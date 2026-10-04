@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T20:57:15Z",
+  "updatedUtc": "2026-10-04T21:01:10Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -79,13 +79,13 @@
     {
       "task": "T08",
       "title": "Rabbit animations",
-      "status": "IN_PROGRESS",
-      "notes": ""
+      "status": "DONE",
+      "notes": "11 actions: Idle_A, Idle_B, Locomotion_Hop, Happy, ReactTouch, Sleep_Enter/Loop/Exit, Eat_Loop, Social_Nose, Inspect. Mapping: manifest SleepLoop=Sleep_Loop, Wake=Sleep_Exit, Social_A=Social_Nose, Locomotion_WalkHop=Locomotion_Hop."
     },
     {
       "task": "T09",
       "title": "Rabbit LOD",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "notes": ""
     },
     {
@@ -2042,7 +2042,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2050,8 +2050,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T21:01:06Z",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "passedGates": [
+        "G05"
+      ]
     },
     {
       "id": "B-AN-SQ-002",
@@ -2061,7 +2064,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2069,8 +2072,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T21:01:06Z",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "passedGates": [
+        "G05"
+      ]
     },
     {
       "id": "B-AN-SQ-003",
@@ -2080,7 +2086,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2088,8 +2094,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T21:01:06Z",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "passedGates": [
+        "G05"
+      ]
     },
     {
       "id": "B-AN-SQ-004",
@@ -2099,7 +2108,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2107,8 +2116,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T21:01:07Z",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "passedGates": [
+        "G05"
+      ]
     },
     {
       "id": "B-AN-SQ-005",
@@ -2118,7 +2130,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2126,8 +2138,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T21:01:07Z",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "passedGates": [
+        "G05"
+      ]
     },
     {
       "id": "B-AN-SQ-006",
@@ -2137,7 +2152,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2145,8 +2160,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T21:01:08Z",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "passedGates": [
+        "G05"
+      ]
     },
     {
       "id": "B-AN-SQ-007",
@@ -2156,7 +2174,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2164,8 +2182,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T21:01:08Z",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "passedGates": [
+        "G05"
+      ]
     },
     {
       "id": "B-AN-SQ-008",
@@ -2175,7 +2196,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2183,8 +2204,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T21:01:09Z",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "passedGates": [
+        "G05"
+      ]
     },
     {
       "id": "B-AN-SQ-009",
@@ -2194,7 +2218,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2202,8 +2226,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Social_A may wait for the second species (T25)."
+      "lastValidationUtc": "2026-10-04T21:01:09Z",
+      "notes": "Social_A may wait for the second species (T25). | Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "passedGates": [
+        "G05"
+      ]
     },
     {
       "id": "B-AN-SQ-010",
@@ -2213,7 +2240,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2221,8 +2248,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T21:01:10Z",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "passedGates": [
+        "G05"
+      ]
     },
     {
       "id": "B-AN-MQ-LIB",
