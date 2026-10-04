@@ -148,12 +148,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e4cceec9bb758445a84406a76fc8c32, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game.Benchmarks::PocketWilds.Benchmarks.BenchmarkAnimalsEntry
-  _viewCount: 20
-  _softCapacity: 64
-  _hardCapacity: 128
-  _recycleEveryFrame: 1
-  _recyclesPerFrame: 4
-  _spacing: 1.2
+  _catalog: {fileID: 11400000, guid: 8fff2b9dd2f876845b91848bf5195be1, type: 2}
+  _contentDatabase: {fileID: 11400000, guid: d0cd23ae388a7784bb6078fc578fb52e, type: 2}
+  _visualKey: PF_Animal_Rabbit
+  _speciesId: species.rabbit
+  _animalCount: 70
+  _quality: 1
+  _area:
+    Center: {x: 0, y: 0, z: 1}
+    Radius: 3
+  _poolChurn: 0
+  _churnPerSecond: 4
 --- !u!4 &162468537
 Transform:
   m_ObjectHideFlags: 0

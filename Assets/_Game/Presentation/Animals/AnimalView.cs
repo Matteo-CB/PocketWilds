@@ -75,6 +75,13 @@ namespace PocketWilds.Presentation
                 _animator.Play(IdleState, 0, snapshot.IdlePhase);
         }
 
+        /// <summary>Moves the view. Called by the scheduler for walking animals only.</summary>
+        public void SetPose(Vector3 position, float yaw)
+        {
+            EnsureInitialized();
+            _transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yaw, 0f));
+        }
+
         /// <summary>Crossfades to an animator state by hash. Called by the scheduler, never every frame.</summary>
         public void PlayState(int stateHash, float fadeSeconds)
         {

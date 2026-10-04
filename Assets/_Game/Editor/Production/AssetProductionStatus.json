@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T22:10:47Z",
+  "updatedUtc": "2026-10-04T22:23:15Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -103,13 +103,13 @@
     {
       "task": "T12",
       "title": "Scheduler",
-      "status": "IN_PROGRESS",
-      "notes": ""
+      "status": "DONE",
+      "notes": "AnimalScheduler (Presentation/Behavior): one Tick per frame from a manager, ticks A 5 Hz / B 1 Hz sliced round-robin, seeded per-agent timers, states Idle/IdleLook/Wander/Eat/Sleep/Wake/Inspect/React/Happy, temperament weights from seed, BehaviorProfile data in DEF_AnimalVisualCatalog, tier budgets per quality (20/30/40 A), smooth walking via SetPose, Poke reaction. Tests: EditMode 132/132 (tick rates, no synchronized spike: max 3 evaluations and 3 changes per frame for 30 agents over 120 s, tiers by distance, determinism, 0 GC), PlayMode 14/14 (30 real rabbits: no per-view Update, sliced ticks, max 4 changes per frame, hop plays when wandering, 0 GC per tick). Editor benchmark 70 rabbits: Scheduler.TickA avg 0.003 ms (max 0.04), TickB avg 0.004 ms (max 0.016); editor GC 17 KB/frame is the editor itself (same with the benchmark disabled). Device numbers pending (T22)."
     },
     {
       "task": "T13",
       "title": "Blender Egg",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "notes": ""
     },
     {
@@ -8313,7 +8313,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Driver uses TEMP cube placeholder until PF_Animal_Rabbit exists."
+      "notes": "Driver uses TEMP cube placeholder until PF_Animal_Rabbit exists. | T12: driver runs real PF_Animal_Rabbit views (pool + palettes + AnimalScheduler), 70 rabbits = P3 (30 A + 40 B) by default, P1/P2 via _animalCount, optional pool churn. Still no ground: P0 decor arrives with the Grassland kit (T15)."
     },
     {
       "id": "L-SC-007",
@@ -10042,7 +10042,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "TEMP. Runtime-built, never saved as asset. Replace by PF_Animal_Rabbit in benchmarks after T10.",
+      "notes": "TEMP. Runtime-built, never saved as asset. Replace by PF_Animal_Rabbit in benchmarks after T10. | T12: retired from SC_Benchmark_Animals (real rabbit now). Only the in-memory cube fixture of AnimalViewPoolTests remains, test code only.",
       "temp": true
     },
     {

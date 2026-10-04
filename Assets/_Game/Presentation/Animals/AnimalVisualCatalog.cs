@@ -18,6 +18,7 @@ namespace PocketWilds.Presentation
             public AnimalView prefab;
             [Min(0)] public int softCapacity = 24;
             [Min(1)] public int hardCapacity = 48;
+            public BehaviorProfile behavior = new BehaviorProfile();
         }
 
         public List<Entry> entries = new List<Entry>();
