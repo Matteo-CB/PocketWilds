@@ -36,7 +36,7 @@ namespace PocketWilds.Editor.Validation
     }
 
     /// <summary>
-    /// ED-007 Asset Validator (v1: animal prefabs and models). Errors block promotion to production.
+    /// ED-007 Asset Validator (v2: animal prefabs, egg models). Errors block promotion to production.
     /// Budgets are ceilings from the Master Asset Manifest, not targets.
     /// </summary>
     public static class AssetValidator
@@ -56,6 +56,20 @@ namespace PocketWilds.Editor.Validation
 
         private static readonly string[] RequiredSockets = { "SOCK_HeadTop", "SOCK_Neck", "SOCK_Back", "SOCK_TailBase" };
 
+        public const string EggBaseModelPath = "Assets/_Game/Art/Eggs/Models/SM_Egg_Base.fbx";
+        public const string EggFragmentsModelPath = "Assets/_Game/Art/Eggs/Models/SM_Egg_Fragments.fbx";
+        public const string EggMaskPath = "Assets/_Game/Art/Eggs/Textures/T_EggMask_Common.png";
+
+        /// <summary>Egg family ceilings (05 Eggs prompts): base LOD0 250-400, LOD1 100-180, fragments under 300 in total.</summary>
+        public static readonly (string Mesh, int Min, int Max)[] EggBaseBudgets =
+        {
+            ("SM_Egg_Base_LOD0", 250, 400),
+            ("SM_Egg_Base_LOD1", 100, 180),
+        };
+
+        public static readonly string[] EggFragments = { "SM_Egg_Fragment_A", "SM_Egg_Fragment_B", "SM_Egg_Fragment_C" };
+        public const int EggFragmentsMaxTotal = 300;
+
         [MenuItem("Pocket Wilds/Validate/Animal Prefabs", priority = 400)]
         public static void ValidateAllMenu()
         {
@@ -63,9 +77,13 @@ namespace PocketWilds.Editor.Validation
             Report(issues);
         }
 
+        [MenuItem("Pocket Wilds/Validate/Egg Models", priority = 401)]
+        public static void ValidateEggsMenu() => Report(ValidateEggModels());
+
         public static void ValidateAllBatch()
         {
             var issues = ValidateAllAnimals();
+            issues.AddRange(ValidateEggModels());
             Report(issues);
             EditorApplication.Exit(issues.Any(i => i.Severity == IssueSeverity.Error) ? 1 : 0);
         }
@@ -210,6 +228,101 @@ namespace PocketWilds.Editor.Validation
             }
 
             return issues;
+        }
+
+        public static List<ValidationIssue> ValidateEggModels()
+        {
+            var issues = new List<ValidationIssue>();
+            void Error(string path, string rule, string msg) => issues.Add(new ValidationIssue(IssueSeverity.Error, path, rule, msg));
+            void Info(string path, string rule, string msg) => issues.Add(new ValidationIssue(IssueSeverity.Info, path, rule, msg));
+
+            var baseMeshes = LoadMeshes(EggBaseModelPath, Error);
+            foreach (var (name, min, max) in EggBaseBudgets)
+            {
+                if (!baseMeshes.TryGetValue(name, out var mesh))
+                {
+                    Error(EggBaseModelPath, "Mesh", "Missing " + name);
+                    continue;
+                }
+                int tris = Triangles(mesh);
+                if (tris > max || tris < min)
+                    Error(EggBaseModelPath, "Budget", $"{name}: {tris} tris outside {min}-{max}.");
+                else
+                    Info(EggBaseModelPath, "Budget", $"{name}: {tris} tris ({min}-{max}).");
+                CheckEggMesh(EggBaseModelPath, mesh, Error);
+                // Eggs sit on the ground: pivot at the bottom of the shell.
+                if (Mathf.Abs(mesh.bounds.min.y) > 0.002f)
+                    Error(EggBaseModelPath, "Pivot", $"{name}: bottom at y = {mesh.bounds.min.y:F4}, expected 0.");
+            }
+
+            var fragmentMeshes = LoadMeshes(EggFragmentsModelPath, Error);
+            int total = 0;
+            foreach (var name in EggFragments)
+            {
+                if (!fragmentMeshes.TryGetValue(name, out var mesh))
+                {
+                    Error(EggFragmentsModelPath, "Mesh", "Missing " + name);
+                    continue;
+                }
+                total += Triangles(mesh);
+                CheckEggMesh(EggFragmentsModelPath, mesh, Error);
+            }
+            if (total > EggFragmentsMaxTotal)
+                Error(EggFragmentsModelPath, "Budget", $"Fragments: {total} tris > {EggFragmentsMaxTotal}.");
+            else
+                Info(EggFragmentsModelPath, "Budget", $"Fragments: {total} tris (max {EggFragmentsMaxTotal}).");
+
+            if (AssetImporter.GetAtPath(EggMaskPath) is TextureImporter mask)
+            {
+                if (mask.sRGBTexture)
+                    Error(EggMaskPath, "Texture", "Mask must be linear (sRGB off).");
+                var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(EggMaskPath);
+                if (texture != null && (texture.width > 256 || texture.height > 256))
+                    Error(EggMaskPath, "Texture", $"{texture.width}x{texture.height}: egg masks stay at 256.");
+            }
+            else
+            {
+                Error(EggMaskPath, "Texture", "Egg mask texture missing.");
+            }
+            return issues;
+        }
+
+        private static Dictionary<string, Mesh> LoadMeshes(string path, Action<string, string, string> error)
+        {
+            var meshes = new Dictionary<string, Mesh>();
+            if (!(AssetImporter.GetAtPath(path) is ModelImporter importer))
+            {
+                error(path, "Import", "Model not found.");
+                return meshes;
+            }
+            if (importer.isReadable)
+                error(path, "Import", "Read/Write must be disabled.");
+            if (importer.materialImportMode != ModelImporterMaterialImportMode.None)
+                error(path, "Import", "FBX materials must not be imported.");
+            if (importer.animationType != ModelImporterAnimationType.None)
+                error(path, "Import", "Static props have no rig.");
+            foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(path))
+                if (asset is Mesh mesh)
+                    meshes[mesh.name] = mesh;
+            return meshes;
+        }
+
+        private static void CheckEggMesh(string path, Mesh mesh, Action<string, string, string> error)
+        {
+            if (!mesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.TexCoord0))
+                error(path, "Mesh", mesh.name + ": UV0 (mask layout) missing.");
+            if (!mesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.Color))
+                error(path, "Mesh", mesh.name + ": PW_Regions vertex colors missing.");
+            if (mesh.subMeshCount != 1)
+                error(path, "Mesh", mesh.name + $": {mesh.subMeshCount} submeshes, one expected.");
+        }
+
+        public static int Triangles(Mesh mesh)
+        {
+            long indices = 0;
+            for (int i = 0; i < mesh.subMeshCount; i++)
+                indices += mesh.GetIndexCount(i);
+            return (int)(indices / 3);
         }
 
         public static int Triangles(Renderer renderer)

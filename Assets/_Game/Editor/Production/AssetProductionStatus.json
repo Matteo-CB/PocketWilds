@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T22:23:15Z",
+  "updatedUtc": "2026-10-04T22:33:49Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -109,13 +109,13 @@
     {
       "task": "T13",
       "title": "Blender Egg",
-      "status": "IN_PROGRESS",
-      "notes": ""
+      "status": "DONE",
+      "notes": "BL_Egg_Family.blend + pw_egg.py generator, SM_Egg_Base (LOD0 352 / LOD1 120 tris) and SM_Egg_Fragments (208 tris total) exported with the project FBX preset, T_EggMask_Common mask. AssetValidator v2 checks egg budgets, pivot, UV0, colors, mask import (0 errors). TextureImportRules for masks. EditMode 135/135."
     },
     {
       "task": "T14",
       "title": "Hatch sequence",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "notes": ""
     },
     {
@@ -2382,7 +2382,7 @@
       "dependencies": [
         "G-MAT-EGG"
       ],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": "SourceArt/Blender/Eggs/BL_Egg_Family.blend",
       "runtimePath": "Assets/_Game/Art/Eggs/",
       "validationGates": [
@@ -2396,9 +2396,12 @@
         "G22"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Owns the shared egg topology: SM_Egg_Base_LOD0/LOD1, SM_Egg_Fragment_A/B/C.",
-      "prefab": "Assets/_Game/Prefabs/Eggs/PF_Egg_BasicGrassland.prefab"
+      "lastValidationUtc": "2026-10-04T22:33:48Z",
+      "notes": "Owns the shared egg topology: SM_Egg_Base_LOD0/LOD1, SM_Egg_Fragment_A/B/C. | T13: egg family source SourceArt/Blender/Eggs/BL_Egg_Family.blend, rebuilt by SourceArt/Blender/Tools/pw_egg.py (one parametric shell drives meshes, UVs and mask). SM_Egg_Base.fbx: LOD0 352 tris, LOD1 120 tris, pivot at the bottom, UV0 = shell layout, one material slot. SM_Egg_Fragments.fbx: A 96 + B 56 + C 56 = 208 tris, closed shells 1 cm thick, inner shell tagged PW_Regions.G, cut exactly along the crack lines. T_EggMask_Common.png 256 linear (R spots, G leaf band, B flowers, A cracks: 1.0 stage 1, 0.6 stage 2), ASTC 4x4. Captures SourceArt/Blender/Eggs/Captures/T13_*. Pending T14: MAT_Egg_Master (egg shader reading the mask), prefab, hatch.",
+      "prefab": "Assets/_Game/Prefabs/Eggs/PF_Egg_BasicGrassland.prefab",
+      "passedGates": [
+        "G01"
+      ]
     },
     {
       "id": "C-EGG-002",

@@ -4,6 +4,7 @@ Usage inside Blender:
     exec(open(r"<project>/SourceArt/Blender/Tools/pw_export.py").read())
     export_species_model("Rabbit")                 # from BL_Animal_<Species>.blend
     export_animation_library("SmallQuadruped")     # from BL_Rig_<Family>.blend
+    export_static("Assets/_Game/Art/Eggs/Models/SM_Egg_Base.fbx", ("SM_Egg_Base_",))  # props, eggs
 
 Only objects in the EXPORT collection are written. The .blend source is never modified.
 """
@@ -89,3 +90,21 @@ def export_animation_library(family):
         **FBX_PRESET,
     )
     return out, [a.name for a in bpy.data.actions if a.name.startswith(f"AN_{family}_")]
+
+
+def export_static(relative_path, name_prefixes):
+    """Static meshes from EXPORT whose names start with one of name_prefixes. Pivots and names kept."""
+    out = os.path.join(project_root(), *relative_path.split("/"))
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    for o in bpy.context.view_layer.objects:
+        o.select_set(False)
+    chosen = [o for o in bpy.data.collections["EXPORT"].all_objects
+              if o.type == 'MESH' and o.name.startswith(tuple(name_prefixes))]
+    if not chosen:
+        raise RuntimeError("Nothing to export for " + ", ".join(name_prefixes))
+    for o in chosen:
+        o.hide_set(False)
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = chosen[0]
+    bpy.ops.export_scene.fbx(filepath=out, object_types={'MESH'}, bake_anim=False, **FBX_PRESET)
+    return out, [o.name for o in chosen]
