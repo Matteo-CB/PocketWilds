@@ -19,6 +19,7 @@ namespace PocketWilds.Presentation
         [SerializeField] private Renderer[] _fragmentRenderers = System.Array.Empty<Renderer>();
         [SerializeField] private Transform _vfxPoint;
         [SerializeField] private Transform _revealPoint;
+        [SerializeField] private Renderer _blobShadow;
 
         private MeshRenderer[] _shellMeshes;
         private MeshRenderer[] _fragmentMeshes;
@@ -34,8 +35,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>Editor/prefab builder hook. Runtime code never rewires a view.</summary>
         public void SetReferences(Transform shell, Renderer[] shellRenderers, Transform[] fragmentPivots, Renderer[] fragmentRenderers,
-            Transform vfxPoint, Transform revealPoint)
+            Transform vfxPoint, Transform revealPoint, Renderer blobShadow = null)
         {
+            _blobShadow = blobShadow;
             _shell = shell;
             _shellRenderers = shellRenderers;
             _fragmentPivots = fragmentPivots;
@@ -59,6 +61,8 @@ namespace PocketWilds.Presentation
             SetShellVisible(true);
             SetFragmentsVisible(false);
             ApplyVisualData(visualData);
+            if (_blobShadow != null)
+                _blobShadow.enabled = PresentationQuality.BlobShadows;
         }
 
         public void SetCrackStage(int stage) => ApplyVisualData(EggVisualPacking.WithCrackStage(VisualData, stage));
@@ -78,6 +82,8 @@ namespace PocketWilds.Presentation
             ShellVisible = visible;
             for (int i = 0; i < _shellMeshes.Length; i++)
                 _shellMeshes[i].enabled = visible;
+            if (_blobShadow != null)
+                _blobShadow.enabled = visible && PresentationQuality.BlobShadows;
         }
 
         public void SetFragmentsVisible(bool visible)

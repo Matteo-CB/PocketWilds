@@ -3,6 +3,7 @@ using NUnit.Framework;
 using PocketWilds.Content;
 using PocketWilds.Core;
 using PocketWilds.Editor.Animals;
+using PocketWilds.Editor.Validation;
 using PocketWilds.Presentation;
 using PocketWilds.Simulation;
 using UnityEditor;
@@ -143,6 +144,13 @@ namespace PocketWilds.Tests.EditMode
 
                 foreach (var r in view.GetComponentsInChildren<Renderer>(true))
                 {
+                    if (r.name == "BlobShadow")
+                    {
+                        // Low-quality ground contact: its own shared material, never a clone.
+                        Assert.AreSame(AssetDatabase.LoadAssetAtPath<Material>(AssetValidator.BlobShadowMaterialPath), r.sharedMaterial);
+                        Assert.IsFalse(r.HasPropertyBlock());
+                        continue;
+                    }
                     Assert.AreEqual(1, r.sharedMaterials.Length, r.name);
                     Assert.AreSame(master, r.sharedMaterial, r.name + " uses a material clone.");
                     Assert.IsFalse(r.HasPropertyBlock(), r.name + " uses a MaterialPropertyBlock.");

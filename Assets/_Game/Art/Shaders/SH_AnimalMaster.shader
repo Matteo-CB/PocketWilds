@@ -50,6 +50,7 @@ Shader "PocketWilds/AnimalMaster"
             #pragma fragment Frag
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #pragma multi_compile _ FOG_LINEAR
 
             #include "Include/PW_Stylized.hlsl"
 
@@ -70,6 +71,7 @@ Shader "PocketWilds/AnimalMaster"
                 half3 albedo : TEXCOORD2;
                 half eye : TEXCOORD3;
                 half3 ambient : TEXCOORD4;
+                half fogFactor : TEXCOORD5;
             };
 
             Varyings Vert(Attributes input)
@@ -77,6 +79,7 @@ Shader "PocketWilds/AnimalMaster"
                 Varyings output;
                 VertexPositionInputs position = GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = position.positionCS;
+                output.fogFactor = ComputeFogFactor(position.positionCS.z);
                 output.positionWS = position.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
 
@@ -127,7 +130,7 @@ Shader "PocketWilds/AnimalMaster"
 
                 half spec = PW_Specular(normalWS, viewWS, lighting.mainLight, 64.0h) * input.eye * _EyeGloss;
                 half3 color = lighting.color + spec * lighting.mainLight.color;
-                return half4(color, 1);
+                return half4(MixFog(color, input.fogFactor), 1);
             }
             ENDHLSL
         }

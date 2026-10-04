@@ -395,7 +395,8 @@ namespace PocketWilds.Editor.Eggs
                 lodGroup.fadeMode = LODFadeMode.None;
                 lodGroup.RecalculateBounds();
 
-                view.SetReferences(shell, new Renderer[] { lod0, lod1 }, pivots, fragmentRenderers, vfxPoint, revealPoint);
+                var blob = PocketWilds.Editor.Lighting.LightingPipeline.AddBlobShadow(root.transform, new Vector2(0.46f, 0.46f));
+                view.SetReferences(shell, new Renderer[] { lod0, lod1 }, pivots, fragmentRenderers, vfxPoint, revealPoint, blob);
                 Directory.CreateDirectory(Path.GetDirectoryName(EggPrefabPath));
                 var prefab = PrefabUtility.SaveAsPrefabAsset(root, EggPrefabPath);
                 return prefab.GetComponent<EggView>();

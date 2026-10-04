@@ -43,6 +43,7 @@ namespace PocketWilds.Editor.Setup
             public float RenderScale;
             public int Msaa;
             public int ShadowResolution;
+            public bool MainLightShadows;
             public float ShadowDistance;
             public int Cascades;
             public bool SoftShadows;
@@ -53,9 +54,11 @@ namespace PocketWilds.Editor.Setup
 
         private static readonly TierSpec[] Tiers =
         {
-            new TierSpec { Name = "Low", RenderScale = 0.85f, Msaa = 1, ShadowResolution = 512, ShadowDistance = 14f, Cascades = 1, SoftShadows = false, FastSrgb = true, LodBias = 0.7f, SkinWeights = 2 },
-            new TierSpec { Name = "Medium", RenderScale = 1.0f, Msaa = 2, ShadowResolution = 1024, ShadowDistance = 20f, Cascades = 1, SoftShadows = true, FastSrgb = false, LodBias = 1.0f, SkinWeights = 4 },
-            new TierSpec { Name = "High", RenderScale = 1.0f, Msaa = 4, ShadowResolution = 2048, ShadowDistance = 28f, Cascades = 2, SoftShadows = true, FastSrgb = false, LodBias = 1.3f, SkinWeights = 4 },
+            // T16: the gameplay camera sits 13.8 m from its focus, so realtime shadows must reach ~24 m to cover the play
+            // area. Low drops the shadow map entirely and grounds animals and eggs with blob shadows (Performance Bible).
+            new TierSpec { Name = "Low", RenderScale = 0.85f, Msaa = 1, ShadowResolution = 512, MainLightShadows = false, ShadowDistance = 0f, Cascades = 1, SoftShadows = false, FastSrgb = true, LodBias = 0.7f, SkinWeights = 2 },
+            new TierSpec { Name = "Medium", RenderScale = 1.0f, Msaa = 2, ShadowResolution = 1024, MainLightShadows = true, ShadowDistance = 24f, Cascades = 1, SoftShadows = true, FastSrgb = false, LodBias = 1.0f, SkinWeights = 4 },
+            new TierSpec { Name = "High", RenderScale = 1.0f, Msaa = 4, ShadowResolution = 2048, MainLightShadows = true, ShadowDistance = 30f, Cascades = 2, SoftShadows = true, FastSrgb = false, LodBias = 1.3f, SkinWeights = 4 },
         };
 
         [MenuItem("Pocket Wilds/Setup/Apply Project Settings (T00)", priority = 100)]
@@ -84,6 +87,21 @@ namespace PocketWilds.Editor.Setup
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("[Setup] T00 project settings applied.\n" + log);
+        }
+
+        /// <summary>Re-applies only the URP renderer, pipeline assets and quality levels (T16 tier changes).</summary>
+        [MenuItem("Pocket Wilds/Setup/Apply Quality Tiers", priority = 101)]
+        public static void ApplyQualityTiers()
+        {
+            var log = new StringBuilder();
+            var renderer = EnsureRendererData(log);
+            var pipelines = new UniversalRenderPipelineAsset[Tiers.Length];
+            for (int i = 0; i < Tiers.Length; i++)
+                pipelines[i] = EnsurePipelineAsset(Tiers[i], renderer, log);
+            GraphicsSettings.defaultRenderPipeline = pipelines[1];
+            ConfigureQualityLevels(pipelines, log);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[Setup] Quality tiers applied." + System.Environment.NewLine + log);
         }
 
         /// <summary>Batch entry point. Exits with 0 on success, 1 on failure.</summary>
@@ -189,7 +207,7 @@ namespace PocketWilds.Editor.Setup
             SetFloat(so, "m_RenderScale", tier.RenderScale, log);
             SetInt(so, "m_MSAA", tier.Msaa, log);
             SetBool(so, "m_SupportsHDR", false, log);
-            SetBool(so, "m_MainLightShadowsSupported", true, log);
+            SetBool(so, "m_MainLightShadowsSupported", tier.MainLightShadows, log);
             SetInt(so, "m_MainLightShadowmapResolution", tier.ShadowResolution, log);
             SetInt(so, "m_AdditionalLightsRenderingMode", 0, log);
             SetBool(so, "m_AdditionalLightShadowsSupported", false, log);

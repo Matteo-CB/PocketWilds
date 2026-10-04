@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T23:15:35Z",
+  "updatedUtc": "2026-10-04T23:40:50Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -127,13 +127,13 @@
     {
       "task": "T16",
       "title": "Lighting reference",
-      "status": "IN_PROGRESS",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Lighting reference: quality tiers (Low without shadow map + blob shadows, Medium 24 m, High 30 m), LP_Grassland_Day + sky gradient + linear fog in the 4 lit shaders, minimal grading volume (Medium/High), PF_CameraRig_Sanctuary with bounded pan/zoom/states and input; scene wired. Tree A reworked after owner feedback. Tests EditMode 153/153, PlayMode 24/24."
     },
     {
       "task": "T17",
       "title": "First playable loop",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "notes": ""
     },
     {
@@ -3405,7 +3405,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T23:15:33Z",
-      "notes": "MVP A06, LOD0 0.6-1.0k | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | Tris LOD0 830 / LOD1 384 (46%) / LOD2 173 (21%); LODGroup 0.32/0.14/0.03.",
+      "notes": "MVP A06, LOD0 0.6-1.0k | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | Tris LOD0 830 / LOD1 384 (46%) / LOD2 173 (21%); LODGroup 0.32/0.14/0.03. | T16 rework after owner review (foliage looked wrong): one smooth lobed crown (stiff metaball union of 8 masses, voxel remesh, light smoothing, decimated to 430 tris) + 52 leaf scales on the lobe tops (lit tips, scale pattern), foliage normals from the crown center, S-curved trunk with root flare buried in the crown, bark grooves in palette column 4. LOD0 808 / LOD1 400 (50%) / LOD2 153 (19%). Capture T16_tree_close.png.",
       "passedGates": [
         "G01",
         "G02",
@@ -3738,7 +3738,7 @@
       "family": "Lighting",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/Lighting/Grassland/",
       "validationGates": [
@@ -3746,8 +3746,12 @@
         "G29"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T23:40:49Z",
+      "notes": "T16: LP_Grassland_Day (warm neutral sun 1.0 at 50/-32 deg, shadow strength 0.7, trilight ambient, linear fog 20-48 m toward the horizon color, MAT_Sky_Grassland). Applied by VerticalSliceEntry per quality tier. Captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T16_world_*. | T16: LP_Grassland_Day (warm neutral sun 1.0 at 50/-32 deg, shadow strength 0.7, trilight ambient, linear fog 20-48 m toward the horizon color, MAT_Sky_Grassland). Applied by VerticalSliceEntry per quality tier. Captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T16_world_*. | T16: LP_Grassland_Day (warm neutral sun 1.0 at 50/-32 deg, shadow strength 0.7, trilight ambient, linear fog 20-48 m toward the horizon color, MAT_Sky_Grassland). Applied by VerticalSliceEntry per quality tier. Captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T16_world_*.",
+      "passedGates": [
+        "G11",
+        "G29"
+      ]
     },
     {
       "id": "E-DEC-001",
@@ -4813,7 +4817,7 @@
       "family": "Shader",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "Assets/_Game/Art/Shaders/SH_SkyGradient.shadergraph",
       "runtimePath": "Assets/_Game/Art/Shaders/",
       "validationGates": [
@@ -4824,7 +4828,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material)."
     },
     {
       "id": "G-SH-008",
@@ -8255,15 +8259,18 @@
       "family": "Prefab",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/World/PF_CameraRig_Sanctuary.prefab",
       "validationGates": [
         "G11"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T23:40:50Z",
+      "notes": "T16: PF_CameraRig_Sanctuary: fixed pitch 40, FOV 30, distance 9.5-17 (default 13.8), pan clamped around the egg spawn, states DefaultWorld/FocusAnimal/HatchReveal with 0.35 s smoothed transitions, SanctuaryCameraInput (touch drag/pinch, mouse drag/wheel, tap detection) with no allocation. | T16: PF_CameraRig_Sanctuary: fixed pitch 40, FOV 30, distance 9.5-17 (default 13.8), pan clamped around the egg spawn, states DefaultWorld/FocusAnimal/HatchReveal with 0.35 s smoothed transitions, SanctuaryCameraInput (touch drag/pinch, mouse drag/wheel, tap detection) with no allocation. | T16: PF_CameraRig_Sanctuary: fixed pitch 40, FOV 30, distance 9.5-17 (default 13.8), pan clamped around the egg spawn, states DefaultWorld/FocusAnimal/HatchReveal with 0.35 s smoothed transitions, SanctuaryCameraInput (touch drag/pinch, mouse drag/wheel, tap detection) with no allocation.",
+      "passedGates": [
+        "G11"
+      ]
     },
     {
       "id": "K-PF-SELECTION",
@@ -8629,7 +8636,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "URP_Low/Medium/High + Unity quality levels exist (T00). QualityProfile data asset (Battery, density) pending."
+      "notes": "URP_Low/Medium/High + Unity quality levels exist (T00). QualityProfile data asset (Battery, density) pending. | T16: tiers from ProjectSetup.TierSpec: Low no shadow map (blob shadows), render scale 0.85, no post; Medium 24 m 1 cascade 1024 soft, MSAA 2, minimal grading; High 30 m 2 cascades 2048, MSAA 4."
     },
     {
       "id": "M-DEF-HAPTIC",
@@ -8688,7 +8695,7 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Content/",
       "validationGates": [
@@ -8697,7 +8704,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T16: LightingProfile ScriptableObject (sun, trilight ambient, sky colors + material, linear fog); Grassland profile generated by LightingPipeline. Other biomes later."
     },
     {
       "id": "N-GRP-Bootstrap",

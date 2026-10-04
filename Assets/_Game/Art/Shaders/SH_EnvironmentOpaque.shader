@@ -49,6 +49,7 @@ Shader "PocketWilds/EnvironmentOpaque"
             #pragma fragment Frag
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #pragma multi_compile _ FOG_LINEAR
 
             #include "Include/PW_Stylized.hlsl"
 
@@ -67,6 +68,7 @@ Shader "PocketWilds/EnvironmentOpaque"
                 half3 normalWS : TEXCOORD1;
                 half3 albedo : TEXCOORD2;
                 half3 ambient : TEXCOORD3;
+                half fogFactor : TEXCOORD4;
             };
 
             Varyings Vert(Attributes input)
@@ -74,6 +76,7 @@ Shader "PocketWilds/EnvironmentOpaque"
                 Varyings output;
                 VertexPositionInputs position = GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = position.positionCS;
+                output.fogFactor = ComputeFogFactor(position.positionCS.z);
                 output.positionWS = position.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
 
@@ -112,7 +115,7 @@ Shader "PocketWilds/EnvironmentOpaque"
                 half3 normalWS = normalize(input.normalWS);
                 half3 viewWS = normalize(GetWorldSpaceViewDir(input.positionWS));
                 PWLightResult lighting = PW_StylizedLighting(input.albedo, normalWS, viewWS, input.positionWS, input.ambient);
-                return half4(lighting.color, 1);
+                return half4(MixFog(lighting.color, input.fogFactor), 1);
             }
             ENDHLSL
         }

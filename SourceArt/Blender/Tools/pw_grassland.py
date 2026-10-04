@@ -20,7 +20,6 @@ import bpy
 from mathutils import Matrix, Vector
 
 ROCK_SIZES = {"S": (0.30, 0.26, 90), "M": (0.58, 0.46, 150), "L": (1.0, 0.78, 230)}  # width, height, target tris
-TREE_LOD_RATIOS = (1.0, 0.45, 0.2)
 GROUND_HALF = 7.0          # 14 m chunk
 GROUND_FLAT_RADIUS = 5.0   # animals and egg live on a flat center
 GROUND_DEPTH = 1.1
@@ -345,105 +344,226 @@ def build_flower(kind, collections):
 
 
 # ---------------- Tree ----------------
-TREE_MASSES = [  # center, radius
-    (Vector((0.0, 0.05, 1.95)), 0.82),
-    (Vector((-0.62, 0.12, 1.55)), 0.6),
-    (Vector((0.6, -0.12, 1.6)), 0.64),
-    (Vector((0.05, -0.35, 1.5)), 0.5),
-    (Vector((0.15, 0.45, 1.55)), 0.48),
+# Chibi tree: short S-curved trunk with flared roots and three branches into one smooth crown volume
+# (clean union of a few masses, no random bumps), covered with small flat leaves laid like scales.
+# The scales give a scalloped, leafy silhouette and close-up detail for 4 triangles each.
+# Every foliage vertex (crown and leaves) takes its normal from the crown center: the crown shades
+# as one soft plush volume (classic stylized foliage), the scales only shape the outline.
+CANOPY_CENTER = Vector((0.0, 0.0, 1.8))
+CANOPY_RADII = Vector((1.35, 1.25, 0.8))
+
+# Crown lobes: center, radius. A broad dome: central mass, a ring of side lobes, one crown top.
+TREE_MASSES = [
+    (Vector((0.0, 0.0, 1.86)), 0.84),
+    (Vector((-0.8, 0.1, 1.62)), 0.6),
+    (Vector((0.82, -0.05, 1.64)), 0.62),
+    (Vector((0.1, 0.66, 1.6)), 0.58),
+    (Vector((0.05, -0.64, 1.56)), 0.55),
+    (Vector((-0.56, -0.48, 1.72)), 0.5),
+    (Vector((0.58, 0.48, 1.74)), 0.5),
+    (Vector((-0.18, 0.08, 2.36)), 0.56),
 ]
+TREE_BRANCHES = [  # toward a lobe center, with the branch radius at its base (seen under the crown)
+    (Vector((-0.62, 0.08, 1.58)), 0.085),
+    (Vector((0.62, -0.05, 1.6)), 0.085),
+    (Vector((0.06, 0.5, 1.58)), 0.08),
+]
+TREE_TRUNK_TOP = Vector((0.04, 0.0, 1.5))  # buried in the crown: no visible trunk cap
+# lod: (crown triangles, leaf scales, trunk sides, trunk rings, branches)
+TREE_LODS = {0: (430, 52, 8, 5, True), 1: (250, 14, 6, 3, True), 2: (130, 0, 5, 2, False)}
+
+
+def _trunk_axis(t):
+    """Gentle S curve from the ground (t=0) to the trunk top (t=1)."""
+    x = 0.06 * math.sin(t * math.pi * 1.1) - 0.02 * t
+    return Vector((x + TREE_TRUNK_TOP.x * t, 0.015 * math.sin(t * math.pi * 2.0), t * TREE_TRUNK_TOP.z))
+
+
+def _tube(bm, points, radii, sides, cap_top=True, flare=None):
+    """Ring sweep along points; flare(k, angle) optionally pushes the first ring out (roots)."""
+    rings = []
+    for i, (p, r) in enumerate(zip(points, radii)):
+        axis = (points[i + 1] - p).normalized() if i < len(points) - 1 else (p - points[i - 1]).normalized()
+        ref = Vector((1, 0, 0)) if abs(axis.x) < 0.9 else Vector((0, 1, 0))
+        u = axis.cross(ref).normalized()
+        w = axis.cross(u).normalized()
+        ring = []
+        for k in range(sides):
+            a = k / sides * math.tau
+            radius = r * (flare(k, a) if (flare and i == 0) else 1.0)
+            ring.append(bm.verts.new(p + (u * math.cos(a) + w * math.sin(a)) * radius))
+        rings.append(ring)
+    for a_ring, b_ring in zip(rings[:-1], rings[1:]):
+        for k in range(sides):
+            n = (k + 1) % sides
+            bm.faces.new((a_ring[k], a_ring[n], b_ring[n], b_ring[k]))
+    if cap_top:
+        bm.faces.new(rings[-1])
+    return rings
+
+
+def _crown_mesh():
+    """Smooth union of the masses: metaball, voxel remesh, smoothing. Returns a temporary mesh."""
+    work = bpy.data.collections["WORK"]
+    data = bpy.data.metaballs.get("WORK_GL_Tree_A_Crown") or bpy.data.metaballs.new("WORK_GL_Tree_A_Crown")
+    data.elements.clear()
+    data.resolution = 0.08
+    data.render_resolution = 0.08
+    for center, radius in TREE_MASSES:
+        e = data.elements.new(type='ELLIPSOID')
+        e.co = center
+        # With stiffness 2 and the default 0.6 threshold the surface sits at ~0.67 of the element
+        # radius: scale up so each mass shows its nominal size, slightly flattened.
+        # Stiffer field: lobes fuse at their base but keep their own rounded outline.
+        e.radius = radius * 1.35
+        e.size_x, e.size_y, e.size_z = 1.0, 1.0, 0.86
+        e.stiffness = 3.0
+    obj = bpy.data.objects.get("WORK_GL_Tree_A_Crown") or bpy.data.objects.new("WORK_GL_Tree_A_Crown", data)
+    if obj.name not in work.objects:
+        work.objects.link(obj)
+    obj.hide_render = True
+    obj.hide_viewport = False  # hidden objects are skipped by the depsgraph: keep it evaluated
+    bpy.context.view_layer.update()
+    mesh = bpy.data.meshes.new_from_object(obj.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    obj.hide_set(True)
+    temp = bpy.data.objects.new("WORK_GL_Tree_A_CrownTemp", mesh)
+    work.objects.link(temp)
+    remesh = temp.modifiers.new("Remesh", 'REMESH')
+    remesh.mode = 'VOXEL'
+    remesh.voxel_size = 0.05
+    replace_with_evaluated(temp, remesh)
+    smooth = temp.modifiers.new("Smooth", 'SMOOTH')
+    smooth.factor = 0.6
+    smooth.iterations = 5
+    replace_with_evaluated(temp, smooth)
+    return temp
+
+
+def _leaf_scale(bm, base, normal, down, size, lift):
+    """Rounded leaf lying on the crown like a scale, pointing outward-down, tip barely lifted.
+    Front face is forced to face outward; the back copy sits just under it."""
+    n = normal.normalized()
+    along = (down - n * down.dot(n))
+    if along.length < 1e-3:
+        along = n.cross(Vector((1, 0, 0)))
+    along.normalize()
+    side = n.cross(along).normalized()
+    tip = base + along * size + n * size * lift
+    mid = base + along * size * 0.48 + n * size * lift * 0.4
+    pts = [base - along * size * 0.2, mid + side * size * 0.46, tip, mid - side * size * 0.46]
+    front = bm.faces.new([bm.verts.new(p) for p in pts])
+    back = bm.faces.new([bm.verts.new(p - n * 0.006) for p in reversed(pts)])
+    front.normal_update()
+    back.normal_update()
+    if front.normal.dot(n) < 0.0:
+        front.normal_flip()
+    if back.normal.dot(n) > 0.0:
+        back.normal_flip()
 
 
 def build_tree(collections, lod_collections):
-    work = bpy.data.collections["WORK"]
-    # Foliage: metaball union for soft lumpy masses, then remesh and decimate per LOD.
-    mb_data = bpy.data.metaballs.get("WORK_GL_Tree_A_Foliage") or bpy.data.metaballs.new("WORK_GL_Tree_A_Foliage")
-    mb_data.elements.clear()
-    mb_data.resolution = 0.12
-    mb_data.render_resolution = 0.12
-    for center, radius in TREE_MASSES:
-        e = mb_data.elements.new()
-        e.co = center
-        e.radius = radius
-        e.stiffness = 2.2
-    rng = random.Random(77)
-    for _ in range(9):
-        c, r = TREE_MASSES[rng.randrange(len(TREE_MASSES))]
-        d = Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(-0.2, 1))).normalized()
-        e = mb_data.elements.new()
-        e.co = c + d * r * 0.8
-        e.radius = r * 0.42
-        e.stiffness = 2.0
-    mb = bpy.data.objects.get("WORK_GL_Tree_A_Foliage") or bpy.data.objects.new("WORK_GL_Tree_A_Foliage", mb_data)
-    if mb.name not in work.objects:
-        work.objects.link(mb)
-    mb.hide_render = True
-    bpy.context.view_layer.update()
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-    foliage_mesh = bpy.data.meshes.new_from_object(mb.evaluated_get(depsgraph))
-
+    from mathutils.bvhtree import BVHTree
+    crown = _crown_mesh()
     results = []
-    for lod in range(len(TREE_LOD_RATIOS)):
-        bm = bmesh.new()
-        bm.from_mesh(foliage_mesh)
-        bmesh.ops.triangulate(bm, faces=bm.faces)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.01)
-        temp = object_from_bmesh("WORK_GL_Tree_A_FoliageTemp", bm, [work])
-        decimate_to(temp, {0: 760, 1: 330, 2: 150}[lod])
+    for lod, (crown_tris, scales, sides, rings, branches) in TREE_LODS.items():
+        temp = bpy.data.objects.new("WORK_GL_Tree_A_LODTemp", crown.data.copy())
+        bpy.data.collections["WORK"].objects.link(temp)
+        decimate_to(temp, crown_tris)
 
         bm = bmesh.new()
         bm.from_mesh(temp.data)
-        foliage_verts = len(bm.verts)
-        _trunk(bm, sides=8 if lod < 2 else 5, rings=4 if lod == 0 else (3 if lod == 1 else 2))
+        bmesh.ops.triangulate(bm, faces=bm.faces)
+        crown_end = len(bm.verts)
+        tree = BVHTree.FromBMesh(bm)
+        rng = random.Random(4242)
+        # Leaf scales on the upper and side surface: Fibonacci directions, jittered, raycast onto the crown.
+        golden = math.pi * (3.0 - math.sqrt(5.0))
+        placed = 0
+        for i in range(scales * 3):
+            if placed >= scales:
+                break
+            z = 1.0 - 1.0 * (i + 0.5) / (scales * 3)   # upper hemisphere only
+            r = math.sqrt(max(0.0, 1.0 - z * z))
+            a = i * golden + rng.uniform(-0.2, 0.2)
+            direction = Vector((math.cos(a) * r, math.sin(a) * r, z))
+            if direction.z < 0.15:
+                continue  # leaves sit on the lobe tops: side-on leaves would read as spikes
+            origin = CANOPY_CENTER + Vector((direction.x * CANOPY_RADII.x, direction.y * CANOPY_RADII.y, direction.z * CANOPY_RADII.z)) * 2.0
+            hit, normal, _, _ = tree.ray_cast(origin, -direction)
+            if hit is None:
+                continue
+            size = rng.uniform(0.22, 0.3)
+            _leaf_scale(bm, hit - normal * 0.015, normal, Vector((0, 0, -1)) + direction * 0.6, size, rng.uniform(0.08, 0.16))
+            placed += 1
+        foliage_end = len(bm.verts)
+
+        points = [_trunk_axis(i / rings) for i in range(rings + 1)]
+        radii = [0.27 - 0.1 * (i / rings) ** 0.7 for i in range(rings + 1)]
+        _tube(bm, points, radii, sides, cap_top=True,
+              flare=lambda k, a: 1.0 + 0.65 * max(0.0, math.cos(a * 2.0 + 0.4)) ** 3)
+        if branches:
+            for target, radius in TREE_BRANCHES:
+                start = TREE_TRUNK_TOP + (target - TREE_TRUNK_TOP) * 0.05
+                mid = TREE_TRUNK_TOP + (target - TREE_TRUNK_TOP) * 0.55 + Vector((0, 0, 0.08))
+                _tube(bm, [start, mid, target], [radius * 1.3, radius, radius * 0.6], max(4, sides - 2))
+        bm.normal_update()
+
         temp_mesh = temp.data
         bpy.data.objects.remove(temp)
         bpy.data.meshes.remove(temp_mesh)
-
         name = f"GL_Tree_A_LOD{lod}"
         obj = object_from_bmesh(name, bm, collections if lod == 0 else lod_collections)
-        _paint_tree(obj, foliage_verts)
+        _tree_normals(obj, foliage_end)
+        _paint_tree(obj, crown_end, foliage_end)
         results.append(obj)
-    bpy.data.meshes.remove(foliage_mesh)
+
+    crown_mesh = crown.data
+    bpy.data.objects.remove(crown)
+    bpy.data.meshes.remove(crown_mesh)
     return results
 
 
-def _trunk(bm, sides, rings):
-    """Short tapered trunk with a flared base, ending inside the canopy."""
-    pts = []
-    for i in range(rings + 1):
-        t = i / rings
-        z = t * 1.45
-        radius = 0.15 + 0.13 * (1.0 - t) ** 2.2 + (0.07 if i == 0 else 0.0)
-        bend = Vector((0.05 * math.sin(t * 2.0), 0.0, 0.0))
-        pts.append((z, radius, bend))
-    previous = None
-    for z, radius, bend in pts:
-        ring = [bm.verts.new(Vector((math.cos(k / sides * math.tau) * radius, math.sin(k / sides * math.tau) * radius, z)) + bend) for k in range(sides)]
-        if previous:
-            for k in range(sides):
-                n = (k + 1) % sides
-                bm.faces.new((previous[k], previous[n], ring[n], ring[k]))
-        previous = ring
-    bm.faces.new(previous)
+def _canopy_dir(co):
+    d = co - CANOPY_CENTER
+    return Vector((d.x / CANOPY_RADII.x, d.y / CANOPY_RADII.y, d.z / CANOPY_RADII.z)).normalized()
 
 
-def _paint_tree(obj, foliage_verts):
-    """Vertices [0, foliage_verts) are foliage, the rest is bark (built in that order)."""
-    canopy_center = Vector((0.0, 0.0, 1.7))
-    sun_dir = Vector((0.4, -0.5, 0.75)).normalized()
+def _tree_normals(obj, foliage_end):
+    me = obj.data
+    normals = []
+    for v in me.vertices:
+        if v.index < foliage_end:
+            normals.append(v.normal.lerp(_canopy_dir(v.co), 0.8).normalized())
+        else:
+            normals.append(v.normal.copy())
+    me.normals_split_custom_set_from_vertices(normals)
+
+
+def _paint_tree(obj, crown_end, foliage_end):
+    """Foliage: R foliage, G sunlit crown, B shaded underside. Bark: base color, A grooves (palette column 4).
+    Leaf scales [crown_end, foliage_end) catch extra light at their tips: a scale pattern on the lit side."""
+    sun_dir = Vector((0.45, -0.55, 0.7)).normalized()
 
     def regions(co, n, i):
-        if i >= foliage_verts:
-            return (0.0, 0.0, 0.0, 0.0)
-        sun = smoothstep(0.25, 0.85, n.z) * smoothstep(-0.3, 0.6, n.dot(sun_dir))
-        shade = smoothstep(-0.1, -0.7, n.z)
-        return (1.0, sun, shade, 0.0)
+        if i >= foliage_end:
+            angle = math.atan2(co.y, co.x)
+            grooves = smoothstep(0.55, 0.95, math.sin(angle * 5.0 + co.z * 3.0)) * 0.6
+            return (0.0, 0.0, 0.0, grooves)
+        c = _canopy_dir(co)
+        sun = smoothstep(0.05, 0.85, c.dot(sun_dir)) * smoothstep(-0.25, 0.45, c.z)
+        shade = smoothstep(-0.05, -0.75, c.z)
+        # Scale-to-scale variation: some leaves catch a little more light, like real foliage.
+        flicker = 0.18 * (0.5 + 0.5 * wave_noise(co * 3.1, 77, octaves=1))
+        if i >= crown_end:
+            return (1.0, min(1.0, 0.35 + sun * 0.75 + flicker), shade * 0.5, 0.0)
+        return (1.0, min(1.0, sun * 0.85 + flicker * 0.5), shade, 0.0)
 
     def occlusion(co, n, i):
-        if i >= foliage_verts:
-            return (0.35 * (1.0 - smoothstep(0.0, 0.5, co.z)) + 0.45 * smoothstep(1.0, 1.4, co.z), co.z / 2.8)
-        inner = 1.0 - smoothstep(0.55, 1.0, (co - canopy_center).length / 1.2)
-        return (0.25 * smoothstep(0.0, -0.8, n.z) + 0.3 * inner, co.z / 2.8)
+        if i >= foliage_end:
+            under_canopy = smoothstep(0.95, 1.3, co.z)
+            return (0.3 * (1.0 - smoothstep(0.0, 0.35, co.z)) + 0.5 * under_canopy, co.z / 3.0)
+        depth = 1.0 - smoothstep(0.7, 1.0, (co - CANOPY_CENTER).length / 1.15)
+        return (0.25 * smoothstep(0.0, -0.8, _canopy_dir(co).z) + 0.35 * depth, co.z / 3.0)
 
     write_layers(obj, regions, occlusion)
 
@@ -540,7 +660,7 @@ PREVIEW_PALETTES = {
     "ground": ("8CC56B", "A9D77F", "6FA957", "E4D9A8", "9C7458", "4F6B45", "B4D873"),
     "grass": ("74B35A", "B2DE86", "B2DE86", "74B35A", "74B35A", "4E7A43", "B2DE86"),
     "rock": ("E8DCC4", "E8DCC4", "9CC77A", "E8DCC4", "E8DCC4", "A39478", "FFFFFF"),
-    "tree": ("9B7156", "86C266", "B6DE84", "5F9E52", "86C266", "3F6A3C", "FFFFFF"),
+    "tree": ("93694F", "7DB960", "A9D57C", "578F4B", "6E4C3A", "3B6338", "FFFFFF"),
     "flower_white": ("6FAF55", "F8F4EA", "F2C94C", "6FAF55", "6FAF55", "4A7340", "FFFFFF"),
     "flower_blue": ("6FAF55", "A9C8F2", "F2C94C", "6FAF55", "6FAF55", "4A7340", "FFFFFF"),
     "flower_pink": ("6FAF55", "F3C4D6", "F2C94C", "6FAF55", "6FAF55", "4A7340", "FFFFFF"),

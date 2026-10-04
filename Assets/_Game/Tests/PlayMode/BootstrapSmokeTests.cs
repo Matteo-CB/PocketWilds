@@ -172,6 +172,14 @@ namespace PocketWilds.Tests.PlayMode
             Assert.IsTrue(bootstrap.Context.Palettes.TryGetRow(ContentId.FromSource("palette.grassland.ground"), out int row));
             var ground = entry.StartChunk.transform.Find("Ground").GetComponent<MeshRenderer>();
             Assert.AreEqual(row, EnvironmentVisualPacking.PaletteRow(ground.GetShaderUserValue()));
+
+            // T16: lighting profile applied for the active tier, camera framed on the egg.
+            Assert.IsNotNull(entry.Lighting);
+            Assert.AreEqual(entry.Lighting.sky, RenderSettings.skybox);
+            Assert.IsTrue(RenderSettings.fog);
+            Assert.AreEqual(bootstrap.Context.Quality.CurrentTier, PresentationQuality.Tier);
+            Assert.IsNotNull(entry.CameraRig);
+            Assert.Less(Vector3.Distance(entry.CameraRig.Focus, entry.StartChunk.EggSpawn.position), 0.01f);
 #else
             Assert.Ignore("Editor only.");
             yield break;

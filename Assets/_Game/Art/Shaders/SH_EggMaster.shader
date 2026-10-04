@@ -53,6 +53,7 @@ Shader "PocketWilds/EggMaster"
             #pragma fragment Frag
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #pragma multi_compile _ FOG_LINEAR
 
             #include "Include/PW_Stylized.hlsl"
 
@@ -75,6 +76,7 @@ Shader "PocketWilds/EggMaster"
                 float2 uv : TEXCOORD2;
                 half inner : TEXCOORD3;
                 half3 ambient : TEXCOORD4;
+                half fogFactor : TEXCOORD5;
             };
 
             Varyings Vert(Attributes input)
@@ -82,6 +84,7 @@ Shader "PocketWilds/EggMaster"
                 Varyings output;
                 VertexPositionInputs position = GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = position.positionCS;
+                output.fogFactor = ComputeFogFactor(position.positionCS.z);
                 output.positionWS = position.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.uv = input.uv;
@@ -138,7 +141,7 @@ Shader "PocketWilds/EggMaster"
                 // Reveal anticipation: warm accent rim that grows with the glow bits.
                 half fresnel = pow(1.0h - saturate(dot(normalWS, viewWS)), 2.0h);
                 color += accent * glow * (0.25h + 0.75h * fresnel);
-                return half4(color, 1);
+                return half4(MixFog(color, input.fogFactor), 1);
             }
             ENDHLSL
         }

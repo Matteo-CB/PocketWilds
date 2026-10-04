@@ -40,21 +40,38 @@ namespace PocketWilds.Editor.Capture
                 try
                 {
                     var chunk = Object.FindAnyObjectByType<WorldChunk>();
+                    var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
+                    var sun = Object.FindAnyObjectByType<Light>();
                     chunk.Bind(palettes);
-                    Populate(registry, palettes, chunk, rabbits, temp);
 
                     var camera = Camera.main;
                     for (int level = 0; level < QualitySettings.names.Length; level++)
                     {
+                        var tier = (QualityTier)level;
                         QualitySettings.SetQualityLevel(level, true);
-                        chunk.ApplyQuality((QualityTier)level);
+                        if (entry != null && entry.Lighting != null)
+                            entry.Lighting.Apply(sun, camera, tier);
+                        else
+                            PresentationQuality.Apply(tier);
+                        chunk.ApplyQuality(tier);
+                        // Views read the quality (blob shadows) when configured: repopulate per tier.
+                        foreach (var go in temp)
+                            Object.DestroyImmediate(go);
+                        temp.Clear();
+                        Populate(registry, palettes, chunk, rabbits, temp);
                         string path = $"{CaptureUtility.DefaultFolder}/{prefix}_world_{QualitySettings.names[level]}.png";
                         // First render after a pipeline switch may still compile shader variants: render twice.
                         CaptureUtility.Render(camera, 540, 1170, path);
                         results.Add(CaptureUtility.Render(camera, 540, 1170, path));
                     }
                     QualitySettings.SetQualityLevel(quality, true);
+                    if (entry != null && entry.Lighting != null)
+                        entry.Lighting.Apply(sun, camera, (QualityTier)quality);
                     chunk.ApplyQuality((QualityTier)quality);
+                    foreach (var go in temp)
+                        Object.DestroyImmediate(go);
+                    temp.Clear();
+                    Populate(registry, palettes, chunk, rabbits, temp);
 
                     var position = camera.transform.position;
                     var rotation = camera.transform.rotation;
@@ -73,6 +90,31 @@ namespace PocketWilds.Editor.Capture
                 }
             }
             return string.Join(", ", results);
+        }
+
+        /// <summary>Close-up of any point of the vertical slice with palettes and the Medium lighting (prop reviews).</summary>
+        public static string CaptureCloseUp(string fileName, Vector3 target, Vector3 cameraOffset, int width = 900, int height = 900)
+        {
+            var active = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (active.path != ScenePath && !string.IsNullOrEmpty(active.path) && active.isDirty)
+                return "refused: save or discard changes in " + active.path;
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var registry = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath).CreateBuilder().Build();
+            string result;
+            using (var palettes = new PaletteTable(registry))
+            {
+                Object.FindAnyObjectByType<WorldChunk>().Bind(palettes);
+                var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
+                var camera = Camera.main;
+                entry.Lighting.Apply(Object.FindAnyObjectByType<Light>(), camera, QualityTier.Medium);
+                camera.transform.position = target + cameraOffset;
+                camera.transform.LookAt(target);
+                string path = $"{CaptureUtility.DefaultFolder}/{fileName}.png";
+                CaptureUtility.Render(camera, width, height, path);
+                result = CaptureUtility.Render(camera, width, height, path);
+            }
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            return result;
         }
 
         private static void Populate(ContentRegistry registry, PaletteTable palettes, WorldChunk chunk, int rabbits, List<GameObject> temp)

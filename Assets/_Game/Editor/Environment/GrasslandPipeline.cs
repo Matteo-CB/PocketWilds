@@ -85,10 +85,10 @@ namespace PocketWilds.Editor.Environment
             }
             set.palettes.Clear();
             // base, R, G, B, A, occlusion, accent (Grassland identity: fresh soft green, cream stone, pastel flowers).
-            Add(set, PaletteGround, "7DB363", "98C77A", "659C56", "DCCF9E", "8F6A50", "4A6542", "A2C672");
+            Add(set, PaletteGround, "78A862", "8FB878", "5F9152", "B8C98E", "8F6A50", "4A6542", "9CBC74");
             Add(set, PaletteGrass, "66A253", "9FCE78", "9FCE78", "66A253", "66A253", "476F3E", "9FCE78");
             Add(set, PaletteRock, "E8DCC4", "E8DCC4", "9CC77A", "E8DCC4", "E8DCC4", "A39478", "FFFFFF");
-            Add(set, PaletteTree, "93694F", "7DB960", "A9D57C", "578F4B", "7DB960", "3B6338", "FFFFFF");
+            Add(set, PaletteTree, "93694F", "7DB960", "A9D57C", "578F4B", "6E4C3A", "3B6338", "FFFFFF");
             Add(set, FlowerPalettes[0], "6FAF55", "F8F4EA", "F2C94C", "6FAF55", "6FAF55", "4A7340", "FFFFFF");
             Add(set, FlowerPalettes[1], "6FAF55", "F7DF7A", "F29C4C", "6FAF55", "6FAF55", "4A7340", "FFFFFF");
             Add(set, FlowerPalettes[2], "6FAF55", "F3C4D6", "F2C94C", "6FAF55", "6FAF55", "4A7340", "FFFFFF");

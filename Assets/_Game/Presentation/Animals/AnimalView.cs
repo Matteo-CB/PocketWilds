@@ -21,6 +21,8 @@ namespace PocketWilds.Presentation
         [SerializeField] private Transform _socketNeck;
         [SerializeField] private Transform _socketBack;
         [SerializeField] private Transform _socketTailBase;
+        [Tooltip("Soft disc under the animal, shown only when the quality tier has no shadow map.")]
+        [SerializeField] private Renderer _blobShadow;
 
         private SkinnedMeshRenderer[] _skinned;
         private MeshRenderer[] _meshes;
@@ -48,8 +50,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>Editor/prefab builder hook. Runtime code never rewires a view.</summary>
         public void SetReferences(Renderer[] renderers, Animator animator, LODGroup lodGroup,
-            Transform headTop, Transform neck, Transform back, Transform tailBase)
+            Transform headTop, Transform neck, Transform back, Transform tailBase, Renderer blobShadow = null)
         {
+            _blobShadow = blobShadow;
             _renderers = renderers;
             _animator = animator;
             _lodGroup = lodGroup;
@@ -71,6 +74,8 @@ namespace PocketWilds.Presentation
             _transform.localScale = new Vector3(scale, scale, scale);
 
             ApplyVisualData(snapshot.VisualData);
+            if (_blobShadow != null)
+                _blobShadow.enabled = PresentationQuality.BlobShadows;
             if (_animator != null && _animator.runtimeAnimatorController != null)
                 _animator.Play(IdleState, 0, snapshot.IdlePhase);
         }

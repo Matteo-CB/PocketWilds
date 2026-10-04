@@ -199,6 +199,8 @@ namespace PocketWilds.Editor.Validation
 
             foreach (var r in renderers)
             {
+                if (IsBlobShadow(r, issues, path))
+                    continue;
                 if (r.sharedMaterials.Length != 1)
                     Error("Materials", $"{r.name} has {r.sharedMaterials.Length} materials; one shared material expected.");
                 foreach (var m in r.sharedMaterials)
@@ -351,6 +353,8 @@ namespace PocketWilds.Editor.Validation
             int fragmentTris = 0, shellTris = 0;
             foreach (var r in prefab.GetComponentsInChildren<Renderer>(true))
             {
+                if (IsBlobShadow(r, issues, EggPrefabPath))
+                    continue;
                 if (r.sharedMaterials.Length != 1 || r.sharedMaterial != material)
                     Error("Materials", $"{r.name} must use only {EggMaterialPath}.");
                 bool fragment = r.name.StartsWith("SM_Egg_Fragment_", StringComparison.Ordinal);
@@ -490,6 +494,22 @@ namespace PocketWilds.Editor.Validation
                 error(path, "Mesh", mesh.name + ": PW_Regions vertex colors missing.");
             if (mesh.subMeshCount != 1)
                 error(path, "Mesh", mesh.name + $": {mesh.subMeshCount} submeshes, one expected.");
+        }
+
+        public const string BlobShadowMaterialPath = "Assets/_Game/Art/Materials/MAT_BlobShadow.mat";
+
+        /// <summary>The Low-quality blob shadow is the only renderer allowed besides the master material.</summary>
+        private static bool IsBlobShadow(Renderer renderer, List<ValidationIssue> issues, string path)
+        {
+            if (renderer.name != "BlobShadow")
+                return false;
+            if (AssetDatabase.GetAssetPath(renderer.sharedMaterial) != BlobShadowMaterialPath)
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Materials", "BlobShadow must use " + BlobShadowMaterialPath + "."));
+            if (renderer.enabled)
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "BlobShadow", "BlobShadow is disabled in the prefab; views enable it on Low only."));
+            if (renderer.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off)
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "BlobShadow", "BlobShadow never casts shadows."));
+            return true;
         }
 
         public static int Triangles(Mesh mesh)

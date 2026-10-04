@@ -202,10 +202,14 @@ namespace PocketWilds.Editor.Animals
                 lodGroup.animateCrossFading = false;
                 lodGroup.RecalculateBounds();
 
+                // Low quality has no shadow map: a soft disc sized to the LOD0 footprint grounds the animal.
+                var footprint = renderers[0].bounds.size;
+                var blob = PocketWilds.Editor.Lighting.LightingPipeline.AddBlobShadow(root.transform, new Vector2(footprint.x * 1.35f, footprint.z * 1.2f));
+
                 var view = root.AddComponent<AnimalView>();
                 view.SetReferences(renderers.Cast<Renderer>().ToArray(), animator, lodGroup,
                     FindDeep(visual.transform, "SOCK_HeadTop"), FindDeep(visual.transform, "SOCK_Neck"),
-                    FindDeep(visual.transform, "SOCK_Back"), FindDeep(visual.transform, "SOCK_TailBase"));
+                    FindDeep(visual.transform, "SOCK_Back"), FindDeep(visual.transform, "SOCK_TailBase"), blob);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath(species)));
                 var saved = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath(species), out bool success);
