@@ -19,7 +19,7 @@ namespace PocketWilds.Presentation
         private readonly Dictionary<ContentId, uint> _visualByVariant;
         private readonly Dictionary<ContentId, uint> _defaultBySpecies;
 
-        public AnimalVisualResolver(ContentRegistry registry, AnimalPaletteTable palettes)
+        public AnimalVisualResolver(ContentRegistry registry, PaletteTable palettes)
         {
             var variants = registry.Variants;
             _visualByVariant = new Dictionary<ContentId, uint>(variants.Count);

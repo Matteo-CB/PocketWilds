@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e855f1dd598ceed428b337adbbb80cc3, type: 3}
+  m_Name: DEF_HatchPresentation
+  m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.HatchPresentationConfig
+  eggPrefab: {fileID: 5304181661739469705, guid: ee6d2a7d94ef5f54b98624b7702a78c9, type: 3}
+  crackVfx: {fileID: 6568505899500033532, guid: 7d11d0942bd935144b4244801ed4728f, type: 3}
+  hatchCommonVfx: {fileID: 4439562137847667432, guid: 72e3eea4e01a441419d4d048b1222292, type: 3}
+  hatchRareVfx: {fileID: 5416515032618753205, guid: 4bce736394a9a26408857e368a9be306, type: 3}
+  idlePulseScale: 0.03
+  idlePulseHz: 1.1
+  anticipation: 0.5
+  afterCrack1: 0.5
+  afterCrack2: 0.45
+  reveal: 0.45
+  celebrate: 0.55
+  rarityExtraSeconds:
+  - 0
+  - 0
+  - 0.25
+  - 0.4
+  - 0.6
+  - 0.8
+  repeatSpeed: 1.6
+  wobbleDegrees1: 7
+  wobbleDegrees2: 11
+  wobbleHz: 3.2
+  crackSquash: 0.12
+  swellBeforeBurst: 0.06
+  swellSeconds: 0.25
+  fragments:
+  - velocity: {x: 0.12, y: 1.5, z: -0.35}
+    spin: {x: -150, y: 40, z: 80}
+  - velocity: {x: -0.75, y: 0.55, z: 0.08}
+    spin: {x: 120, y: 0, z: 200}
+  - velocity: {x: 0.7, y: 0.6, z: -0.45}
+    spin: {x: -110, y: -30, z: -190}
+  gravity: 5.5
+  fragmentFlightSeconds: 0.55
+  fragmentShrinkSeconds: 0.18
+  revealOvershoot: 1.14
+  happyDelay: 0.12

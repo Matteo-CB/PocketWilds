@@ -6,6 +6,7 @@ using PocketWilds.Content;
 using PocketWilds.Core;
 using PocketWilds.Presentation;
 using PocketWilds.Services.Device;
+using PocketWilds.Services.Feedback;
 using PocketWilds.Services.Save;
 using PocketWilds.Simulation;
 using UnityEngine;
@@ -45,7 +46,7 @@ namespace PocketWilds.Bootstrap
         private QualityService _quality;
         private FrameRateService _frameRate;
         private GameLoop _loop;
-        private AnimalPaletteTable _palettes;
+        private PaletteTable _palettes;
         private ISceneEntry _activeEntry;
 
         public BootState State { get; private set; } = BootState.NotStarted;
@@ -135,9 +136,10 @@ namespace PocketWilds.Bootstrap
 
             sequence.AddBlocking("Presentation", async cancellationToken =>
             {
-                _palettes = new AnimalPaletteTable(_content.Variants);
+                _palettes = new PaletteTable(_content);
                 var visuals = new AnimalVisualResolver(_content, _palettes);
-                Context = new GameContext(_clock, _content, _save, _economy, _quality, _frameRate, _palettes, visuals, _visualCatalog);
+                Context = new GameContext(_clock, _content, _save, _economy, _quality, _frameRate, _palettes, visuals, _visualCatalog,
+                    NullAudioService.Instance, NullHapticService.Instance);
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 if (_options.LoadTargetScene)

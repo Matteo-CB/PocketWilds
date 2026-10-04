@@ -22,7 +22,7 @@ namespace PocketWilds.Tests.PlayMode
         private GameObject _root;
         private GameObject _camera;
         private AnimalViewPool _pool;
-        private AnimalPaletteTable _palettes;
+        private PaletteTable _palettes;
         private AnimalScheduler _scheduler;
         private AnimalView[] _views;
 
@@ -42,7 +42,7 @@ namespace PocketWilds.Tests.PlayMode
             var database = UnityEditor.AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>("Assets/_Game/Content/DEF_ContentDatabase.asset");
             Assert.IsTrue(catalog.TryGet("PF_Animal_Rabbit", out var entry));
             var registry = database.CreateBuilder().Build();
-            _palettes = new AnimalPaletteTable(registry.Variants);
+            _palettes = new PaletteTable(registry);
             var resolver = new AnimalVisualResolver(registry, _palettes);
 
             // Animators cull completely when unseen: the camera frames the whole meadow.
@@ -106,10 +106,14 @@ namespace PocketWilds.Tests.PlayMode
 
             int maxChanges = 0, maxTicked = 0;
             bool sawWanderInAnimator = false;
-            float end = Time.time + 8f;
-            while (Time.time < end)
+            // Fixed simulation step: the criterion is about the scheduler, not about editor frame pacing
+            // (an unfocused editor produces long frames that legitimately evaluate more agents at once).
+            const float step = 1f / 60f;
+            float time = Time.time;
+            for (int frame = 0; frame < 480; frame++)
             {
-                _scheduler.Tick(Time.time, Time.deltaTime);
+                time += step;
+                _scheduler.Tick(time, step);
                 maxChanges = Mathf.Max(maxChanges, _scheduler.StateChangesLastTick);
                 maxTicked = Mathf.Max(maxTicked, _scheduler.AgentsTickedLastTick);
                 yield return null;
@@ -126,8 +130,8 @@ namespace PocketWilds.Tests.PlayMode
             }
 
             Assert.AreEqual(Rabbits, _scheduler.CountA);
-            // Editor frame times vary: a long frame legitimately evaluates more agents, never all of them.
-            Assert.Less(maxTicked, Rabbits / 3, "Ticks must be sliced across frames.");
+            // 30 agents x 5 Hz at 60 fps: 2.5 evaluations per frame on average.
+            Assert.LessOrEqual(maxTicked, 3, "Ticks must be sliced across frames.");
             Assert.LessOrEqual(maxChanges, 4, "Synchronized decision spike.");
             Assert.Greater(_scheduler.TotalStateChanges, 15);
             Assert.IsTrue(sawWanderInAnimator, "A wandering rabbit must hop.");

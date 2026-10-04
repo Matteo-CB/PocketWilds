@@ -69,6 +69,11 @@ namespace PocketWilds.Editor.Validation
 
         public static readonly string[] EggFragments = { "SM_Egg_Fragment_A", "SM_Egg_Fragment_B", "SM_Egg_Fragment_C" };
         public const int EggFragmentsMaxTotal = 300;
+        public const string EggPrefabPath = "Assets/_Game/Prefabs/Eggs/PF_Egg_Base.prefab";
+        public const string EggMaterialPath = "Assets/_Game/Art/Materials/MAT_Egg_Master.mat";
+
+        /// <summary>MVP Asset Pack A03: under 500 triangles for everything visible at once.</summary>
+        public const int EggVisibleMaxTriangles = 500;
 
         [MenuItem("Pocket Wilds/Validate/Animal Prefabs", priority = 400)]
         public static void ValidateAllMenu()
@@ -77,13 +82,19 @@ namespace PocketWilds.Editor.Validation
             Report(issues);
         }
 
-        [MenuItem("Pocket Wilds/Validate/Egg Models", priority = 401)]
-        public static void ValidateEggsMenu() => Report(ValidateEggModels());
+        [MenuItem("Pocket Wilds/Validate/Eggs", priority = 401)]
+        public static void ValidateEggsMenu()
+        {
+            var issues = ValidateEggModels();
+            issues.AddRange(ValidateEggPrefab());
+            Report(issues);
+        }
 
         public static void ValidateAllBatch()
         {
             var issues = ValidateAllAnimals();
             issues.AddRange(ValidateEggModels());
+            issues.AddRange(ValidateEggPrefab());
             Report(issues);
             EditorApplication.Exit(issues.Any(i => i.Severity == IssueSeverity.Error) ? 1 : 0);
         }
@@ -284,6 +295,65 @@ namespace PocketWilds.Editor.Validation
             {
                 Error(EggMaskPath, "Texture", "Egg mask texture missing.");
             }
+            return issues;
+        }
+
+        public static List<ValidationIssue> ValidateEggPrefab()
+        {
+            var issues = new List<ValidationIssue>();
+            void Error(string rule, string msg) => issues.Add(new ValidationIssue(IssueSeverity.Error, EggPrefabPath, rule, msg));
+            void Info(string rule, string msg) => issues.Add(new ValidationIssue(IssueSeverity.Info, EggPrefabPath, rule, msg));
+
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(EggPrefabPath);
+            if (prefab == null)
+            {
+                Error("Load", "Egg prefab missing.");
+                return issues;
+            }
+            if (prefab.GetComponent<EggView>() == null)
+                Error("EggView", "Root must carry EggView.");
+
+            foreach (var c in prefab.GetComponentsInChildren<Component>(true))
+            {
+                if (c == null) { Error("MissingScript", "Missing script reference."); continue; }
+                if (c is Collider) Error("Forbidden", $"Collider on {c.name}: taps use centralized picking.");
+                if (c is Rigidbody) Error("Forbidden", $"Rigidbody on {c.name}: fragments fly without physics.");
+                if (c is AudioSource) Error("Forbidden", $"AudioSource on {c.name}: sounds go through the audio service.");
+                if (c is Animator) Error("Forbidden", $"Animator on {c.name}: the hatch sequence drives the egg.");
+                if (c is ParticleSystem) Error("Forbidden", $"ParticleSystem on {c.name}: VFX are pooled separately.");
+                if (c is MonoBehaviour mb && !(mb is EggView))
+                    Error("Forbidden", $"Unexpected script {mb.GetType().Name} on {c.name}.");
+            }
+
+            var material = AssetDatabase.LoadAssetAtPath<Material>(EggMaterialPath);
+            int fragmentTris = 0, shellTris = 0;
+            foreach (var r in prefab.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r.sharedMaterials.Length != 1 || r.sharedMaterial != material)
+                    Error("Materials", $"{r.name} must use only {EggMaterialPath}.");
+                bool fragment = r.name.StartsWith("SM_Egg_Fragment_", StringComparison.Ordinal);
+                if (fragment)
+                {
+                    fragmentTris += Triangles(r);
+                    if (r.enabled)
+                        Error("Fragments", $"{r.name} must be hidden until the burst.");
+                    if (r.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off)
+                        Error("Fragments", $"{r.name}: fragments do not cast shadows.");
+                }
+                else if (r.name.EndsWith("_LOD0", StringComparison.Ordinal))
+                {
+                    shellTris = Triangles(r);
+                }
+            }
+            int visible = Math.Max(shellTris, fragmentTris);
+            if (visible > EggVisibleMaxTriangles)
+                Error("Budget", $"{visible} tris visible at once > {EggVisibleMaxTriangles}.");
+            else
+                Info("Budget", $"Shell {shellTris} tris, fragments {fragmentTris} tris (max {EggVisibleMaxTriangles} visible).");
+
+            var lodGroup = prefab.GetComponent<LODGroup>();
+            if (lodGroup == null || lodGroup.lodCount != 2)
+                Error("LODGroup", "Egg needs a LODGroup with LOD0 and LOD1.");
             return issues;
         }
 

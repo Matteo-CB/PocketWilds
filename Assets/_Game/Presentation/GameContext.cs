@@ -1,5 +1,6 @@
 using PocketWilds.Content;
 using PocketWilds.Core;
+using PocketWilds.Services.Feedback;
 using PocketWilds.Services.Save;
 using PocketWilds.Simulation;
 
@@ -18,9 +19,11 @@ namespace PocketWilds.Presentation
             EconomyService economy,
             QualityService quality,
             FrameRateService frameRate,
-            AnimalPaletteTable palettes,
+            PaletteTable palettes,
             AnimalVisualResolver visuals,
-            AnimalVisualCatalog visualCatalog)
+            AnimalVisualCatalog visualCatalog,
+            IAudioService audio,
+            IHapticService haptics)
         {
             Clock = clock;
             Content = content;
@@ -31,6 +34,8 @@ namespace PocketWilds.Presentation
             Palettes = palettes;
             Visuals = visuals;
             VisualCatalog = visualCatalog;
+            Audio = audio ?? NullAudioService.Instance;
+            Haptics = haptics ?? NullHapticService.Instance;
         }
 
         public IGameClock Clock { get; }
@@ -40,11 +45,15 @@ namespace PocketWilds.Presentation
         public EconomyService Economy { get; }
         public QualityService Quality { get; }
         public FrameRateService FrameRate { get; }
-        public AnimalPaletteTable Palettes { get; }
+        public PaletteTable Palettes { get; }
         public AnimalVisualResolver Visuals { get; }
 
         /// <summary>Species visual key to prefab. Null in headless tests.</summary>
         public AnimalVisualCatalog VisualCatalog { get; }
+
+        /// <summary>Named audio events. No-op until the audio service and clips land.</summary>
+        public IAudioService Audio { get; }
+        public IHapticService Haptics { get; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

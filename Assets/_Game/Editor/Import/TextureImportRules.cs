@@ -11,7 +11,7 @@ namespace PocketWilds.Editor.Import
     /// </summary>
     public sealed class TextureImportRules : AssetPostprocessor
     {
-        private const uint Version = 1;
+        private const uint Version = 2;
         private const string ArtRoot = "Assets/_Game/Art/";
 
         public override uint GetVersion() => Version;
@@ -23,6 +23,33 @@ namespace PocketWilds.Editor.Import
             string name = Path.GetFileNameWithoutExtension(assetPath);
             if (name.StartsWith("T_", StringComparison.Ordinal) && name.Contains("Mask"))
                 ApplyMask((TextureImporter)assetImporter, assetPath.StartsWith(AssetImportRules.EggsRoot, StringComparison.Ordinal));
+            else if (name.StartsWith("T_VFX_", StringComparison.Ordinal))
+                ApplyVfxAtlas((TextureImporter)assetImporter);
+        }
+
+        /// <summary>Grayscale particle atlas: one channel, linear, R8 everywhere (a few KB).</summary>
+        public static void ApplyVfxAtlas(TextureImporter importer)
+        {
+            importer.textureType = TextureImporterType.SingleChannel;
+            var settings = new TextureImporterSettings();
+            importer.ReadTextureSettings(settings);
+            settings.singleChannelComponent = TextureImporterSingleChannelComponent.Red;
+            importer.SetTextureSettings(settings);
+            importer.sRGBTexture = false;
+            importer.alphaSource = TextureImporterAlphaSource.None;
+            importer.mipmapEnabled = true;
+            importer.isReadable = false;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            foreach (var platform in new[] { "Android", "iPhone" })
+            {
+                var platformSettings = importer.GetPlatformTextureSettings(platform);
+                platformSettings.overridden = true;
+                platformSettings.maxTextureSize = 128;
+                platformSettings.format = TextureImporterFormat.R8;
+                importer.SetPlatformTextureSettings(platformSettings);
+            }
         }
 
         public static void ApplyMask(TextureImporter importer, bool eggLayout)

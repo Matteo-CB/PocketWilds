@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T22:33:49Z",
+  "updatedUtc": "2026-10-04T22:54:51Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -115,13 +115,13 @@
     {
       "task": "T14",
       "title": "Hatch sequence",
-      "status": "IN_PROGRESS",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Hatch sequence: HatchSequencePlayer (waiting pulse, anticipation wobble, crack 1, crack 2 with swell and glow, burst with ballistic fragments, animal pop with overshoot, Happy, celebration), timeline data DEF_HatchPresentation, Common 2.45 s, rarities +0.25 to +0.8 s, repeats x1.6, Skip. EggView + PF_Egg_Base, SH_EggMaster/MAT_Egg_Master, VfxPool + 3 VFX on SH_AdditiveVFXLite, audio/haptic hooks (IAudioService/IHapticService, no-op until clips). PaletteTable now holds eggs. Tests: EditMode 143/143, PlayMode 19/19 incl. 10 hatches after warmup with 0 GC and 0 Instantiate, skip without double events. Capture tool HatchCapture."
     },
     {
       "task": "T15",
       "title": "Grassland kit",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "notes": ""
     },
     {
@@ -2382,7 +2382,7 @@
       "dependencies": [
         "G-MAT-EGG"
       ],
-      "status": "BLOCKOUT",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Eggs/BL_Egg_Family.blend",
       "runtimePath": "Assets/_Game/Art/Eggs/",
       "validationGates": [
@@ -2396,11 +2396,18 @@
         "G22"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-04T22:33:48Z",
-      "notes": "Owns the shared egg topology: SM_Egg_Base_LOD0/LOD1, SM_Egg_Fragment_A/B/C. | T13: egg family source SourceArt/Blender/Eggs/BL_Egg_Family.blend, rebuilt by SourceArt/Blender/Tools/pw_egg.py (one parametric shell drives meshes, UVs and mask). SM_Egg_Base.fbx: LOD0 352 tris, LOD1 120 tris, pivot at the bottom, UV0 = shell layout, one material slot. SM_Egg_Fragments.fbx: A 96 + B 56 + C 56 = 208 tris, closed shells 1 cm thick, inner shell tagged PW_Regions.G, cut exactly along the crack lines. T_EggMask_Common.png 256 linear (R spots, G leaf band, B flowers, A cracks: 1.0 stage 1, 0.6 stage 2), ASTC 4x4. Captures SourceArt/Blender/Eggs/Captures/T13_*. Pending T14: MAT_Egg_Master (egg shader reading the mask), prefab, hatch.",
+      "lastValidationUtc": "2026-10-04T22:54:48Z",
+      "notes": "Owns the shared egg topology: SM_Egg_Base_LOD0/LOD1, SM_Egg_Fragment_A/B/C. | T13: egg family source SourceArt/Blender/Eggs/BL_Egg_Family.blend, rebuilt by SourceArt/Blender/Tools/pw_egg.py (one parametric shell drives meshes, UVs and mask). SM_Egg_Base.fbx: LOD0 352 tris, LOD1 120 tris, pivot at the bottom, UV0 = shell layout, one material slot. SM_Egg_Fragments.fbx: A 96 + B 56 + C 56 = 208 tris, closed shells 1 cm thick, inner shell tagged PW_Regions.G, cut exactly along the crack lines. T_EggMask_Common.png 256 linear (R spots, G leaf band, B flowers, A cracks: 1.0 stage 1, 0.6 stage 2), ASTC 4x4. Captures SourceArt/Blender/Eggs/Captures/T13_*. Pending T14: MAT_Egg_Master (egg shader reading the mask), prefab, hatch. | T14: PF_Egg_Base + MAT_Egg_Master + DEF_Egg_Grassland_Basic. Unity captures SourceArt/Blender/Eggs/Captures/Unity/T14_*. | Integrated: shared prefab PF_Egg_Base (not a per-egg copy, Gate 31), palette row in the global table, hatch staging validated by PlayMode tests.",
       "prefab": "Assets/_Game/Prefabs/Eggs/PF_Egg_BasicGrassland.prefab",
       "passedGates": [
-        "G01"
+        "G01",
+        "G02",
+        "G03",
+        "G06",
+        "G08",
+        "G10",
+        "G16",
+        "G22"
       ]
     },
     {
@@ -2412,7 +2419,7 @@
         "G-MAT-EGG",
         "C-EGG-001"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Eggs/BL_Egg_Family.blend",
       "runtimePath": "Assets/_Game/Art/Eggs/",
       "validationGates": [
@@ -2426,9 +2433,14 @@
         "G22"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Same topology, palette/mask/module only.",
-      "prefab": "Assets/_Game/Prefabs/Eggs/PF_Egg_FocusGrassland.prefab"
+      "lastValidationUtc": "2026-10-04T22:54:48Z",
+      "notes": "Same topology, palette/mask/module only. | T14: DEF_Egg_Grassland_Focus, same shell, richer green/gold, leaf band mask (G). | Captured: T14_egg_states.png, T14_hatch_sheet_rare.png. | Data only on PF_Egg_Base.",
+      "prefab": "Assets/_Game/Prefabs/Eggs/PF_Egg_FocusGrassland.prefab",
+      "passedGates": [
+        "G02",
+        "G06",
+        "G16"
+      ]
     },
     {
       "id": "C-EGG-003",
@@ -4753,7 +4765,7 @@
       "family": "Shader",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "Assets/_Game/Art/Shaders/SH_AdditiveVFXLite.shadergraph",
       "runtimePath": "Assets/_Game/Art/Shaders/",
       "validationGates": [
@@ -4763,8 +4775,12 @@
         "G29"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T22:54:49Z",
+      "notes": "T14: SH_AdditiveVFXLite, additive unlit, one R8 atlas (T_VFX_SparkAtlas 128x64: soft dot, star), tile picked by texture sheet animation; MAT_VFX_AdditiveLite shared by every hatch effect. | Reviewed in T14 hatch sheets. | Shared by VFX_Crack, VFX_HatchCommon, VFX_HatchRare.",
+      "passedGates": [
+        "G06",
+        "G10"
+      ]
     },
     {
       "id": "G-MAT-001",
@@ -4813,15 +4829,18 @@
       "dependencies": [
         "G-SH-001"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/Materials/MAT_Egg_Master.mat",
       "validationGates": [
         "G06"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T22:54:48Z",
+      "notes": "T14: MAT_Egg_Master on SH_EggMaster (shares Include/PW_Stylized.hlsl with the animal master; per-pixel mask T_EggMask_Common; palette, crack stage, mask strengths and glow from the Shader User Value; SRP Batcher compatible, no clones). | Reviewed on Basic and Focus, intact, crack 1, crack 2 + glow, fragments. | Used by every egg renderer (AssetValidator egg prefab rule).",
+      "passedGates": [
+        "G06"
+      ]
     },
     {
       "id": "G-MAT-WATER",
@@ -5180,7 +5199,7 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/VFX/VFX_Crack.prefab",
       "validationGates": [
@@ -5188,8 +5207,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T22:54:49Z",
+      "notes": "T14: VFX_Crack: puff 7 + glints 4, built by EggPipeline, pooled by VfxPool (no Instantiate after warmup), Low quality scales bursts. | Reviewed in T14 hatch sheets. | Played by HatchSequencePlayer; 10 hatches after warmup: 0 GC, 0 Instantiate.",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-003",
@@ -5199,7 +5221,7 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/VFX/VFX_HatchCommon.prefab",
       "validationGates": [
@@ -5207,8 +5229,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T22:54:49Z",
+      "notes": "T14: VFX_HatchCommon: flash 1 + sparkles 16 + motes 12, built by EggPipeline, pooled by VfxPool (no Instantiate after warmup), Low quality scales bursts. | Reviewed in T14 hatch sheets. | Played by HatchSequencePlayer; 10 hatches after warmup: 0 GC, 0 Instantiate.",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-004",
@@ -5218,7 +5243,7 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/VFX/VFX_HatchRare.prefab",
       "validationGates": [
@@ -5226,8 +5251,11 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T22:54:50Z",
+      "notes": "T14: VFX_HatchRare: gold glow 1 + star ring 18 + rising 16/s for 0.6 s, built by EggPipeline, pooled by VfxPool (no Instantiate after warmup), Low quality scales bursts. | Reviewed in T14 hatch sheets. | Played by HatchSequencePlayer; 10 hatches after warmup: 0 GC, 0 Instantiate.",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-005",
@@ -6529,7 +6557,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-002",
@@ -6545,7 +6573,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-003",
@@ -6561,7 +6589,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-004",
@@ -6577,7 +6605,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-005",
@@ -6593,7 +6621,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-006",
@@ -6609,7 +6637,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-007",
@@ -6625,7 +6653,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-CURRENCY-001",
@@ -8423,7 +8451,7 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Content/",
       "validationGates": [
@@ -8432,7 +8460,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T14: EggDefinition (tier, biome, palette, mask strengths, visual key) + EggDefinitionAsset + ContentDatabase eggs list; Grassland Basic and Focus. Drop tables arrive with HatchService (T17)."
     },
     {
       "id": "M-DEF-DECOR",

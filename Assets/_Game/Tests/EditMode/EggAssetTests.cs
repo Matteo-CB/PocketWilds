@@ -17,6 +17,13 @@ namespace PocketWilds.Tests.EditMode
         }
 
         [Test]
+        public void EggPrefab_PassesAssetValidator()
+        {
+            var errors = AssetValidator.ValidateEggPrefab().Where(i => i.Severity == IssueSeverity.Error).ToList();
+            Assert.IsEmpty(errors, string.Join("\n", errors));
+        }
+
+        [Test]
         public void Fragments_FitTheIntactEgg()
         {
             var base0 = AssetDatabase.LoadAllAssetsAtPath(AssetValidator.EggBaseModelPath).OfType<Mesh>().First(m => m.name == "SM_Egg_Base_LOD0");

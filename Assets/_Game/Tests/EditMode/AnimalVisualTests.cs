@@ -18,7 +18,7 @@ namespace PocketWilds.Tests.EditMode
         private const string PrefabPath = "Assets/_Game/Prefabs/Animals/PF_Animal_Rabbit.prefab";
 
         private ContentRegistry _registry;
-        private AnimalPaletteTable _palettes;
+        private PaletteTable _palettes;
         private AnimalVisualResolver _resolver;
         private readonly List<GameObject> _spawned = new List<GameObject>();
 
@@ -27,7 +27,7 @@ namespace PocketWilds.Tests.EditMode
         {
             var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath);
             _registry = database.CreateBuilder().Build();
-            _palettes = new AnimalPaletteTable(_registry.Variants);
+            _palettes = new PaletteTable(_registry);
             _resolver = new AnimalVisualResolver(_registry, _palettes);
         }
 

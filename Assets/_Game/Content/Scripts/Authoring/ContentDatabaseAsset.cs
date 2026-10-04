@@ -11,6 +11,7 @@ namespace PocketWilds.Content
     public sealed class ContentDatabaseAsset : ScriptableObject
     {
         public List<SpeciesDefinitionAsset> species = new List<SpeciesDefinitionAsset>();
+        public List<EggDefinitionAsset> eggs = new List<EggDefinitionAsset>();
 
         [Tooltip("Retired source IDs. They can never be reused.")]
         public List<string> tombstones = new List<string>();
@@ -27,6 +28,11 @@ namespace PocketWilds.Content
                 builder.AddSpecies(asset.ToRuntime(), asset.sourceId);
                 foreach (var variant in asset.variants)
                     builder.AddVariant(asset.ToRuntime(variant), variant.sourceId);
+            }
+            foreach (var egg in eggs)
+            {
+                if (egg != null)
+                    builder.AddEgg(egg.ToRuntime(), egg.sourceId);
             }
             return builder;
         }

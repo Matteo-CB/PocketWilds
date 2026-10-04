@@ -25,7 +25,7 @@ namespace PocketWilds.Benchmarks
         [SerializeField, Min(1)] private int _churnPerSecond = 4;
 
         private AnimalViewPool _pool;
-        private AnimalPaletteTable _ownedPalettes;
+        private PaletteTable _ownedPalettes;
         private AnimalVisualResolver _resolver;
         private AnimalScheduler _scheduler;
         private BehaviorProfile _profile;
@@ -72,7 +72,7 @@ namespace PocketWilds.Benchmarks
             else
             {
                 var registry = _contentDatabase.CreateBuilder().Build();
-                _ownedPalettes = new AnimalPaletteTable(registry.Variants);
+                _ownedPalettes = new PaletteTable(registry);
                 _resolver = new AnimalVisualResolver(registry, _ownedPalettes);
             }
 

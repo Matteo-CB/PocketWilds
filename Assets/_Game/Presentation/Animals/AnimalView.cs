@@ -82,6 +82,13 @@ namespace PocketWilds.Presentation
             _transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yaw, 0f));
         }
 
+        /// <summary>Uniform scale, used by staged reveals (hatch). Configure sets the resting scale.</summary>
+        public void SetScale(float scale)
+        {
+            EnsureInitialized();
+            _transform.localScale = new Vector3(scale, scale, scale);
+        }
+
         /// <summary>Crossfades to an animator state by hash. Called by the scheduler, never every frame.</summary>
         public void PlayState(int stateHash, float fadeSeconds)
         {

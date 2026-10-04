@@ -7,38 +7,40 @@ using UnityEngine;
 namespace PocketWilds.Presentation
 {
     /// <summary>
-    /// Every variant palette in one tiny global texture (8 colors per row). Built once at boot.
-    /// A new palette is data only: no material, no texture asset, no code.
+    /// Every palette (animal variants, then eggs) in one tiny global texture, 8 colors per row.
+    /// Built once at boot. A new palette is data only: no material, no texture asset, no code.
+    /// Shaders read the row from the per-renderer Shader User Value.
     /// </summary>
-    public sealed class AnimalPaletteTable : IDisposable
+    public sealed class PaletteTable : IDisposable
     {
         public const int MaxRows = 1024;
-        public static readonly int PaletteTextureId = Shader.PropertyToID("_PW_AnimalPalettes");
+        public const int Columns = 8;
+        public static readonly int PaletteTextureId = Shader.PropertyToID("_PW_Palettes");
         public static readonly int RowCountId = Shader.PropertyToID("_PW_PaletteRowCount");
 
-        private readonly Dictionary<ContentId, int> _rowByVariant;
+        private readonly Dictionary<ContentId, int> _rowById;
         private Texture2D _texture;
 
-        public AnimalPaletteTable(ContentTable<VariantDefinition> variants)
+        public PaletteTable(ContentRegistry registry)
         {
-            int count = variants.Count;
+            var variants = registry.Variants;
+            var eggs = registry.Eggs;
+            int count = variants.Count + eggs.Count;
             if (count > MaxRows)
                 throw new InvalidOperationException($"Too many palettes ({count}). Raise the RSUV row bits first.");
 
             int rows = Mathf.NextPowerOfTwo(Mathf.Max(1, count));
-            _rowByVariant = new Dictionary<ContentId, int>(count);
-            var pixels = new Color32[VariantDefinition.PaletteSize * rows];
-            for (int row = 0; row < count; row++)
-            {
-                var variant = variants[row];
-                _rowByVariant.Add(variant.Id, row);
-                for (int c = 0; c < VariantDefinition.PaletteSize; c++)
-                    pixels[row * VariantDefinition.PaletteSize + c] = variant.Palette[c];
-            }
+            _rowById = new Dictionary<ContentId, int>(count);
+            var pixels = new Color32[Columns * rows];
+            int row = 0;
+            for (int i = 0; i < variants.Count; i++)
+                Write(pixels, row++, variants[i].Id, variants[i].Palette);
+            for (int i = 0; i < eggs.Count; i++)
+                Write(pixels, row++, eggs[i].Id, eggs[i].Palette);
 
-            _texture = new Texture2D(VariantDefinition.PaletteSize, rows, TextureFormat.RGBA32, mipChain: false, linear: false)
+            _texture = new Texture2D(Columns, rows, TextureFormat.RGBA32, mipChain: false, linear: false)
             {
-                name = "PW_AnimalPalettes",
+                name = "PW_Palettes",
                 filterMode = FilterMode.Point,
                 wrapMode = TextureWrapMode.Clamp,
                 hideFlags = HideFlags.DontSave,
@@ -55,7 +57,15 @@ namespace PocketWilds.Presentation
         public int RowCount { get; }
         public int PaletteCount { get; }
 
-        public bool TryGetRow(ContentId variant, out int row) => _rowByVariant.TryGetValue(variant, out row);
+        /// <summary>Row of a variant or egg palette.</summary>
+        public bool TryGetRow(ContentId id, out int row) => _rowById.TryGetValue(id, out row);
+
+        private void Write(Color32[] pixels, int row, ContentId id, Color32[] palette)
+        {
+            _rowById.Add(id, row);
+            for (int c = 0; c < Columns; c++)
+                pixels[row * Columns + c] = palette[c];
+        }
 
         public void Dispose()
         {
@@ -75,7 +85,7 @@ namespace PocketWilds.Presentation
     {
         public static uint Pack(int paletteRow, PatternChannel pattern, int patternStrength, int rareIntensity)
         {
-            uint row = (uint)Mathf.Clamp(paletteRow, 0, AnimalPaletteTable.MaxRows - 1);
+            uint row = (uint)Mathf.Clamp(paletteRow, 0, PaletteTable.MaxRows - 1);
             uint channel = (uint)pattern & 7u;
             uint strength = (uint)Mathf.Clamp(patternStrength, 0, 15);
             uint rare = (uint)Mathf.Clamp(rareIntensity, 0, 15);

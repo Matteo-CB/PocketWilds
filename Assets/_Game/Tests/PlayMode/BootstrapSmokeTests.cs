@@ -135,8 +135,9 @@ namespace PocketWilds.Tests.PlayMode
             yield return Boot(false, b => bootstrap = b);
 
             var context = bootstrap.Context;
-            Assert.AreEqual(6, context.Palettes.PaletteCount);
-            Assert.AreEqual(8f, Shader.GetGlobalFloat(AnimalPaletteTable.RowCountId));
+            int palettes = _content.Variants.Count + _content.Eggs.Count;
+            Assert.AreEqual(palettes, context.Palettes.PaletteCount);
+            Assert.AreEqual((float)Mathf.NextPowerOfTwo(palettes), Shader.GetGlobalFloat(PaletteTable.RowCountId));
             var animal = new AnimalInstance
             {
                 InstanceId = 1,
@@ -149,7 +150,7 @@ namespace PocketWilds.Tests.PlayMode
 
             Object.Destroy(bootstrap.gameObject);
             yield return null;
-            Assert.AreEqual(0f, Shader.GetGlobalFloat(AnimalPaletteTable.RowCountId), "Palettes must be released with the bootstrap.");
+            Assert.AreEqual(0f, Shader.GetGlobalFloat(PaletteTable.RowCountId), "Palettes must be released with the bootstrap.");
 #else
             Assert.Ignore("Editor only.");
             yield break;
