@@ -1,5 +1,6 @@
 using System.Collections;
 using NUnit.Framework;
+using PocketWilds.Content;
 using PocketWilds.Core;
 using PocketWilds.Presentation;
 using UnityEngine;
@@ -37,13 +38,13 @@ namespace PocketWilds.Tests.PlayMode
             Object.Destroy(_template);
         }
 
-        private static AnimalVisualSnapshot Snapshot(uint id, Color color) => new AnimalVisualSnapshot
+        private static AnimalVisualSnapshot Snapshot(uint id, uint visualData) => new AnimalVisualSnapshot
         {
             InstanceId = id,
             Species = ContentId.FromSource("species.rabbit"),
             Position = new Vector3(id, 0f, 0f),
             Scale = 1f,
-            PrimaryColor = color,
+            VisualData = visualData,
         };
 
         [UnityTest]
@@ -57,7 +58,7 @@ namespace PocketWilds.Tests.PlayMode
             yield return null;
 
             var views = new AnimalView[20];
-            var snapshot = Snapshot(1, Color.white);
+            var snapshot = Snapshot(1, 7u);
 
             // Warm the code path once.
             for (int i = 0; i < views.Length; i++)
@@ -87,24 +88,25 @@ namespace PocketWilds.Tests.PlayMode
             _pool.Warmup(handle, 1);
             yield return null;
 
-            Assert.IsTrue(_pool.TryAcquire(handle, Snapshot(5, Color.red), out var view));
-            var renderer = view.GetComponent<Renderer>();
+            uint red = AnimalVisualPacking.Pack(3, PatternChannel.Uv1X, 12, 0);
+            uint blue = AnimalVisualPacking.Pack(9, PatternChannel.None, 0, 2);
+            Assert.IsTrue(_pool.TryAcquire(handle, Snapshot(5, red), out var view));
+            var renderer = view.GetComponent<MeshRenderer>();
             Assert.AreEqual(5u, view.OwnerInstanceId);
-            Assert.IsTrue(renderer.HasPropertyBlock());
-            var block = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(block);
-            Assert.AreEqual(Color.red, block.GetColor(AnimalShaderIds.PrimaryColor));
+            Assert.AreEqual(red, renderer.GetShaderUserValue());
+            Assert.IsFalse(renderer.HasPropertyBlock(), "Variants never use MaterialPropertyBlocks.");
 
             _pool.Release(view);
             Assert.AreEqual(0u, view.OwnerInstanceId);
-            Assert.IsFalse(renderer.HasPropertyBlock(), "Palette must not leak to the next owner.");
+            Assert.AreEqual(0u, renderer.GetShaderUserValue(), "Palette must not leak to the next owner.");
             Assert.IsFalse(view.gameObject.activeSelf);
 
-            Assert.IsTrue(_pool.TryAcquire(handle, Snapshot(6, Color.blue), out var again));
+            Assert.IsTrue(_pool.TryAcquire(handle, Snapshot(6, blue), out var again));
             Assert.AreSame(view, again);
             Assert.AreEqual(6u, again.OwnerInstanceId);
-            renderer.GetPropertyBlock(block);
-            Assert.AreEqual(Color.blue, block.GetColor(AnimalShaderIds.PrimaryColor));
+            Assert.AreEqual(blue, renderer.GetShaderUserValue());
+            Assert.AreEqual(9, AnimalVisualPacking.PaletteRow(renderer.GetShaderUserValue()));
+            Assert.AreEqual(2, AnimalVisualPacking.RareIntensity(renderer.GetShaderUserValue()));
             Assert.AreEqual(new Vector3(6f, 0f, 0f), again.transform.position);
             Assert.AreEqual(1, renderer.sharedMaterials.Length);
             _pool.Release(again);
@@ -116,8 +118,8 @@ namespace PocketWilds.Tests.PlayMode
             int handle = _pool.Register("TEMP_PlaceholderAnimal", _template.GetComponent<AnimalView>(), 4, 8);
             var views = new AnimalView[8];
             for (int i = 0; i < 8; i++)
-                Assert.IsTrue(_pool.TryAcquire(handle, Snapshot((uint)i + 1, Color.white), out views[i]));
-            Assert.IsFalse(_pool.TryAcquire(handle, Snapshot(99, Color.white), out _));
+                Assert.IsTrue(_pool.TryAcquire(handle, Snapshot((uint)i + 1, 7u), out views[i]));
+            Assert.IsFalse(_pool.TryAcquire(handle, Snapshot(99, 7u), out _));
 
             for (int i = 0; i < 8; i++)
                 _pool.Release(views[i]);

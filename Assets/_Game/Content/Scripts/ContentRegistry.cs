@@ -59,14 +59,21 @@ namespace PocketWilds.Content
     /// </summary>
     public sealed class ContentRegistry
     {
-        public ContentRegistry(ContentTable<SpeciesDefinition> species)
+        public ContentRegistry(ContentTable<SpeciesDefinition> species, ContentTable<VariantDefinition> variants)
         {
             Species = species;
+            Variants = variants;
         }
 
-        public static ContentRegistry Empty { get; } = new ContentRegistry(ContentTable<SpeciesDefinition>.Empty);
+        public ContentRegistry(ContentTable<SpeciesDefinition> species)
+            : this(species, ContentTable<VariantDefinition>.Empty)
+        {
+        }
+
+        public static ContentRegistry Empty { get; } = new ContentRegistry(ContentTable<SpeciesDefinition>.Empty, ContentTable<VariantDefinition>.Empty);
 
         public ContentTable<SpeciesDefinition> Species { get; }
+        public ContentTable<VariantDefinition> Variants { get; }
     }
 
     public enum ContentIssueSeverity
@@ -98,6 +105,7 @@ namespace PocketWilds.Content
     public sealed class ContentRegistryBuilder
     {
         private readonly List<SpeciesDefinition> _species = new List<SpeciesDefinition>();
+        private readonly List<VariantDefinition> _variants = new List<VariantDefinition>();
         private readonly Dictionary<uint, string> _seenHashes = new Dictionary<uint, string>();
         private readonly HashSet<uint> _tombstones = new HashSet<uint>();
         private readonly List<ContentIssue> _issues = new List<ContentIssue>();
@@ -129,11 +137,31 @@ namespace PocketWilds.Content
                 _species.Add(definition);
         }
 
+        public void AddVariant(VariantDefinition definition, string sourceId)
+        {
+            if (definition.Palette == null || definition.Palette.Length != VariantDefinition.PaletteSize)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Palette must have " + VariantDefinition.PaletteSize + " colors."));
+                return;
+            }
+            if (TryClaim(definition.Id, sourceId))
+                _variants.Add(definition);
+        }
+
         public ContentRegistry Build()
         {
+            var speciesIds = new HashSet<ContentId>();
+            foreach (var species in _species)
+                speciesIds.Add(species.Id);
+            foreach (var variant in _variants)
+            {
+                if (!speciesIds.Contains(variant.Species))
+                    _issues.Add(new ContentIssue(ContentIssueSeverity.Error, variant.Id.ToString(), "Variant references an unknown species."));
+            }
+
             if (HasErrors)
                 throw new InvalidOperationException("Content has errors: " + string.Join("; ", _issues));
-            return new ContentRegistry(new ContentTable<SpeciesDefinition>(_species));
+            return new ContentRegistry(new ContentTable<SpeciesDefinition>(_species), new ContentTable<VariantDefinition>(_variants));
         }
 
         private bool TryClaim(ContentId id, string sourceId)

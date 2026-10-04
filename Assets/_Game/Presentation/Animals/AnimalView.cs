@@ -4,27 +4,34 @@ using UnityEngine;
 namespace PocketWilds.Presentation
 {
     /// <summary>
-    /// Pooled, temporary presentation of one animal. Holds cached references only:
-    /// no Update, no save data, no economy, no persistent RNG. Losing a view never loses an animal.
-    /// Variants are applied through a MaterialPropertyBlock, never a material clone.
+    /// Pooled, temporary presentation of one animal. Cached references only: no Update, no save
+    /// data, no economy, no persistent RNG. Losing a view never loses an animal.
+    /// Variants are applied through the per-renderer Shader User Value: one shared material,
+    /// SRP Batcher compatible, never a material clone or a MaterialPropertyBlock.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class AnimalView : MonoBehaviour, IPoolable
     {
+        public static readonly int IdleState = Animator.StringToHash("Idle");
+
         [SerializeField] private Renderer[] _renderers = System.Array.Empty<Renderer>();
         [SerializeField] private Animator _animator;
+        [SerializeField] private LODGroup _lodGroup;
         [SerializeField] private Transform _socketHeadTop;
         [SerializeField] private Transform _socketNeck;
         [SerializeField] private Transform _socketBack;
         [SerializeField] private Transform _socketTailBase;
 
-        private MaterialPropertyBlock _block;
+        private SkinnedMeshRenderer[] _skinned;
+        private MeshRenderer[] _meshes;
         private Transform _transform;
+        private bool _initialized;
 
         /// <summary>0 when the view is free in its pool.</summary>
         public uint OwnerInstanceId { get; private set; }
 
         public ContentId Species { get; private set; }
+        public uint VisualData { get; private set; }
 
         /// <summary>Pool that created this view. Set once by AnimalViewPool.</summary>
         internal GameObjectPool<AnimalView> SourcePool { get; set; }
@@ -32,11 +39,26 @@ namespace PocketWilds.Presentation
         internal int PoolHandle { get; set; } = -1;
 
         public Animator Animator => _animator;
+        public LODGroup LodGroup => _lodGroup;
         public Transform SocketHeadTop => _socketHeadTop;
         public Transform SocketNeck => _socketNeck;
         public Transform SocketBack => _socketBack;
         public Transform SocketTailBase => _socketTailBase;
         public int RendererCount => _renderers.Length;
+
+        /// <summary>Editor/prefab builder hook. Runtime code never rewires a view.</summary>
+        public void SetReferences(Renderer[] renderers, Animator animator, LODGroup lodGroup,
+            Transform headTop, Transform neck, Transform back, Transform tailBase)
+        {
+            _renderers = renderers;
+            _animator = animator;
+            _lodGroup = lodGroup;
+            _socketHeadTop = headTop;
+            _socketNeck = neck;
+            _socketBack = back;
+            _socketTailBase = tailBase;
+            _initialized = false;
+        }
 
         public void Configure(in AnimalVisualSnapshot snapshot)
         {
@@ -48,17 +70,16 @@ namespace PocketWilds.Presentation
             float scale = snapshot.Scale > 0f ? snapshot.Scale : 1f;
             _transform.localScale = new Vector3(scale, scale, scale);
 
-            _block.Clear();
-            _block.SetColor(AnimalShaderIds.PrimaryColor, snapshot.PrimaryColor);
-            _block.SetColor(AnimalShaderIds.SecondaryColor, snapshot.SecondaryColor);
-            _block.SetColor(AnimalShaderIds.BellyColor, snapshot.BellyColor);
-            _block.SetColor(AnimalShaderIds.DetailColor, snapshot.DetailColor);
-            _block.SetColor(AnimalShaderIds.EyeColor, snapshot.EyeColor);
-            _block.SetFloat(AnimalShaderIds.PatternIndex, snapshot.PatternIndex);
-            _block.SetFloat(AnimalShaderIds.PatternStrength, snapshot.PatternStrength);
-            _block.SetFloat(AnimalShaderIds.RareEffectIntensity, snapshot.RareEffectIntensity);
-            for (int i = 0; i < _renderers.Length; i++)
-                _renderers[i].SetPropertyBlock(_block);
+            ApplyVisualData(snapshot.VisualData);
+            if (_animator != null && _animator.runtimeAnimatorController != null)
+                _animator.Play(IdleState, 0, snapshot.IdlePhase);
+        }
+
+        /// <summary>Crossfades to an animator state by hash. Called by the scheduler, never every frame.</summary>
+        public void PlayState(int stateHash, float fadeSeconds)
+        {
+            if (_animator != null)
+                _animator.CrossFadeInFixedTime(stateHash, fadeSeconds);
         }
 
         /// <summary>Clears everything a previous owner set, so a recycled view never shows stale data.</summary>
@@ -67,9 +88,17 @@ namespace PocketWilds.Presentation
             EnsureInitialized();
             OwnerInstanceId = 0;
             Species = ContentId.None;
-            for (int i = 0; i < _renderers.Length; i++)
-                _renderers[i].SetPropertyBlock(null);
+            ApplyVisualData(0u);
             _transform.localScale = Vector3.one;
+        }
+
+        private void ApplyVisualData(uint data)
+        {
+            VisualData = data;
+            for (int i = 0; i < _skinned.Length; i++)
+                _skinned[i].SetShaderUserValue(data);
+            for (int i = 0; i < _meshes.Length; i++)
+                _meshes[i].SetShaderUserValue(data);
         }
 
         void IPoolable.OnAcquire()
@@ -80,15 +109,29 @@ namespace PocketWilds.Presentation
 
         private void EnsureInitialized()
         {
-            if (_block != null)
+            if (_initialized)
                 return;
-
-            _block = new MaterialPropertyBlock();
+            _initialized = true;
             _transform = transform;
             if (_renderers == null || _renderers.Length == 0)
                 _renderers = GetComponentsInChildren<Renderer>(true);
             if (_animator == null)
                 _animator = GetComponentInChildren<Animator>(true);
+
+            int skinnedCount = 0, meshCount = 0;
+            foreach (var r in _renderers)
+            {
+                if (r is SkinnedMeshRenderer) skinnedCount++;
+                else if (r is MeshRenderer) meshCount++;
+            }
+            _skinned = new SkinnedMeshRenderer[skinnedCount];
+            _meshes = new MeshRenderer[meshCount];
+            skinnedCount = meshCount = 0;
+            foreach (var r in _renderers)
+            {
+                if (r is SkinnedMeshRenderer s) _skinned[skinnedCount++] = s;
+                else if (r is MeshRenderer m) _meshes[meshCount++] = m;
+            }
         }
 
         private void Awake() => EnsureInitialized();

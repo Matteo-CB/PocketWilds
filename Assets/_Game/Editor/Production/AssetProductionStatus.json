@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T21:26:34Z",
+  "updatedUtc": "2026-10-04T21:57:39Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -91,13 +91,13 @@
     {
       "task": "T10",
       "title": "Unity animal import",
-      "status": "IN_PROGRESS",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Import presets, master material, Animator, LODGroup, sockets, PF_Animal_Rabbit, AssetValidator pass, PlayMode checks pass."
     },
     {
       "task": "T11",
       "title": "AnimalView",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "notes": ""
     },
     {
@@ -224,7 +224,7 @@
       "dependencies": [
         "G-SH-001"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Rigs/SmallQuadruped/",
       "validationGates": [
@@ -235,7 +235,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T20:57:15Z",
-      "notes": "Source BL_Rig_SmallQuadruped.blend: 24 deform bones (spec names), FK only, consistent rolls, no control bones exported, sockets HeadTop/Neck/Back/TailBase/Ear_L/Ear_R world-aligned at rest. | T07: rabbit skinned (max 3 influences, rigid head/cheeks, ellipsoid neck blend, ear axis weights). 9 extreme poses captured (SourceArt/Blender/Animals/Rabbit/Captures/T07_pose_sheet.png). FBX export with project preset OK. Second-species bind test pending (T23 Squirrel).",
+      "notes": "Source BL_Rig_SmallQuadruped.blend: 24 deform bones (spec names), FK only, consistent rolls, no control bones exported, sockets HeadTop/Neck/Back/TailBase/Ear_L/Ear_R world-aligned at rest. | T07: rabbit skinned (max 3 influences, rigid head/cheeks, ellipsoid neck blend, ear axis weights). 9 extreme poses captured (SourceArt/Blender/Animals/Rabbit/Captures/T07_pose_sheet.png). FBX export with project preset OK. Second-species bind test pending (T23 Squirrel). | T10: family controller AC_SmallQuadruped (11 states, 7 exit transitions). Clips bind to SK_SmallQuadruped/... paths (preserveHierarchy).",
       "skeleton": "SK_SmallQuadruped",
       "passedGates": [
         "G04"
@@ -415,7 +415,7 @@
         "B-AN-SQ-007",
         "B-AN-SQ-008"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Animals/Rabbit/BL_Animal_Rabbit.blend",
       "runtimePath": "Assets/_Game/Art/Animals/Rabbit/Models/",
       "validationGates": [
@@ -434,8 +434,8 @@
         "G34"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-04T21:26:34Z",
-      "notes": "Art benchmark for the whole roster. Do not start Squirrel before Rabbit passes phone-scale review. | Source BL_Animal_Rabbit.blend created (metaball blockout in WORK, editable). | T06: SKM_Rabbit_LOD0 quad mesh 2110 tris (1042 quads), 0.51 m long, 0.66 m with ears. Phone-scale captures 1080x2340 and 720x1600 pass silhouette/proportion rules. Captures/T06_review_sheet.png | T09: LOD0 2110 / LOD1 792 / LOD2 382 tris (budgets 2.0-2.6k / 0.7-1.0k / 0.3-0.45k). LOD1 quadriflow 372 quads; LOD2 symmetric collapse of LOD1 with re-placed eyes. Shared skeleton, weights transferred from LOD0, max 3 influences. Review: Captures/T09_lod_sheet.png. Variant colors will use Renderer Shader User Value (SRP Batcher compatible) instead of MaterialPropertyBlock.",
+      "lastValidationUtc": "2026-10-04T21:57:36Z",
+      "notes": "Art benchmark for the whole roster. Do not start Squirrel before Rabbit passes phone-scale review. | Source BL_Animal_Rabbit.blend created (metaball blockout in WORK, editable). | T06: SKM_Rabbit_LOD0 quad mesh 2110 tris (1042 quads), 0.51 m long, 0.66 m with ears. Phone-scale captures 1080x2340 and 720x1600 pass silhouette/proportion rules. Captures/T06_review_sheet.png | T09: LOD0 2110 / LOD1 792 / LOD2 382 tris (budgets 2.0-2.6k / 0.7-1.0k / 0.3-0.45k). LOD1 quadriflow 372 quads; LOD2 symmetric collapse of LOD1 with re-placed eyes. Shared skeleton, weights transferred from LOD0, max 3 influences. Review: Captures/T09_lod_sheet.png. Variant colors will use Renderer Shader User Value (SRP Batcher compatible) instead of MaterialPropertyBlock. | T10: SKM_Rabbit.fbx imported (Animal_Rigged rules: Generic, no materials, Read/Write off, optimized hierarchy, 6 exposed sockets). PF_Animal_Rabbit: LODGroup 0.07/0.035/0.008, MAT_Animal_Master only, AC_SmallQuadruped, CullCompletely, AnimalView. AssetValidator 0 errors. PlayMode: hop bounce >3 cm, state flow, sockets follow bones, 100 pool cycles 0 GC/0 Instantiate. DEF_Species_Rabbit with 6 variants. Pending: Spotted pattern mask + inner ear/belly regions (T11), GPU/device measurement.",
       "contentId": "species.rabbit",
       "biome": "Grassland",
       "rigFamily": "SmallQuadruped",
@@ -448,8 +448,13 @@
       ],
       "variants": 6,
       "passedGates": [
+        "G01",
         "G02",
-        "G03"
+        "G03",
+        "G04",
+        "G06",
+        "G08",
+        "G16"
       ]
     },
     {
@@ -2043,7 +2048,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2052,7 +2057,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:01:06Z",
-      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit.",
       "passedGates": [
         "G05"
       ]
@@ -2065,7 +2070,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2074,7 +2079,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:01:06Z",
-      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit.",
       "passedGates": [
         "G05"
       ]
@@ -2087,7 +2092,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2096,7 +2101,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:01:06Z",
-      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit.",
       "passedGates": [
         "G05"
       ]
@@ -2109,7 +2114,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2118,7 +2123,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:01:07Z",
-      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit.",
       "passedGates": [
         "G05"
       ]
@@ -2131,7 +2136,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2140,7 +2145,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:01:07Z",
-      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit.",
       "passedGates": [
         "G05"
       ]
@@ -2153,7 +2158,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2162,7 +2167,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:01:08Z",
-      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit.",
       "passedGates": [
         "G05"
       ]
@@ -2175,7 +2180,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2184,7 +2189,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:01:08Z",
-      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit.",
       "passedGates": [
         "G05"
       ]
@@ -2197,7 +2202,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2206,7 +2211,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:01:09Z",
-      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit.",
       "passedGates": [
         "G05"
       ]
@@ -2219,7 +2224,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2228,7 +2233,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:01:09Z",
-      "notes": "Social_A may wait for the second species (T25). | Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "notes": "Social_A may wait for the second species (T25). | Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit.",
       "passedGates": [
         "G05"
       ]
@@ -2241,7 +2246,7 @@
       "dependencies": [
         "A-RIG-001"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
@@ -2250,7 +2255,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:01:10Z",
-      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10).",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit.",
       "passedGates": [
         "G05"
       ]
@@ -4609,7 +4614,7 @@
       "family": "Shader",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "Assets/_Game/Art/Shaders/SH_AnimalMaster.shadergraph",
       "runtimePath": "Assets/_Game/Art/Shaders/",
       "validationGates": [
@@ -4619,8 +4624,11 @@
         "G29"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T21:57:38Z",
+      "notes": "SH_AnimalMaster.shader: palette via Renderer Shader User Value + global _PW_AnimalPalettes, vertex-color regions, wrapped diffuse, main light shadows, SH ambient, rim, eye gloss. SRP Batcher compatible (single UnityPerMaterial CBUFFER). | Unity capture of 6 variants: SourceArt/Blender/Animals/Rabbit/Captures/Unity/ | Used by PF_Animal_Rabbit; no material instances. GPU timing on device pending.",
+      "passedGates": [
+        "G06"
+      ]
     },
     {
       "id": "G-SH-002",
@@ -4763,15 +4771,18 @@
       "dependencies": [
         "G-SH-001"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/Materials/MAT_Animal_Master.mat",
       "validationGates": [
         "G06"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-04T21:57:38Z",
+      "notes": "MAT_Animal_Master shared by all LODs, instancing off (skinned), SRP Batcher path.",
+      "passedGates": [
+        "G06"
+      ]
     },
     {
       "id": "G-MAT-ENV",
@@ -8358,7 +8369,7 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Content/",
       "validationGates": [
@@ -8367,7 +8378,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Runtime SpeciesDefinition + registry exist (T01); authoring DEF_Species assets come with T10."
+      "notes": "Runtime SpeciesDefinition + registry exist (T01); authoring DEF_Species assets come with T10. | DEF_Species_Rabbit + DEF_ContentDatabase + DEF_AnimalVisualCatalog created by AnimalPipeline."
     },
     {
       "id": "M-DEF-PALETTE",
@@ -10172,7 +10183,7 @@
       "family": "EditorTool",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -10180,7 +10191,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "AssetValidator v1: animal prefabs (naming, LOD budgets, materials/shader, forbidden components, sockets, animator, importer). Runs in EditMode test AllAnimalPrefabs_PassAssetValidator."
     },
     {
       "id": "ED-008",

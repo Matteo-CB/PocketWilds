@@ -85,11 +85,8 @@ namespace PocketWilds.Benchmarks
                 Position = new Vector3((slot % columns - columns * 0.5f) * _spacing, 0f, (slot / columns) * _spacing),
                 Yaw = (slot * 47) % 360,
                 Scale = 0.45f,
-                PrimaryColor = Color.HSVToRGB((slot * 0.137f) % 1f, 0.35f, 0.95f),
-                SecondaryColor = Color.white,
-                BellyColor = Color.white,
-                DetailColor = Color.black,
-                EyeColor = Color.black,
+                VisualData = AnimalVisualPacking.Pack(slot % 6, PocketWilds.Content.PatternChannel.None, 0, 0),
+                IdlePhase = (slot * 0.137f) % 1f,
             };
 
             if (!_pool.TryAcquire(_handle, snapshot, out var view))
