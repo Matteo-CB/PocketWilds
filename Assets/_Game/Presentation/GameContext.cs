@@ -17,7 +17,10 @@ namespace PocketWilds.Presentation
             SaveService save,
             EconomyService economy,
             QualityService quality,
-            FrameRateService frameRate)
+            FrameRateService frameRate,
+            AnimalPaletteTable palettes,
+            AnimalVisualResolver visuals,
+            AnimalVisualCatalog visualCatalog)
         {
             Clock = clock;
             Content = content;
@@ -25,6 +28,9 @@ namespace PocketWilds.Presentation
             Economy = economy;
             Quality = quality;
             FrameRate = frameRate;
+            Palettes = palettes;
+            Visuals = visuals;
+            VisualCatalog = visualCatalog;
         }
 
         public IGameClock Clock { get; }
@@ -34,6 +40,11 @@ namespace PocketWilds.Presentation
         public EconomyService Economy { get; }
         public QualityService Quality { get; }
         public FrameRateService FrameRate { get; }
+        public AnimalPaletteTable Palettes { get; }
+        public AnimalVisualResolver Visuals { get; }
+
+        /// <summary>Species visual key to prefab. Null in headless tests.</summary>
+        public AnimalVisualCatalog VisualCatalog { get; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

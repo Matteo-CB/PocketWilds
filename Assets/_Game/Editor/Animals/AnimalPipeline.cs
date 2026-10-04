@@ -252,7 +252,7 @@ namespace PocketWilds.Editor.Animals
                 Variant("variant.rabbit.grey", RarityTier.Uncommon, Hex("A9A6A8"), Hex("EDB9BA"), Hex("E9E4E0"), Hex("E48E96"), Hex("1C1718")),
                 Variant("variant.rabbit.black", RarityTier.Uncommon, Hex("3B302E"), Hex("C99A9C"), Hex("6B5B57"), Hex("D98C93"), Hex("0E0A0A")),
                 Variant("variant.rabbit.spotted", RarityTier.Rare, Hex("F4EBDD"), Hex("F2BCBC"), Hex("FFF8EE"), Hex("E98A93"), Hex("1E1414"),
-                    pattern: Hex("C9A27E"), channel: PatternChannel.Uv1X, strength: 15),
+                    pattern: Hex("C9A27E"), channel: PatternChannel.MaskA, strength: 15),
                 Variant("variant.rabbit.sakura", RarityTier.Epic, Hex("F6C9D4"), Hex("FBE3E8"), Hex("FFF1F4"), Hex("E77D95"), Hex("2B1820")),
             };
             EditorUtility.SetDirty(asset);

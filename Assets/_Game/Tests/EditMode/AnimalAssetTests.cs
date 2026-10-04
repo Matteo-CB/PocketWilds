@@ -53,8 +53,8 @@ namespace PocketWilds.Tests.EditMode
         }
 
         [TestCase(0, PatternChannel.None, 0, 0)]
-        [TestCase(1023, PatternChannel.Uv2Y, 15, 15)]
-        [TestCase(37, PatternChannel.Uv1X, 9, 3)]
+        [TestCase(1023, PatternChannel.MaskD, 15, 15)]
+        [TestCase(37, PatternChannel.MaskA, 9, 3)]
         public void VisualPacking_RoundTrips(int row, PatternChannel pattern, int strength, int rare)
         {
             uint packed = AnimalVisualPacking.Pack(row, pattern, strength, rare);

@@ -4,14 +4,17 @@ using UnityEngine;
 
 namespace PocketWilds.Content
 {
-    /// <summary>Which mesh channel carries the variant pattern mask (see SH_AnimalMaster).</summary>
+    /// <summary>
+    /// Which authored pattern mask a variant uses. Masks are painted per species in Blender and
+    /// exported as UV channels: A = uv0.x, B = uv0.y, C = uv1.x, D = uv1.y. Stable byte values.
+    /// </summary>
     public enum PatternChannel : byte
     {
         None = 0,
-        Uv1X = 1,
-        Uv1Y = 2,
-        Uv2X = 3,
-        Uv2Y = 4,
+        MaskA = 1,
+        MaskB = 2,
+        MaskC = 3,
+        MaskD = 4,
     }
 
     /// <summary>

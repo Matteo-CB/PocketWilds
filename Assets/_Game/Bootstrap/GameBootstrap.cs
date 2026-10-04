@@ -33,6 +33,8 @@ namespace PocketWilds.Bootstrap
         public static BootOptions PendingOptions;
 
         [SerializeField] private string _targetScene = "SC_VerticalSlice_Grassland";
+        [SerializeField] private ContentDatabaseAsset _contentDatabase;
+        [SerializeField] private AnimalVisualCatalog _visualCatalog;
 
         private BootOptions _options;
         private IGameClock _clock;
@@ -43,6 +45,7 @@ namespace PocketWilds.Bootstrap
         private QualityService _quality;
         private FrameRateService _frameRate;
         private GameLoop _loop;
+        private AnimalPaletteTable _palettes;
         private ISceneEntry _activeEntry;
 
         public BootState State { get; private set; } = BootState.NotStarted;
@@ -103,7 +106,7 @@ namespace PocketWilds.Bootstrap
 
             sequence.AddBlocking("ContentRegistry", () =>
             {
-                _content = _options.ContentOverride ?? BuildShippedContent();
+                _content = _options.ContentOverride ?? BuildShippedContent(_contentDatabase);
             });
 
             sequence.AddBlocking("Save", async cancellationToken =>
@@ -132,7 +135,9 @@ namespace PocketWilds.Bootstrap
 
             sequence.AddBlocking("Presentation", async cancellationToken =>
             {
-                Context = new GameContext(_clock, _content, _save, _economy, _quality, _frameRate);
+                _palettes = new AnimalPaletteTable(_content.Variants);
+                var visuals = new AnimalVisualResolver(_content, _palettes);
+                Context = new GameContext(_clock, _content, _save, _economy, _quality, _frameRate, _palettes, visuals, _visualCatalog);
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 if (_options.LoadTargetScene)
@@ -143,10 +148,15 @@ namespace PocketWilds.Bootstrap
             return sequence;
         }
 
-        private static ContentRegistry BuildShippedContent()
+        private static ContentRegistry BuildShippedContent(ContentDatabaseAsset database)
         {
-            // Species definitions arrive with the Rabbit integration (T10/T11). Empty registry until then.
-            var builder = new ContentRegistryBuilder();
+            if (database == null)
+                throw new InvalidOperationException("GameBootstrap has no content database.");
+            var builder = database.CreateBuilder();
+            foreach (var issue in builder.Issues)
+                GameLog.Warning(LogCategory.Boot, issue.ToString());
+            if (builder.HasErrors)
+                throw new InvalidOperationException("Shipped content has errors. See the log.");
             return builder.Build();
         }
 
@@ -184,6 +194,12 @@ namespace PocketWilds.Bootstrap
                 _save.FlushNow();
             else
                 _loop.ResetAccumulators();
+        }
+
+        private void OnDestroy()
+        {
+            _palettes?.Dispose();
+            _palettes = null;
         }
 
         private void OnApplicationQuit()

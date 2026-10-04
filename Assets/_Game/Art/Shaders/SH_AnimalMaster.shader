@@ -2,7 +2,7 @@
 // Colors come from a global palette texture (_PW_AnimalPalettes, 8 colors per row).
 // The row and pattern come from the per-renderer Shader User Value (SRP Batcher compatible, no material clones):
 //   bits 0-9   palette row
-//   bits 10-12 pattern channel (0 none, 1 uv1.x, 2 uv1.y, 3 uv2.x, 4 uv2.y)
+//   bits 10-12 pattern mask (0 none, 1 A = uv0.x, 2 B = uv0.y, 3 C = uv1.x, 4 D = uv1.y)
 //   bits 13-16 pattern strength (0-15)
 //   bits 17-20 rare effect intensity (0-15), reserved for the RareAura module
 // Regions come from vertex colors: R secondary, G belly, B detail (nose, paws), A eyes.
@@ -62,8 +62,8 @@ Shader "PocketWilds/AnimalMaster"
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
                 half4 color : COLOR;
-                float2 uv1 : TEXCOORD1;
-                float2 uv2 : TEXCOORD2;
+                float2 mask01 : TEXCOORD0;
+                float2 mask23 : TEXCOORD1;
             };
 
             struct Varyings
@@ -111,10 +111,10 @@ Shader "PocketWilds/AnimalMaster"
                 }
 
                 half pattern = 0;
-                if (patternChannel == 1u) pattern = input.uv1.x;
-                else if (patternChannel == 2u) pattern = input.uv1.y;
-                else if (patternChannel == 3u) pattern = input.uv2.x;
-                else if (patternChannel == 4u) pattern = input.uv2.y;
+                if (patternChannel == 1u) pattern = input.mask01.x;
+                else if (patternChannel == 2u) pattern = input.mask01.y;
+                else if (patternChannel == 3u) pattern = input.mask23.x;
+                else if (patternChannel == 4u) pattern = input.mask23.y;
 
                 half3 color = primary;
                 color = lerp(color, secondary, input.color.r);

@@ -88,7 +88,7 @@ namespace PocketWilds.Tests.PlayMode
             _pool.Warmup(handle, 1);
             yield return null;
 
-            uint red = AnimalVisualPacking.Pack(3, PatternChannel.Uv1X, 12, 0);
+            uint red = AnimalVisualPacking.Pack(3, PatternChannel.MaskA, 12, 0);
             uint blue = AnimalVisualPacking.Pack(9, PatternChannel.None, 0, 2);
             Assert.IsTrue(_pool.TryAcquire(handle, Snapshot(5, red), out var view));
             var renderer = view.GetComponent<MeshRenderer>();

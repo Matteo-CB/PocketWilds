@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T21:57:39Z",
+  "updatedUtc": "2026-10-04T22:10:47Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -97,13 +97,13 @@
     {
       "task": "T11",
       "title": "AnimalView",
-      "status": "IN_PROGRESS",
-      "notes": ""
+      "status": "DONE",
+      "notes": "AnimalVisualResolver (AnimalInstance -> snapshot, 0 GC, fallback to species default variant, idle phase from seed via SeedHash). Palettes and resolver built at boot. Real rabbit regions and pattern masks. Tests: EditMode 119/119 (SeedHash frozen, idle phase spread, packing, 6 distinct variants, unknown variant fallback, resolve 0 GC, 6 variants on the real prefab share MAT_Animal_Master with no clone and no MaterialPropertyBlock), PlayMode 10/10 (boot with shipped content resolves Spotted, palettes released on destroy)."
     },
     {
       "task": "T12",
       "title": "Scheduler",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "notes": ""
     },
     {
@@ -435,7 +435,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:57:36Z",
-      "notes": "Art benchmark for the whole roster. Do not start Squirrel before Rabbit passes phone-scale review. | Source BL_Animal_Rabbit.blend created (metaball blockout in WORK, editable). | T06: SKM_Rabbit_LOD0 quad mesh 2110 tris (1042 quads), 0.51 m long, 0.66 m with ears. Phone-scale captures 1080x2340 and 720x1600 pass silhouette/proportion rules. Captures/T06_review_sheet.png | T09: LOD0 2110 / LOD1 792 / LOD2 382 tris (budgets 2.0-2.6k / 0.7-1.0k / 0.3-0.45k). LOD1 quadriflow 372 quads; LOD2 symmetric collapse of LOD1 with re-placed eyes. Shared skeleton, weights transferred from LOD0, max 3 influences. Review: Captures/T09_lod_sheet.png. Variant colors will use Renderer Shader User Value (SRP Batcher compatible) instead of MaterialPropertyBlock. | T10: SKM_Rabbit.fbx imported (Animal_Rigged rules: Generic, no materials, Read/Write off, optimized hierarchy, 6 exposed sockets). PF_Animal_Rabbit: LODGroup 0.07/0.035/0.008, MAT_Animal_Master only, AC_SmallQuadruped, CullCompletely, AnimalView. AssetValidator 0 errors. PlayMode: hop bounce >3 cm, state flow, sockets follow bones, 100 pool cycles 0 GC/0 Instantiate. DEF_Species_Rabbit with 6 variants. Pending: Spotted pattern mask + inner ear/belly regions (T11), GPU/device measurement.",
+      "notes": "Art benchmark for the whole roster. Do not start Squirrel before Rabbit passes phone-scale review. | Source BL_Animal_Rabbit.blend created (metaball blockout in WORK, editable). | T06: SKM_Rabbit_LOD0 quad mesh 2110 tris (1042 quads), 0.51 m long, 0.66 m with ears. Phone-scale captures 1080x2340 and 720x1600 pass silhouette/proportion rules. Captures/T06_review_sheet.png | T09: LOD0 2110 / LOD1 792 / LOD2 382 tris (budgets 2.0-2.6k / 0.7-1.0k / 0.3-0.45k). LOD1 quadriflow 372 quads; LOD2 symmetric collapse of LOD1 with re-placed eyes. Shared skeleton, weights transferred from LOD0, max 3 influences. Review: Captures/T09_lod_sheet.png. Variant colors will use Renderer Shader User Value (SRP Batcher compatible) instead of MaterialPropertyBlock. | T10: SKM_Rabbit.fbx imported (Animal_Rigged rules: Generic, no materials, Read/Write off, optimized hierarchy, 6 exposed sockets). PF_Animal_Rabbit: LODGroup 0.07/0.035/0.008, MAT_Animal_Master only, AC_SmallQuadruped, CullCompletely, AnimalView. AssetValidator 0 errors. PlayMode: hop bounce >3 cm, state flow, sockets follow bones, 100 pool cycles 0 GC/0 Instantiate. DEF_Species_Rabbit with 6 variants. Pending: Spotted pattern mask + inner ear/belly regions (T11), GPU/device measurement. | T11: PW_Regions painted by SourceArt/Blender/Tools/pw_masks.py (R inner ears, G chest/belly/muzzle/tail) and pattern masks in UV0 PW_Masks (x = MaskA spots + left ear tip, y = MaskB saddle + ears) on LOD0/1/2, no vertex split (1078/412/201 verts unchanged). 6 variants rendered from one prefab and one material: TestResults/Captures/T11_rabbit_variants_front.png, _back.png, _spotted_close.png. Spot edges are soft and follow the vertex density in close-up; fine at game scale, re-check in Codex close-up (T19).",
       "contentId": "species.rabbit",
       "biome": "Grassland",
       "rigFamily": "SmallQuadruped",
@@ -4625,7 +4625,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:57:38Z",
-      "notes": "SH_AnimalMaster.shader: palette via Renderer Shader User Value + global _PW_AnimalPalettes, vertex-color regions, wrapped diffuse, main light shadows, SH ambient, rim, eye gloss. SRP Batcher compatible (single UnityPerMaterial CBUFFER). | Unity capture of 6 variants: SourceArt/Blender/Animals/Rabbit/Captures/Unity/ | Used by PF_Animal_Rabbit; no material instances. GPU timing on device pending.",
+      "notes": "SH_AnimalMaster.shader: palette via Renderer Shader User Value + global _PW_AnimalPalettes, vertex-color regions, wrapped diffuse, main light shadows, SH ambient, rim, eye gloss. SRP Batcher compatible (single UnityPerMaterial CBUFFER). | Unity capture of 6 variants: SourceArt/Blender/Animals/Rabbit/Captures/Unity/ | Used by PF_Animal_Rabbit; no material instances. GPU timing on device pending. | T11: pattern channels A/B read from TEXCOORD0, C/D from TEXCOORD1; per-vertex albedo, SRP Batcher compatible through Renderer Shader User Value.",
       "passedGates": [
         "G06"
       ]
@@ -5068,7 +5068,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T11: Rabbit patterns use per-vertex masks (UV0 PW_Masks, MaskA/MaskB; UV1 reserved for MaskC/MaskD) instead of a texture: no sample, no unwrap, no extra memory. Texture kept PLANNED only if Codex close-up review (T19) needs crisper patterns."
     },
     {
       "id": "G-TEX-NOISE",
@@ -8378,7 +8378,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Runtime SpeciesDefinition + registry exist (T01); authoring DEF_Species assets come with T10. | DEF_Species_Rabbit + DEF_ContentDatabase + DEF_AnimalVisualCatalog created by AnimalPipeline."
+      "notes": "Runtime SpeciesDefinition + registry exist (T01); authoring DEF_Species assets come with T10. | DEF_Species_Rabbit + DEF_ContentDatabase + DEF_AnimalVisualCatalog created by AnimalPipeline. | T11: GameBootstrap builds the shipped registry from DEF_ContentDatabase (scene reference in SC_Bootstrap); errors stop the boot. AnimalPaletteTable + AnimalVisualResolver live in GameContext."
     },
     {
       "id": "M-DEF-PALETTE",

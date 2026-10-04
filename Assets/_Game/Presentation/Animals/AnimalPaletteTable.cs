@@ -62,7 +62,10 @@ namespace PocketWilds.Presentation
             if (_texture == null)
                 return;
             Shader.SetGlobalFloat(RowCountId, 0f);
-            UnityEngine.Object.Destroy(_texture);
+            if (Application.isPlaying)
+                UnityEngine.Object.Destroy(_texture);
+            else
+                UnityEngine.Object.DestroyImmediate(_texture);
             _texture = null;
         }
     }

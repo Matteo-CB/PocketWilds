@@ -22,12 +22,14 @@ namespace PocketWilds.Tests.PlayMode
     public class BootstrapSmokeTests
     {
         private string _saveDir;
+        private ContentRegistry _content;
 
         [SetUp]
         public void SetUp()
         {
             _saveDir = Path.Combine(Path.GetTempPath(), "PocketWildsPlayTests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_saveDir);
+            _content = null;
         }
 
         [TearDown]
@@ -57,7 +59,7 @@ namespace PocketWilds.Tests.PlayMode
             GameBootstrap.PendingOptions = new BootOptions
             {
                 SaveDirectory = _saveDir,
-                ContentOverride = TempContent(),
+                ContentOverride = _content ?? TempContent(),
                 LoadTargetScene = loadScene,
             };
             var go = new GameObject("GameBootstrap");
@@ -120,6 +122,38 @@ namespace PocketWilds.Tests.PlayMode
             var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
             Assert.IsNotNull(entry);
             Assert.IsTrue(entry.HasContext);
+        }
+
+        [UnityTest]
+        public IEnumerator Boot_WithShippedContent_ResolvesRabbitVariants()
+        {
+#if UNITY_EDITOR
+            var database = UnityEditor.AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>("Assets/_Game/Content/DEF_ContentDatabase.asset");
+            Assert.IsNotNull(database);
+            _content = database.CreateBuilder().Build();
+            GameBootstrap bootstrap = null;
+            yield return Boot(false, b => bootstrap = b);
+
+            var context = bootstrap.Context;
+            Assert.AreEqual(6, context.Palettes.PaletteCount);
+            Assert.AreEqual(8f, Shader.GetGlobalFloat(AnimalPaletteTable.RowCountId));
+            var animal = new AnimalInstance
+            {
+                InstanceId = 1,
+                Species = ContentId.FromSource("species.rabbit"),
+                Variant = ContentId.FromSource("variant.rabbit.spotted"),
+                Seed = 5,
+            };
+            Assert.IsTrue(context.Visuals.TryResolve(animal, Vector3.zero, 0f, out var snapshot));
+            Assert.AreEqual(PatternChannel.MaskA, AnimalVisualPacking.Pattern(snapshot.VisualData));
+
+            Object.Destroy(bootstrap.gameObject);
+            yield return null;
+            Assert.AreEqual(0f, Shader.GetGlobalFloat(AnimalPaletteTable.RowCountId), "Palettes must be released with the bootstrap.");
+#else
+            Assert.Ignore("Editor only.");
+            yield break;
+#endif
         }
     }
 }
