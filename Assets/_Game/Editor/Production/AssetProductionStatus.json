@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T21:01:10Z",
+  "updatedUtc": "2026-10-04T21:26:34Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -85,13 +85,13 @@
     {
       "task": "T09",
       "title": "Rabbit LOD",
-      "status": "IN_PROGRESS",
-      "notes": ""
+      "status": "DONE",
+      "notes": "LOD1/LOD2 authored, skinned, captured at 1x/2x/3x gameplay distance."
     },
     {
       "task": "T10",
       "title": "Unity animal import",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "notes": ""
     },
     {
@@ -434,8 +434,8 @@
         "G34"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-04T20:50:12Z",
-      "notes": "Art benchmark for the whole roster. Do not start Squirrel before Rabbit passes phone-scale review. | Source BL_Animal_Rabbit.blend created (metaball blockout in WORK, editable). | T06: SKM_Rabbit_LOD0 quad mesh 2110 tris (1042 quads), 0.51 m long, 0.66 m with ears. Phone-scale captures 1080x2340 and 720x1600 pass silhouette/proportion rules. Captures/T06_review_sheet.png",
+      "lastValidationUtc": "2026-10-04T21:26:34Z",
+      "notes": "Art benchmark for the whole roster. Do not start Squirrel before Rabbit passes phone-scale review. | Source BL_Animal_Rabbit.blend created (metaball blockout in WORK, editable). | T06: SKM_Rabbit_LOD0 quad mesh 2110 tris (1042 quads), 0.51 m long, 0.66 m with ears. Phone-scale captures 1080x2340 and 720x1600 pass silhouette/proportion rules. Captures/T06_review_sheet.png | T09: LOD0 2110 / LOD1 792 / LOD2 382 tris (budgets 2.0-2.6k / 0.7-1.0k / 0.3-0.45k). LOD1 quadriflow 372 quads; LOD2 symmetric collapse of LOD1 with re-placed eyes. Shared skeleton, weights transferred from LOD0, max 3 influences. Review: Captures/T09_lod_sheet.png. Variant colors will use Renderer Shader User Value (SRP Batcher compatible) instead of MaterialPropertyBlock.",
       "contentId": "species.rabbit",
       "biome": "Grassland",
       "rigFamily": "SmallQuadruped",
@@ -448,7 +448,8 @@
       ],
       "variants": 6,
       "passedGates": [
-        "G02"
+        "G02",
+        "G03"
       ]
     },
     {
