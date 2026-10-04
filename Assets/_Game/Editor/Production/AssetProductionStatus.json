@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T20:38:42Z",
+  "updatedUtc": "2026-10-04T20:50:12Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -67,13 +67,13 @@
     {
       "task": "T06",
       "title": "Blender Rabbit blockout",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Blockout + production quad topology, phone-scale captures in SourceArt/Blender/Animals/Rabbit/Captures."
     },
     {
       "task": "T07",
       "title": "Rig SmallQuadruped",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "notes": ""
     },
     {
@@ -412,7 +412,7 @@
         "B-AN-SQ-007",
         "B-AN-SQ-008"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Animals/Rabbit/BL_Animal_Rabbit.blend",
       "runtimePath": "Assets/_Game/Art/Animals/Rabbit/Models/",
       "validationGates": [
@@ -431,8 +431,8 @@
         "G34"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Art benchmark for the whole roster. Do not start Squirrel before Rabbit passes phone-scale review.",
+      "lastValidationUtc": "2026-10-04T20:50:12Z",
+      "notes": "Art benchmark for the whole roster. Do not start Squirrel before Rabbit passes phone-scale review. | Source BL_Animal_Rabbit.blend created (metaball blockout in WORK, editable). | T06: SKM_Rabbit_LOD0 quad mesh 2110 tris (1042 quads), 0.51 m long, 0.66 m with ears. Phone-scale captures 1080x2340 and 720x1600 pass silhouette/proportion rules. Captures/T06_review_sheet.png",
       "contentId": "species.rabbit",
       "biome": "Grassland",
       "rigFamily": "SmallQuadruped",
@@ -443,7 +443,10 @@
         "SKM_Rabbit_LOD1",
         "SKM_Rabbit_LOD2"
       ],
-      "variants": 6
+      "variants": 6,
+      "passedGates": [
+        "G02"
+      ]
     },
     {
       "id": "A-SP-002",
