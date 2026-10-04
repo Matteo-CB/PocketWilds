@@ -59,11 +59,18 @@ namespace PocketWilds.Content
     /// </summary>
     public sealed class ContentRegistry
     {
-        public ContentRegistry(ContentTable<SpeciesDefinition> species, ContentTable<VariantDefinition> variants, ContentTable<EggDefinition> eggs)
+        public ContentRegistry(ContentTable<SpeciesDefinition> species, ContentTable<VariantDefinition> variants, ContentTable<EggDefinition> eggs,
+            ContentTable<PaletteDefinition> palettes)
         {
             Species = species;
             Variants = variants;
             Eggs = eggs;
+            Palettes = palettes;
+        }
+
+        public ContentRegistry(ContentTable<SpeciesDefinition> species, ContentTable<VariantDefinition> variants, ContentTable<EggDefinition> eggs)
+            : this(species, variants, eggs, ContentTable<PaletteDefinition>.Empty)
+        {
         }
 
         public ContentRegistry(ContentTable<SpeciesDefinition> species, ContentTable<VariantDefinition> variants)
@@ -81,6 +88,9 @@ namespace PocketWilds.Content
         public ContentTable<SpeciesDefinition> Species { get; }
         public ContentTable<VariantDefinition> Variants { get; }
         public ContentTable<EggDefinition> Eggs { get; }
+
+        /// <summary>World palettes (props, ground).</summary>
+        public ContentTable<PaletteDefinition> Palettes { get; }
     }
 
     public enum ContentIssueSeverity
@@ -114,6 +124,7 @@ namespace PocketWilds.Content
         private readonly List<SpeciesDefinition> _species = new List<SpeciesDefinition>();
         private readonly List<VariantDefinition> _variants = new List<VariantDefinition>();
         private readonly List<EggDefinition> _eggs = new List<EggDefinition>();
+        private readonly List<PaletteDefinition> _palettes = new List<PaletteDefinition>();
         private readonly Dictionary<uint, string> _seenHashes = new Dictionary<uint, string>();
         private readonly HashSet<uint> _tombstones = new HashSet<uint>();
         private readonly List<ContentIssue> _issues = new List<ContentIssue>();
@@ -177,6 +188,17 @@ namespace PocketWilds.Content
                 _eggs.Add(definition);
         }
 
+        public void AddPalette(PaletteDefinition definition, string sourceId)
+        {
+            if (definition.Colors == null || definition.Colors.Length != PaletteDefinition.PaletteSize)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Palette must have " + PaletteDefinition.PaletteSize + " colors."));
+                return;
+            }
+            if (TryClaim(definition.Id, sourceId))
+                _palettes.Add(definition);
+        }
+
         public ContentRegistry Build()
         {
             var speciesIds = new HashSet<ContentId>();
@@ -191,7 +213,7 @@ namespace PocketWilds.Content
             if (HasErrors)
                 throw new InvalidOperationException("Content has errors: " + string.Join("; ", _issues));
             return new ContentRegistry(new ContentTable<SpeciesDefinition>(_species), new ContentTable<VariantDefinition>(_variants),
-                new ContentTable<EggDefinition>(_eggs));
+                new ContentTable<EggDefinition>(_eggs), new ContentTable<PaletteDefinition>(_palettes));
         }
 
         private bool TryClaim(ContentId id, string sourceId)

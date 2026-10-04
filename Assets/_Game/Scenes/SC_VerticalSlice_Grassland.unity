@@ -216,6 +216,79 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &554286941
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2095385850}
+    m_Modifications:
+    - target: {fileID: 457667685460402783, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+      propertyPath: m_Name
+      value: Chunk_Grassland_Start
+      objectReference: {fileID: 0}
+    - target: {fileID: 4138652818320761582, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4138652818320761582, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4138652818320761582, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4138652818320761582, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4138652818320761582, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4138652818320761582, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4138652818320761582, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4138652818320761582, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4138652818320761582, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4138652818320761582, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+--- !u!114 &554286942 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5012231992067558532, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+  m_PrefabInstance: {fileID: 554286941}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95a50a5363cbad943a2a2879a6c48e40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.WorldChunk
+--- !u!4 &554286943 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4138652818320761582, guid: fec057fd2ff9d9f4493f7a87f3bd545b, type: 3}
+  m_PrefabInstance: {fileID: 554286941}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1923692975
 GameObject:
   m_ObjectHideFlags: 0
@@ -338,7 +411,7 @@ Transform:
   m_GameObject: {fileID: 1923692975}
   serializedVersion: 2
   m_LocalRotation: {x: 0.34202015, y: 0, z: 0, w: 0.9396927}
-  m_LocalPosition: {x: 0, y: 9, z: -10.5}
+  m_LocalPosition: {x: 0.0000010844605, y: 8.870469, z: -9.917822}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -373,6 +446,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ff0a53ee0fb1404499c167aaa26f285, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.VerticalSliceEntry
+  _startChunk: {fileID: 554286942}
 --- !u!4 &1935673350
 Transform:
   m_ObjectHideFlags: 0
@@ -416,7 +490,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 554286943}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807

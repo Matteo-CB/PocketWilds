@@ -7,7 +7,7 @@ using UnityEngine;
 namespace PocketWilds.Presentation
 {
     /// <summary>
-    /// Every palette (animal variants, then eggs) in one tiny global texture, 8 colors per row.
+    /// Every palette (animal variants, eggs, then world palettes) in one tiny global texture, 8 colors per row.
     /// Built once at boot. A new palette is data only: no material, no texture asset, no code.
     /// Shaders read the row from the per-renderer Shader User Value.
     /// </summary>
@@ -25,7 +25,8 @@ namespace PocketWilds.Presentation
         {
             var variants = registry.Variants;
             var eggs = registry.Eggs;
-            int count = variants.Count + eggs.Count;
+            var world = registry.Palettes;
+            int count = variants.Count + eggs.Count + world.Count;
             if (count > MaxRows)
                 throw new InvalidOperationException($"Too many palettes ({count}). Raise the RSUV row bits first.");
 
@@ -37,6 +38,8 @@ namespace PocketWilds.Presentation
                 Write(pixels, row++, variants[i].Id, variants[i].Palette);
             for (int i = 0; i < eggs.Count; i++)
                 Write(pixels, row++, eggs[i].Id, eggs[i].Palette);
+            for (int i = 0; i < world.Count; i++)
+                Write(pixels, row++, world[i].Id, world[i].Colors);
 
             _texture = new Texture2D(Columns, rows, TextureFormat.RGBA32, mipChain: false, linear: false)
             {

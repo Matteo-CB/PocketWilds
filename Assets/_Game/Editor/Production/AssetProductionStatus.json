@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T22:54:51Z",
+  "updatedUtc": "2026-10-04T23:15:35Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -121,13 +121,13 @@
     {
       "task": "T15",
       "title": "Grassland kit",
-      "status": "IN_PROGRESS",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Grassland kit: ground, 3 grass tufts, tree A (LOD0-2), 3 rocks, 3 flowers from pw_grassland.py; SH_EnvironmentOpaque + SH_GroundMaster, 2 materials for the whole chunk; world palettes as content (PaletteDefinition, DEF_Palettes_Grassland) in the global PaletteTable; WorldChunk (one component per chunk, no Update); PF_Chunk_Grassland_Start in the vertical slice. Captures Low/Medium/High/close. Tests EditMode 148/148, PlayMode 20/20."
     },
     {
       "task": "T16",
       "title": "Lighting reference",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "notes": ""
     },
     {
@@ -2802,7 +2802,7 @@
         "G-SH-002",
         "G-SH-003"
       ],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -2819,7 +2819,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "",
+      "notes": "T15: core kit (ground, 3 grass, 3 flowers, tree A, 3 rocks), DEF_Palettes_Grassland (9 palettes), PF_Chunk_Grassland_Start in SC_VerticalSlice_Grassland. Pending: Ground_B, Edge A/B, Tree_B, Log, Stump, landmarks, other chunks, lighting profile (T16), streaming (T27). Perf note: ~160 renderers in view at Medium (SRP Batcher); measure on device at T22, combine grass/flowers per chunk if render thread exceeds budget.",
       "definition": "Assets/_Game/Content/Biomes/DEF_Biome_Grassland.asset",
       "contentId": "biome.grassland"
     },
@@ -3131,7 +3131,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3142,8 +3142,14 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "MVP A04"
+      "lastValidationUtc": "2026-10-04T23:15:31Z",
+      "notes": "MVP A04 | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06",
+        "G08"
+      ]
     },
     {
       "id": "D-BIO-001/GL_Ground_Core_B",
@@ -3219,7 +3225,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3230,8 +3236,14 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "MVP A05, 20-60 tris"
+      "lastValidationUtc": "2026-10-04T23:15:31Z",
+      "notes": "MVP A05, 20-60 tris | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06",
+        "G08"
+      ]
     },
     {
       "id": "D-BIO-001/GL_GrassTuft_M",
@@ -3241,7 +3253,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3252,8 +3264,14 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "MVP A05"
+      "lastValidationUtc": "2026-10-04T23:15:32Z",
+      "notes": "MVP A05 | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06",
+        "G08"
+      ]
     },
     {
       "id": "D-BIO-001/GL_GrassTuft_L",
@@ -3263,7 +3281,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3274,8 +3292,14 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "MVP A05"
+      "lastValidationUtc": "2026-10-04T23:15:32Z",
+      "notes": "MVP A05 | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06",
+        "G08"
+      ]
     },
     {
       "id": "D-BIO-001/GL_Flower_A",
@@ -3285,7 +3309,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3296,8 +3320,14 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "MVP A08"
+      "lastValidationUtc": "2026-10-04T23:15:32Z",
+      "notes": "MVP A08 | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06",
+        "G08"
+      ]
     },
     {
       "id": "D-BIO-001/GL_Flower_B",
@@ -3307,7 +3337,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3318,8 +3348,14 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "MVP A08"
+      "lastValidationUtc": "2026-10-04T23:15:32Z",
+      "notes": "MVP A08 | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06",
+        "G08"
+      ]
     },
     {
       "id": "D-BIO-001/GL_Flower_C",
@@ -3329,7 +3365,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3340,8 +3376,14 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "MVP A08"
+      "lastValidationUtc": "2026-10-04T23:15:32Z",
+      "notes": "MVP A08 | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06",
+        "G08"
+      ]
     },
     {
       "id": "D-BIO-001/GL_Tree_A",
@@ -3351,7 +3393,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3362,8 +3404,15 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "MVP A06, LOD0 0.6-1.0k"
+      "lastValidationUtc": "2026-10-04T23:15:33Z",
+      "notes": "MVP A06, LOD0 0.6-1.0k | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | Tris LOD0 830 / LOD1 384 (46%) / LOD2 173 (21%); LODGroup 0.32/0.14/0.03.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G03",
+        "G06",
+        "G08"
+      ]
     },
     {
       "id": "D-BIO-001/GL_Tree_B",
@@ -3395,7 +3444,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3406,8 +3455,14 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "MVP A07"
+      "lastValidationUtc": "2026-10-04T23:15:32Z",
+      "notes": "MVP A07 | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06",
+        "G08"
+      ]
     },
     {
       "id": "D-BIO-001/GL_Rock_M",
@@ -3417,7 +3472,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3428,8 +3483,14 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "MVP A07"
+      "lastValidationUtc": "2026-10-04T23:15:32Z",
+      "notes": "MVP A07 | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06",
+        "G08"
+      ]
     },
     {
       "id": "D-BIO-001/GL_Rock_L",
@@ -3439,7 +3500,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3450,8 +3511,14 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "MVP A07"
+      "lastValidationUtc": "2026-10-04T23:15:32Z",
+      "notes": "MVP A07 | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*. | T15: BL_Biome_Grassland_Core.blend rebuilt by SourceArt/Blender/Tools/pw_grassland.py; PW_Regions + PW_Occlusion per vertex; exported with the project FBX preset; PF prefab plain renderers; Unity captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T15_*.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06",
+        "G08"
+      ]
     },
     {
       "id": "D-BIO-001/GL_Log",
@@ -3593,7 +3660,7 @@
       "dependencies": [
         "D-BIO-001/GL_Ground_Core_A"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/World/Chunks/Grassland/PF_Chunk_Grassland_Start.prefab",
       "validationGates": [
@@ -3603,7 +3670,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_Meadow",
@@ -4651,7 +4718,7 @@
       "family": "Shader",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "Assets/_Game/Art/Shaders/SH_EnvironmentOpaque.shadergraph",
       "runtimePath": "Assets/_Game/Art/Shaders/",
       "validationGates": [
@@ -4662,7 +4729,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T15: SH_EnvironmentOpaque (palette per vertex: base + R/G/B/A regions + baked occlusion; brightness jitter in the Shader User Value; shares Include/PW_Stylized.hlsl). | T15: SH_EnvironmentOpaque (palette per vertex: base + R/G/B/A regions + baked occlusion; brightness jitter in the Shader User Value; shares Include/PW_Stylized.hlsl). | T15: SH_EnvironmentOpaque (palette per vertex: base + R/G/B/A regions + baked occlusion; brightness jitter in the Shader User Value; shares Include/PW_Stylized.hlsl)."
     },
     {
       "id": "G-SH-003",
@@ -4670,7 +4737,7 @@
       "family": "Shader",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "Assets/_Game/Art/Shaders/SH_GroundMaster.shadergraph",
       "runtimePath": "Assets/_Game/Art/Shaders/",
       "validationGates": [
@@ -4681,7 +4748,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T15: SH_GroundMaster (palette regions + soft world-space macro variation, receives shadows, no caster pass). | T15: SH_GroundMaster (palette regions + soft world-space macro variation, receives shadows, no caster pass). | T15: SH_GroundMaster (palette regions + soft world-space macro variation, receives shadows, no caster pass)."
     },
     {
       "id": "G-SH-004",
@@ -4811,7 +4878,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/Materials/MAT_Environment_Common.mat",
       "validationGates": [
@@ -4819,7 +4886,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T15: MAT_Environment_Common, every Grassland prop. | T15: MAT_Environment_Common, every Grassland prop. | T15: MAT_Environment_Common, every Grassland prop."
     },
     {
       "id": "G-MAT-EGG",
@@ -4886,7 +4953,7 @@
       "dependencies": [
         "G-SH-003"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/Materials/MAT_Ground_Grassland.mat",
       "validationGates": [
@@ -4894,7 +4961,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T15: MAT_Ground_Grassland on GL_Ground_Core_A. | T15: MAT_Ground_Grassland on GL_Ground_Core_A. | T15: MAT_Ground_Grassland on GL_Ground_Core_A."
     },
     {
       "id": "G-MAT-GROUND-Forest",
@@ -8280,7 +8347,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Shell only: camera, sun, VerticalSliceEntry. No art yet."
+      "notes": "Shell only: camera, sun, VerticalSliceEntry. No art yet. | T15: start chunk placed under World, VerticalSliceEntry binds palettes and quality density; gameplay camera framing on the egg spawn (pitch 40, 13.8 m, FOV 30)."
     },
     {
       "id": "L-SC-003",

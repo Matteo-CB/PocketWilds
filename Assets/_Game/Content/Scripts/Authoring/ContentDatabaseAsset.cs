@@ -12,6 +12,7 @@ namespace PocketWilds.Content
     {
         public List<SpeciesDefinitionAsset> species = new List<SpeciesDefinitionAsset>();
         public List<EggDefinitionAsset> eggs = new List<EggDefinitionAsset>();
+        public List<PaletteSetAsset> paletteSets = new List<PaletteSetAsset>();
 
         [Tooltip("Retired source IDs. They can never be reused.")]
         public List<string> tombstones = new List<string>();
@@ -33,6 +34,13 @@ namespace PocketWilds.Content
             {
                 if (egg != null)
                     builder.AddEgg(egg.ToRuntime(), egg.sourceId);
+            }
+            foreach (var set in paletteSets)
+            {
+                if (set == null)
+                    continue;
+                foreach (var entry in set.palettes)
+                    builder.AddPalette(entry.ToRuntime(), entry.sourceId);
             }
             return builder;
         }

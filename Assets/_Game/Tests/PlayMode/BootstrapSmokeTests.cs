@@ -135,7 +135,7 @@ namespace PocketWilds.Tests.PlayMode
             yield return Boot(false, b => bootstrap = b);
 
             var context = bootstrap.Context;
-            int palettes = _content.Variants.Count + _content.Eggs.Count;
+            int palettes = _content.Variants.Count + _content.Eggs.Count + _content.Palettes.Count;
             Assert.AreEqual(palettes, context.Palettes.PaletteCount);
             Assert.AreEqual((float)Mathf.NextPowerOfTwo(palettes), Shader.GetGlobalFloat(PaletteTable.RowCountId));
             var animal = new AnimalInstance
@@ -151,6 +151,27 @@ namespace PocketWilds.Tests.PlayMode
             Object.Destroy(bootstrap.gameObject);
             yield return null;
             Assert.AreEqual(0f, Shader.GetGlobalFloat(PaletteTable.RowCountId), "Palettes must be released with the bootstrap.");
+#else
+            Assert.Ignore("Editor only.");
+            yield break;
+#endif
+        }
+
+        [UnityTest]
+        public IEnumerator Boot_IntoVerticalSlice_BindsTheGrasslandChunk()
+        {
+#if UNITY_EDITOR
+            var database = UnityEditor.AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>("Assets/_Game/Content/DEF_ContentDatabase.asset");
+            _content = database.CreateBuilder().Build();
+            GameBootstrap bootstrap = null;
+            yield return Boot(true, b => bootstrap = b);
+
+            var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
+            Assert.IsNotNull(entry);
+            Assert.IsNotNull(entry.StartChunk, "SC_VerticalSlice_Grassland must reference its start chunk.");
+            Assert.IsTrue(bootstrap.Context.Palettes.TryGetRow(ContentId.FromSource("palette.grassland.ground"), out int row));
+            var ground = entry.StartChunk.transform.Find("Ground").GetComponent<MeshRenderer>();
+            Assert.AreEqual(row, EnvironmentVisualPacking.PaletteRow(ground.GetShaderUserValue()));
 #else
             Assert.Ignore("Editor only.");
             yield break;

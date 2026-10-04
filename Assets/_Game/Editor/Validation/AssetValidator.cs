@@ -72,6 +72,24 @@ namespace PocketWilds.Editor.Validation
         public const string EggPrefabPath = "Assets/_Game/Prefabs/Eggs/PF_Egg_Base.prefab";
         public const string EggMaterialPath = "Assets/_Game/Art/Materials/MAT_Egg_Master.mat";
 
+        public const string GrasslandPrefabFolder = "Assets/_Game/Prefabs/Environment/Grassland";
+        public const string GrasslandChunkPath = "Assets/_Game/Prefabs/World/Chunks/Grassland/PF_Chunk_Grassland_Start.prefab";
+        public static readonly string[] EnvironmentMaterialPaths =
+        {
+            "Assets/_Game/Art/Materials/MAT_Environment_Common.mat",
+            "Assets/_Game/Art/Materials/MAT_Ground_Grassland.mat",
+        };
+
+        /// <summary>Biomes doc budgets (triangles, LOD0): name prefix, min, max.</summary>
+        public static readonly (string Prefix, int Min, int Max)[] EnvironmentBudgets =
+        {
+            ("GL_GrassTuft_", 20, 60),
+            ("GL_Flower_", 20, 150),
+            ("GL_Rock_", 60, 250),
+            ("GL_Tree_A_LOD0", 600, 1000),
+            ("GL_Ground_Core_", 200, 2500),
+        };
+
         /// <summary>MVP Asset Pack A03: under 500 triangles for everything visible at once.</summary>
         public const int EggVisibleMaxTriangles = 500;
 
@@ -90,11 +108,15 @@ namespace PocketWilds.Editor.Validation
             Report(issues);
         }
 
+        [MenuItem("Pocket Wilds/Validate/Grassland Kit", priority = 402)]
+        public static void ValidateEnvironmentMenu() => Report(ValidateEnvironment());
+
         public static void ValidateAllBatch()
         {
             var issues = ValidateAllAnimals();
             issues.AddRange(ValidateEggModels());
             issues.AddRange(ValidateEggPrefab());
+            issues.AddRange(ValidateEnvironment());
             Report(issues);
             EditorApplication.Exit(issues.Any(i => i.Severity == IssueSeverity.Error) ? 1 : 0);
         }
@@ -355,6 +377,89 @@ namespace PocketWilds.Editor.Validation
             if (lodGroup == null || lodGroup.lodCount != 2)
                 Error("LODGroup", "Egg needs a LODGroup with LOD0 and LOD1.");
             return issues;
+        }
+
+        /// <summary>Grassland kit prefabs and the start chunk: plain renderers, two shared materials, budgets.</summary>
+        public static List<ValidationIssue> ValidateEnvironment()
+        {
+            var issues = new List<ValidationIssue>();
+            var allowed = new HashSet<Material>(EnvironmentMaterialPaths.Select(AssetDatabase.LoadAssetAtPath<Material>));
+
+            foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { GrasslandPrefabFolder }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                CheckPlainProps(prefab, path, allowed, issues, allowChunkRoot: false);
+                foreach (var renderer in prefab.GetComponentsInChildren<Renderer>(true))
+                {
+                    var filter = renderer.GetComponent<MeshFilter>();
+                    string meshName = filter != null && filter.sharedMesh != null ? filter.sharedMesh.name : renderer.name;
+                    foreach (var (prefix, min, max) in EnvironmentBudgets)
+                    {
+                        if (!meshName.StartsWith(prefix, StringComparison.Ordinal))
+                            continue;
+                        int tris = Triangles(renderer);
+                        var severity = tris < min || tris > max ? IssueSeverity.Error : IssueSeverity.Info;
+                        issues.Add(new ValidationIssue(severity, path, "Budget", $"{meshName}: {tris} tris ({min}-{max})."));
+                    }
+                }
+                var lod = prefab.GetComponent<LODGroup>();
+                if (prefab.name.StartsWith("PF_GL_Tree", StringComparison.Ordinal))
+                {
+                    var lods = lod != null ? lod.GetLODs() : Array.Empty<LOD>();
+                    if (lods.Length != 3)
+                    {
+                        issues.Add(new ValidationIssue(IssueSeverity.Error, path, "LODGroup", "Trees need LOD0/1/2."));
+                    }
+                    else
+                    {
+                        float t0 = Triangles(lods[0].renderers[0]);
+                        float r1 = Triangles(lods[1].renderers[0]) / t0, r2 = Triangles(lods[2].renderers[0]) / t0;
+                        if (r1 < 0.35f || r1 > 0.55f || r2 < 0.15f || r2 > 0.25f)
+                            issues.Add(new ValidationIssue(IssueSeverity.Error, path, "LOD", $"LOD ratios {r1:P0} / {r2:P0}, expected 35-55% / 15-25%."));
+                    }
+                }
+            }
+
+            var chunk = AssetDatabase.LoadAssetAtPath<GameObject>(GrasslandChunkPath);
+            if (chunk == null)
+            {
+                issues.Add(new ValidationIssue(IssueSeverity.Error, GrasslandChunkPath, "Load", "Start chunk missing."));
+                return issues;
+            }
+            CheckPlainProps(chunk, GrasslandChunkPath, allowed, issues, allowChunkRoot: true);
+            var world = chunk.GetComponent<WorldChunk>();
+            if (world == null)
+            {
+                issues.Add(new ValidationIssue(IssueSeverity.Error, GrasslandChunkPath, "WorldChunk", "Chunk root must carry WorldChunk."));
+                return issues;
+            }
+            var bound = new HashSet<Renderer>();
+            for (int i = 0; i < world.BindingCount; i++)
+                bound.Add(world.GetBinding(i).renderer);
+            foreach (var renderer in chunk.GetComponentsInChildren<Renderer>(true))
+                if (!bound.Contains(renderer))
+                    issues.Add(new ValidationIssue(IssueSeverity.Error, GrasslandChunkPath, "Palette", renderer.name + " has no palette binding."));
+            if (world.EggSpawn == null || world.AnimalSpawns.Length < 3)
+                issues.Add(new ValidationIssue(IssueSeverity.Error, GrasslandChunkPath, "Points", "Start chunk needs an egg spawn and 3 animal spawns."));
+            return issues;
+        }
+
+        private static void CheckPlainProps(GameObject root, string path, HashSet<Material> allowed, List<ValidationIssue> issues, bool allowChunkRoot)
+        {
+            foreach (var c in root.GetComponentsInChildren<Component>(true))
+            {
+                if (c == null) { issues.Add(new ValidationIssue(IssueSeverity.Error, path, "MissingScript", "Missing script reference.")); continue; }
+                if (c is Collider || c is Rigidbody || c is AudioSource || c is Light || c is Animator || c is ParticleSystem)
+                    issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Forbidden", $"{c.GetType().Name} on {c.name}: props are plain renderers."));
+                if (c is MonoBehaviour mb && !(allowChunkRoot && mb is WorldChunk && c.gameObject == root))
+                    issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Forbidden", $"Script {mb.GetType().Name} on {c.name}: no per-prop logic."));
+            }
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer.sharedMaterials.Length != 1 || !allowed.Contains(renderer.sharedMaterial))
+                    issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Materials", $"{renderer.name} must use one shared environment material."));
+            }
         }
 
         private static Dictionary<string, Mesh> LoadMeshes(string path, Action<string, string, string> error)
