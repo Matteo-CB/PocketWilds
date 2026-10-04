@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T20:50:12Z",
+  "updatedUtc": "2026-10-04T20:57:15Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -73,13 +73,13 @@
     {
       "task": "T07",
       "title": "Rig SmallQuadruped",
-      "status": "IN_PROGRESS",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Rig + skin + extreme poses OK. Airborne pose stretches haunches but does not break; HopLoop keeps leg extension <= 30 deg."
     },
     {
       "task": "T08",
       "title": "Rabbit animations",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "notes": ""
     },
     {
@@ -224,7 +224,7 @@
       "dependencies": [
         "G-SH-001"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "runtimePath": "Assets/_Game/Art/Rigs/SmallQuadruped/",
       "validationGates": [
@@ -234,9 +234,12 @@
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "",
-      "skeleton": "SK_SmallQuadruped"
+      "lastValidationUtc": "2026-10-04T20:57:15Z",
+      "notes": "Source BL_Rig_SmallQuadruped.blend: 24 deform bones (spec names), FK only, consistent rolls, no control bones exported, sockets HeadTop/Neck/Back/TailBase/Ear_L/Ear_R world-aligned at rest. | T07: rabbit skinned (max 3 influences, rigid head/cheeks, ellipsoid neck blend, ear axis weights). 9 extreme poses captured (SourceArt/Blender/Animals/Rabbit/Captures/T07_pose_sheet.png). FBX export with project preset OK. Second-species bind test pending (T23 Squirrel).",
+      "skeleton": "SK_SmallQuadruped",
+      "passedGates": [
+        "G04"
+      ]
     },
     {
       "id": "A-RIG-002",
