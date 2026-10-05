@@ -1,0 +1,24 @@
+{
+    "name": "Game.Benchmarks.Runner",
+    "rootNamespace": "PocketWilds.Benchmarks",
+    "references": [
+        "Game.Core",
+        "Game.Content",
+        "Game.Simulation",
+        "Game.Services",
+        "Game.Presentation",
+        "Game.UI",
+        "Game.Bootstrap"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_EDITOR || DEVELOPMENT_BUILD"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

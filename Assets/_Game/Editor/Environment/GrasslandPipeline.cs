@@ -28,6 +28,7 @@ namespace PocketWilds.Editor.Environment
         public const string ModelsFolder = "Assets/_Game/Art/Environment/Grassland/Models";
         public const string PrefabsFolder = "Assets/_Game/Prefabs/Environment/Grassland";
         public const string ChunkPath = "Assets/_Game/Prefabs/World/Chunks/Grassland/PF_Chunk_Grassland_Start.prefab";
+        public const string BakedFolder = "Assets/_Game/Art/Environment/Grassland/Baked";
         public const string PalettesPath = "Assets/_Game/Content/Palettes/DEF_Palettes_Grassland.asset";
 
         public const string PaletteGround = "palette.grassland.ground";
@@ -382,9 +383,24 @@ namespace PocketWilds.Editor.Environment
                     ["GL_Tree"] = Child(props, "Trees"), ["GL_Rock"] = Child(props, "Rocks"),
                     ["GL_Grass"] = Child(props, "Grass"), ["GL_Flower"] = Child(props, "Flowers"),
                 };
+                // Grass tufts and flowers are merged per palette and density class (one renderer each):
+                // ~190 small renderers became about a dozen draws. Each instance keeps its brightness in uv.y.
+                var merged = new Dictionary<(string palette, bool secondary, string group), List<(Mesh mesh, Matrix4x4 matrix, byte brightness)>>();
                 foreach (var placement in layout)
                 {
                     var group = groups.First(g => placement.Prop.StartsWith(g.Key, StringComparison.Ordinal)).Value;
+                    bool mergeable = placement.Prop.StartsWith("GL_Grass", StringComparison.Ordinal)
+                                     || placement.Prop.StartsWith("GL_Flower", StringComparison.Ordinal);
+                    if (mergeable)
+                    {
+                        byte level = (byte)(5 + rng.Next(7));
+                        var key = (placement.Palette, placement.Secondary, group.name);
+                        if (!merged.TryGetValue(key, out var list))
+                            merged[key] = list = new List<(Mesh, Matrix4x4, byte)>();
+                        var matrix = Matrix4x4.TRS(placement.Position, Quaternion.Euler(0f, placement.Yaw, 0f), Vector3.one * placement.Scale);
+                        list.Add((prefabs[placement.Prop].GetComponent<MeshFilter>().sharedMesh, matrix, level));
+                        continue;
+                    }
                     var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefabs[placement.Prop], group);
                     instance.transform.SetLocalPositionAndRotation(placement.Position, Quaternion.Euler(0f, placement.Yaw, 0f));
                     instance.transform.localScale = Vector3.one * placement.Scale;
@@ -397,6 +413,24 @@ namespace PocketWilds.Editor.Environment
                             brightness = brightness, secondary = placement.Secondary,
                         });
                     }
+                }
+
+                var env = prefabs["GL_Rock_S"].GetComponent<MeshRenderer>().sharedMaterial;
+                Directory.CreateDirectory(BakedFolder);
+                int index = 0;
+                foreach (var pair in merged.OrderBy(p => p.Key.group).ThenBy(p => p.Key.palette).ThenBy(p => p.Key.secondary))
+                {
+                    string shortName = pair.Key.palette.Substring(pair.Key.palette.LastIndexOf('.') + 1);
+                    string name = $"Merged_{shortName}_{(pair.Key.secondary ? "Secondary" : "Primary")}";
+                    var mesh = MergeProps(pair.Value, $"MSH_Chunk_Grassland_Start_{index++:00}_{shortName}");
+                    var go = new GameObject(name);
+                    go.transform.SetParent(groups.First(g => g.Value.name == pair.Key.group).Value, false);
+                    var renderer = AddRenderer(go, mesh, env, ShadowCastingMode.Off);
+                    bindings.Add(new WorldChunk.PaletteBinding
+                    {
+                        renderer = renderer, paletteId = ContentId.FromSource(pair.Key.palette).Value,
+                        brightness = WorldChunk.NeutralBrightness, secondary = pair.Key.secondary, vertexBrightness = true,
+                    });
                 }
 
                 var spawns = Child(root.transform, "SpawnPoints");
@@ -436,6 +470,63 @@ namespace PocketWilds.Editor.Environment
             {
                 Object.DestroyImmediate(root);
             }
+        }
+
+        /// <summary>
+        /// One static mesh for many prop instances: positions and normals in chunk space, vertex colors kept
+        /// (palette regions), uv.x kept (occlusion), uv.y = instance brightness level / 15.
+        /// </summary>
+        private static Mesh MergeProps(List<(Mesh mesh, Matrix4x4 matrix, byte brightness)> instances, string assetName)
+        {
+            var vertices = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var colors = new List<Color32>();
+            var uvs = new List<Vector2>();
+            var triangles = new List<int>();
+            var sourceVertices = new List<Vector3>();
+            var sourceNormals = new List<Vector3>();
+            var sourceColors = new List<Color32>();
+            var sourceUvs = new List<Vector2>();
+            foreach (var (mesh, matrix, brightness) in instances)
+            {
+                int offset = vertices.Count;
+                mesh.GetVertices(sourceVertices);
+                mesh.GetNormals(sourceNormals);
+                mesh.GetColors(sourceColors);
+                mesh.GetUVs(0, sourceUvs);
+                var normalMatrix = matrix.inverse.transpose;
+                float level = brightness / 15f;
+                for (int v = 0; v < sourceVertices.Count; v++)
+                {
+                    vertices.Add(matrix.MultiplyPoint3x4(sourceVertices[v]));
+                    normals.Add(normalMatrix.MultiplyVector(v < sourceNormals.Count ? sourceNormals[v] : Vector3.up).normalized);
+                    colors.Add(v < sourceColors.Count ? sourceColors[v] : new Color32(0, 0, 0, 0));
+                    uvs.Add(new Vector2(v < sourceUvs.Count ? sourceUvs[v].x : 0f, level));
+                }
+                var source = mesh.triangles;
+                for (int t = 0; t < source.Length; t++)
+                    triangles.Add(source[t] + offset);
+            }
+
+            string path = $"{BakedFolder}/{assetName}.asset";
+            var merged = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (merged == null)
+            {
+                merged = new Mesh();
+                AssetDatabase.CreateAsset(merged, path);
+            }
+            merged.Clear();
+            merged.name = assetName;
+            merged.indexFormat = vertices.Count > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
+            merged.SetVertices(vertices);
+            merged.SetNormals(normals);
+            merged.SetColors(colors);
+            merged.SetUVs(0, uvs);
+            merged.SetTriangles(triangles, 0);
+            merged.RecalculateBounds();
+            merged.UploadMeshData(false);
+            EditorUtility.SetDirty(merged);
+            return merged;
         }
 
         private static Transform Child(Transform parent, string name)

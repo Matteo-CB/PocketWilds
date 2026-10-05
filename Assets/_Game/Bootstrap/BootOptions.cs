@@ -1,4 +1,5 @@
 using PocketWilds.Content;
+using PocketWilds.Core;
 using PocketWilds.Presentation;
 
 namespace PocketWilds.Bootstrap
@@ -22,6 +23,9 @@ namespace PocketWilds.Bootstrap
 
         /// <summary>Text tables used when the bootstrap has no content database (tests).</summary>
         public LocalizationTableAsset[] LocalizationOverride;
+
+        /// <summary>Quality tier forced for this boot (benchmarks), instead of device settings.</summary>
+        public QualityTier? QualityOverride;
 
         /// <summary>Wall clock replacement (tests that simulate time away).</summary>
         public PocketWilds.Core.IGameClock ClockOverride;

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using PocketWilds.Content;
 using PocketWilds.Core;
 using PocketWilds.Services.Feedback;
@@ -55,6 +56,7 @@ namespace PocketWilds.Presentation
         private BigValue _eggCost;
         private BigValue _heldLight;
         private BigValue _heldAtCollect;
+        private readonly CancellationTokenSource _lifetime = new CancellationTokenSource();
         private MasteryGain _pendingMastery;
         private bool _masteryShown = true;
         private float _collectTime = -1f;
@@ -105,6 +107,7 @@ namespace PocketWilds.Presentation
             _scheduler = new AnimalScheduler(_visibleBudget + 2, settings, chunk.WanderArea);
 
             SpawnSavedAnimals();
+            _ = WarmupSparesAsync();
             PresentEgg();
             _hud?.Bind(this);
             RefreshEggCost();
@@ -332,8 +335,29 @@ namespace PocketWilds.Presentation
             _nextEggTime = _time + NextEggDelay;
         }
 
+        /// <summary>
+        /// Fills the rest of the visible budget with pooled views, two per frame right after entering: later
+        /// hatches never instantiate during gameplay (Performance Bible: pooling, no runtime Instantiate).
+        /// </summary>
+        private async Awaitable WarmupSparesAsync()
+        {
+            try
+            {
+                int spares = _visibleBudget + 1 - VisibleAnimals;
+                if (spares > 0)
+                    await _animals.WarmupAsync(_rabbitHandle, spares, 2, _lifetime.Token);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        public int PooledSpares => _animals.GetPool(_rabbitHandle).Stats.Inactive;
+
         public void Dispose()
         {
+            _lifetime.Cancel();
+            _lifetime.Dispose();
             _hatch.Clear();
             _vfx.Dispose();
             _animals.Dispose();

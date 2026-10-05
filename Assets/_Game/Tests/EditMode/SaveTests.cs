@@ -313,6 +313,49 @@ namespace PocketWilds.Tests.EditMode
             service.PendingWrite.Wait();
         }
 
+        [Test]
+        public void AtomicWrite_ReusesItsBuffers()
+        {
+            var store = new SaveFileStore(_dir);
+            var writer = new ByteBufferWriter();
+            new BinarySaveSerializer().Serialize(RichState(), writer);
+            store.WriteAtomic(writer.Buffer, writer.Length);
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 5; i++)
+                store.WriteAtomic(writer.Buffer, writer.Length);
+            long perWrite = (GC.GetAllocatedBytesForCurrentThread() - before) / 5;
+            UnityEngine.Debug.Log($"[Benchmark] Save write: {perWrite} B managed per write ({writer.Length} B file)");
+            Assert.Less(perWrite, 4096, "No 64 KB stream buffer, no read-back array: only file handles.");
+        }
+
+        [Test]
+        public void BackgroundAutosave_StartsWithoutAllocating()
+        {
+            var service = NewService();
+            service.LoadOrCreate();
+            // First background write creates the writer thread (once per session).
+            service.RequestSave(SaveUrgency.Priority);
+            _clock.Advance(TimeSpan.FromSeconds(1));
+            service.Tick();
+            Assert.IsTrue(service.IsWriteInFlight || service.State.Meta.Revision > 0);
+            service.PendingWrite.Wait();
+            service.Tick();
+            long revision = service.State.Meta.Revision;
+
+            service.RequestSave(SaveUrgency.Priority);
+            _clock.Advance(TimeSpan.FromSeconds(1));
+            Assert.That(() => service.Tick(), Is.Not.AllocatingGCMemory(), "Serialize + hand-off to the writer thread.");
+            Assert.AreEqual(revision + 1, service.State.Meta.Revision);
+            service.PendingWrite.Wait();
+            service.Tick();
+            Assert.IsNull(service.LastWriteError);
+            service.Dispose();
+
+            var reloaded = NewService();
+            reloaded.LoadOrCreate();
+            Assert.AreEqual(revision + 1, reloaded.State.Meta.Revision, "The background write reached the disk.");
+        }
+
         [TestCase("GoldenSave_New_v1")]
         [TestCase("GoldenSave_Day7_v1")]
         [TestCase("GoldenSave_PremiumEntitlements_v1")]

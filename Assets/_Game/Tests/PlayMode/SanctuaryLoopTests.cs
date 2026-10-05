@@ -97,6 +97,10 @@ namespace PocketWilds.Tests.PlayMode
             Assert.IsTrue(hud.IsBound);
             Assert.AreEqual(0, sanctuary.VisibleAnimals);
             Assert.IsNotNull(sanctuary.WaitingEgg, "The tutorial egg waits from the first frame.");
+            // T22: the rest of the visible budget is pooled within a few frames: hatching never instantiates.
+            for (int i = 0; i < 60 && sanctuary.PooledSpares < 30; i++)
+                yield return null;
+            Assert.GreaterOrEqual(sanctuary.PooledSpares, 30, "Medium budget (50) minus nothing visible, warmed two per frame.");
             yield return null;
             Assert.IsFalse(hud.CostVisible, "The free egg shows no price.");
             Assert.AreEqual(1, hud.VisualState, "The free egg is ready to touch.");

@@ -54,14 +54,16 @@ namespace PocketWilds.Services.Save
         {
             System.IO.Directory.CreateDirectory(Directory);
 
-            using (var stream = new FileStream(TempPath, FileMode.Create, FileAccess.Write, FileShare.None, 64 * 1024, FileOptions.WriteThrough))
+            // One Write call with the whole snapshot: no FileStream buffer (bufferSize 1), nothing to copy.
+            using (var stream = new FileStream(TempPath, FileMode.Create, FileAccess.Write, FileShare.None, 1, FileOptions.WriteThrough))
             {
                 stream.Write(data, 0, length);
                 stream.Flush(true);
             }
 
-            var check = File.ReadAllBytes(TempPath);
-            if (!SaveFileFormat.TryValidate(check, check.Length, out _, out var error))
+            // Read back into a reused buffer: verifying a save does not allocate its size every time (T22).
+            int read = ReadIntoVerifyBuffer(TempPath);
+            if (!SaveFileFormat.TryValidate(_verify, read, out _, out var error))
                 throw new IOException("Written save failed verification: " + error);
 
             if (File.Exists(CurrentPath))
@@ -72,6 +74,30 @@ namespace PocketWilds.Services.Save
             }
 
             File.Move(TempPath, CurrentPath);
+        }
+
+        private byte[] _verify = new byte[64 * 1024];
+
+        /// <summary>Reads a whole file into the verification buffer (grown when needed). Not thread-safe: one writer at a time.</summary>
+        private int ReadIntoVerifyBuffer(string path)
+        {
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1, FileOptions.None))
+            {
+                long size = stream.Length;
+                if (size > int.MaxValue)
+                    throw new IOException("Save file too large.");
+                if (_verify.Length < size)
+                    _verify = new byte[Math.Max((int)size, _verify.Length * 2)];
+                int total = 0;
+                while (total < size)
+                {
+                    int n = stream.Read(_verify, total, (int)size - total);
+                    if (n <= 0)
+                        break;
+                    total += n;
+                }
+                return total;
+            }
         }
 
         /// <summary>Every slot file that exists, newest kinds first. Content is not validated here.</summary>

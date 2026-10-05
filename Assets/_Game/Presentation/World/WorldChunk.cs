@@ -18,6 +18,9 @@ namespace PocketWilds.Presentation
             public Renderer renderer;
             [Tooltip("ContentId value of palette.<biome>.<name>.")] public uint paletteId;
             [Range(0, 15)] public byte brightness;
+
+            [Tooltip("Merged props: each instance's brightness is stored in uv.y instead.")]
+            public bool vertexBrightness;
             [Tooltip("Small decorative prop removed on Low quality (Biomes doc: -35 to 50% density).")]
             public bool secondary;
         }
@@ -71,7 +74,7 @@ namespace PocketWilds.Presentation
                     missing++;
                     continue;
                 }
-                uint data = EnvironmentVisualPacking.Pack(row, binding.brightness);
+                uint data = EnvironmentVisualPacking.Pack(row, binding.brightness, binding.vertexBrightness);
                 if (binding.renderer is MeshRenderer mesh)
                     mesh.SetShaderUserValue(data);
             }
@@ -94,8 +97,13 @@ namespace PocketWilds.Presentation
     /// <summary>Packs the per-renderer Shader User Value read by SH_EnvironmentOpaque and SH_GroundMaster.</summary>
     public static class EnvironmentVisualPacking
     {
-        public static uint Pack(int paletteRow, int brightness) =>
-            (uint)Mathf.Clamp(paletteRow, 0, PaletteTable.MaxRows - 1) | ((uint)Mathf.Clamp(brightness, 0, 15) << 10);
+        public const uint VertexBrightnessFlag = 1u << 14;
+
+        public static uint Pack(int paletteRow, int brightness, bool vertexBrightness = false) =>
+            (uint)Mathf.Clamp(paletteRow, 0, PaletteTable.MaxRows - 1) | ((uint)Mathf.Clamp(brightness, 0, 15) << 10)
+            | (vertexBrightness ? VertexBrightnessFlag : 0u);
+
+        public static bool UsesVertexBrightness(uint packed) => (packed & VertexBrightnessFlag) != 0u;
 
         public static int PaletteRow(uint packed) => (int)(packed & 1023u);
         public static int Brightness(uint packed) => (int)((packed >> 10) & 15u);

@@ -106,7 +106,7 @@ namespace PocketWilds.Bootstrap
             {
                 var device = LocalDeviceSettingsStore.Load();
                 _quality = new QualityService();
-                _quality.Apply(device.QualityOverride);
+                _quality.Apply(_options.QualityOverride ?? device.QualityOverride);
                 _frameRate = new FrameRateService();
                 _frameRate.Apply(device.BatterySaver);
             });
@@ -230,6 +230,7 @@ namespace PocketWilds.Bootstrap
         {
             if (_save != null && _offline != null)
                 _save.BeforeSerialize -= _offline.CaptureSnapshot;
+            _save?.Dispose();
             _palettes?.Dispose();
             _palettes = null;
         }

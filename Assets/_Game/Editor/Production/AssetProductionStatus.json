@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T01:52:54Z",
+  "updatedUtc": "2026-10-05T02:30:22Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -163,8 +163,8 @@
     {
       "task": "T22",
       "title": "Performance baseline",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "REVIEW",
+      "notes": "Performance baseline: PerformanceBaselineRunner (real boot, scene and save; P0, P1, 10, P2 20, 30, 50 Medium, 20 Low, 50 High, P5 hatch burst) with FrameTimingManager + ProfilerRecorder; JSON baselines in Docs/Performance/Baselines, report Docs/Performance/T22_Baseline.md (Tools/perf_report.py). Windows development player (RTX 5060 Ti, 480x1040): main thread 1.1 to 2.4 ms mean, simulation <= 0.02 ms, UI ~0.05 ms, GPU <= 0.6 ms, steady GC 0 B/frame. Fixes found by measuring: grass/flowers merged per palette (chunk 218 -> 43 renderers, batches P0 70 -> 40, P2 102 -> 78), save writer thread instead of Task.Run, no 64 KB stream buffer / read-back array, sanctuary animal pool warmed to the visible budget (no Instantiate on hatch), AllocationProbe editor tool. Open: shader variant prewarm (one 54 ms hitch on first High use), REVIEW until the same runner runs on a Target Android device (no device connected)."
     },
     {
       "task": "T23",

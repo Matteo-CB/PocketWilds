@@ -44,22 +44,62 @@ namespace PocketWilds.Tests.EditMode
         [Test]
         public void LowQuality_DropsAboutHalfOfTheSmallProps_AndKeepsTreesAndRocks()
         {
+            // Small props are merged per palette and density class: density is measured in vertices.
             var chunk = Chunk();
             int small = 0, secondary = 0;
             for (int i = 0; i < chunk.BindingCount; i++)
             {
                 var binding = chunk.GetBinding(i);
-                var mesh = binding.renderer.GetComponent<MeshFilter>().sharedMesh.name;
-                bool isSmall = mesh.StartsWith("GL_GrassTuft_") || mesh.StartsWith("GL_Flower_");
-                if (isSmall) small++;
+                var mesh = binding.renderer.GetComponent<MeshFilter>().sharedMesh;
+                bool isSmall = mesh.name.StartsWith("MSH_Chunk_") || mesh.name.StartsWith("GL_GrassTuft_") || mesh.name.StartsWith("GL_Flower_");
+                if (isSmall) small += mesh.vertexCount;
                 if (binding.secondary)
                 {
-                    secondary++;
-                    Assert.IsTrue(isSmall, mesh + " is structural and must stay on Low.");
+                    secondary += mesh.vertexCount;
+                    Assert.IsTrue(isSmall, mesh.name + " is structural and must stay on Low.");
                 }
             }
             float ratio = secondary / (float)small;
             Assert.That(ratio, NUnit.Framework.Is.InRange(0.35f, 0.5f), "Biomes doc: Low reduces flower/grass density by 35 to 50%.");
+        }
+
+        [Test]
+        public void SmallProps_AreMergedPerPalette_WithPerInstanceBrightness()
+        {
+            var chunk = Chunk();
+            var renderers = chunk.GetComponentsInChildren<MeshRenderer>(true);
+            Assert.LessOrEqual(renderers.Length, 50, "T22: grass and flowers merged, about a dozen draws instead of ~190.");
+            int merged = 0;
+            for (int i = 0; i < chunk.BindingCount; i++)
+            {
+                var binding = chunk.GetBinding(i);
+                var mesh = binding.renderer.GetComponent<MeshFilter>().sharedMesh;
+                if (!mesh.name.StartsWith("MSH_Chunk_"))
+                {
+                    Assert.IsFalse(binding.vertexBrightness, mesh.name);
+                    continue;
+                }
+                merged++;
+                Assert.IsTrue(binding.vertexBrightness, mesh.name + " keeps each instance's brightness in uv.y.");
+                Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.Off, binding.renderer.shadowCastingMode);
+                var uvs = new System.Collections.Generic.List<Vector2>();
+                mesh.GetUVs(0, uvs);
+                Assert.AreEqual(mesh.vertexCount, uvs.Count);
+                float min = 1f, max = 0f;
+                foreach (var uv in uvs)
+                {
+                    min = Mathf.Min(min, uv.y);
+                    max = Mathf.Max(max, uv.y);
+                }
+                Assert.GreaterOrEqual(min, 5f / 15f - 1e-4f);
+                Assert.LessOrEqual(max, 11f / 15f + 1e-4f);
+            }
+            Assert.Greater(merged, 4);
+            uint packed = EnvironmentVisualPacking.Pack(42, 8, true);
+            Assert.IsTrue(EnvironmentVisualPacking.UsesVertexBrightness(packed));
+            Assert.AreEqual(42, EnvironmentVisualPacking.PaletteRow(packed));
+            Assert.AreEqual(8, EnvironmentVisualPacking.Brightness(packed));
+            Assert.IsFalse(EnvironmentVisualPacking.UsesVertexBrightness(EnvironmentVisualPacking.Pack(42, 8)));
         }
 
         [Test]

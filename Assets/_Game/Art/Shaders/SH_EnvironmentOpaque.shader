@@ -82,7 +82,9 @@ Shader "PocketWilds/EnvironmentOpaque"
 
                 uint data = unity_RendererUserValue;
                 uint row = data & 1023u;
-                half brightness = 0.92h + half((data >> 10) & 15u) / 15.0h * 0.16h;
+                // Bit 14: merged chunk props carry each instance's brightness in uv.y (0..1 = level 0..15).
+                half level = (data & 16384u) != 0u ? saturate(half(input.uv.y)) * 15.0h : half((data >> 10) & 15u);
+                half brightness = 0.92h + level / 15.0h * 0.16h;
 
                 half3 c0, c1, c2, c3, c4, c5;
                 if (!PW_HasPalettes())

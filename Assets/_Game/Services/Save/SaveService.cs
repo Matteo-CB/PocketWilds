@@ -74,7 +74,7 @@ namespace PocketWilds.Services.Save
     /// priority saves, and a synchronous flush for pause/quit. Serialization happens on the main
     /// thread into a reused buffer (measured by Save.Serialize); disk IO runs on a worker thread.
     /// </summary>
-    public sealed class SaveService : ISaveScheduler
+    public sealed class SaveService : ISaveScheduler, IDisposable
     {
         /// <summary>
         /// Raised on the main thread right before each serialization, after Meta.LastSaveUtc is set.
@@ -89,8 +89,8 @@ namespace PocketWilds.Services.Save
         private readonly SaveServiceOptions _options;
         private readonly ByteBufferWriter _writer = new ByteBufferWriter(64 * 1024);
 
+        private readonly SaveWriteWorker _worker;
         private PlayerState? _state;
-        private Task? _writeTask;
         private bool _normalPending;
         private bool _priorityPending;
         private double _normalRequestedAt;
@@ -108,17 +108,26 @@ namespace PocketWilds.Services.Save
             _migrations = migrations;
             _clock = clock;
             _options = options;
+            _worker = new SaveWriteWorker(store);
         }
 
         public PlayerState State => _state ?? throw new InvalidOperationException("Save not loaded yet.");
         public bool HasState => _state != null;
         public bool IsReadOnly { get; private set; }
-        public bool IsWriteInFlight => _writeTask != null && !_writeTask.IsCompleted;
+        public bool IsWriteInFlight => _worker.Busy;
         public SaveLoadResult? LastLoad { get; private set; }
         public Exception? LastWriteError { get; private set; }
 
-        /// <summary>Exposed for tests: completes when the current background write finishes.</summary>
-        public Task PendingWrite => _writeTask ?? Task.CompletedTask;
+        /// <summary>Exposed for tests: completes when the current background write finishes (allocates; tests only).</summary>
+        public Task PendingWrite => _worker.Busy ? Task.Run(() => _worker.Wait(Timeout.InfiniteTimeSpan)) : Task.CompletedTask;
+
+        /// <summary>Stops the background writer thread. A pending write finishes first (up to 3 s).</summary>
+        public void Dispose()
+        {
+            _worker.Wait(TimeSpan.FromSeconds(3));
+            PollWrite();
+            _worker.Dispose();
+        }
 
         public Task<SaveLoadResult> LoadOrCreateAsync(CancellationToken cancellationToken)
         {
@@ -241,7 +250,7 @@ namespace PocketWilds.Services.Save
                 return;
 
             PollWrite();
-            if (_writeTask != null)
+            if (_worker.Busy)
                 return;
 
             double now = _clock.SessionSeconds;
@@ -259,20 +268,14 @@ namespace PocketWilds.Services.Save
             if (_state == null || IsReadOnly)
                 return false;
 
-            if (_writeTask != null)
+            if (_worker.Busy)
             {
-                try
-                {
-                    _writeTask.Wait(TimeSpan.FromSeconds(3));
-                }
-                catch (AggregateException)
-                {
-                    // Reported by PollWrite below; the synchronous write retries anyway.
-                }
+                _worker.Wait(TimeSpan.FromSeconds(3));
                 PollWrite();
-                if (_writeTask != null)
+                if (_worker.Busy)
                     return false;
             }
+            PollWrite();
 
             SerializeState();
             try
@@ -307,9 +310,7 @@ namespace PocketWilds.Services.Save
         private void BeginBackgroundWrite()
         {
             SerializeState();
-            var buffer = _writer.Buffer;
-            int length = _writer.Length;
-            _writeTask = Task.Run(() => _store.WriteAtomic(buffer, length));
+            _worker.Begin(_writer.Buffer, _writer.Length);
         }
 
         private void SerializeState()
@@ -338,13 +339,10 @@ namespace PocketWilds.Services.Save
 
         private void PollWrite()
         {
-            if (_writeTask == null || !_writeTask.IsCompleted)
+            if (!_worker.TryTakeResult(out var error))
                 return;
-
-            var task = _writeTask;
-            _writeTask = null;
-            if (task.IsFaulted || task.IsCanceled)
-                OnWriteFailed(task.Exception?.GetBaseException() ?? new OperationCanceledException("Save write cancelled."));
+            if (error != null)
+                OnWriteFailed(error);
             else
                 OnWriteSucceeded();
         }
