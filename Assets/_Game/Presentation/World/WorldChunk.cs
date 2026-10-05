@@ -31,31 +31,50 @@ namespace PocketWilds.Presentation
         [SerializeField] private WanderArea _wanderArea = new WanderArea(Vector3.zero, 4f);
         [SerializeField] private Transform _eggSpawn;
         [SerializeField] private Transform[] _animalSpawns = Array.Empty<Transform>();
-        [SerializeField] private Transform[] _interestPoints = Array.Empty<Transform>();
+        [SerializeField] private InterestPoint[] _interests = Array.Empty<InterestPoint>();
         [SerializeField] private Transform[] _vfxAnchors = Array.Empty<Transform>();
         [SerializeField] private Transform[] _links = Array.Empty<Transform>();
 
         public int BindingCount => _bindings.Length;
         public Transform EggSpawn => _eggSpawn;
         public Transform[] AnimalSpawns => _animalSpawns;
-        public Transform[] InterestPoints => _interestPoints;
+        public int InterestCount => _interests.Length;
+        public InterestPoint GetInterest(int index) => _interests[index];
         public Transform[] VfxAnchors => _vfxAnchors;
         public Transform[] Links => _links;
 
         /// <summary>Walkable disk in world space (simple region data, no NavMesh).</summary>
         public WanderArea WanderArea => new WanderArea(transform.TransformPoint(_wanderArea.Center), _wanderArea.Radius);
 
+        /// <summary>Wander area in chunk space (authoring).</summary>
+        public WanderArea LocalWanderArea => _wanderArea;
+
+        /// <summary>World-space copy of the points of interest for the scheduler. Allocates: call once when entering.</summary>
+        public InterestPoint[] GetWorldInterests()
+        {
+            var result = new InterestPoint[_interests.Length];
+            for (int i = 0; i < _interests.Length; i++)
+            {
+                var p = _interests[i];
+                result[i] = new InterestPoint(transform.TransformPoint(p.position), p.standOff, p.kind);
+            }
+            return result;
+        }
+
+        /// <summary>Editor/composer hook: points of interest in chunk space.</summary>
+        public void SetInterests(InterestPoint[] interests) => _interests = interests ?? Array.Empty<InterestPoint>();
+
         public PaletteBinding GetBinding(int index) => _bindings[index];
 
         /// <summary>Editor/composer hook. Runtime code never rewires a chunk.</summary>
         public void SetAuthoring(PaletteBinding[] bindings, WanderArea area, Transform eggSpawn, Transform[] animalSpawns,
-            Transform[] interestPoints, Transform[] vfxAnchors, Transform[] links)
+            InterestPoint[] interests, Transform[] vfxAnchors, Transform[] links)
         {
             _bindings = bindings;
             _wanderArea = area;
             _eggSpawn = eggSpawn;
             _animalSpawns = animalSpawns;
-            _interestPoints = interestPoints;
+            _interests = interests ?? Array.Empty<InterestPoint>();
             _vfxAnchors = vfxAnchors;
             _links = links;
         }
@@ -92,6 +111,17 @@ namespace PocketWilds.Presentation
                     binding.renderer.gameObject.SetActive(keepSecondary);
             }
         }
+
+#if UNITY_EDITOR
+        private void OnDrawGizmosSelected()
+        {
+            foreach (var p in _interests)
+            {
+                Gizmos.color = p.kind == InterestKind.Eat ? new Color(1f, 0.6f, 0.2f) : new Color(0.3f, 0.7f, 1f);
+                Gizmos.DrawWireSphere(transform.TransformPoint(p.position), Mathf.Max(0.05f, p.standOff));
+            }
+        }
+#endif
     }
 
     /// <summary>Packs the per-renderer Shader User Value read by SH_EnvironmentOpaque and SH_GroundMaster.</summary>

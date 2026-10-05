@@ -190,6 +190,99 @@ namespace PocketWilds.Editor.Capture
             return string.Join(", ", results);
         }
 
+        [MenuItem("Pocket Wilds/Capture/Social and Points of Interest", priority = 523)]
+        public static void CaptureSocialMenu() => Debug.Log("[WorldCapture] " + CaptureSocial("T25"));
+
+        /// <summary>
+        /// T25 reference: two greeting pairs nose to nose (mid Social clip, root gap from the behavior data) and a
+        /// squirrel inspecting the big rock from its stand-off point, Medium lighting, gameplay and close views.
+        /// </summary>
+        public static string CaptureSocial(string prefix)
+        {
+            var active = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (active.path != ScenePath && !string.IsNullOrEmpty(active.path) && active.isDirty)
+                return "refused: save or discard changes in " + active.path;
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var registry = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath).CreateBuilder().Build();
+            var catalog = AssetDatabase.LoadAssetAtPath<AnimalVisualCatalog>(AnimalPipeline.VisualCatalogPath);
+            var temp = new List<GameObject>();
+            var results = new List<string>();
+            using (var palettes = new PaletteTable(registry))
+            {
+                try
+                {
+                    var chunk = Object.FindAnyObjectByType<WorldChunk>();
+                    var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
+                    var camera = Camera.main;
+                    chunk.Bind(palettes);
+                    entry.Lighting.Apply(Object.FindAnyObjectByType<Light>(), camera, QualityTier.Medium);
+                    chunk.ApplyQuality(QualityTier.Medium);
+                    var resolver = new AnimalVisualResolver(registry, palettes);
+                    var egg = chunk.EggSpawn.position;
+
+                    float Gap(string a, string b)
+                    {
+                        catalog.TryGet(registry.Species.Get(ContentId.FromSource("species." + a)).VisualKey, out var ea);
+                        catalog.TryGet(registry.Species.Get(ContentId.FromSource("species." + b)).VisualKey, out var eb);
+                        return 0.5f * (ea.behavior.socialGap + eb.behavior.socialGap);
+                    }
+                    void Pair(string a, string b, Vector3 center, float yaw, uint seed)
+                    {
+                        float half = 0.5f * Gap(a.Split('.')[0], b.Split('.')[0]);
+                        var dir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
+                        var va = Spawn(registry, resolver, a, seed, seed * 31u + 3u, center - dir * half, yaw, 0f);
+                        var vb = Spawn(registry, resolver, b, seed + 1, seed * 31u + 34u, center + dir * half, yaw + 180f, 0f);
+                        foreach (var v in new[] { va, vb })
+                        {
+                            v.Animator.Play(AnimalStateHashes.Social, 0, 0.45f);
+                            v.Animator.Update(0f);
+                            temp.Add(v.gameObject);
+                        }
+                    }
+                    Pair("rabbit.brown", "squirrel.red", egg + new Vector3(0.35f, 0f, 1.1f), 80f, 1);
+                    Pair("hedgehog.brown", "rabbit.white", egg + new Vector3(-0.95f, 0f, 1.25f), 110f, 5);
+
+                    // The squirrel stands off the nearest inspect point, facing it.
+                    var points = chunk.GetWorldInterests();
+                    InterestPoint rock = default;
+                    float best = float.MaxValue;
+                    foreach (var p in points)
+                    {
+                        float d = Vector3.Distance(p.position, egg);
+                        if (p.kind == InterestKind.Inspect && d < best)
+                        {
+                            best = d;
+                            rock = p;
+                        }
+                    }
+                    var toRock = rock.position - egg;
+                    toRock.y = 0f;
+                    var stand = rock.position - toRock.normalized * rock.standOff;
+                    var squirrel = Spawn(registry, resolver, "squirrel.autumn", 9, 300u, stand, Mathf.Atan2(toRock.x, toRock.z) * Mathf.Rad2Deg, 0f);
+                    squirrel.Animator.Play(AnimalStateHashes.Inspect, 0, 0.4f);
+                    squirrel.Animator.Update(0f);
+                    temp.Add(squirrel.gameObject);
+
+                    string world = $"{CaptureUtility.DefaultFolder}/{prefix}_world_social.png";
+                    CaptureUtility.Render(camera, 540, 1170, world);
+                    results.Add(CaptureUtility.Render(camera, 540, 1170, world));
+                    var position = camera.transform.position;
+                    var rotation = camera.transform.rotation;
+                    camera.transform.position = egg + new Vector3(0.3f, 1.6f, -2.6f);
+                    camera.transform.LookAt(egg + new Vector3(0.2f, 0.2f, 1.1f));
+                    results.Add(CaptureUtility.Render(camera, 1200, 760, $"{CaptureUtility.DefaultFolder}/{prefix}_world_social_close.png"));
+                    camera.transform.SetPositionAndRotation(position, rotation);
+                }
+                finally
+                {
+                    foreach (var go in temp)
+                        Object.DestroyImmediate(go);
+                    EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+                }
+            }
+            return string.Join(", ", results);
+        }
+
         private static AnimalView Spawn(ContentRegistry registry, AnimalVisualResolver resolver, string speciesAndVariant, uint instanceId,
             uint seed, Vector3 position, float yaw, float animationTime)
         {

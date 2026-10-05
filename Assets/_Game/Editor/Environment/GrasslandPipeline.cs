@@ -254,7 +254,7 @@ namespace PocketWilds.Editor.Environment
             return center;
         }
 
-        private static List<Placement> Layout(Vector3 egg)
+        private static List<Placement> Layout(Vector3 egg, List<Vector3> patchCenters = null)
         {
             var list = new List<Placement>();
             var rng = new Random(1507);
@@ -342,6 +342,7 @@ namespace PocketWilds.Editor.Environment
                         Palette = palette, Secondary = i >= 2 && rng.NextDouble() < 0.6,
                     });
                 }
+                patchCenters?.Add(center);
                 patches++;
             }
             return list;
@@ -441,13 +442,8 @@ namespace PocketWilds.Editor.Environment
                     Point(spawns, "AnimalSpawn_02", egg + new Vector3(-0.95f, 0f, 0.75f)),
                     Point(spawns, "AnimalSpawn_03", egg + new Vector3(0.15f, 0f, 1.6f)),
                 };
-                var interests = Child(root.transform, "InterestPoints");
-                var interestPoints = new[]
-                {
-                    Point(interests, "IP_Inspect_RockL", new Vector3(1.45f, 0f, 1.25f)),
-                    Point(interests, "IP_Inspect_Tree", new Vector3(-1.55f, 0f, 3.75f)),
-                    Point(interests, "IP_Eat_Meadow", egg + new Vector3(-1.7f, 0f, -1.3f)),
-                };
+                var area = new WanderArea(egg + new Vector3(0f, 0f, 0.6f), 3.2f);
+                var interestPoints = Interests(egg, area);
                 var anchors = Child(root.transform, "VFXAnchors");
                 var vfxAnchors = new[]
                 {
@@ -462,7 +458,7 @@ namespace PocketWilds.Editor.Environment
                     Point(linksRoot, "Link_S", new Vector3(0f, 0f, -7f)), Point(linksRoot, "Link_W", new Vector3(-7f, 0f, 0f)),
                 };
 
-                chunk.SetAuthoring(bindings.ToArray(), new WanderArea(egg + new Vector3(0f, 0f, 0.6f), 3.2f), eggSpawn, animals, interestPoints, vfxAnchors, links);
+                chunk.SetAuthoring(bindings.ToArray(), area, eggSpawn, animals, interestPoints, vfxAnchors, links);
                 Directory.CreateDirectory(Path.GetDirectoryName(ChunkPath));
                 PrefabUtility.SaveAsPrefabAsset(root, ChunkPath);
             }
@@ -527,6 +523,62 @@ namespace PocketWilds.Editor.Environment
             merged.UploadMeshData(false);
             EditorUtility.SetDirty(merged);
             return merged;
+        }
+
+        /// <summary>
+        /// T25 points of interest, from the same deterministic layout as the props: rocks and tree trunks to
+        /// inspect, flower patches and a meadow spot to nibble. Only points an animal can reach from the wander area.
+        /// </summary>
+        public static InterestPoint[] Interests(Vector3 egg, WanderArea area)
+        {
+            var centers = new List<Vector3>();
+            var layout = Layout(egg, centers);
+            var result = new List<InterestPoint>();
+            void Add(Vector3 position, float standOff, InterestKind kind)
+            {
+                if (Vector3.Distance(new Vector3(position.x, 0f, position.z), new Vector3(area.Center.x, 0f, area.Center.z)) <= area.Radius + standOff + 0.2f)
+                    result.Add(new InterestPoint(position, standOff, kind));
+            }
+            foreach (var p in layout)
+            {
+                if (p.Prop.StartsWith("GL_Rock_", StringComparison.Ordinal))
+                {
+                    float size = p.Prop.EndsWith("L", StringComparison.Ordinal) ? 0.62f : p.Prop.EndsWith("M", StringComparison.Ordinal) ? 0.45f : 0.32f;
+                    Add(p.Position, size * p.Scale, InterestKind.Inspect);
+                }
+                else if (p.Prop.StartsWith("GL_Tree", StringComparison.Ordinal))
+                {
+                    Add(p.Position, 0.42f * p.Scale, InterestKind.Inspect);
+                }
+            }
+            foreach (var c in centers)
+                Add(c, 0.16f, InterestKind.Eat);
+            Add(egg + new Vector3(-1.7f, 0f, -1.3f), 0f, InterestKind.Eat);
+            return result.ToArray();
+        }
+
+        /// <summary>Rewrites only the start chunk's points of interest (no prop or mesh rebuild).</summary>
+        [MenuItem("Pocket Wilds/Environment/Update Chunk Points of Interest", priority = 172)]
+        public static void UpdateChunkInterests()
+        {
+            var root = PrefabUtility.LoadPrefabContents(ChunkPath);
+            try
+            {
+                var chunk = root.GetComponent<WorldChunk>();
+                var ground = root.transform.Find("Ground").GetComponent<MeshFilter>().sharedMesh;
+                var egg = ClearingCenter(ground);
+                var legacy = root.transform.Find("InterestPoints");
+                if (legacy != null)
+                    UnityEngine.Object.DestroyImmediate(legacy.gameObject);
+                var points = Interests(egg, chunk.LocalWanderArea);
+                chunk.SetInterests(points);
+                PrefabUtility.SaveAsPrefabAsset(root, ChunkPath);
+                Debug.Log($"[GrasslandPipeline] {points.Length} points of interest in the start chunk.");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
         }
 
         private static Transform Child(Transform parent, string name)

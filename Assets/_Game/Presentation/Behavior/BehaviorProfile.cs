@@ -12,7 +12,7 @@ namespace PocketWilds.Presentation
     [Serializable]
     public sealed class BehaviorProfile
     {
-        public const int ChoiceCount = 6;
+        public const int ChoiceCount = 7;
 
         [Header("Choice weights after a state ends")]
         [Min(0f)] public float idleWeight = 0.20f;
@@ -21,6 +21,8 @@ namespace PocketWilds.Presentation
         [Min(0f)] public float eatWeight = 0.14f;
         [Min(0f)] public float inspectWeight = 0.10f;
         [Min(0f)] public float sleepWeight = 0.06f;
+        [Tooltip("Nose greeting with a nearby animal of the same social group (T25).")]
+        [Min(0f)] public float socialWeight = 0.09f;
 
         [Header("Loop durations (seconds)")]
         public Vector2 idleSeconds = new Vector2(2.5f, 6f);
@@ -33,6 +35,20 @@ namespace PocketWilds.Presentation
         [Min(0.1f)] public float reactSeconds = 0.67f;
         [Min(0.1f)] public float happySeconds = 1.04f;
         [Min(0.1f)] public float wakeSeconds = 0.67f;
+        [Min(0.1f)] public float socialSeconds = 1.32f;
+
+        [Header("Social and points of interest (T25)")]
+        [Tooltip("Animals of the same group can greet each other (shared clips). 0 = SmallQuadruped.")]
+        [Min(0)] public int socialGroup;
+        [Tooltip("Farthest partner a greeting looks for (meters).")]
+        [Min(0.3f)] public float socialRadius = 2.2f;
+        [Tooltip("Root to root distance of two greeting animals: their noses just touch.")]
+        [Min(0.1f)] public float socialGap = 0.42f;
+        [Tooltip("How long the first animal at the meeting point waits for its partner.")]
+        [Min(0.5f)] public float socialWaitSeconds = 3f;
+        [Tooltip("Farthest rock, tree or flower patch an inspect or a snack walks to (meters).")]
+        [Min(0.3f)] public float interestRadius = 2.6f;
+        [Range(0f, 1f)] public float eatAtPointChance = 0.6f;
 
         [Header("Movement")]
         [Tooltip("Ground speed matched to the hop clip so paws do not slide.")]
@@ -60,7 +76,8 @@ namespace PocketWilds.Presentation
                 case 2: return wanderWeight;
                 case 3: return eatWeight;
                 case 4: return inspectWeight;
-                default: return sleepWeight;
+                case 5: return sleepWeight;
+                default: return socialWeight;
             }
         }
 
@@ -74,7 +91,8 @@ namespace PocketWilds.Presentation
                 case 2: return AnimalBehaviorState.Wander;
                 case 3: return AnimalBehaviorState.Eat;
                 case 4: return AnimalBehaviorState.Inspect;
-                default: return AnimalBehaviorState.Sleep;
+                case 5: return AnimalBehaviorState.Sleep;
+                default: return AnimalBehaviorState.Social;
             }
         }
     }
@@ -84,21 +102,26 @@ namespace PocketWilds.Presentation
     {
         public const int Count = 5;
 
-        // Columns: Idle, IdleLook, Wander, Eat, Inspect, Sleep.
+        // Columns: Idle, IdleLook, Wander, Eat, Inspect, Sleep, Social.
         private static readonly float[] Multipliers =
         {
-            0.8f, 1.0f, 1.5f, 1.0f, 1.1f, 0.5f, // Playful
-            1.4f, 1.2f, 0.7f, 1.0f, 0.7f, 1.0f, // Shy
-            0.9f, 1.5f, 1.1f, 0.9f, 2.0f, 0.7f, // Curious
-            1.2f, 0.9f, 0.7f, 1.0f, 0.8f, 2.6f, // Sleepy
-            0.9f, 0.9f, 1.3f, 1.0f, 1.3f, 0.8f, // Brave
+            0.8f, 1.0f, 1.5f, 1.0f, 1.1f, 0.5f, 1.8f, // Playful
+            1.4f, 1.2f, 0.7f, 1.0f, 0.7f, 1.0f, 0.35f, // Shy
+            0.9f, 1.5f, 1.1f, 0.9f, 2.0f, 0.7f, 1.2f, // Curious
+            1.2f, 0.9f, 0.7f, 1.0f, 0.8f, 2.6f, 0.6f, // Sleepy
+            0.9f, 0.9f, 1.3f, 1.0f, 1.3f, 0.8f, 1.3f, // Brave
         };
 
         private static readonly float[] HappyAfterTouch = { 0.6f, 0.15f, 0.4f, 0.3f, 0.55f };
+
+        // Chance to accept a greeting when another animal comes over. Shy ones often stay put.
+        private static readonly float[] AcceptGreeting = { 0.95f, 0.35f, 0.85f, 0.55f, 0.9f };
 
         public static float Multiplier(Temperament temperament, int choice) =>
             Multipliers[(int)temperament * BehaviorProfile.ChoiceCount + choice];
 
         public static float HappyChance(Temperament temperament) => HappyAfterTouch[(int)temperament];
+
+        public static float AcceptChance(Temperament temperament) => AcceptGreeting[(int)temperament];
     }
 }

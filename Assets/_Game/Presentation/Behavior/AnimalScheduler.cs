@@ -11,33 +11,47 @@ namespace PocketWilds.Presentation
     /// <item>Decisions run in ticks: tier A agents about 5 times per second, tier B about once,
     /// sliced round-robin across frames so the cost per frame stays flat.</item>
     /// <item>Every agent keeps its own seeded timers, so neighbours never decide in the same frame.</item>
-    /// <item>Only walking agents touch their transform each frame (smooth motion between ticks).</item>
+    /// <item>Only walking or turning agents touch their transform each frame (smooth motion between ticks).</item>
+    /// <item>T25: a greeting reserves two animals and a meeting marker (two anchors on the line between them);
+    /// both walk to their anchor, the first one waits facing the other, then both play Social nose to nose.
+    /// Inspect and Eat may walk to a reserved point of interest (rock, tree, flower patch) and face it.
+    /// No NavMesh, no physics: straight walks inside the chunk's wander area.</item>
     /// </list>
     /// Preallocated arrays only: no allocation after construction. Views may be null (headless tests).
     /// </summary>
     public sealed class AnimalScheduler
     {
         public const int InvalidHandle = -1;
+        public const int MaxInterests = 32;
 
         private const uint RngSalt = 0x5C4ED001u;
         private const uint TemperamentSalt = 0x7E3A0001u;
         private const float ArriveDistance = 0.04f;
+        // Approaches end exactly on their anchor: two greeting animals must stand socialGap apart.
+        private const float ApproachArriveDistance = 0.01f;
         private const float MaxFacingErrorToWalk = 50f;
         private const float Acceleration = 2.5f;
+        private const float FacedDegrees = 2f;
+        private const float HappyAfterGreeting = 0.6f;
 
         private struct Agent
         {
             public Vector3 Position;
             public Vector3 Target;
+            public Vector3 Facing;
             public float Yaw;
             public float Speed;
             public float StateEnd;
             public uint Rng;
             public uint InstanceId;
+            public int Partner;
+            public int Interest;
             public AnimalBehaviorState State;
             public AnimalBehaviorState LastChoice;
+            public AnimalBehaviorState Arrive;
             public Temperament Temperament;
             public SimulationTier Tier;
+            public bool Turn;
         }
 
         private readonly Agent[] _agents;
@@ -50,6 +64,8 @@ namespace PocketWilds.Presentation
         private readonly int[] _tierB;
         private readonly float[] _sortKeys;
         private readonly int[] _sortSlots;
+        private readonly InterestPoint[] _interests = new InterestPoint[MaxInterests];
+        private readonly int[] _interestOwner = new int[MaxInterests];
 
         private SchedulerSettings _settings;
         private WanderArea _area;
@@ -60,9 +76,11 @@ namespace PocketWilds.Presentation
         private int _countB;
         private int _cursorA;
         private int _cursorB;
+        private int _interestCount;
         private float _budgetA;
         private float _budgetB;
         private float _nextTierUpdate;
+        private float _now;
         private bool _tiersDirty = true;
 
         public AnimalScheduler(int capacity, SchedulerSettings settings, WanderArea area)
@@ -89,6 +107,8 @@ namespace PocketWilds.Presentation
                 _freeSlots[i] = capacity - 1 - i;
             }
             _freeCount = capacity;
+            for (int i = 0; i < MaxInterests; i++)
+                _interestOwner[i] = InvalidHandle;
         }
 
         public int Capacity { get; }
@@ -97,7 +117,7 @@ namespace PocketWilds.Presentation
         public int CountB => _countB;
         public SchedulerSettings Settings => _settings;
 
-        /// <summary>State changes during the last Tick. A synchronized spike shows up here first.</summary>
+        /// <summary>Own decisions during the last Tick (a partner joining a greeting is not one). A synchronized spike shows up here first.</summary>
         public int StateChangesLastTick { get; private set; }
 
         /// <summary>Agents evaluated during the last Tick, A and B together.</summary>
@@ -107,6 +127,17 @@ namespace PocketWilds.Presentation
         public long TotalTicksA { get; private set; }
         public long TotalTicksB { get; private set; }
 
+        /// <summary>Greeting pairs formed (both animals reserved).</summary>
+        public long SocialInvitations { get; private set; }
+
+        /// <summary>Greetings that reached the nose touch.</summary>
+        public long SocialGreetings { get; private set; }
+
+        /// <summary>Arrivals at a point of interest.</summary>
+        public long InterestVisits { get; private set; }
+
+        public int InterestCount => _interestCount;
+
         public void SetSettings(SchedulerSettings settings)
         {
             _settings = settings;
@@ -114,6 +145,22 @@ namespace PocketWilds.Presentation
         }
 
         public void SetArea(WanderArea area) => _area = area;
+
+        /// <summary>World-space points of interest of the current chunk (copied; at most <see cref="MaxInterests"/>).</summary>
+        public void SetInterests(InterestPoint[] points)
+        {
+            for (int i = 0; i < _interestCount; i++)
+                ReleaseInterestOwner(i);
+            _interestCount = points == null ? 0 : Math.Min(points.Length, MaxInterests);
+            for (int i = 0; i < _interestCount; i++)
+            {
+                _interests[i] = points[i];
+                _interestOwner[i] = InvalidHandle;
+            }
+        }
+
+        public InterestPoint GetInterestPoint(int index) => _interests[index];
+        public int GetInterestOwner(int index) => _interestOwner[index];
 
         /// <summary>Point the camera looks at. Nearest animals become tier A at the next tier update.</summary>
         public void SetFocus(Vector3 focus) => _focus = focus;
@@ -134,8 +181,11 @@ namespace PocketWilds.Presentation
                 Yaw = yaw,
                 InstanceId = instanceId,
                 Rng = rng,
+                Partner = InvalidHandle,
+                Interest = InvalidHandle,
                 State = AnimalBehaviorState.Idle,
                 LastChoice = AnimalBehaviorState.Idle,
+                Arrive = AnimalBehaviorState.Idle,
                 Temperament = (Temperament)(SeedHash.Mix(seed, TemperamentSalt) % TemperamentTable.Count),
                 Tier = SimulationTier.B,
             };
@@ -157,6 +207,8 @@ namespace PocketWilds.Presentation
         {
             if (!IsValid(handle))
                 return;
+            // A greeting partner or a reserved point never stays locked by an animal that left.
+            EndActivity(handle, ref _agents[handle], _now);
             int index = _activeIndexBySlot[handle];
             int lastSlot = _active[--_activeCount];
             _active[index] = lastSlot;
@@ -176,6 +228,8 @@ namespace PocketWilds.Presentation
         public Vector3 GetPosition(int handle) => _agents[handle].Position;
         public float GetYaw(int handle) => _agents[handle].Yaw;
         public uint GetInstanceId(int handle) => _agents[handle].InstanceId;
+        public int GetPartner(int handle) => _agents[handle].Partner;
+        public int GetInterest(int handle) => _agents[handle].Interest;
 
         /// <summary>The player touched this animal: immediate reaction, outside the tick cadence.</summary>
         public void Poke(int handle, float time)
@@ -184,14 +238,29 @@ namespace PocketWilds.Presentation
                 return;
             ref var agent = ref _agents[handle];
             var profile = _profiles[handle];
+            EndActivity(handle, ref agent, time);
             if (agent.State == AnimalBehaviorState.Sleep)
-                Enter(handle, ref agent, profile, AnimalBehaviorState.Wake, time);
+                Play(handle, ref agent, profile, AnimalBehaviorState.Wake, time, false);
             else if (agent.State != AnimalBehaviorState.React)
-                Enter(handle, ref agent, profile, AnimalBehaviorState.React, time);
+                Play(handle, ref agent, profile, AnimalBehaviorState.React, time, false);
+        }
+
+        /// <summary>
+        /// Debug and tests: this animal looks for a greeting partner now, whatever its temperament.
+        /// Returns true when a pair formed (both reserved and walking to their anchors).
+        /// </summary>
+        public bool TryStartSocial(int handle, float time)
+        {
+            if (!IsValid(handle) || _agents[handle].Partner >= 0)
+                return false;
+            ref var agent = ref _agents[handle];
+            EndActivity(handle, ref agent, time);
+            return TryFormPair(handle, ref agent, _profiles[handle], time, true);
         }
 
         public void Tick(float time, float deltaTime)
         {
+            _now = time;
             StateChangesLastTick = 0;
             AgentsTickedLastTick = 0;
             if (_activeCount == 0)
@@ -260,17 +329,25 @@ namespace PocketWilds.Presentation
             switch (agent.State)
             {
                 case AnimalBehaviorState.Sleep:
-                    Enter(slot, ref agent, profile, AnimalBehaviorState.Wake, time);
+                    Play(slot, ref agent, profile, AnimalBehaviorState.Wake, time, false);
                     break;
                 case AnimalBehaviorState.React:
                     bool happy = Next01(ref agent.Rng) < TemperamentTable.HappyChance(agent.Temperament);
-                    Enter(slot, ref agent, profile, happy ? AnimalBehaviorState.Happy : AnimalBehaviorState.Idle, time);
+                    Play(slot, ref agent, profile, happy ? AnimalBehaviorState.Happy : AnimalBehaviorState.Idle, time, false);
                     break;
                 case AnimalBehaviorState.Wander:
-                    // Timed out before arriving (blocked by the area edge): settle down.
-                    Enter(slot, ref agent, profile, AnimalBehaviorState.Idle, time);
+                case AnimalBehaviorState.SocialWait:
+                    // Timed out before arriving (area edge) or the partner never came: settle down.
+                    EndActivity(slot, ref agent, time);
+                    Play(slot, ref agent, profile, AnimalBehaviorState.Idle, time, false);
+                    break;
+                case AnimalBehaviorState.Social:
+                    EndActivity(slot, ref agent, time);
+                    bool glad = Next01(ref agent.Rng) < TemperamentTable.HappyChance(agent.Temperament) * HappyAfterGreeting;
+                    Play(slot, ref agent, profile, glad ? AnimalBehaviorState.Happy : AnimalBehaviorState.Idle, time, false);
                     break;
                 default:
+                    EndActivity(slot, ref agent, time);
                     Enter(slot, ref agent, profile, Choose(ref agent, profile), time);
                     break;
             }
@@ -303,7 +380,7 @@ namespace PocketWilds.Presentation
                 return 0f;
             if (tierB)
             {
-                if (state == AnimalBehaviorState.IdleLook || state == AnimalBehaviorState.Inspect)
+                if (state == AnimalBehaviorState.IdleLook || state == AnimalBehaviorState.Inspect || state == AnimalBehaviorState.Social)
                     return 0f;
                 if (state == AnimalBehaviorState.Wander)
                     return profile.Weight(choice) * profile.tierBWanderScale * TemperamentTable.Multiplier(agent.Temperament, choice);
@@ -311,7 +388,45 @@ namespace PocketWilds.Presentation
             return profile.Weight(choice) * TemperamentTable.Multiplier(agent.Temperament, choice);
         }
 
+        /// <summary>A decision: some activities first walk somewhere (a partner, a point of interest).</summary>
         private void Enter(int slot, ref Agent agent, BehaviorProfile profile, AnimalBehaviorState state, float time)
+        {
+            switch (state)
+            {
+                case AnimalBehaviorState.Wander:
+                    if (TryPickWanderTarget(slot, ref agent, profile))
+                    {
+                        agent.Arrive = AnimalBehaviorState.Idle;
+                        Play(slot, ref agent, profile, AnimalBehaviorState.Wander, time, false);
+                    }
+                    else
+                    {
+                        Play(slot, ref agent, profile, AnimalBehaviorState.Idle, time, false);
+                    }
+                    return;
+                case AnimalBehaviorState.Social:
+                    if (!TryFormPair(slot, ref agent, profile, time, false))
+                    {
+                        // Nobody around (or a shy neighbour): looks around instead, and will not retry at once.
+                        Play(slot, ref agent, profile, AnimalBehaviorState.IdleLook, time, false);
+                        agent.LastChoice = AnimalBehaviorState.Social;
+                    }
+                    return;
+                case AnimalBehaviorState.Inspect:
+                    if (agent.Tier == SimulationTier.A && TryApproachInterest(slot, ref agent, profile, InterestKind.Inspect, time))
+                        return;
+                    break;
+                case AnimalBehaviorState.Eat:
+                    if (agent.Tier == SimulationTier.A && Next01(ref agent.Rng) < profile.eatAtPointChance
+                        && TryApproachInterest(slot, ref agent, profile, InterestKind.Eat, time))
+                        return;
+                    break;
+            }
+            Play(slot, ref agent, profile, state, time, false);
+        }
+
+        /// <summary>Starts a state now. induced: a consequence of another animal's decision (greeting partner).</summary>
+        private void Play(int slot, ref Agent agent, BehaviorProfile profile, AnimalBehaviorState state, float time, bool induced)
         {
             float scale = agent.Tier == SimulationTier.B ? profile.tierBDurationScale : 1f;
             int animatorState;
@@ -325,10 +440,6 @@ namespace PocketWilds.Presentation
                     duration = profile.idleLookSeconds;
                     break;
                 case AnimalBehaviorState.Wander:
-                    if (!TryPickWanderTarget(slot, ref agent, profile))
-                    {
-                        goto default;
-                    }
                     animatorState = AnimalStateHashes.Move;
                     fade = profile.moveFade;
                     float distance = Flat(agent.Target - agent.Position).magnitude;
@@ -361,6 +472,14 @@ namespace PocketWilds.Presentation
                     animatorState = AnimalStateHashes.Happy;
                     duration = profile.happySeconds;
                     break;
+                case AnimalBehaviorState.Social:
+                    animatorState = AnimalStateHashes.Social;
+                    duration = profile.socialSeconds;
+                    break;
+                case AnimalBehaviorState.SocialWait:
+                    animatorState = AnimalStateHashes.Idle;
+                    duration = profile.socialWaitSeconds;
+                    break;
                 default:
                     state = AnimalBehaviorState.Idle;
                     animatorState = AnimalStateHashes.Idle;
@@ -370,14 +489,18 @@ namespace PocketWilds.Presentation
 
             if (state != AnimalBehaviorState.Wander)
                 agent.Speed = 0f;
-            if (state != AnimalBehaviorState.React && state != AnimalBehaviorState.Wake && state != AnimalBehaviorState.Happy)
-                agent.LastChoice = state;
+            // An approach walk counts as the activity it leads to.
+            var choice = state == AnimalBehaviorState.Wander && agent.Arrive != AnimalBehaviorState.Idle ? agent.Arrive : state;
+            if (choice != AnimalBehaviorState.React && choice != AnimalBehaviorState.Wake && choice != AnimalBehaviorState.Happy
+                && choice != AnimalBehaviorState.SocialWait)
+                agent.LastChoice = choice;
 
             // One-shots return to Idle inside the Animator by exit time: replaying Idle would restart the loop.
-            bool animatorAlreadyIdle = state == AnimalBehaviorState.Idle && ReturnsToIdle(agent.State);
+            bool animatorAlreadyIdle = animatorState == AnimalStateHashes.Idle && ReturnsToIdle(agent.State);
             agent.State = state;
             agent.StateEnd = time + duration;
-            StateChangesLastTick++;
+            if (!induced)
+                StateChangesLastTick++;
             TotalStateChanges++;
 
             var view = _views[slot];
@@ -395,10 +518,203 @@ namespace PocketWilds.Presentation
                 case AnimalBehaviorState.React:
                 case AnimalBehaviorState.Happy:
                 case AnimalBehaviorState.Wake:
+                case AnimalBehaviorState.Social:
+                case AnimalBehaviorState.SocialWait:
                     return true;
                 default:
                     return false;
             }
+        }
+
+        // ---------------- Greetings ----------------
+
+        /// <summary>
+        /// Nearest free tier-A neighbour of the same social group, idle or looking around, accepts by temperament.
+        /// The meeting marker is two anchors on the line between them, socialGap apart.
+        /// </summary>
+        private bool TryFormPair(int slot, ref Agent agent, BehaviorProfile profile, float time, bool ignoreTemperament)
+        {
+            if (agent.Tier != SimulationTier.A || profile.socialWeight <= 0f)
+                return false;
+            float best = profile.socialRadius * profile.socialRadius;
+            int partner = InvalidHandle;
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int other = _active[i];
+                if (other == slot)
+                    continue;
+                ref var o = ref _agents[other];
+                var op = _profiles[other];
+                if (o.Tier != SimulationTier.A || o.Partner >= 0 || op.socialWeight <= 0f || op.socialGroup != profile.socialGroup)
+                    continue;
+                if (o.State != AnimalBehaviorState.Idle && o.State != AnimalBehaviorState.IdleLook)
+                    continue;
+                float d2 = Flat(o.Position - agent.Position).sqrMagnitude;
+                if (d2 < best)
+                {
+                    best = d2;
+                    partner = other;
+                }
+            }
+            if (partner == InvalidHandle)
+                return false;
+            ref var p = ref _agents[partner];
+            if (!ignoreTemperament && Next01(ref agent.Rng) >= TemperamentTable.AcceptChance(p.Temperament))
+                return false;
+
+            var delta = Flat(p.Position - agent.Position);
+            float distance = delta.magnitude;
+            float yaw = agent.Yaw * Mathf.Deg2Rad;
+            var dir = distance > 1e-3f ? delta / distance : new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw));
+            float halfGap = 0.25f * (profile.socialGap + _profiles[partner].socialGap);
+            var middle = _area.Clamp((agent.Position + p.Position) * 0.5f);
+            var anchorA = _area.Clamp(middle - dir * halfGap);
+            var anchorB = _area.Clamp(middle + dir * halfGap);
+
+            EndActivity(partner, ref p, time);
+            agent.Partner = partner;
+            p.Partner = slot;
+            SocialInvitations++;
+            StartApproach(slot, ref agent, profile, anchorA, anchorB, AnimalBehaviorState.Social, time, false);
+            // The approach above may already end in a greeting if the partner was waiting: check the link first.
+            if (p.Partner == slot && p.State != AnimalBehaviorState.Social)
+                StartApproach(partner, ref p, _profiles[partner], anchorB, anchorA, AnimalBehaviorState.Social, time, true);
+            return true;
+        }
+
+        // ---------------- Points of interest ----------------
+
+        private bool TryApproachInterest(int slot, ref Agent agent, BehaviorProfile profile, InterestKind kind, float time)
+        {
+            if (_interestCount == 0)
+                return false;
+            float reach = profile.interestRadius * profile.interestRadius;
+            int pick = InvalidHandle;
+            int seen = 0;
+            for (int i = 0; i < _interestCount; i++)
+            {
+                if (_interests[i].kind != kind || _interestOwner[i] != InvalidHandle)
+                    continue;
+                if (Flat(_interests[i].position - agent.Position).sqrMagnitude > reach)
+                    continue;
+                // Uniform pick among the candidates without a list.
+                seen++;
+                if (Next01(ref agent.Rng) * seen < 1f)
+                    pick = i;
+            }
+            if (pick == InvalidHandle)
+                return false;
+
+            var point = _interests[pick];
+            var toPoint = Flat(point.position - agent.Position);
+            float distance = toPoint.magnitude;
+            float yaw = agent.Yaw * Mathf.Deg2Rad;
+            var dir = distance > 1e-3f ? toPoint / distance : new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw));
+            var stand = _area.Clamp(point.position - dir * point.standOff);
+            // A point outside the area would leave the animal staring from too far away.
+            if (Flat(point.position - stand).magnitude > point.standOff + 0.35f)
+                return false;
+            // Someone already stands there: inspect or eat where it is instead.
+            if (Crowded(slot, stand, profile.personalSpace * profile.personalSpace))
+                return false;
+
+            _interestOwner[pick] = slot;
+            agent.Interest = pick;
+            StartApproach(slot, ref agent, profile, stand, point.position,
+                kind == InterestKind.Eat ? AnimalBehaviorState.Eat : AnimalBehaviorState.Inspect, time, false);
+            return true;
+        }
+
+        private void ReleaseInterestOwner(int index)
+        {
+            int owner = _interestOwner[index];
+            _interestOwner[index] = InvalidHandle;
+            if (owner >= 0 && owner < Capacity && _agents[owner].Interest == index)
+                _agents[owner].Interest = InvalidHandle;
+        }
+
+        // ---------------- Walks, arrivals, endings ----------------
+
+        private void StartApproach(int slot, ref Agent agent, BehaviorProfile profile, Vector3 target, Vector3 facing,
+            AnimalBehaviorState arrive, float time, bool induced)
+        {
+            agent.Target = target;
+            agent.Facing = facing;
+            agent.Arrive = arrive;
+            if (Flat(target - agent.Position).sqrMagnitude <= ApproachArriveDistance * ApproachArriveDistance)
+            {
+                Arrive(slot, ref agent, profile, time, induced);
+                return;
+            }
+            Play(slot, ref agent, profile, AnimalBehaviorState.Wander, time, induced);
+        }
+
+        private void Arrive(int slot, ref Agent agent, BehaviorProfile profile, float time, bool induced)
+        {
+            var arrive = agent.Arrive;
+            agent.Arrive = AnimalBehaviorState.Idle;
+            switch (arrive)
+            {
+                case AnimalBehaviorState.Inspect:
+                case AnimalBehaviorState.Eat:
+                    InterestVisits++;
+                    agent.Turn = true;
+                    Play(slot, ref agent, profile, arrive, time, induced);
+                    return;
+                case AnimalBehaviorState.Social:
+                    int partner = agent.Partner;
+                    if (partner >= 0 && IsValid(partner) && _agents[partner].Partner == slot)
+                    {
+                        ref var p = ref _agents[partner];
+                        agent.Turn = true;
+                        if (p.State == AnimalBehaviorState.SocialWait)
+                        {
+                            // Both at their anchors: noses meet.
+                            agent.Facing = p.Position;
+                            p.Facing = agent.Position;
+                            p.Turn = true;
+                            SocialGreetings++;
+                            Play(slot, ref agent, profile, AnimalBehaviorState.Social, time, induced);
+                            Play(partner, ref p, _profiles[partner], AnimalBehaviorState.Social, time, true);
+                        }
+                        else
+                        {
+                            // First there: waits, turned toward where the partner is heading.
+                            agent.Facing = p.Target;
+                            Play(slot, ref agent, profile, AnimalBehaviorState.SocialWait, time, induced);
+                        }
+                        return;
+                    }
+                    agent.Partner = InvalidHandle;
+                    break;
+            }
+            Play(slot, ref agent, profile, AnimalBehaviorState.Idle, time, induced);
+        }
+
+        /// <summary>Frees the reserved point and breaks the greeting link; a partner left waiting settles down.</summary>
+        private void EndActivity(int slot, ref Agent agent, float time)
+        {
+            if (agent.Interest >= 0)
+            {
+                if (_interestOwner[agent.Interest] == slot)
+                    _interestOwner[agent.Interest] = InvalidHandle;
+                agent.Interest = InvalidHandle;
+            }
+            agent.Arrive = AnimalBehaviorState.Idle;
+            agent.Turn = false;
+
+            int partner = agent.Partner;
+            if (partner < 0)
+                return;
+            agent.Partner = InvalidHandle;
+            if (!IsValid(partner) || _agents[partner].Partner != slot)
+                return;
+            ref var p = ref _agents[partner];
+            p.Partner = InvalidHandle;
+            if (p.State == AnimalBehaviorState.SocialWait)
+                Play(partner, ref p, _profiles[partner], AnimalBehaviorState.Idle, time, true);
+            else if (p.State == AnimalBehaviorState.Wander && p.Arrive == AnimalBehaviorState.Social)
+                p.Arrive = AnimalBehaviorState.Idle;
         }
 
         private bool TryPickWanderTarget(int slot, ref Agent agent, BehaviorProfile profile)
@@ -412,18 +728,7 @@ namespace PocketWilds.Presentation
                 var candidate = _area.Clamp(agent.Position + new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle)) * distance);
                 if (Flat(candidate - agent.Position).sqrMagnitude < 0.04f)
                     continue;
-
-                bool crowded = false;
-                for (int i = 0; i < _activeCount && !crowded; i++)
-                {
-                    int other = _active[i];
-                    if (other == slot)
-                        continue;
-                    ref var o = ref _agents[other];
-                    var spot = o.State == AnimalBehaviorState.Wander ? o.Target : o.Position;
-                    crowded = Flat(spot - candidate).sqrMagnitude < minSpace;
-                }
-                if (crowded)
+                if (Crowded(slot, candidate, minSpace))
                     continue;
 
                 agent.Target = candidate;
@@ -432,18 +737,38 @@ namespace PocketWilds.Presentation
             return false;
         }
 
+        /// <summary>Another animal stands (or is heading) within the given squared distance of this spot.</summary>
+        private bool Crowded(int slot, Vector3 spot, float minSpaceSquared)
+        {
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int other = _active[i];
+                if (other == slot)
+                    continue;
+                ref var o = ref _agents[other];
+                var taken = o.State == AnimalBehaviorState.Wander ? o.Target : o.Position;
+                if (Flat(taken - spot).sqrMagnitude < minSpaceSquared)
+                    return true;
+            }
+            return false;
+        }
+
         private void Move(int slot, float time, float deltaTime)
         {
             ref var agent = ref _agents[slot];
             if (agent.State != AnimalBehaviorState.Wander)
+            {
+                if (agent.Turn)
+                    TurnToFacing(slot, ref agent, deltaTime);
                 return;
+            }
 
             var profile = _profiles[slot];
             var toTarget = Flat(agent.Target - agent.Position);
             float distance = toTarget.magnitude;
-            if (distance <= ArriveDistance)
+            if (distance <= (agent.Arrive == AnimalBehaviorState.Idle ? ArriveDistance : ApproachArriveDistance))
             {
-                Enter(slot, ref agent, profile, AnimalBehaviorState.Idle, time);
+                Arrive(slot, ref agent, profile, time, false);
                 return;
             }
 
@@ -457,6 +782,24 @@ namespace PocketWilds.Presentation
             float step = Mathf.Min(agent.Speed * deltaTime, distance);
             agent.Position += toTarget * (step / distance);
 
+            var view = _views[slot];
+            if (view != null)
+                view.SetPose(agent.Position, agent.Yaw);
+        }
+
+        /// <summary>Turns in place toward the point of interest or the partner, then stops touching the transform.</summary>
+        private void TurnToFacing(int slot, ref Agent agent, float deltaTime)
+        {
+            var to = Flat(agent.Facing - agent.Position);
+            if (to.sqrMagnitude < 1e-6f)
+            {
+                agent.Turn = false;
+                return;
+            }
+            float desired = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
+            agent.Yaw = Mathf.MoveTowardsAngle(agent.Yaw, desired, _profiles[slot].turnDegreesPerSecond * deltaTime);
+            if (Mathf.Abs(Mathf.DeltaAngle(agent.Yaw, desired)) < FacedDegrees)
+                agent.Turn = false;
             var view = _views[slot];
             if (view != null)
                 view.SetPose(agent.Position, agent.Yaw);

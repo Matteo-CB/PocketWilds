@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace PocketWilds.Presentation
 {
-    /// <summary>Visible behavior of one animal. Social arrives with T25.</summary>
+    /// <summary>Visible behavior of one animal. Presentation only, never saved.</summary>
     public enum AnimalBehaviorState : byte
     {
         Idle = 0,
@@ -17,6 +17,34 @@ namespace PocketWilds.Presentation
         React = 7,
         Happy = 8,
         Social = 9,
+        /// <summary>First at the meeting point: idles and turns toward the partner still on its way.</summary>
+        SocialWait = 10,
+    }
+
+    /// <summary>What an animal does at a point of interest.</summary>
+    public enum InterestKind : byte
+    {
+        Inspect = 0,
+        Eat = 1,
+    }
+
+    /// <summary>
+    /// A rock, tree or flower patch animals walk to (T25). Authored as chunk data: no collider, no NavMesh.
+    /// The animal stops standOff meters before the point, facing it.
+    /// </summary>
+    [Serializable]
+    public struct InterestPoint
+    {
+        public Vector3 position;
+        [Min(0f)] public float standOff;
+        public InterestKind kind;
+
+        public InterestPoint(Vector3 position, float standOff, InterestKind kind)
+        {
+            this.position = position;
+            this.standOff = standOff;
+            this.kind = kind;
+        }
     }
 
     /// <summary>A: near and interactive, frequent ticks. B: background, rare ticks and a smaller state set.</summary>

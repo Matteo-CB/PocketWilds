@@ -24,6 +24,7 @@ MonoBehaviour:
       eatWeight: 0.14
       inspectWeight: 0.1
       sleepWeight: 0.06
+      socialWeight: 0.09
       idleSeconds: {x: 2.5, y: 6}
       eatSeconds: {x: 4, y: 9}
       sleepSeconds: {x: 10, y: 24}
@@ -32,6 +33,13 @@ MonoBehaviour:
       reactSeconds: 0.67
       happySeconds: 1.04
       wakeSeconds: 0.67
+      socialSeconds: 1.32
+      socialGroup: 0
+      socialRadius: 2.2
+      socialGap: 0.42
+      socialWaitSeconds: 3
+      interestRadius: 2.6
+      eatAtPointChance: 0.6
       moveSpeed: 0.38
       turnDegreesPerSecond: 300
       wanderDistance: {x: 0.5, y: 1.6}
@@ -52,6 +60,7 @@ MonoBehaviour:
       eatWeight: 0.14
       inspectWeight: 0.1
       sleepWeight: 0.06
+      socialWeight: 0.09
       idleSeconds: {x: 2.5, y: 6}
       eatSeconds: {x: 4, y: 9}
       sleepSeconds: {x: 10, y: 24}
@@ -60,6 +69,13 @@ MonoBehaviour:
       reactSeconds: 0.67
       happySeconds: 1.04
       wakeSeconds: 0.67
+      socialSeconds: 1.32
+      socialGroup: 0
+      socialRadius: 2.2
+      socialGap: 0.42
+      socialWaitSeconds: 3
+      interestRadius: 2.6
+      eatAtPointChance: 0.6
       moveSpeed: 0.38
       turnDegreesPerSecond: 300
       wanderDistance: {x: 0.5, y: 1.6}
@@ -80,6 +96,7 @@ MonoBehaviour:
       eatWeight: 0.14
       inspectWeight: 0.1
       sleepWeight: 0.06
+      socialWeight: 0.09
       idleSeconds: {x: 2.5, y: 6}
       eatSeconds: {x: 4, y: 9}
       sleepSeconds: {x: 10, y: 24}
@@ -88,6 +105,13 @@ MonoBehaviour:
       reactSeconds: 0.67
       happySeconds: 1.04
       wakeSeconds: 0.67
+      socialSeconds: 1.32
+      socialGroup: 0
+      socialRadius: 2.2
+      socialGap: 0.46
+      socialWaitSeconds: 3
+      interestRadius: 2.6
+      eatAtPointChance: 0.6
       moveSpeed: 0.28
       turnDegreesPerSecond: 300
       wanderDistance: {x: 0.5, y: 1.6}

@@ -270,6 +270,7 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual(Expected("ReactTouch"), profile.reactSeconds, 0.05f);
             Assert.AreEqual(Expected("Happy"), profile.happySeconds, 0.05f);
             Assert.AreEqual(Expected("Sleep_Exit"), profile.wakeSeconds, 0.05f);
+            Assert.AreEqual(Expected("Social_Nose"), profile.socialSeconds, 0.05f);
         }
     }
 }

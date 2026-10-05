@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T04:10:27Z",
+  "updatedUtc": "2026-10-05T04:35:10Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -181,8 +181,8 @@
     {
       "task": "T25",
       "title": "Social behavior",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Social and Inspect in the central scheduler, no NavMeshAgent: greetings reserve two tier-A animals and a two-anchor meeting marker, both walk to their anchor, the first waits facing the other, both play the family Social clip in the same frame; temperament sets the greeting weight and acceptance; poke, departure or timeout release the pair. Inspect/Eat walk to a reserved point of interest (one animal per point, personal space kept) and face it. Chunk points of interest are data generated from the prop layout (7 in the start chunk). Sim cost 0.013-0.025 ms mean (budget 1.5 ms), 0 GC per frame. EditMode 257/257, PlayMode 31/31 (+1 explicit). Captures TestResults/Captures/T25_world_social.png, _close.png. Doc Docs/Performance/T25_Social.md."
     },
     {
       "task": "T26",

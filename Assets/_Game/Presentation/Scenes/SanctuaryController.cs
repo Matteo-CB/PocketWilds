@@ -124,6 +124,7 @@ namespace PocketWilds.Presentation
             _vfx.Warmup(rare, 1);
             _hatch = new HatchSequencePlayer(hatchConfig, _vfx, crack, common, rare, context.Audio, context.Haptics);
             _scheduler = new AnimalScheduler(_visibleBudget + 2, settings, chunk.WanderArea);
+            _scheduler.SetInterests(chunk.GetWorldInterests());
 
             SpawnSavedAnimals();
             WarmupSpares();
@@ -135,6 +136,9 @@ namespace PocketWilds.Presentation
         public int VisibleAnimals { get; private set; }
         public HatchSequencePlayer Hatch => _hatch;
         public AnimalScheduler Scheduler => _scheduler;
+
+        /// <summary>Time of the last Tick, the clock the scheduler runs on.</summary>
+        public float SimulationTime => _time;
         public EggView WaitingEgg => _waitingEgg;
         public BigValue EggCost => _eggCost;
 

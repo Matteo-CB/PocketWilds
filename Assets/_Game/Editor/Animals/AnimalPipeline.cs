@@ -87,8 +87,12 @@ namespace PocketWilds.Editor.Animals
         [MenuItem("Pocket Wilds/Animals/Build Hedgehog (T24)", priority = 152)]
         public static void BuildHedgehog()
         {
-            // Short legs and a scurry: a little slower than the hopping species.
-            BuildSpecies("Hedgehog", "SmallQuadruped", EnsureHedgehogDefinition, LowBodyClips, behavior => behavior.moveSpeed = 0.28f);
+            // Short legs and a scurry: a little slower than the hopping species. Longer snout: noses meet a bit farther apart.
+            BuildSpecies("Hedgehog", "SmallQuadruped", EnsureHedgehogDefinition, LowBodyClips, behavior =>
+            {
+                behavior.moveSpeed = 0.28f;
+                behavior.socialGap = 0.46f;
+            });
         }
 
         public static void BuildSpecies(string species, string family, Func<SpeciesDefinitionAsset> ensureDefinition,
