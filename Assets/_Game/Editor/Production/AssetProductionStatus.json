@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T03:47:23Z",
+  "updatedUtc": "2026-10-05T04:10:27Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -175,8 +175,8 @@
     {
       "task": "T24",
       "title": "Hedgehog",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Hedgehog on the shared rig family, no species-specific runtime code: species clip swaps are an override asset, behavior speed is catalog data. New in the pipeline: mesh lobes for sculpted shells (pw_species), species masks via PW_Part, pw_preview palette helper, three-species benchmark scenarios, generic GrasslandSpeciesTests and SpeciesMeadowPlayTests. EditMode 248/248, PlayMode 30/30 (+1 explicit)."
     },
     {
       "task": "T25",
@@ -235,7 +235,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T20:57:15Z",
-      "notes": "Source BL_Rig_SmallQuadruped.blend: 24 deform bones (spec names), FK only, consistent rolls, no control bones exported, sockets HeadTop/Neck/Back/TailBase/Ear_L/Ear_R world-aligned at rest. | T07: rabbit skinned (max 3 influences, rigid head/cheeks, ellipsoid neck blend, ear axis weights). 9 extreme poses captured (SourceArt/Blender/Animals/Rabbit/Captures/T07_pose_sheet.png). FBX export with project preset OK. Second-species bind test pending (T23 Squirrel). | T10: family controller AC_SmallQuadruped (11 states, 7 exit transitions). Clips bind to SK_SmallQuadruped/... paths (preserveHierarchy).",
+      "notes": "Source BL_Rig_SmallQuadruped.blend: 24 deform bones (spec names), FK only, consistent rolls, no control bones exported, sockets HeadTop/Neck/Back/TailBase/Ear_L/Ear_R world-aligned at rest. | T07: rabbit skinned (max 3 influences, rigid head/cheeks, ellipsoid neck blend, ear axis weights). 9 extreme poses captured (SourceArt/Blender/Animals/Rabbit/Captures/T07_pose_sheet.png). FBX export with project preset OK. Second-species bind test pending (T23 Squirrel). | T10: family controller AC_SmallQuadruped (11 states, 7 exit transitions). Clips bind to SK_SmallQuadruped/... paths (preserveHierarchy). | T24: RIG-001 validation met, Rabbit, Squirrel and Hedgehog bind to the unchanged skeleton without runtime code changes (GrasslandSpeciesTests compare bone paths and bind poses). Family library gains AN_SmallQuadruped_Locomotion_Walk (0.8 s loop) and Happy_Bounce (1 s) for low-bodied species, selected per species by AnimatorOverrideController (data). AC_SmallQuadruped untouched.",
       "skeleton": "SK_SmallQuadruped",
       "passedGates": [
         "G04"
@@ -525,7 +525,7 @@
         "L-SC-004",
         "A-SP-001"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Animals/Hedgehog/BL_Animal_Hedgehog.blend",
       "runtimePath": "Assets/_Game/Art/Animals/Hedgehog/Models/",
       "validationGates": [
@@ -544,8 +544,8 @@
         "G34"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "",
+      "lastValidationUtc": "2026-10-05T04:10:14Z",
+      "notes": "T24: pw_species SPECS[Hedgehog]: compact oval body, tiny face with rounded snout, short legs, ears part of the head, no tail; spine shell = shell ellipsoid + 30 large lobes generated on it (_shell_lobes). Captures SourceArt/Blender/Animals/Hedgehog/Captures/T24_blockout3_sheet.png. | QuadriFlow melted the lobes (T24_lod0_sheet.png): body remeshed without them, each lobe is clean low-poly geometry per LOD (34/18/4 tris), rigid on the body weight under its base (PW_Part attribute). LOD 2406/1094/443 tris. Masks: shell secondary, snout/underside belly, mask A mushroom spots on every third lobe, mask B light lobe tips. Poses T24_pose_sheet.png, palettes T24_pal_sheet.png, LODs T24_lod_sheet.png, family Walk/Happy_Bounce frames T24_anim_sheet.png. | T24 Unity: SKM_Hedgehog.fbx (same bone paths and bind poses as Rabbit), PF_Animal_Hedgehog with AOC_SmallQuadruped_Hedgehog (family controller, Hop->Walk, Happy->Happy_Bounce), MAT_Animal_Master, DEF_Species_Hedgehog 6 variants (Brown, Cream Common; Grey, Black Uncommon; White Rare; Mushroom Epic, palette only), en/fr names, Codex thumbnails, Grassland pools. AssetValidator 0 errors. Captures TestResults/Captures/T24_hedgehog_variants.png, T24_world_species_mix.png, _close.png. Performance Docs/Performance/T24_Hedgehog.md: three species same batches/SetPass as rabbits only. Pending: device measurement.",
       "contentId": "species.hedgehog",
       "biome": "Grassland",
       "rigFamily": "SmallQuadruped",
@@ -556,7 +556,16 @@
         "SKM_Hedgehog_LOD1",
         "SKM_Hedgehog_LOD2"
       ],
-      "variants": 6
+      "variants": 6,
+      "passedGates": [
+        "G01",
+        "G02",
+        "G03",
+        "G04",
+        "G06",
+        "G08",
+        "G16"
+      ]
     },
     {
       "id": "A-SP-004",

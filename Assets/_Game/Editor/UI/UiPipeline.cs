@@ -79,6 +79,13 @@ namespace PocketWilds.Editor.UI
             { "variant.squirrel.cream.name", "Cream", "Crème" },
             { "variant.squirrel.black.name", "Black", "Noir" },
             { "variant.squirrel.autumn.name", "Autumn", "Automne" },
+            { "species.hedgehog.name", "Hedgehog", "Hérisson" },
+            { "variant.hedgehog.brown.name", "Brown", "Brun" },
+            { "variant.hedgehog.cream.name", "Cream", "Crème" },
+            { "variant.hedgehog.grey.name", "Grey", "Gris" },
+            { "variant.hedgehog.black.name", "Black", "Noir" },
+            { "variant.hedgehog.white.name", "White", "Blanc" },
+            { "variant.hedgehog.mushroom.name", "Mushroom", "Champignon" },
         };
 
         public static readonly string[] Languages = { "en", "fr" };

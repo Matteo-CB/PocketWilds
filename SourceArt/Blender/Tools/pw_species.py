@@ -22,6 +22,7 @@ import bmesh
 from mathutils import Euler, Matrix, Vector
 from mathutils.bvhtree import BVHTree
 from mathutils.geometry import intersect_point_line
+from mathutils.kdtree import KDTree
 
 ARMATURE = "SK_SmallQuadruped"
 # Metaball element radius: with stiffness 2 the surface of an ellipsoid lands on its half sizes.
@@ -31,9 +32,35 @@ EYE = (0, 0, 0, 1)
 NOSE = (0, 0, 1, 0)
 
 
-def _ell(center, half, rot=(0, 0, 0), stiff=2.0, mirror=False, part=None):
-    """part="head": the volume moves rigidly with the Head bone (face beads never pop out)."""
-    return dict(center=center, half=half, rot=rot, stiff=stiff, mirror=mirror, part=part)
+def _ell(center, half, rot=(0, 0, 0), stiff=2.0, mirror=False, part=None, axis=None):
+    """part="head": the volume moves rigidly with the Head bone (face beads never pop out).
+    axis: optional direction of the long (local Y) half size; replaces rot."""
+    return dict(center=center, half=half, rot=rot, stiff=stiff, mirror=mirror, part=part, axis=axis)
+
+
+def _shell_lobes(center, radii, rows, half, push=0.004, lean=0.72, stiff=1.4):
+    """Large stylized spine lobes on an ellipsoid shell (A-SP-003: one sculpted volume, no quills).
+    rows: (alpha, [beta...]) in degrees; alpha runs from the forehead (0) over the back to the rump (180),
+    beta from the spine line (0) down the flank. Each lobe leans backward along the shell and a little
+    outward, so its tip stands out of the silhouette. beta > 0 is mirrored."""
+    c = Vector(center); r = Vector(radii)
+    lobes = []
+    for alpha, betas in rows:
+        a = math.radians(alpha)
+        for beta in betas:
+            b = math.radians(beta)
+            sp = Vector((math.sin(b), -math.cos(b) * math.cos(a), math.cos(b) * math.sin(a)))
+            p = c + Vector((r.x * sp.x, r.y * sp.y, r.z * sp.z))
+            n = Vector((sp.x / r.x, sp.y / r.y, sp.z / r.z)).normalized()
+            t = Vector((0.0, r.y * math.cos(b) * math.sin(a), r.z * math.cos(b) * math.cos(a))).normalized()
+            # Flank lobes lie flatter: a crown of side spikes reads as a mane from the front.
+            lean_b = lean + (1.0 - lean) * 0.6 * min(1.0, beta / 70.0)
+            axis = (t * lean_b + n * (1.0 - lean_b)).normalized()
+            lobes.append(_ell(tuple(p + n * push), half, stiff=stiff, mirror=beta > 0.5, part="shell", axis=tuple(axis)))
+    return lobes
+
+
+HEDGEHOG_SHELL = ((0, 0.045, 0.160), (0.140, 0.170, 0.125))
 
 
 SPECS = {
@@ -80,6 +107,45 @@ SPECS = {
         lod1_tris=960,
         lod2_tris=420,
         back_probe_y=0.07,
+    ),
+    # Hedgehog (A-SP-003): compact oval body, tiny face with a rounded snout, short legs, spines as one
+    # shell volume with large lobes. Small round ears belong to the head (no ear bone motion), no tail.
+    "Hedgehog": dict(
+        blockout=[
+            _ell(HEDGEHOG_SHELL[0], HEDGEHOG_SHELL[1], part="shell"),
+            _ell((0, 0.045, 0.125), (0.125, 0.150, 0.100)),                          # body core, flat belly
+            _ell((0, -0.105, 0.165), (0.078, 0.085, 0.078), part="head"),            # face
+            _ell((0.042, -0.140, 0.148), (0.038, 0.038, 0.034), stiff=1.6, mirror=True, part="head"),  # cheeks
+            _ell((0, -0.190, 0.150), (0.036, 0.050, 0.032), rot=(-8, 0, 0), stiff=1.6, part="head"),  # snout
+            _ell((0.058, -0.085, 0.226), (0.024, 0.012, 0.024), rot=(0, 25, 20), mirror=True, part="head"),  # ears
+            _ell((0.048, -0.060, 0.045), (0.024, 0.024, 0.035), mirror=True),       # front legs, short
+            _ell((0.048, -0.075, 0.016), (0.024, 0.030, 0.016), mirror=True),       # front feet
+            _ell((0.070, 0.100, 0.045), (0.028, 0.028, 0.035), mirror=True),        # hind legs
+            _ell((0.072, 0.085, 0.016), (0.026, 0.036, 0.016), mirror=True),        # hind feet
+        ] + _shell_lobes(HEDGEHOG_SHELL[0], HEDGEHOG_SHELL[1], [
+            (40, [0, 28]), (62, [14, 42]), (85, [0, 28, 54]), (108, [14, 40, 62]),
+            (131, [0, 28, 54]), (154, [14, 40]), (172, [0, 26]),
+        ], half=(0.040, 0.066, 0.018), push=0.010, lean=0.70, stiff=2.5),
+        shell=HEDGEHOG_SHELL,
+        eyes=dict(x=0.038, z=0.190, r=0.020, sink=0.35),
+        nose=dict(x=0.0, z=0.158, r=0.016, sink=0.40),
+        head_center=(0, -0.105, 0.165),
+        head_radii=(0.078, 0.085, 0.078),
+        ear_mode="none",
+        # Short legs: the leg bones only drive the feet; the skirt above follows the trunk.
+        hind_leg_band=(0.055, 0.025),
+        front_leg_band=(0.055, 0.025),
+        leg_band_bones=("Upper", "Lower"),
+        # Remeshing melts 30 lobes into a crumpled shell: the body is remeshed without them and every
+        # lobe is clean low-poly geometry per LOD (34 / 18 / 4 triangles), rigid on the body under it.
+        lobe_mode="mesh",
+        lod0_faces=720,
+        lod1_mode="collapse",
+        lod1_tris=1060,
+        lod1_body_tris=500,
+        lod2_tris=450,
+        lod2_body_tris=290,
+        back_probe_y=0.06,
     ),
 }
 
@@ -217,18 +283,26 @@ def build_blockout(species):
     mb = meta.data
     mb.elements.clear()
 
-    def add(center, half, rot, stiff):
+    def add(center, half, rot, stiff, axis=None):
         e = mb.elements.new(type='ELLIPSOID')
         e.co = center; e.radius = K
         e.size_x, e.size_y, e.size_z = half
-        e.rotation = Euler([math.radians(a) for a in rot], 'XYZ').to_quaternion()
+        if axis is not None:
+            e.rotation = Vector(axis).to_track_quat('Y', 'Z')
+        else:
+            e.rotation = Euler([math.radians(a) for a in rot], 'XYZ').to_quaternion()
         e.stiffness = stiff
 
+    mesh_lobes = spec.get("lobe_mode") == "mesh"
     for el in spec["blockout"]:
         c = el["center"]
-        add(c, el["half"], el["rot"], el["stiff"])
+        axis = el.get("axis")
+        if mesh_lobes and axis is not None:
+            continue
+        add(c, el["half"], el["rot"], el["stiff"], axis)
         if el["mirror"]:
-            add((-c[0], c[1], c[2]), el["half"], (el["rot"][0], -el["rot"][1], -el["rot"][2]), el["stiff"])
+            mirrored_axis = (-axis[0], axis[1], axis[2]) if axis is not None else None
+            add((-c[0], c[1], c[2]), el["half"], (el["rot"][0], -el["rot"][1], -el["rot"][2]), el["stiff"], mirrored_axis)
 
     # Ears ride the shared ear bones so their animation bends them from the base.
     arm = bpy.data.objects[ARMATURE]
@@ -242,7 +316,113 @@ def build_blockout(species):
             e.rotation = rot
             e.stiffness = 2.0
     bpy.context.view_layer.update()
+    if mesh_lobes:
+        # Editable preview of the LOD0 lobes next to the metaball body.
+        name = f"WORK_{species}_Lobes"
+        _remove_object(name)
+        bm = bmesh.new(); _add_lobes(bm, lobe_frames(species), 0)
+        me = bpy.data.meshes.new(name); bm.to_mesh(me); bm.free()
+        for p in me.polygons:
+            p.use_smooth = True
+        bpy.data.collections["WORK"].objects.link(bpy.data.objects.new(name, me))
     return len(mb.elements)
+
+
+# ---------------------------------------------------------------- mesh lobes
+
+# Per LOD: (segments around the lobe, ring positions from base 0 to tip 1).
+LOBE_LEVELS = {0: (6, (0.0, 0.33, 0.66)), 1: (5, (0.0, 0.5)), 2: (3, (0.0,))}
+
+
+def lobe_profile(t):
+    # Full leaf-shaped lobe: wide most of the way, then a soft point.
+    return (1.0 - t) ** 0.55
+
+
+def lobe_frames(species):
+    """Base, tip and cross-section axes of every mesh lobe (mirrored ones included), in blockout order."""
+    spec = SPECS[species]
+    sc, sr = Vector(spec["shell"][0]), Vector(spec["shell"][1])
+    frames = []
+    for el in spec["blockout"]:
+        if el.get("axis") is None or el.get("part") != "shell":
+            continue
+        for mirrored in ((False, True) if el["mirror"] else (False,)):
+            c = Vector(el["center"]); a = Vector(el["axis"]).normalized()
+            if mirrored:
+                c.x = -c.x; a.x = -a.x
+            d = c - sc
+            n = Vector((d.x / sr.x ** 2, d.y / sr.y ** 2, d.z / sr.z ** 2)).normalized()
+            u = a.cross(n)
+            if u.length < 1e-6:
+                u = Vector((1.0, 0.0, 0.0))
+            u.normalize()
+            w = a.cross(u).normalized()  # u x w = a: rings wind counter-clockwise around the axis
+            hx, hy, hz = el["half"]
+            frames.append(dict(base=c - a * hy * 0.6, tip=c + a * hy, axis=a, u=u, w=w, wx=hx, wz=hz))
+    return frames
+
+
+def _add_lobes(bm, frames, level):
+    """Closed low-poly lobes, outward normals. Returns the vertex index range of each lobe."""
+    segs, rings = LOBE_LEVELS[level]
+    ranges = []
+    bm.verts.ensure_lookup_table()
+    for f in frames:
+        first = len(bm.verts)
+        span = f["tip"] - f["base"]
+        ring_verts = []
+        for t in rings:
+            center = f["base"] + span * t
+            k = lobe_profile(t)
+            ring = []
+            for i in range(segs):
+                th = 2.0 * math.pi * i / segs
+                ring.append(bm.verts.new(center + f["u"] * (math.cos(th) * f["wx"] * k) + f["w"] * (math.sin(th) * f["wz"] * k)))
+            ring_verts.append(ring)
+        tip = bm.verts.new(f["tip"])
+        for r0, r1 in zip(ring_verts[:-1], ring_verts[1:]):
+            for i in range(segs):
+                j = (i + 1) % segs
+                bm.faces.new((r0[i], r0[j], r1[j], r1[i]))
+        last = ring_verts[-1]
+        for i in range(segs):
+            bm.faces.new((last[i], last[(i + 1) % segs], tip))
+        bm.faces.new(list(reversed(ring_verts[0])))
+        ranges.append((first, len(bm.verts)))
+    return ranges
+
+
+def _rigid_lobes(target, source, frames):
+    """Every lobe takes the weights of the body vertex under its base: lobes never shear."""
+    part_t = target.data.attributes.get("PW_Part")
+    if part_t is None:
+        return 0
+    part_s = source.data.attributes.get("PW_Part")
+    regions = source.data.color_attributes["PW_Regions"].data
+    body = [v for v in source.data.vertices
+            if (part_s is None or part_s.data[v.index].value == 0)
+            and regions[v.index].color[3] < 0.5 and regions[v.index].color[2] < 0.5]
+    kd = KDTree(len(body))
+    for i, v in enumerate(body):
+        kd.insert(v.co, i)
+    kd.balance()
+    svg = source.vertex_groups; tvg = target.vertex_groups
+    cache = {}
+    count = 0
+    for v in target.data.vertices:
+        p = part_t.data[v.index].value
+        if p <= 0:
+            continue
+        if p not in cache:
+            _, idx, _ = kd.find(frames[p - 1]["base"])
+            cache[p] = {svg[g.group].name: g.weight for g in body[idx].groups if g.weight > 0.0}
+        for g in list(v.groups):
+            tvg[g.group].remove([v.index])
+        for k, x in cache[p].items():
+            tvg[k].add([v.index], x, 'REPLACE')
+        count += 1
+    return count
 
 
 def place_features(species):
@@ -313,8 +493,9 @@ def _quad_body(name, hi_me, target_faces, pre_decimate):
     return o
 
 
-def _with_beads(body, out_name, beads, collection):
-    """Body + bead spheres (faces fully inside the body removed) + PW_Regions tags."""
+def _with_beads(body, out_name, beads, collection, lobes=None):
+    """Body + bead spheres (faces fully inside the body removed) + PW_Regions tags.
+    lobes: (frames, level) adds mesh lobes, tagged in the PW_Part attribute (lobe index + 1)."""
     bb = bmesh.new(); bb.from_mesh(body.data); bvh = BVHTree.FromBMesh(bb); bb.free()
     inside = _inside_test(bvh)
     final = bmesh.new(); final.from_mesh(body.data)
@@ -328,6 +509,7 @@ def _with_beads(body, out_name, beads, collection):
         n0 = len(final.verts); final.from_mesh(tmp); bpy.data.meshes.remove(tmp)
         for i in range(n0, len(final.verts)):
             region_of[i] = tag
+    lobe_ranges = _add_lobes(final, lobes[0], lobes[1]) if lobes else []
     _remove_object(out_name)
     me = bpy.data.meshes.new(out_name); final.to_mesh(me); final.free()
     for p in me.polygons:
@@ -335,6 +517,11 @@ def _with_beads(body, out_name, beads, collection):
     attr = me.color_attributes.new("PW_Regions", 'BYTE_COLOR', 'POINT')
     for i, d in enumerate(attr.data):
         d.color = region_of.get(i, (0, 0, 0, 0))
+    if lobe_ranges:
+        part = me.attributes.new("PW_Part", 'INT', 'POINT')
+        for index, (a, b) in enumerate(lobe_ranges):
+            for i in range(a, b):
+                part.data[i].value = index + 1
     o = bpy.data.objects.new(out_name, me)
     bpy.data.collections[collection].objects.link(o)
     bpy.data.collections["EXPORT"].objects.link(o)
@@ -355,7 +542,11 @@ def build_lod0(species):
     beads = [(src["WORK_Eye_R"][0], 8, 6, src["WORK_Eye_R"][1], EYE),
              (src["WORK_Eye_L"][0], 8, 6, src["WORK_Eye_L"][1], EYE),
              (src["WORK_Nose"][0], 6, 4, src["WORK_Nose"][1], NOSE)]
-    lod0, _ = _with_beads(body, f"SKM_{species}_LOD0", beads, "GEO")
+    lobes = (lobe_frames(species), 0) if spec.get("lobe_mode") == "mesh" else None
+    lod0, _ = _with_beads(body, f"SKM_{species}_LOD0", beads, "GEO", lobes)
+    preview = bpy.data.objects.get(f"WORK_{species}_Lobes")
+    if preview is not None:
+        preview.hide_viewport = True; preview.hide_render = True
     for n in src:
         bpy.data.objects[n].hide_viewport = True; bpy.data.objects[n].hide_render = True
     return check(lod0)
@@ -397,6 +588,8 @@ def tail_weights(species, co):
 
 def _ear_weights(species, arm, co):
     spec = SPECS[species]
+    if spec.get("ear_mode") == "none":
+        return None
     side = "L" if co.x > 0 else "R"
     base, tip = ear_axes(arm)[side]
     p, t = intersect_point_line(co, base, tip)
@@ -466,15 +659,18 @@ def skin_lod0(species):
         if a > 0.5 or b > 0.5:
             _put(vg, v, {"Head": 1.0}); continue
         # Legs only drive the lower part of haunches and shoulders; the volume above follows the trunk.
+        hind_band = spec.get("hind_leg_band", (0.15, 0.085))
+        front_band = spec.get("front_leg_band", (0.14, 0.09))
         for side in ("L", "R"):
-            k = f"HindLeg_{side}_Upper"
-            if k in w:
-                keep = smooth(0.15, 0.085, co.z)
-                moved = w[k] * (1 - keep); w[k] -= moved; w["Pelvis"] = w.get("Pelvis", 0) + moved
-            k = f"FrontLeg_{side}_Upper"
-            if k in w:
-                keep = smooth(0.14, 0.09, co.z)
-                moved = w[k] * (1 - keep); w[k] -= moved; w["Chest"] = w.get("Chest", 0) + moved
+            for part in spec.get("leg_band_bones", ("Upper",)):
+                k = f"HindLeg_{side}_{part}"
+                if k in w:
+                    keep = smooth(hind_band[0], hind_band[1], co.z)
+                    moved = w[k] * (1 - keep); w[k] -= moved; w["Pelvis"] = w.get("Pelvis", 0) + moved
+                k = f"FrontLeg_{side}_{part}"
+                if k in w:
+                    keep = smooth(front_band[0], front_band[1], co.z)
+                    moved = w[k] * (1 - keep); w[k] -= moved; w["Chest"] = w.get("Chest", 0) + moved
         # Heat weights leak Tail/Ear/Head into the wrong volumes on big shapes: rebuilt below.
         w = {k: x for k, x in w.items() if not k.startswith("Ear") and not k.startswith("Tail")}
         s = head_s(co)
@@ -523,6 +719,8 @@ def skin_lod0(species):
         bpy.ops.object.vertex_group_clean(group_select_mode='ALL', limit=0.03, keep_single=True)
         bpy.ops.object.vertex_group_limit_total(group_select_mode='ALL', limit=3)
         bpy.ops.object.vertex_group_normalize_all(group_select_mode='ALL', lock_active=False)
+    if spec.get("lobe_mode") == "mesh":
+        stats["lobe_verts"] = _rigid_lobes(obj, obj, lobe_frames(species))
     obj.parent = arm
     counts = [len([g for g in v.groups if g.weight > 0]) for v in me.vertices]
     stats["max_influences"] = max(counts); stats["unweighted"] = counts.count(0)
@@ -558,13 +756,14 @@ def build_lods(species):
     if spec.get("lod1_mode") == "collapse":
         # Small features (squirrel ears) survive a collapse of LOD0 better than a coarse QuadriFlow.
         lod1_body = _collapse(bpy.data.objects[f"WORK_{species}_BodyRemesh"], f"WORK_{species}_LOD1_Body",
-                              spec["lod1_tris"] - 60)
+                              spec.get("lod1_body_tris", spec["lod1_tris"] - 60))
     else:
         hi = _hi_mesh(species)
         lod1_body = _quad_body(f"WORK_{species}_LOD1_Body", hi, spec["lod1_faces"], pre_decimate=0.2)
         bpy.data.meshes.remove(hi)
     # LOD2: symmetric collapse of LOD1 (triangles are fine for the far LOD).
-    lod2_body = _collapse(lod1_body, f"WORK_{species}_LOD2_Body", spec["lod2_tris"] - 25)
+    lod2_body = _collapse(lod1_body, f"WORK_{species}_LOD2_Body", spec.get("lod2_body_tris", spec["lod2_tris"] - 25))
+    frames = lobe_frames(species) if spec.get("lobe_mode") == "mesh" else None
     area, region = view3d()
 
     src = _bead_sources()
@@ -581,7 +780,7 @@ def build_lods(species):
         rr = r * 1.13
         lod2_beads.append((hit - normal * (rr * 0.25), 6, 3, rr, EYE))
     for level, body, beads in ((1, lod1_body, lod1_beads), (2, lod2_body, lod2_beads)):
-        o, region_of = _with_beads(body, f"SKM_{species}_LOD{level}", beads, "LOD")
+        o, region_of = _with_beads(body, f"SKM_{species}_LOD{level}", beads, "LOD", (frames, level) if frames else None)
         o.parent = arm
         mod = o.modifiers.new("Armature", 'ARMATURE'); mod.object = arm
         dt = o.modifiers.new("WeightTransfer", 'DATA_TRANSFER')
@@ -601,6 +800,8 @@ def build_lods(species):
             bpy.ops.object.vertex_group_clean(group_select_mode='ALL', limit=0.03, keep_single=True)
             bpy.ops.object.vertex_group_limit_total(group_select_mode='ALL', limit=3)
             bpy.ops.object.vertex_group_normalize_all(group_select_mode='ALL', lock_active=False)
+        if frames:
+            _rigid_lobes(o, lod0, frames)
         counts = [len(v.groups) for v in o.data.vertices]
         report[o.name] = dict(check(o), max_influences=max(counts), unweighted=counts.count(0))
     return report

@@ -15,13 +15,14 @@ using Object = UnityEngine.Object;
 namespace PocketWilds.Tests.PlayMode
 {
     /// <summary>
-    /// T23 in the real scene: rabbits and squirrels share the meadow, the visible budget and the scheduler;
-    /// both species are pooled ahead of time so a squirrel hatch never instantiates.
+    /// T23 and T24 in the real scene: rabbits, squirrels and hedgehogs share the meadow, the visible budget
+    /// and the scheduler; every species of the egg is pooled ahead of time so no hatch instantiates.
     /// </summary>
-    public class SquirrelPlayTests
+    public class SpeciesMeadowPlayTests
     {
         private static readonly ContentId Rabbit = ContentId.FromSource("species.rabbit");
         private static readonly ContentId Squirrel = ContentId.FromSource("species.squirrel");
+        private static readonly ContentId Hedgehog = ContentId.FromSource("species.hedgehog");
         private static readonly ContentId Basic = ContentId.FromSource("egg.grassland.basic");
         private string _saveDir;
 
@@ -55,7 +56,8 @@ namespace PocketWilds.Tests.PlayMode
             var animals = new[]
             {
                 (Rabbit, "variant.rabbit.brown", RarityTier.Common), (Squirrel, "variant.squirrel.red", RarityTier.Common),
-                (Rabbit, "variant.rabbit.white", RarityTier.Common), (Squirrel, "variant.squirrel.autumn", RarityTier.Epic),
+                (Hedgehog, "variant.hedgehog.brown", RarityTier.Common), (Rabbit, "variant.rabbit.white", RarityTier.Common),
+                (Squirrel, "variant.squirrel.autumn", RarityTier.Epic), (Hedgehog, "variant.hedgehog.mushroom", RarityTier.Epic),
             };
             for (int i = 0; i < animals.Length; i++)
             {
@@ -74,8 +76,17 @@ namespace PocketWilds.Tests.PlayMode
             service.Dispose();
         }
 
+        private static int CountVisible(ContentId species)
+        {
+            int count = 0;
+            foreach (var view in Object.FindObjectsByType<AnimalView>(FindObjectsSortMode.None))
+                if (view.gameObject.activeInHierarchy && view.Species == species)
+                    count++;
+            return count;
+        }
+
         [UnityTest]
-        public IEnumerator Meadow_ShowsBothSpecies_AndSquirrelHatchesComeFromThePool()
+        public IEnumerator Meadow_ShowsEverySpecies_AndHatchesComeFromThePool()
         {
 #if UNITY_EDITOR
             PrepareSave();
@@ -100,41 +111,31 @@ namespace PocketWilds.Tests.PlayMode
             yield return null;
             var context = bootstrap.Context;
             var sanctuary = Object.FindAnyObjectByType<VerticalSliceEntry>().Sanctuary;
-            Assert.AreEqual(4, sanctuary.VisibleAnimals);
+            Assert.AreEqual(6, sanctuary.VisibleAnimals);
+            Assert.AreEqual(2, CountVisible(Rabbit));
+            Assert.AreEqual(2, CountVisible(Squirrel), "Saved squirrels come back with their own prefab.");
+            Assert.AreEqual(2, CountVisible(Hedgehog), "Saved hedgehogs come back with their own prefab.");
 
-            int rabbits = 0, squirrels = 0;
-            foreach (var view in Object.FindObjectsByType<AnimalView>(FindObjectsSortMode.None))
-            {
-                if (!view.gameObject.activeInHierarchy)
-                    continue;
-                if (view.Species == Rabbit) rabbits++;
-                if (view.Species == Squirrel) squirrels++;
-            }
-            Assert.AreEqual(2, rabbits);
-            Assert.AreEqual(2, squirrels, "Saved squirrels come back with their own prefab.");
-
-            // Both species of the egg are warmed side by side.
-            for (int i = 0; i < 90 && sanctuary.PooledSpares < 30; i++)
+            // Every species of the egg is warmed side by side: budget 50 + 1 minus 6 visible each.
+            for (int i = 0; i < 120 && sanctuary.PooledSpares < 45; i++)
                 yield return null;
-            Assert.GreaterOrEqual(sanctuary.PooledSparesOf(Rabbit), 30);
-            Assert.GreaterOrEqual(sanctuary.PooledSparesOf(Squirrel), 30);
-            for (int i = 0; i < 120 && sanctuary.PooledSpares < 47; i++)
-                yield return null;
-            Assert.GreaterOrEqual(sanctuary.PooledSpares, 47, "Budget 50 + 1 minus 4 visible, for each species.");
+            foreach (var species in new[] { Rabbit, Squirrel, Hedgehog })
+                Assert.GreaterOrEqual(sanctuary.PooledSparesOf(species), 45, species.ToString());
             // The warmup tasks make their last check on the next frame: let them end first.
             yield return null;
             yield return null;
             int viewsBefore = Object.FindObjectsByType<AnimalView>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
 
-            // Hatch until a squirrel comes out (two species, pity on nothing: a few eggs at most).
-            int hatchedSquirrels = 0;
-            for (int hatch = 0; hatch < 12 && hatchedSquirrels == 0; hatch++)
+            // Hatch until a squirrel and a hedgehog came out of the grassland egg.
+            bool squirrel = false, hedgehog = false;
+            for (int hatch = 0; hatch < 30 && !(squirrel && hedgehog); hatch++)
             {
                 context.Economy.Grant(CurrencyId.Light, context.Hatch.GetCost(Basic), EconomyReason.Reward);
                 sanctuary.RequestHatch();
                 sanctuary.RequestHatch(); // skip the staging
-                if (context.State.Collection[context.State.Collection.Count - 1].Species == Squirrel)
-                    hatchedSquirrels++;
+                var hatched = context.State.Collection[context.State.Collection.Count - 1].Species;
+                squirrel |= hatched == Squirrel;
+                hedgehog |= hatched == Hedgehog;
                 float until = Time.realtimeSinceStartup + 6f;
                 while (sanctuary.Hatch.IsPlaying || sanctuary.WaitingEgg == null)
                 {
@@ -142,7 +143,7 @@ namespace PocketWilds.Tests.PlayMode
                     yield return null;
                 }
             }
-            Assert.AreEqual(1, hatchedSquirrels, "A squirrel hatched from the grassland egg.");
+            Assert.IsTrue(squirrel && hedgehog, "Both new species hatch from the grassland egg.");
             int viewsAfter = Object.FindObjectsByType<AnimalView>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
             Assert.AreEqual(viewsBefore, viewsAfter, "Hatching reused pooled views: no Instantiate.");
             Assert.AreEqual(context.State.Collection.Count, sanctuary.VisibleAnimals);

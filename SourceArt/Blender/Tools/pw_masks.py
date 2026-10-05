@@ -131,6 +131,31 @@ def squirrel_masks(co, n, ctx):
     return tail, belly, mask_a, mask_b
 
 
+def hedgehog_masks(co, n, ctx):
+    """Secondary = spine shell (every lobe and the skin under them), belly = snout and underside,
+    mask A = one mushroom spot on every third lobe, mask B = light lobe tips."""
+    part = ctx.get("part", 0)
+    lobes = ctx.get("lobes") or []
+    nose = ctx["nose"]
+    if part > 0 and part <= len(lobes):
+        f = lobes[part - 1]
+        span = f["tip"] - f["base"]
+        t = max(0.0, min(1.0, (co - f["base"]).dot(span) / span.length_squared))
+        tips = smoothstep(0.50, 0.85, t)
+        spot = smoothstep(0.30, 0.42, t) * (1.0 - smoothstep(0.62, 0.74, t)) if part % 3 == 1 else 0.0
+        return 1.0, 0.0, spot, tips
+
+    # Face boundary leans forward with height: the shell starts at the forehead.
+    boundary = -0.085 - 0.6 * (co.z - 0.16)
+    face = smoothstep(boundary + 0.02, boundary - 0.02, co.y)
+    skirt = smoothstep(0.085, 0.115, co.z)
+    shell = skirt * (1.0 - face)
+    underside = smoothstep(-0.25, -0.65, n.z)
+    snout = smoothstep(0.065, 0.030, (co - nose).length)
+    belly = max(underside, snout) * (1.0 - shell)
+    return shell, belly, 0.0, 0.0
+
+
 RULES = {
     "Rabbit": dict(
         fn=rabbit_masks,
@@ -139,6 +164,12 @@ RULES = {
                ((0.125, 0.10, 0.15), 0.055), ((-0.125, 0.13, 0.12), 0.055), ((0.11, -0.01, 0.12), 0.045),
                ((0.075, -0.17, 0.33), 0.045)],
     ),
+    "Hedgehog": dict(
+        fn=hedgehog_masks,
+        head_center=(0.0, -0.105, 0.165),
+        head_radii=(0.078, 0.085, 0.078),
+        spots=[],
+    ),
     "Squirrel": dict(
         fn=squirrel_masks,
         head_center=(0.0, -0.080, 0.300),
@@ -146,6 +177,16 @@ RULES = {
         spots=[],
     ),
 }
+
+
+def _lobes(species):
+    try:
+        import pw_species
+    except ImportError:
+        return []
+    if pw_species.SPECS.get(species, {}).get("lobe_mode") != "mesh":
+        return []
+    return pw_species.lobe_frames(species)
 
 
 def _tail_path(species):
@@ -168,6 +209,7 @@ def apply(species, armature_name="SK_SmallQuadruped", nose_object="WORK_Nose"):
         "eyes": [(bpy.data.objects[n].location.copy(), bpy.data.objects[n].get("pw_radius", 0.023))
                  for n in ("WORK_Eye_L", "WORK_Eye_R") if n in bpy.data.objects],
         "tail_path": _tail_path(species),
+        "lobes": _lobes(species),
     }
     report = []
     for lod in range(3):
@@ -179,8 +221,10 @@ def apply(species, armature_name="SK_SmallQuadruped", nose_object="WORK_Nose"):
         while me.uv_layers:
             me.uv_layers.remove(me.uv_layers[0])
         uv = me.uv_layers.new(name="PW_Masks")
+        part_attr = me.attributes.get("PW_Part")
         per_vertex = []
         for v in me.vertices:
+            ctx["part"] = part_attr.data[v.index].value if part_attr is not None else 0
             r, g, b, a = regions.data[v.index].color
             if a > 0.5 or b > 0.5:
                 # Eyes and nose keep their own tags and no pattern.

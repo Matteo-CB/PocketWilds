@@ -119,12 +119,12 @@ namespace PocketWilds.Editor.Capture
 
         private static readonly string[] RabbitMix = { "rabbit.brown", "rabbit.white", "rabbit.grey", "rabbit.spotted", "rabbit.black", "rabbit.sakura" };
 
-        /// <summary>T23: both grassland species side by side in the gameplay frame, plus a closer view.</summary>
-        public static readonly string[] SpeciesMix = { "rabbit.brown", "squirrel.red", "rabbit.white", "squirrel.autumn", "squirrel.grey", "rabbit.spotted" };
+        /// <summary>The grassland species side by side in the gameplay frame, plus a closer view.</summary>
+        public static readonly string[] SpeciesMix = { "rabbit.brown", "squirrel.red", "hedgehog.brown", "squirrel.autumn", "hedgehog.mushroom", "rabbit.spotted" };
 
-        [MenuItem("Pocket Wilds/Capture/Species Mix and Squirrel Variants", priority = 522)]
+        [MenuItem("Pocket Wilds/Capture/Species Mix and Hedgehog Variants", priority = 522)]
         public static void CaptureSpeciesMenu() =>
-            Debug.Log("[WorldCapture] " + CaptureSpecies("T23", "squirrel", new[] { "red", "brown", "grey", "cream", "black", "autumn" }));
+            Debug.Log("[WorldCapture] " + CaptureSpecies("T24", "hedgehog", new[] { "brown", "cream", "grey", "black", "white", "mushroom" }));
 
         /// <summary>
         /// Shared variant prompt: the six palettes of one species on one prefab in a 2 x 3 grid on the meadow

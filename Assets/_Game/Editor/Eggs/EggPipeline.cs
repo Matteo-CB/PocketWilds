@@ -496,7 +496,7 @@ namespace PocketWilds.Editor.Eggs
             EditorUtility.SetDirty(database);
         }
 
-        public static readonly string[] GrasslandSpecies = { "species.rabbit", "species.squirrel" };
+        public static readonly string[] GrasslandSpecies = { "species.rabbit", "species.squirrel", "species.hedgehog" };
 
         private static EggDefinitionAsset EnsureEgg(string assetName, string sourceId, EggTier tier, Action<EggDefinitionAsset> fill)
         {
@@ -514,7 +514,7 @@ namespace PocketWilds.Editor.Eggs
             asset.tier = tier;
             asset.visualKey = "PF_Egg_Base";
             // Grassland pool: integrated species of the biome, equal weights (rarity comes from the tier
-            // roll, discovery from pity). Hedgehog joins when integrated (T24).
+            // roll, discovery from pity).
             asset.pool = new System.Collections.Generic.List<EggDefinitionAsset.PoolEntry>();
             foreach (var species in GrasslandSpecies)
                 asset.pool.Add(new EggDefinitionAsset.PoolEntry { speciesId = species, weight = 1f });

@@ -12,8 +12,8 @@ namespace PocketWilds.Benchmarks
         public int rabbits;
         public PocketWilds.Core.QualityTier tier;
         public bool hatchBurst;
-        /// <summary>T23: every other animal of the save is a squirrel (two species share the meadow).</summary>
-        public bool mixed;
+        /// <summary>Grassland species cycled through the save: 1 rabbits only, 2 + squirrels (T23), 3 + hedgehogs (T24).</summary>
+        public int species = 1;
         public float warmupSeconds = 2f;
         public float measureSeconds = 8f;
 

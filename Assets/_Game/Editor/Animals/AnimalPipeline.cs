@@ -27,6 +27,17 @@ namespace PocketWilds.Editor.Animals
         public static string DefinitionPath(string species) => $"Assets/_Game/Content/Species/DEF_Species_{species}.asset";
         public static string ClipsPath(string family) => $"Assets/_Game/Art/Animations/{family}/AN_{family}.fbx";
         public static string ControllerPath(string family) => $"Assets/_Game/Art/Animations/{family}/AC_{family}.controller";
+        public static string OverridePath(string family, string species) => $"Assets/_Game/Art/Animations/{family}/AOC_{family}_{species}.overrideController";
+
+        /// <summary>
+        /// Low-bodied species (doc RIG-001 and A-SP-003): the family Walk replaces the Hop and Happy_Bounce
+        /// replaces the high Happy. Data only: an override of the family controller, same states.
+        /// </summary>
+        public static readonly (string Family, string Species)[] LowBodyClips =
+        {
+            ("Locomotion_Hop", "Locomotion_Walk"),
+            ("Happy", "Happy_Bounce"),
+        };
 
         /// <summary>LOD switch points as screen-relative height. Tuned on device in T22.</summary>
         public static readonly float[] LodTransitions = { 0.07f, 0.035f, 0.008f };
@@ -73,14 +84,25 @@ namespace PocketWilds.Editor.Animals
             BuildSpecies("Squirrel", "SmallQuadruped", EnsureSquirrelDefinition);
         }
 
-        public static void BuildSpecies(string species, string family, Func<SpeciesDefinitionAsset> ensureDefinition)
+        [MenuItem("Pocket Wilds/Animals/Build Hedgehog (T24)", priority = 152)]
+        public static void BuildHedgehog()
+        {
+            // Short legs and a scurry: a little slower than the hopping species.
+            BuildSpecies("Hedgehog", "SmallQuadruped", EnsureHedgehogDefinition, LowBodyClips, behavior => behavior.moveSpeed = 0.28f);
+        }
+
+        public static void BuildSpecies(string species, string family, Func<SpeciesDefinitionAsset> ensureDefinition,
+            (string Family, string Species)[] clipOverrides = null, Action<BehaviorProfile> behavior = null)
         {
             var material = EnsureAnimalMaterial();
             var controller = EnsureFamilyController(family);
-            var prefab = BuildPrefab(species, material, controller);
+            RuntimeAnimatorController runtime = controller;
+            if (clipOverrides != null && clipOverrides.Length > 0)
+                runtime = EnsureSpeciesOverride(family, species, controller, clipOverrides);
+            var prefab = BuildPrefab(species, material, runtime);
             var definition = ensureDefinition();
             EnsureContentDatabase(definition);
-            EnsureVisualCatalog(definition.visualKey, prefab);
+            EnsureVisualCatalog(definition.visualKey, prefab, behavior);
             AssetDatabase.SaveAssets();
             Debug.Log($"[AnimalPipeline] {species}: prefab, controller, material, definition and catalog up to date.");
         }
@@ -164,6 +186,40 @@ namespace PocketWilds.Editor.Animals
             return controller;
         }
 
+        /// <summary>Family controller with a few family clips swapped for one species. Never a species-only clip.</summary>
+        public static AnimatorOverrideController EnsureSpeciesOverride(string family, string species, AnimatorController controller,
+            (string Family, string Species)[] clipOverrides)
+        {
+            var clips = AssetDatabase.LoadAllAssetsAtPath(ClipsPath(family)).OfType<AnimationClip>()
+                .Where(c => !c.name.StartsWith("__preview__", StringComparison.Ordinal))
+                .ToDictionary(c => c.name, c => c);
+            string path = OverridePath(family, species);
+            var aoc = AssetDatabase.LoadAssetAtPath<AnimatorOverrideController>(path);
+            if (aoc == null)
+            {
+                aoc = new AnimatorOverrideController(controller);
+                AssetDatabase.CreateAsset(aoc, path);
+            }
+            aoc.runtimeAnimatorController = controller;
+            var pairs = new List<KeyValuePair<AnimationClip, AnimationClip>>();
+            aoc.GetOverrides(pairs);
+            for (int i = 0; i < pairs.Count; i++)
+            {
+                AnimationClip replacement = null;
+                foreach (var (from, to) in clipOverrides)
+                {
+                    if (pairs[i].Key.name != $"AN_{family}_{from}")
+                        continue;
+                    if (!clips.TryGetValue($"AN_{family}_{to}", out replacement))
+                        throw new InvalidOperationException($"Missing family clip AN_{family}_{to}");
+                }
+                pairs[i] = new KeyValuePair<AnimationClip, AnimationClip>(pairs[i].Key, replacement);
+            }
+            aoc.ApplyOverrides(pairs);
+            EditorUtility.SetDirty(aoc);
+            return aoc;
+        }
+
         private static bool IsUpToDate(AnimatorController controller, string family, Dictionary<string, AnimationClip> clips)
         {
             if (controller.layers.Length == 0 || controller.parameters.Length != 0)
@@ -189,7 +245,7 @@ namespace PocketWilds.Editor.Animals
 
         // ---------------- Prefab ----------------
 
-        public static AnimalView BuildPrefab(string species, Material material, AnimatorController controller)
+        public static AnimalView BuildPrefab(string species, Material material, RuntimeAnimatorController controller)
         {
             var model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath(species));
             if (model == null)
@@ -323,6 +379,37 @@ namespace PocketWilds.Editor.Animals
             return asset;
         }
 
+        private static SpeciesDefinitionAsset EnsureHedgehogDefinition()
+        {
+            var asset = LoadOrCreate<SpeciesDefinitionAsset>(DefinitionPath("Hedgehog"));
+            asset.sourceId = "species.hedgehog";
+            asset.displayKey = "species.hedgehog.name";
+            asset.rigFamily = RigFamily.SmallQuadruped;
+            asset.biomeId = "biome.grassland";
+            asset.baseProduction = 1.0;
+            asset.visualKey = "PF_Animal_Hedgehog";
+
+            // Hedgehog regions (pw_masks.hedgehog_masks): secondary = spine shell, belly = snout and underside,
+            // detail = nose, mask A = mushroom spots on every third lobe, mask B = light lobe tips.
+            // Mushroom changes the palette only (A-SP-003): red shell, white spots.
+            asset.variants = new List<SpeciesDefinitionAsset.VariantEntry>
+            {
+                Variant("variant.hedgehog.brown", RarityTier.Common, Hex("B48A66"), Hex("6E4B36"), Hex("EEDCC4"), Hex("2A1E1C"), Hex("140E0D"),
+                    pattern: Hex("E8D3B4"), channel: PatternChannel.MaskB, strength: 12),
+                Variant("variant.hedgehog.cream", RarityTier.Common, Hex("EFE0CA"), Hex("D8C09E"), Hex("FFF6EA"), Hex("4A3532"), Hex("1C1414"),
+                    pattern: Hex("FFF4E2"), channel: PatternChannel.MaskB, strength: 10),
+                Variant("variant.hedgehog.grey", RarityTier.Uncommon, Hex("CFC6BE"), Hex("7F7873"), Hex("F0EBE6"), Hex("2A2424"), Hex("141012"),
+                    pattern: Hex("E6E0DA"), channel: PatternChannel.MaskB, strength: 12),
+                Variant("variant.hedgehog.black", RarityTier.Uncommon, Hex("9C8A7E"), Hex("3A312D"), Hex("D4C6BA"), Hex("1A1414"), Hex("0B0808"),
+                    pattern: Hex("7A6D66"), channel: PatternChannel.MaskB, strength: 10),
+                Variant("variant.hedgehog.white", RarityTier.Rare, Hex("F8F0E8"), Hex("EDE2D6"), Hex("FFFFFF"), Hex("E49AA0"), Hex("2A1A1C")),
+                Variant("variant.hedgehog.mushroom", RarityTier.Epic, Hex("EAD6BD"), Hex("D2433A"), Hex("FFF4E6"), Hex("3A2A28"), Hex("1A1212"),
+                    pattern: Hex("FFF8F0"), channel: PatternChannel.MaskA, strength: 15),
+            };
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
         private static SpeciesDefinitionAsset.VariantEntry Variant(string id, RarityTier rarity, Color primary, Color secondary,
             Color belly, Color detail, Color eye, Color? pattern = null, PatternChannel channel = PatternChannel.None, int strength = 0)
         {
@@ -361,11 +448,13 @@ namespace PocketWilds.Editor.Animals
                 throw new InvalidOperationException("Content errors: " + string.Join("; ", builder.Issues));
         }
 
-        private static void EnsureVisualCatalog(string visualKey, AnimalView prefab)
+        private static void EnsureVisualCatalog(string visualKey, AnimalView prefab, Action<BehaviorProfile> behavior = null)
         {
             var catalog = LoadOrCreate<AnimalVisualCatalog>(VisualCatalogPath);
             catalog.entries.RemoveAll(e => e == null || e.visualKey == visualKey);
-            catalog.entries.Add(new AnimalVisualCatalog.Entry { visualKey = visualKey, prefab = prefab, softCapacity = 24, hardCapacity = 48 });
+            var entry = new AnimalVisualCatalog.Entry { visualKey = visualKey, prefab = prefab, softCapacity = 24, hardCapacity = 48 };
+            behavior?.Invoke(entry.behavior);
+            catalog.entries.Add(entry);
             EditorUtility.SetDirty(catalog);
         }
 

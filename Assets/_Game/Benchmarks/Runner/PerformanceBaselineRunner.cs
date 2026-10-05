@@ -46,6 +46,13 @@ namespace PocketWilds.Benchmarks
             ("variant.squirrel.black", RarityTier.Rare), ("variant.squirrel.autumn", RarityTier.Epic),
         };
 
+        private static readonly (string id, RarityTier rarity)[] HedgehogVariants =
+        {
+            ("variant.hedgehog.brown", RarityTier.Common), ("variant.hedgehog.cream", RarityTier.Common),
+            ("variant.hedgehog.grey", RarityTier.Uncommon), ("variant.hedgehog.black", RarityTier.Uncommon),
+            ("variant.hedgehog.white", RarityTier.Rare), ("variant.hedgehog.mushroom", RarityTier.Epic),
+        };
+
         public static PerformanceScenario[] DefaultScenarios() => new[]
         {
             new PerformanceScenario("P0", "Empty sanctuary", 0, QualityTier.Medium),
@@ -60,8 +67,10 @@ namespace PocketWilds.Benchmarks
             {
                 measureSeconds = 14f,
             },
-            new PerformanceScenario("P2-Mix", "20 animals, 10 rabbits + 10 squirrels", 20, QualityTier.Medium) { mixed = true },
-            new PerformanceScenario("S50-Mix", "50 animals, 25 rabbits + 25 squirrels", 50, QualityTier.Medium) { mixed = true },
+            new PerformanceScenario("P2-Mix", "20 animals, 10 rabbits + 10 squirrels", 20, QualityTier.Medium) { species = 2 },
+            new PerformanceScenario("S50-Mix", "50 animals, 25 rabbits + 25 squirrels", 50, QualityTier.Medium) { species = 2 },
+            new PerformanceScenario("P2-Mix3", "20 animals, rabbits, squirrels and hedgehogs", 20, QualityTier.Medium) { species = 3 },
+            new PerformanceScenario("S50-Mix3", "50 animals, rabbits, squirrels and hedgehogs", 50, QualityTier.Medium) { species = 3 },
         };
 
         private static PerformanceScenario[] Filter(PerformanceScenario[] all, string[] args)
@@ -142,7 +151,7 @@ namespace PocketWilds.Benchmarks
             foreach (var scenario in scenarios)
             {
                 string saveDir = Path.Combine(Application.temporaryCachePath, "pw-benchmark", scenario.id);
-                PrepareSave(saveDir, scenario.rabbits, scenario.mixed);
+                PrepareSave(saveDir, scenario.rabbits, scenario.species);
                 yield return Boot(saveDir, scenario.tier);
                 var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                 var bootstrap = Object.FindAnyObjectByType<GameBootstrap>();
@@ -191,10 +200,10 @@ namespace PocketWilds.Benchmarks
         }
 
         /// <summary>
-        /// A real save: N rabbits cycling the six variants (mixed: every other one a squirrel cycling its own
-        /// six), all seen, Light for the hatch burst.
+        /// A real save: N animals cycling the grassland species (1 to 3) and each species' six variants, all
+        /// seen, Light for the hatch burst.
         /// </summary>
-        private static void PrepareSave(string directory, int rabbits, bool mixed)
+        private static void PrepareSave(string directory, int rabbits, int speciesCount)
         {
             if (Directory.Exists(directory))
                 Directory.Delete(directory, true);
@@ -203,14 +212,15 @@ namespace PocketWilds.Benchmarks
                 new RuntimeGameClock(), new SaveServiceOptions { AppVersion = Application.version });
             service.LoadOrCreate();
             var state = service.State;
-            var rabbit = ContentId.FromSource("species.rabbit");
-            var squirrel = ContentId.FromSource("species.squirrel");
+            var ids = new[] { ContentId.FromSource("species.rabbit"), ContentId.FromSource("species.squirrel"), ContentId.FromSource("species.hedgehog") };
+            var tables = new[] { RabbitVariants, SquirrelVariants, HedgehogVariants };
+            speciesCount = Mathf.Clamp(speciesCount, 1, ids.Length);
             for (int i = 0; i < rabbits; i++)
             {
-                bool isSquirrel = mixed && (i & 1) == 1;
-                var species = isSquirrel ? squirrel : rabbit;
-                var table = isSquirrel ? SquirrelVariants : RabbitVariants;
-                var (id, rarity) = table[(mixed ? i >> 1 : i) % table.Length];
+                int which = i % speciesCount;
+                var species = ids[which];
+                var table = tables[which];
+                var (id, rarity) = table[(i / speciesCount) % table.Length];
                 var variant = ContentId.FromSource(id);
                 state.Collection.Add(new AnimalInstance
                 {
