@@ -32,6 +32,11 @@ namespace PocketWilds.UI
         [SerializeField] private GameObject _costRow;
         [SerializeField] private TMP_Text _costLabel;
 
+        [Header("Shortcuts")]
+        [SerializeField] private Button _codexButton;
+        [SerializeField] private RectTransform _codexRoot;
+        [SerializeField] private GameObject _codexBadge;
+
         private ISanctuaryActions _actions;
         private BigValueText _light;
         private BigValueText _rate;
@@ -45,6 +50,7 @@ namespace PocketWilds.UI
         private Vector2 _chipHome;
         private Rect _appliedSafeArea;
         private Vector2Int _appliedScreen;
+        private bool _badgeShown;
 
         /// <summary>Reduce Motion: no breathing or shaking, states stay readable through color.</summary>
         public bool ReduceMotion { get; set; }
@@ -65,6 +71,9 @@ namespace PocketWilds.UI
             _chipHome = _lightChip.anchoredPosition;
             _freeShown = !_costRow.activeSelf;
             _hatchButton.onClick.AddListener(OnHatchPressed);
+            if (_codexButton != null)
+                _codexButton.onClick.AddListener(OnCodexPressed);
+            _badgeShown = _codexBadge != null && _codexBadge.activeSelf;
             FitSafeArea();
         }
 
@@ -106,6 +115,16 @@ namespace PocketWilds.UI
 
         public void PulseNotEnough() => _pulse = 0f;
 
+        public void SetCodexBadge(bool visible)
+        {
+            if (_codexBadge == null || visible == _badgeShown)
+                return;
+            _badgeShown = visible;
+            _codexBadge.SetActive(visible);
+        }
+
+        public bool CodexBadgeVisible => _badgeShown;
+
         public void Tick(float unscaledDeltaTime)
         {
             if (!_bound)
@@ -141,7 +160,8 @@ namespace PocketWilds.UI
 
         public bool IsOverUi(Vector2 screenPosition) =>
             RectTransformUtility.RectangleContainsScreenPoint(_hatchRoot, screenPosition, null)
-            || RectTransformUtility.RectangleContainsScreenPoint(_lightChip, screenPosition, null);
+            || RectTransformUtility.RectangleContainsScreenPoint(_lightChip, screenPosition, null)
+            || (_codexRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_codexRoot, screenPosition, null));
 
         /// <summary>Prefab builder hook (Editor UiPipeline).</summary>
         public void SetReferences(UiColorTokens tokens, RectTransform safeArea, RectTransform lightChip, TMP_Text lightLabel,
@@ -179,12 +199,24 @@ namespace PocketWilds.UI
             _safeArea.offsetMax = Vector2.zero;
         }
 
+        /// <summary>Prefab builder hook for the shortcut row (Editor UiPipeline).</summary>
+        public void SetShortcutReferences(Button codexButton, RectTransform codexRoot, GameObject codexBadge)
+        {
+            _codexButton = codexButton;
+            _codexRoot = codexRoot;
+            _codexBadge = codexBadge;
+        }
+
         private void OnHatchPressed() => _actions?.RequestHatch();
+
+        private void OnCodexPressed() => _actions?.OpenCodex();
 
         private void OnDestroy()
         {
             if (_hatchButton != null)
                 _hatchButton.onClick.RemoveListener(OnHatchPressed);
+            if (_codexButton != null)
+                _codexButton.onClick.RemoveListener(OnCodexPressed);
         }
     }
 }

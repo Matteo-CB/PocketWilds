@@ -22,7 +22,7 @@ namespace PocketWilds.Tests.EditMode
         private static GameObject LoadHud() => AssetDatabase.LoadAssetAtPath<GameObject>(UiPipeline.HudPrefabPath);
 
         [Test]
-        public void HudPrefab_SplitsCanvases_AndOnlyTheHatchButtonCatchesTouches()
+        public void HudPrefab_SplitsCanvases_AndOnlyButtonsCatchTouches()
         {
             var prefab = LoadHud();
             Assert.IsNotNull(prefab, "Run Pocket Wilds/UI/Build HUD (T17).");
@@ -44,8 +44,12 @@ namespace PocketWilds.Tests.EditMode
 
             var graphics = prefab.GetComponentsInChildren<Graphic>(true);
             var targets = graphics.Where(g => g.raycastTarget).ToArray();
-            Assert.AreEqual(1, targets.Length, "Only the hatch button is a raycast target.");
-            Assert.IsNotNull(targets[0].GetComponent<Button>());
+            Assert.AreEqual(2, targets.Length, "Only the hatch button and the Codex shortcut catch touches.");
+            Assert.IsTrue(targets.All(t => t.GetComponent<Button>() != null));
+            var shortcuts = prefab.transform.Find("SafeArea/Shortcuts");
+            Assert.IsNotNull(shortcuts.GetComponent<Canvas>(), "Shortcuts rebuild on their own canvas.");
+            Assert.IsNotNull(shortcuts.GetComponent<GraphicRaycaster>());
+            Assert.IsFalse(shortcuts.Find("Codex/Badge").gameObject.activeSelf, "No badge until something new is found.");
             Assert.IsEmpty(prefab.GetComponentsInChildren<LayoutGroup>(true), "No layout recalculation on the HUD.");
             Assert.IsEmpty(prefab.GetComponentsInChildren<ContentSizeFitter>(true));
             Assert.IsEmpty(prefab.GetComponentsInChildren<Animator>(true));
@@ -87,6 +91,7 @@ namespace PocketWilds.Tests.EditMode
                 Assert.IsNotNull(so.FindProperty("_hatchConfig").objectReferenceValue);
                 Assert.AreEqual("egg.grassland.basic", so.FindProperty("_eggId").stringValue);
                 Assert.IsInstanceOf<OfflineReturnScreen>(so.FindProperty("_offlineReturn").objectReferenceValue);
+                Assert.IsInstanceOf<CodexScreen>(so.FindProperty("_codex").objectReferenceValue);
             }
             finally
             {

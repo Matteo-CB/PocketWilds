@@ -317,6 +317,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Day7_v1")]
         [TestCase("GoldenSave_PremiumEntitlements_v1")]
         [TestCase("GoldenSave_Offline_v2")]
+        [TestCase("GoldenSave_Codex_v3")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -332,6 +333,11 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(1, result.FromSchemaVersion);
                 Assert.AreEqual(SaveSchema.CurrentVersion - 1, result.MigrationsApplied);
                 Assert.IsFalse(state.Offline.HasRate, "Schema 1 has no exit snapshot: the rate is rebuilt.");
+            }
+            if (!name.EndsWith("_v3"))
+            {
+                Assert.IsTrue(state.Codex.SeenSpecies.SetEquals(state.Collection.DiscoveredSpecies), "Older saves: everything found counts as seen.");
+                Assert.IsTrue(state.Codex.SeenVariants.SetEquals(state.Collection.DiscoveredVariants));
             }
 
             switch (name)
@@ -368,6 +374,14 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(12.5, state.Offline.RateAtSave.ToDoubleClamped());
                     Assert.AreEqual(new DateTimeOffset(2026, 10, 14, 0, 3, 0, TimeSpan.Zero), state.Offline.HighWaterUtc);
                     Assert.AreEqual(1, state.Collection.Count);
+                    break;
+
+                case "GoldenSave_Codex_v3":
+                    Assert.AreEqual(90, state.Meta.Revision);
+                    Assert.AreEqual(2, state.Collection.Count);
+                    Assert.AreEqual(1, state.Codex.SeenSpecies.Count);
+                    Assert.AreEqual(1, state.Codex.SeenVariants.Count);
+                    Assert.AreEqual(2, state.Collection.DiscoveredVariants.Count, "White rabbit found, not seen yet.");
                     break;
 
                 case "GoldenSave_PremiumEntitlements_v1":

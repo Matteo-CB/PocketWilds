@@ -31,8 +31,8 @@ namespace PocketWilds.Services.Save
     public static class SaveSchema
     {
         /// <summary>Bump on any persisted data change, with a migration and updated golden saves.</summary>
-        /// <summary>2: Offline section (rate at save, time high-water mark).</summary>
-        public const int CurrentVersion = 2;
+        /// <summary>2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids).</summary>
+        public const int CurrentVersion = 3;
     }
 
     /// <summary>
@@ -50,6 +50,7 @@ namespace PocketWilds.Services.Save
         private const ushort SettingsVersion = 1;
         private const ushort EntitlementsVersion = 1;
         private const ushort OfflineVersion = 1;
+        private const ushort CodexVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -119,6 +120,15 @@ namespace PocketWilds.Services.Save
             output.WriteBigValue(state.Offline.RateAtSave);
             output.WriteBool(state.Offline.HasRate);
             output.WriteInt64(state.Offline.HighWaterUtc.ToUnixTimeMilliseconds());
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Codex, CodexVersion);
+            output.WriteInt32(state.Codex.SeenSpecies.Count);
+            foreach (var id in state.Codex.SeenSpecies)
+                output.WriteContentId(id);
+            output.WriteInt32(state.Codex.SeenVariants.Count);
+            foreach (var id in state.Codex.SeenVariants)
+                output.WriteContentId(id);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -258,6 +268,14 @@ namespace PocketWilds.Services.Save
                     ReadEntitlements(entitlements, state.Entitlements);
                 if (document.TryGetSection(SaveSectionId.Offline, out var offline))
                     ReadOffline(offline, state.Offline);
+                if (document.TryGetSection(SaveSectionId.Codex, out var codex))
+                    ReadCodex(codex, state.Codex);
+                else
+                {
+                    // Saves older than the Codex: everything found so far counts as seen (no flood of "New").
+                    state.Codex.SeenSpecies.UnionWith(state.Collection.DiscoveredSpecies);
+                    state.Codex.SeenVariants.UnionWith(state.Collection.DiscoveredVariants);
+                }
             }
             catch (BinaryFormatException ex)
             {
@@ -286,6 +304,18 @@ namespace PocketWilds.Services.Save
             meta.Revision = r.ReadInt64();
             meta.AppVersion = r.ReadString() ?? string.Empty;
             meta.TotalPlaySeconds = r.ReadDouble();
+        }
+
+        private static void ReadCodex(SaveSection section, CodexState codex)
+        {
+            RequireVersion(section, CodexVersion);
+            var r = section.CreateReader();
+            int species = ReadCount(ref r);
+            for (int i = 0; i < species; i++)
+                codex.SeenSpecies.Add(r.ReadContentId());
+            int variants = ReadCount(ref r);
+            for (int i = 0; i < variants; i++)
+                codex.SeenVariants.Add(r.ReadContentId());
         }
 
         private static void ReadOffline(SaveSection section, OfflineState offline)

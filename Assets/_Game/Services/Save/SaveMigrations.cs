@@ -8,6 +8,7 @@ namespace PocketWilds.Services.Save
         public static ISaveMigration[] All() => new ISaveMigration[]
         {
             new Migration0001AddOffline(),
+            new Migration0002AddCodex(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -21,6 +22,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 1;
         public int ToVersion => 2;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 2 to 3: adds the Codex section. A file without it loads with every discovery marked as
+    /// seen (BinarySaveSerializer), so old profiles do not open a Codex full of "New" badges.
+    /// </summary>
+    public sealed class Migration0002AddCodex : ISaveMigration
+    {
+        public int FromVersion => 2;
+        public int ToVersion => 3;
 
         public void Apply(SaveDocument document)
         {

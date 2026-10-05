@@ -13,6 +13,7 @@ namespace PocketWilds.Content
         public List<SpeciesDefinitionAsset> species = new List<SpeciesDefinitionAsset>();
         public List<EggDefinitionAsset> eggs = new List<EggDefinitionAsset>();
         public List<PaletteSetAsset> paletteSets = new List<PaletteSetAsset>();
+        public List<BiomeDefinitionAsset> biomes = new List<BiomeDefinitionAsset>();
 
         [Tooltip("Player-facing text, one table per language (LOC_en first: it is the fallback).")]
         public List<LocalizationTableAsset> localization = new List<LocalizationTableAsset>();
@@ -37,6 +38,11 @@ namespace PocketWilds.Content
             {
                 if (egg != null)
                     builder.AddEgg(egg.ToRuntime(), egg.sourceId);
+            }
+            foreach (var biome in biomes)
+            {
+                if (biome != null)
+                    builder.AddBiome(biome.ToRuntime(), biome.sourceId);
             }
             foreach (var set in paletteSets)
             {

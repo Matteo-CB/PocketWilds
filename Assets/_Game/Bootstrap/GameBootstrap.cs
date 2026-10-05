@@ -46,6 +46,7 @@ namespace PocketWilds.Bootstrap
         private EconomyService _economy;
         private HatchService _hatch;
         private OfflineService _offline;
+        private CodexService _codex;
         private LocalizationService _localization;
         private QualityService _quality;
         private FrameRateService _frameRate;
@@ -140,6 +141,7 @@ namespace PocketWilds.Bootstrap
                 _economy = new EconomyService(_save.State, _content, EconomyConfig.Default, _save);
                 _hatch = new HatchService(_save.State, _content, _economy, _clock, _save);
                 _offline = new OfflineService(_save.State, _economy, _clock);
+                _codex = new CodexService(_save.State, _content, _save);
                 _save.BeforeSerialize += _offline.CaptureSnapshot;
             });
 
@@ -156,7 +158,7 @@ namespace PocketWilds.Bootstrap
                 var visuals = new AnimalVisualResolver(_content, _palettes);
                 var catalog = _options.VisualCatalogOverride != null ? _options.VisualCatalogOverride : _visualCatalog;
                 Context = new GameContext(_clock, _content, _save, _economy, _hatch, _quality, _frameRate, _palettes, visuals, catalog,
-                    NullAudioService.Instance, NullHapticService.Instance, _offline, _localization);
+                    NullAudioService.Instance, NullHapticService.Instance, _offline, _localization, _codex);
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 if (_options.LoadTargetScene)

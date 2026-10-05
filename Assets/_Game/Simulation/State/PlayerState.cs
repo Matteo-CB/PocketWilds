@@ -16,6 +16,7 @@ namespace PocketWilds.Simulation
         public SettingsState Settings { get; } = new SettingsState();
         public EntitlementState Entitlements { get; } = new EntitlementState();
         public OfflineState Offline { get; } = new OfflineState();
+        public CodexState Codex { get; } = new CodexState();
 
         public static PlayerState CreateNew(DateTimeOffset utcNow)
         {
@@ -26,6 +27,16 @@ namespace PocketWilds.Simulation
             state.Offline.HighWaterUtc = utcNow;
             return state;
         }
+    }
+
+    /// <summary>
+    /// What the player has already looked at in the Codex. Discovered minus seen = "New" badges.
+    /// Only discovered ids are ever added, so seen is always a subset of discovered.
+    /// </summary>
+    public sealed class CodexState
+    {
+        public HashSet<ContentId> SeenSpecies { get; } = new HashSet<ContentId>();
+        public HashSet<ContentId> SeenVariants { get; } = new HashSet<ContentId>();
     }
 
     /// <summary>

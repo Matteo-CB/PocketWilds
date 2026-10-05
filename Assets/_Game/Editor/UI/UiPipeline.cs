@@ -36,6 +36,11 @@ namespace PocketWilds.Editor.UI
         public const string GlowPath = KitFolder + "/UI_Glow_Soft.png";
         public const string HudPrefabPath = "Assets/_Game/Prefabs/UI/Screens/PF_UI_HUD_Main.prefab";
         public const string OfflineReturnPrefabPath = "Assets/_Game/Prefabs/UI/Screens/PF_UI_OfflineReturn.prefab";
+        public const string CodexPrefabPath = "Assets/_Game/Prefabs/UI/Screens/PF_UI_Codex.prefab";
+        public const string DotPath = KitFolder + "/UI_Dot.png";
+        public const string StarPath = IconFolder + "/ICO_Rarity_Star.png";
+        public const string BackIconPath = IconFolder + "/ICO_Back_Chevron.png";
+        public const string CodexIconPath = IconFolder + "/ICO_Codex_Book.png";
         public const string LocalizationFolder = "Assets/_Game/Content/Localization";
         public const string ContentDatabasePath = "Assets/_Game/Content/DEF_ContentDatabase.asset";
         public const string HatchConfigPath = "Assets/_Game/Content/Visuals/DEF_HatchPresentation.asset";
@@ -53,6 +58,19 @@ namespace PocketWilds.Editor.UI
         {
             { UiTextKeys.OfflineWelcomeBack, "Welcome back", "Bon retour" },
             { UiTextKeys.CollectButton, "Collect", "Récolter" },
+            { UiTextKeys.CodexTitle, "Codex", "Codex" },
+            { UiTextKeys.CodexVariants, "Variants", "Variantes" },
+            { UiTextKeys.CodexNew, "New", "Nouveau" },
+            { UiTextKeys.CodexUnknown, "???", "???" },
+            // Content names (display keys of biome, species and variant definitions).
+            { "biome.grassland.name", "Meadow", "Prairie" },
+            { "species.rabbit.name", "Rabbit", "Lapin" },
+            { "variant.rabbit.brown.name", "Brown", "Brun" },
+            { "variant.rabbit.white.name", "White", "Blanc" },
+            { "variant.rabbit.grey.name", "Grey", "Gris" },
+            { "variant.rabbit.black.name", "Black", "Noir" },
+            { "variant.rabbit.spotted.name", "Spotted", "Tacheté" },
+            { "variant.rabbit.sakura.name", "Sakura", "Sakura" },
         };
 
         public static readonly string[] Languages = { "en", "fr" };
@@ -63,9 +81,11 @@ namespace PocketWilds.Editor.UI
             ReimportSprites();
             var tokens = EnsureTokens();
             EnsureAtlas();
+            PocketWilds.Editor.Content.BiomePipeline.EnsureBiomes();
             EnsureLocalization();
             BuildHudPrefab(tokens);
             BuildOfflineReturnPrefab(tokens);
+            BuildCodexPrefab(tokens);
             AssetDatabase.SaveAssets();
             SetupScene();
             Debug.Log("[UiPipeline] HUD and screens built and wired.");
@@ -99,7 +119,8 @@ namespace PocketWilds.Editor.UI
 
         public static void ReimportSprites()
         {
-            foreach (var path in new[] { PillPath, CirclePath, PanelPath, ButtonPrimaryPath, GlowPath, LightIconPath, EggIconPath })
+            foreach (var path in new[] { PillPath, CirclePath, PanelPath, ButtonPrimaryPath, GlowPath, DotPath, LightIconPath, EggIconPath,
+                         StarPath, BackIconPath, CodexIconPath })
             {
                 if (!File.Exists(path))
                     throw new FileNotFoundException("Run SourceArt/UI/Tools/pw_ui_sprites.py first.", path);
@@ -235,6 +256,25 @@ namespace PocketWilds.Editor.UI
 
                 hud.SetReferences(tokens, safe, chip, value, rate, button, hatchRoot, buttonImage, egg, costRow.gameObject, cost);
 
+                // Shortcuts: the Codex, bottom left in the thumb zone, own canvas + raycaster.
+                var shortcuts = Rect("Shortcuts", safe);
+                Stretch(shortcuts);
+                shortcuts.gameObject.AddComponent<Canvas>();
+                shortcuts.gameObject.AddComponent<GraphicRaycaster>();
+                var codexRoot = Rect("Codex", shortcuts);
+                Place(codexRoot, Vector2.zero, Vector2.zero, new Vector2(52f, 132f), new Vector2(176f, 176f));
+                var codexImage = AddImage("Button", codexRoot, circle, tokens.panelPrimary, Image.Type.Simple);
+                codexImage.raycastTarget = true;
+                Stretch(codexImage.rectTransform);
+                var codexButton = codexImage.gameObject.AddComponent<Button>();
+                ConfigureButton(codexButton, codexImage);
+                var codexIcon = AddImage("Icon", codexImage.rectTransform, AssetDatabase.LoadAssetAtPath<Sprite>(CodexIconPath), Color.white, Image.Type.Simple);
+                Place(codexIcon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 6f), new Vector2(112f, 112f));
+                var badge = AddImage("Badge", codexRoot, AssetDatabase.LoadAssetAtPath<Sprite>(DotPath), tokens.errorSoft, Image.Type.Simple);
+                Place(badge.rectTransform, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-26f, -26f), new Vector2(46f, 46f));
+                badge.gameObject.SetActive(false);
+                hud.SetShortcutReferences(codexButton, codexRoot, badge.gameObject);
+
                 Directory.CreateDirectory(Path.GetDirectoryName(HudPrefabPath));
                 return PrefabUtility.SaveAsPrefabAsset(root, HudPrefabPath).GetComponent<SanctuaryHud>();
             }
@@ -335,6 +375,289 @@ namespace PocketWilds.Editor.UI
             }
         }
 
+        private static void ConfigureButton(Button button, Image target)
+        {
+            button.targetGraphic = target;
+            button.transition = Selectable.Transition.ColorTint;
+            var colors = ColorBlock.defaultColorBlock;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = Color.white;
+            colors.selectedColor = Color.white;
+            colors.pressedColor = new Color(0.86f, 0.86f, 0.86f, 1f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+            var navigation = button.navigation;
+            navigation.mode = Navigation.Mode.None;
+            button.navigation = navigation;
+        }
+
+        /// <summary>
+        /// PF_UI_Codex: opaque full screen, header (back, title, completion), virtualized list of biome
+        /// headers and 3-card rows (templates only, rows are pooled at runtime), species sheet with 12 slots.
+        /// </summary>
+        public static CodexScreen BuildCodexPrefab(UiColorTokens tokens)
+        {
+            var panel = AssetDatabase.LoadAssetAtPath<Sprite>(PanelPath);
+            var pill = AssetDatabase.LoadAssetAtPath<Sprite>(PillPath);
+            var circle = AssetDatabase.LoadAssetAtPath<Sprite>(CirclePath);
+            var star = AssetDatabase.LoadAssetAtPath<Sprite>(StarPath);
+            var back = AssetDatabase.LoadAssetAtPath<Sprite>(BackIconPath);
+            var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
+            var visuals = AssetDatabase.LoadAssetAtPath<CodexVisualCatalog>("Assets/_Game/Content/Visuals/DEF_CodexVisuals.asset");
+            if (panel == null || pill == null || circle == null || star == null || back == null || font == null || visuals == null)
+                throw new InvalidOperationException("Codex sprites, font or DEF_CodexVisuals missing (run Render Animal Thumbnails).");
+
+            var root = new GameObject("PF_UI_Codex", typeof(RectTransform));
+            try
+            {
+                var canvas = root.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 20;
+                AddScaler(root);
+                root.AddComponent<GraphicRaycaster>();
+                var screen = root.AddComponent<CodexScreen>();
+
+                var content = Rect("Content", root.transform);
+                Stretch(content);
+                var group = content.gameObject.AddComponent<CanvasGroup>();
+                var background = Rect("Background", content).gameObject.AddComponent<Image>();
+                Stretch(background.rectTransform);
+                background.color = tokens.backgroundLight;
+                background.raycastTarget = true;
+                background.maskable = false;
+
+                var safe = Rect("SafeArea", content);
+                Stretch(safe);
+
+                // Header.
+                var header = Rect("Header", safe);
+                header.anchorMin = new Vector2(0f, 1f);
+                header.anchorMax = new Vector2(1f, 1f);
+                header.pivot = new Vector2(0.5f, 1f);
+                header.anchoredPosition = Vector2.zero;
+                header.sizeDelta = new Vector2(0f, 300f);
+                var backImage = AddImage("Back", header, circle, Color.white, Image.Type.Simple);
+                backImage.raycastTarget = true;
+                Place(backImage.rectTransform, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), new Vector2(110f, -100f), new Vector2(140f, 140f));
+                var backButton = backImage.gameObject.AddComponent<Button>();
+                ConfigureButton(backButton, backImage);
+                var chevron = AddImage("Chevron", backImage.rectTransform, back, tokens.textPrimary, Image.Type.Simple);
+                Place(chevron.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-4f, 6f), new Vector2(64f, 64f));
+                var title = AddText("Title", header, font, 76f, FontStyles.Bold, tokens.textPrimary, "Codex");
+                title.alignment = TextAlignmentOptions.Center;
+                Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -100f), new Vector2(600f, 100f));
+                var progressBack = AddImage("ProgressBack", header, pill, tokens.panelSecondary, Image.Type.Sliced);
+                Place(progressBack.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-50f, -205f), new Vector2(520f, 44f));
+                progressBack.pixelsPerUnitMultiplier = 2.6f;
+                var progressFill = AddImage("Fill", progressBack.rectTransform, pill, tokens.success, Image.Type.Sliced);
+                progressFill.pixelsPerUnitMultiplier = 2.6f;
+                var fillRect = progressFill.rectTransform;
+                fillRect.anchorMin = new Vector2(0f, 0f);
+                fillRect.anchorMax = new Vector2(0f, 1f);
+                fillRect.pivot = new Vector2(0f, 0.5f);
+                fillRect.anchoredPosition = Vector2.zero;
+                fillRect.sizeDelta = new Vector2(44f, 0f);
+                var progressLabel = AddText("ProgressLabel", header, font, 42f, FontStyles.Bold, tokens.textSecondary, "0/0");
+                Place(progressLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, 0.5f), new Vector2(238f, -202f), new Vector2(200f, 60f));
+
+                // Virtualized list.
+                var viewport = Rect("Viewport", safe);
+                viewport.anchorMin = Vector2.zero;
+                viewport.anchorMax = Vector2.one;
+                viewport.offsetMin = Vector2.zero;
+                viewport.offsetMax = new Vector2(0f, -300f);
+                viewport.gameObject.AddComponent<RectMask2D>();
+                var dragArea = viewport.gameObject.AddComponent<Image>();
+                dragArea.color = new Color(1f, 1f, 1f, 0f);
+                dragArea.raycastTarget = true;
+                var listContent = Rect("List", viewport);
+                listContent.anchorMin = new Vector2(0f, 1f);
+                listContent.anchorMax = new Vector2(1f, 1f);
+                listContent.pivot = new Vector2(0.5f, 1f);
+                listContent.anchoredPosition = Vector2.zero;
+                listContent.sizeDelta = new Vector2(0f, 400f);
+                var scroll = viewport.gameObject.AddComponent<ScrollRect>();
+                ConfigureScroll(scroll, viewport, listContent);
+
+                var headerRow = BuildHeaderRow(listContent, font, tokens);
+                var cardRow = BuildCardRow(listContent, font, tokens, panel, pill);
+
+                // Species sheet, scrollable for species with many variants.
+                var sheetRect = Rect("Sheet", safe);
+                sheetRect.anchorMin = Vector2.zero;
+                sheetRect.anchorMax = Vector2.one;
+                sheetRect.offsetMin = Vector2.zero;
+                sheetRect.offsetMax = new Vector2(0f, -300f);
+                sheetRect.gameObject.AddComponent<RectMask2D>();
+                var sheetBack = sheetRect.gameObject.AddComponent<Image>();
+                sheetBack.color = tokens.backgroundLight;
+                sheetBack.raycastTarget = true;
+                var sheetContent = Rect("SheetContent", sheetRect);
+                sheetContent.anchorMin = new Vector2(0f, 1f);
+                sheetContent.anchorMax = new Vector2(1f, 1f);
+                sheetContent.pivot = new Vector2(0.5f, 1f);
+                sheetContent.anchoredPosition = Vector2.zero;
+                sheetContent.sizeDelta = new Vector2(0f, 1600f);
+                var sheetScroll = sheetRect.gameObject.AddComponent<ScrollRect>();
+                ConfigureScroll(sheetScroll, sheetRect, sheetContent);
+
+                var portraitBack = AddImage("PortraitBack", sheetContent, panel, Color.white, Image.Type.Sliced);
+                Place(portraitBack.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -20f), new Vector2(500f, 500f));
+                var portrait = AddImage("Portrait", portraitBack.rectTransform, null, Color.white, Image.Type.Simple);
+                Place(portrait.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 6f), new Vector2(440f, 440f));
+                var sheetName = AddText("Name", sheetContent, font, 72f, FontStyles.Bold, tokens.textPrimary, "Rabbit");
+                sheetName.alignment = TextAlignmentOptions.Center;
+                Place(sheetName.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -585f), new Vector2(900f, 96f));
+                var owned = AddText("Owned", sheetContent, font, 44f, FontStyles.Bold, tokens.textSecondary, "x0");
+                owned.alignment = TextAlignmentOptions.Center;
+                Place(owned.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -655f), new Vector2(400f, 60f));
+                var variantsTitle = AddText("VariantsTitle", sheetContent, font, 46f, FontStyles.Bold, tokens.textSecondary, "Variants");
+                Place(variantsTitle.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(64f, -722f), new Vector2(600f, 60f));
+
+                var slots = new CodexVariantSlotView[12];
+                for (int i = 0; i < slots.Length; i++)
+                {
+                    int column = i % CodexScreen.SheetColumns;
+                    int row = i / CodexScreen.SheetColumns;
+                    var position = new Vector2(60f + column * 330f, -(CodexScreen.SheetSlotsTop + row * CodexScreen.SheetSlotPitch));
+                    slots[i] = BuildSlot(sheetContent, "Slot" + i, position, font, tokens, panel, pill, star);
+                }
+                sheetRect.gameObject.SetActive(false);
+
+                screen.SetReferences(tokens, visuals, content.gameObject, group, safe, backButton, title, progressBack.rectTransform,
+                    fillRect, progressLabel, scroll, viewport, listContent, headerRow, cardRow, sheetRect.gameObject, sheetScroll,
+                    sheetContent, portrait, sheetName, owned, variantsTitle, slots);
+                content.gameObject.SetActive(false);
+
+                Directory.CreateDirectory(Path.GetDirectoryName(CodexPrefabPath));
+                return PrefabUtility.SaveAsPrefabAsset(root, CodexPrefabPath).GetComponent<CodexScreen>();
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void ConfigureScroll(ScrollRect scroll, RectTransform viewport, RectTransform content)
+        {
+            scroll.viewport = viewport;
+            scroll.content = content;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Elastic;
+            scroll.elasticity = 0.08f;
+            scroll.inertia = true;
+            scroll.decelerationRate = 0.12f;
+            scroll.scrollSensitivity = 40f;
+        }
+
+        private static CodexHeaderView BuildHeaderRow(RectTransform parent, TMP_FontAsset font, UiColorTokens tokens)
+        {
+            var rect = Rect("HeaderRowTemplate", parent);
+            TopStretch(rect, CodexScreen.HeaderRowHeight);
+            var view = rect.gameObject.AddComponent<CodexHeaderView>();
+            var title = AddText("Title", rect, font, 50f, FontStyles.Bold, tokens.textPrimary, "Meadow");
+            Place(title.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(64f, 18f), new Vector2(600f, 70f));
+            var count = AddText("Count", rect, font, 40f, FontStyles.Bold, tokens.textSecondary, "0/0");
+            count.alignment = TextAlignmentOptions.MidlineRight;
+            Place(count.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-64f, 20f), new Vector2(300f, 64f));
+            view.SetReferences(rect, title, count);
+            rect.gameObject.SetActive(false);
+            return view;
+        }
+
+        private static CodexCardRow BuildCardRow(RectTransform parent, TMP_FontAsset font, UiColorTokens tokens, Sprite panel, Sprite pill)
+        {
+            var rect = Rect("CardRowTemplate", parent);
+            TopStretch(rect, CodexScreen.CardRowHeight);
+            var row = rect.gameObject.AddComponent<CodexCardRow>();
+            var cards = new CodexCardView[CodexCardRow.Columns];
+            for (int c = 0; c < cards.Length; c++)
+            {
+                var card = Rect("Card" + c, rect);
+                Place(card, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(60f + c * 330f, -10f), new Vector2(300f, 400f));
+                var cardBack = AddImage("Background", card, panel, Color.white, Image.Type.Sliced);
+                Stretch(cardBack.rectTransform);
+                cardBack.raycastTarget = true;
+                cardBack.pixelsPerUnitMultiplier = 1.4f;
+                var button = cardBack.gameObject.AddComponent<Button>();
+                ConfigureButton(button, cardBack);
+                var thumb = AddImage("Thumbnail", card, null, Color.white, Image.Type.Simple);
+                Place(thumb.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -22f), new Vector2(240f, 240f));
+                var name = AddText("Name", card, font, 40f, FontStyles.Bold, tokens.textPrimary, "Rabbit");
+                name.alignment = TextAlignmentOptions.Center;
+                name.enableAutoSizing = true;
+                name.fontSizeMin = 28f;
+                name.fontSizeMax = 40f;
+                Place(name.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -296f), new Vector2(270f, 56f));
+                var count = AddText("Count", card, font, 32f, FontStyles.Bold, tokens.textSecondary, "0/0");
+                count.alignment = TextAlignmentOptions.Center;
+                Place(count.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -350f), new Vector2(200f, 46f));
+                var badge = BuildBadge(card, font, tokens, pill, out var badgeLabel);
+                var view = card.gameObject.AddComponent<CodexCardView>();
+                view.SetReferences(cardBack, thumb, name, count, badge, badgeLabel, button);
+                cards[c] = view;
+            }
+            row.SetReferences(rect, cards);
+            rect.gameObject.SetActive(false);
+            return row;
+        }
+
+        private static CodexVariantSlotView BuildSlot(RectTransform parent, string name, Vector2 position, TMP_FontAsset font, UiColorTokens tokens,
+            Sprite panel, Sprite pill, Sprite star)
+        {
+            var slot = Rect(name, parent);
+            Place(slot, new Vector2(0f, 1f), new Vector2(0f, 1f), position, new Vector2(300f, 340f));
+            var back = AddImage("Background", slot, panel, Color.white, Image.Type.Sliced);
+            back.pixelsPerUnitMultiplier = 1.4f;
+            Stretch(back.rectTransform);
+            var thumb = AddImage("Thumbnail", slot, null, Color.white, Image.Type.Simple);
+            Place(thumb.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -16f), new Vector2(200f, 200f));
+            var label = AddText("Name", slot, font, 36f, FontStyles.Bold, tokens.textPrimary, "Brown");
+            label.alignment = TextAlignmentOptions.Center;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 26f;
+            label.fontSizeMax = 36f;
+            Place(label.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -246f), new Vector2(270f, 52f));
+            var stars = new Image[6];
+            for (int i = 0; i < stars.Length; i++)
+            {
+                stars[i] = AddImage("Star" + i, slot, star, Color.white, Image.Type.Simple);
+                Place(stars[i].rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f),
+                    new Vector2((i - 2.5f) * CodexVariantSlotView.StarPitch, -300f), new Vector2(36f, 36f));
+            }
+            var badge = BuildBadge(slot, font, tokens, pill, out var badgeLabel);
+            var view = slot.gameObject.AddComponent<CodexVariantSlotView>();
+            view.SetReferences(back, thumb, label, stars, badge, badgeLabel);
+            slot.gameObject.SetActive(false);
+            return view;
+        }
+
+        private static GameObject BuildBadge(RectTransform parent, TMP_FontAsset font, UiColorTokens tokens, Sprite pill, out TMP_Text label)
+        {
+            var badge = AddImage("NewBadge", parent, pill, tokens.accentPrimary, Image.Type.Sliced);
+            badge.pixelsPerUnitMultiplier = 2.2f;
+            Place(badge.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(10f, 14f), new Vector2(150f, 56f));
+            var text = AddText("Label", badge.rectTransform, font, 28f, FontStyles.Bold, tokens.textPrimary, "New");
+            text.alignment = TextAlignmentOptions.Center;
+            text.enableAutoSizing = true;
+            text.fontSizeMin = 20f;
+            text.fontSizeMax = 28f;
+            Place(text.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 3f), new Vector2(136f, 44f));
+            badge.gameObject.SetActive(false);
+            label = text;
+            return badge.gameObject;
+        }
+
+        private static void TopStretch(RectTransform rect, float height)
+        {
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(0f, height);
+        }
+
         private static void AddScaler(GameObject root)
         {
             var scaler = root.AddComponent<CanvasScaler>();
@@ -357,12 +680,14 @@ namespace PocketWilds.Editor.UI
             VerticalSliceEntry entry = null;
             SanctuaryHud hud = null;
             OfflineReturnScreen offline = null;
+            CodexScreen codex = null;
             EventSystem events = null;
             foreach (var root in scene.GetRootGameObjects())
             {
                 entry = entry ?? root.GetComponent<VerticalSliceEntry>();
                 hud = hud ?? root.GetComponent<SanctuaryHud>();
                 offline = offline ?? root.GetComponent<OfflineReturnScreen>();
+                codex = codex ?? root.GetComponent<CodexScreen>();
                 events = events ?? root.GetComponent<EventSystem>();
             }
             if (entry == null)
@@ -373,6 +698,12 @@ namespace PocketWilds.Editor.UI
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(HudPrefabPath);
                 hud = ((GameObject)PrefabUtility.InstantiatePrefab(prefab, scene)).GetComponent<SanctuaryHud>();
                 hud.name = "HUD_Main";
+            }
+            if (codex == null)
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CodexPrefabPath);
+                codex = ((GameObject)PrefabUtility.InstantiatePrefab(prefab, scene)).GetComponent<CodexScreen>();
+                codex.name = "Screen_Codex";
             }
             if (offline == null)
             {
@@ -392,6 +723,7 @@ namespace PocketWilds.Editor.UI
             var so = new SerializedObject(entry);
             so.FindProperty("_hud").objectReferenceValue = hud;
             so.FindProperty("_offlineReturn").objectReferenceValue = offline;
+            so.FindProperty("_codex").objectReferenceValue = codex;
             so.FindProperty("_hatchConfig").objectReferenceValue = AssetDatabase.LoadAssetAtPath<HatchPresentationConfig>(HatchConfigPath);
             so.FindProperty("_eggId").stringValue = "egg.grassland.basic";
             so.ApplyModifiedPropertiesWithoutUndo();

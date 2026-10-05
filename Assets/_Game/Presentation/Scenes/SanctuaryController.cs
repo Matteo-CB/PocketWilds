@@ -14,7 +14,7 @@ namespace PocketWilds.Presentation
     /// pooled views, no per-animal logic, no allocation in steady state. Away time comes back through the
     /// offline return screen; its Light counts up into the HUD when collected (T18).
     /// </summary>
-    public sealed class SanctuaryController : ISanctuaryActions, IHatchListener, IOfflineReturnActions, IDisposable
+    public sealed class SanctuaryController : ISanctuaryActions, IHatchListener, IOfflineReturnActions, ICodexActions, IDisposable
     {
         private const float NextEggDelay = 0.45f;
         private const float RepeatWindowSeconds = 15f;
@@ -27,6 +27,7 @@ namespace PocketWilds.Presentation
         private readonly SanctuaryCameraRig _rig;
         private readonly ISanctuaryHud _hud;
         private readonly IOfflineReturnView _offlineView;
+        private readonly ICodexView _codexView;
         private readonly SanctuaryCameraInput _input;
         private readonly ContentId _eggId;
         private readonly EggDefinition _egg;
@@ -57,13 +58,15 @@ namespace PocketWilds.Presentation
         private float _collectTime = -1f;
 
         public SanctuaryController(GameContext context, WorldChunk chunk, SanctuaryCameraRig rig, ISanctuaryHud hud,
-            HatchPresentationConfig hatchConfig, string eggSourceId, Transform root, IOfflineReturnView offlineView = null)
+            HatchPresentationConfig hatchConfig, string eggSourceId, Transform root, IOfflineReturnView offlineView = null,
+            ICodexView codexView = null)
         {
             _context = context;
             _chunk = chunk;
             _rig = rig;
             _hud = hud;
             _offlineView = offlineView;
+            _codexView = codexView;
             _input = rig != null ? rig.GetComponent<SanctuaryCameraInput>() : null;
             _root = root;
             _eggId = ContentId.FromSource(eggSourceId);
@@ -124,6 +127,10 @@ namespace PocketWilds.Presentation
         }
 
         public bool OfflineScreenOpen => _offlineView != null && _offlineView.IsOpen;
+        public bool CodexOpen => _codexView != null && _codexView.IsOpen;
+
+        /// <summary>A screen covers the sanctuary: world touches and hatching wait.</summary>
+        public bool ModalOpen => OfflineScreenOpen || CodexOpen;
 
         /// <summary>Collected offline Light is still counting into the HUD.</summary>
         public bool OfflineCollecting => _collectTime >= 0f;
@@ -138,6 +145,7 @@ namespace PocketWilds.Presentation
             }
 
             UpdateOfflineReturn(deltaTime);
+            _codexView?.Tick(deltaTime);
 
             if (_rig != null)
                 _scheduler.SetFocus(_rig.Focus);
@@ -152,6 +160,8 @@ namespace PocketWilds.Presentation
                 bool free = _context.Hatch.IsNextHatchFree;
                 // Cached cost (refreshed after each hatch): no price curve evaluation per frame.
                 _hud.SetEgg(_eggCost, free, free || economy.CanSpend(CurrencyId.Light, _eggCost));
+                if (_context.Codex != null)
+                    _hud.SetCodexBadge(_context.Codex.HasNew);
                 _hud.Tick(deltaTime);
             }
         }
@@ -159,7 +169,7 @@ namespace PocketWilds.Presentation
         /// <summary>World tap from the camera input (already filtered from UI touches).</summary>
         public void OnTap(Vector2 screenPosition)
         {
-            if (OfflineScreenOpen || (_hud != null && _hud.IsOverUi(screenPosition)))
+            if (ModalOpen || (_hud != null && _hud.IsOverUi(screenPosition)))
                 return;
             if (_hatch.IsPlaying)
             {
@@ -202,7 +212,7 @@ namespace PocketWilds.Presentation
 
         public void RequestHatch()
         {
-            if (OfflineScreenOpen)
+            if (ModalOpen)
                 return;
             if (_hatch.IsPlaying)
             {
@@ -246,6 +256,29 @@ namespace PocketWilds.Presentation
                 // Presentation could not stage it (pool exhausted): the animal is saved, show it directly.
                 OnHatchFinished();
             }
+        }
+
+        /// <summary>
+        /// HUD shortcut. The Codex is opaque and full screen: the world camera stops while it is open
+        /// (no GPU spent on hidden pixels) and restarts instantly on close.
+        /// </summary>
+        public void OpenCodex()
+        {
+            if (_codexView == null || _context.Codex == null || ModalOpen || _hatch.IsPlaying)
+                return;
+            _codexView.Open(_context.Codex, _context.Localization, this);
+            _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
+            SetWorldVisible(false);
+        }
+
+        public void CodexClosed() => SetWorldVisible(true);
+
+        private void SetWorldVisible(bool visible)
+        {
+            if (_rig != null && _rig.Camera != null)
+                _rig.Camera.enabled = visible;
+            if (_input != null)
+                _input.Blocked = !visible;
         }
 
         /// <summary>Collect button: the held Light counts up into the HUD counter.</summary>
@@ -292,7 +325,7 @@ namespace PocketWilds.Presentation
         {
             if (_offlineView == null)
                 return;
-            if (!_offlineView.IsOpen && _collectTime < 0f && !_hatch.IsPlaying
+            if (!_offlineView.IsOpen && !CodexOpen && _collectTime < 0f && !_hatch.IsPlaying
                 && _context.Offline != null && _context.Offline.TryTakePending(out var report))
             {
                 // Already in the wallet (saved at once); the HUD holds it back until Collect.
@@ -321,7 +354,7 @@ namespace PocketWilds.Presentation
                 }
             }
 
-            bool modal = _offlineView.IsOpen;
+            bool modal = ModalOpen;
             if (_input != null && _input.Blocked != modal)
                 _input.Blocked = modal;
         }

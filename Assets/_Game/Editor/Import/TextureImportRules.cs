@@ -12,7 +12,7 @@ namespace PocketWilds.Editor.Import
     /// </summary>
     public sealed class TextureImportRules : AssetPostprocessor
     {
-        private const uint Version = 5;
+        private const uint Version = 6;
         public const string UiRoot = "Assets/_Game/Art/UI/";
         private const string ArtRoot = "Assets/_Game/Art/";
 
@@ -23,7 +23,9 @@ namespace PocketWilds.Editor.Import
             if (!assetPath.StartsWith(ArtRoot, StringComparison.Ordinal))
                 return;
             string name = Path.GetFileNameWithoutExtension(assetPath);
-            if (assetPath.StartsWith(UiRoot, StringComparison.Ordinal)
+            if (assetPath.StartsWith(UiRoot, StringComparison.Ordinal) && name.StartsWith("TH_", StringComparison.Ordinal))
+                ApplyThumbnail((TextureImporter)assetImporter);
+            else if (assetPath.StartsWith(UiRoot, StringComparison.Ordinal)
                 && (name.StartsWith("UI_", StringComparison.Ordinal) || name.StartsWith("ICO_", StringComparison.Ordinal)))
                 ApplyUiSprite((TextureImporter)assetImporter, name);
             else if (name.StartsWith("T_", StringComparison.Ordinal) && name.Contains("Mask"))
@@ -73,6 +75,38 @@ namespace PocketWilds.Editor.Import
             {
                 var platformSettings = importer.GetPlatformTextureSettings(platform);
                 platformSettings.overridden = false;
+                importer.SetPlatformTextureSettings(platformSettings);
+            }
+        }
+
+        /// <summary>
+        /// Codex thumbnails (TH_*): sprites loaded on demand, never packed into a static atlas (UI doc
+        /// ATLAS PLAN). ASTC 4x4 on mobile (64 KB at 256 px), no mipmaps.
+        /// </summary>
+        public static void ApplyThumbnail(TextureImporter importer)
+        {
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spritePixelsPerUnit = 100f;
+            importer.sRGBTexture = true;
+            importer.alphaSource = TextureImporterAlphaSource.FromInput;
+            importer.alphaIsTransparency = true;
+            importer.mipmapEnabled = false;
+            importer.isReadable = false;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.textureCompression = TextureImporterCompression.CompressedHQ;
+            var settings = new TextureImporterSettings();
+            importer.ReadTextureSettings(settings);
+            settings.spriteMeshType = SpriteMeshType.FullRect;
+            settings.spriteGenerateFallbackPhysicsShape = false;
+            importer.SetTextureSettings(settings);
+            foreach (var platform in new[] { "Android", "iPhone" })
+            {
+                var platformSettings = importer.GetPlatformTextureSettings(platform);
+                platformSettings.overridden = true;
+                platformSettings.maxTextureSize = 256;
+                platformSettings.format = TextureImporterFormat.ASTC_4x4;
                 importer.SetPlatformTextureSettings(platformSettings);
             }
         }

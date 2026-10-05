@@ -8,7 +8,11 @@ namespace PocketWilds.UI
     {
         public const string OfflineWelcomeBack = "offline.welcome_back";
         public const string CollectButton = "ui.collect.button";
+        public const string CodexTitle = "codex.title";
+        public const string CodexVariants = "codex.variants";
+        public const string CodexNew = "codex.new";
+        public const string CodexUnknown = "codex.unknown";
 
-        public static readonly string[] All = { OfflineWelcomeBack, CollectButton };
+        public static readonly string[] All = { OfflineWelcomeBack, CollectButton, CodexTitle, CodexVariants, CodexNew, CodexUnknown };
     }
 }

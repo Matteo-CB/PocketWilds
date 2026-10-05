@@ -28,6 +28,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Day7_v1", BuildDay7());
             created += WriteIfMissing("GoldenSave_PremiumEntitlements_v1", BuildPremium());
             created += WriteIfMissing("GoldenSave_Offline_v2", BuildOffline());
+            created += WriteIfMissing("GoldenSave_Codex_v3", BuildCodex());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -70,6 +71,28 @@ namespace PocketWilds.Editor.Saves
             state.Meta.LastKnownSessionId = new Guid("5e55e55e-0000-4000-8000-000000000001");
             state.Meta.Revision = 1;
             state.Meta.AppVersion = "0.1.0";
+            return state;
+        }
+
+        /// <summary>Schema 3: one species seen, one variant still new.</summary>
+        private static PlayerState BuildCodex()
+        {
+            var state = BuildOffline();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-000000000019");
+            state.Meta.Revision = 90;
+            var rabbit = ContentId.FromSource("species.rabbit");
+            state.Collection.Add(new AnimalInstance
+            {
+                Species = rabbit,
+                Variant = ContentId.FromSource("variant.rabbit.white"),
+                Seed = 19u,
+                CreatedUtcSeconds = (uint)BaseTime.ToUnixTimeSeconds(),
+            });
+            state.Collection.DiscoveredSpecies.Add(rabbit);
+            state.Collection.DiscoveredVariants.Add(ContentId.FromSource("variant.rabbit.brown"));
+            state.Collection.DiscoveredVariants.Add(ContentId.FromSource("variant.rabbit.white"));
+            state.Codex.SeenSpecies.Add(rabbit);
+            state.Codex.SeenVariants.Add(ContentId.FromSource("variant.rabbit.brown"));
             return state;
         }
 

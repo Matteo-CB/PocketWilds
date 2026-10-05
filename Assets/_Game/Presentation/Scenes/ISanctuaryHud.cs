@@ -18,6 +18,9 @@ namespace PocketWilds.Presentation
         /// <summary>"Not yet" feedback on the currency chip and the hatch button.</summary>
         void PulseNotEnough();
 
+        /// <summary>Small dot on the Codex shortcut: something found and not looked at yet.</summary>
+        void SetCodexBadge(bool visible);
+
         void Tick(float unscaledDeltaTime);
 
         /// <summary>True when a screen point lands on an interactive HUD element (world taps ignore it).</summary>
@@ -28,5 +31,7 @@ namespace PocketWilds.Presentation
     public interface ISanctuaryActions
     {
         void RequestHatch();
+
+        void OpenCodex();
     }
 }

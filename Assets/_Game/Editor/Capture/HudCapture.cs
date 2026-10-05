@@ -6,6 +6,7 @@ using PocketWilds.Editor.Animals;
 using PocketWilds.Editor.UI;
 using PocketWilds.Services.Localization;
 using PocketWilds.Presentation;
+using PocketWilds.Simulation;
 using PocketWilds.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -91,6 +92,56 @@ namespace PocketWilds.Editor.Capture
                             string path = $"{CaptureUtility.DefaultFolder}/{prefix}_offline_{language}.png";
                             CaptureUtility.Render(camera, 1080, 2340, path, 4, refreshBoth);
                             results.Add(CaptureUtility.Render(camera, 1080, 2340, path, 4, refreshBoth));
+                        }
+                        offline.transform.Find("Content").gameObject.SetActive(false);
+                    }
+
+                    // Codex list and species sheet, with a small real collection.
+                    var codexScreen = Object.FindAnyObjectByType<CodexScreen>();
+                    if (codexScreen != null)
+                    {
+                        var codexCanvas = codexScreen.GetComponent<Canvas>();
+                        var codexScaler = codexScreen.GetComponent<CanvasScaler>();
+                        codexCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+                        codexCanvas.worldCamera = camera;
+                        codexCanvas.planeDistance = camera.nearClipPlane + 0.04f;
+                        System.Action refreshCodex = () =>
+                        {
+                            handle?.Invoke(scaler, null);
+                            handle?.Invoke(codexScaler, null);
+                            Canvas.ForceUpdateCanvases();
+                        };
+                        var state = PlayerState.CreateNew(System.DateTimeOffset.UtcNow);
+                        var rabbit = ContentId.FromSource("species.rabbit");
+                        string[] owned = { "brown", "brown", "brown", "white", "white", "spotted" };
+                        foreach (string variant in owned)
+                        {
+                            var id = ContentId.FromSource("variant.rabbit." + variant);
+                            state.Collection.Add(new AnimalInstance { Species = rabbit, Variant = id, Seed = 1u });
+                            state.Collection.DiscoveredVariants.Add(id);
+                        }
+                        state.Collection.DiscoveredSpecies.Add(rabbit);
+                        state.Codex.SeenSpecies.Add(rabbit);
+                        state.Codex.SeenVariants.Add(ContentId.FromSource("variant.rabbit.brown"));
+                        var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath);
+                        foreach (string language in UiPipeline.Languages)
+                        {
+                            var text = new LocalizationService(database.localization, language, SystemLanguage.English);
+                            var codex = new CodexService(state, registry, null);
+                            codexScreen.Open(codex, text, null);
+                            refreshCodex();
+                            for (int i = 0; i < 10; i++)
+                                codexScreen.Tick(0.05f);
+                            string listPath = $"{CaptureUtility.DefaultFolder}/{prefix}_codex_list_{language}.png";
+                            CaptureUtility.Render(camera, 1080, 2340, listPath, 4, refreshCodex);
+                            results.Add(CaptureUtility.Render(camera, 1080, 2340, listPath, 4, refreshCodex));
+                            codexScreen.OpenSheet(0);
+                            string sheetPath = $"{CaptureUtility.DefaultFolder}/{prefix}_codex_sheet_{language}.png";
+                            CaptureUtility.Render(camera, 1080, 2340, sheetPath, 4, refreshCodex);
+                            results.Add(CaptureUtility.Render(camera, 1080, 2340, sheetPath, 4, refreshCodex));
+                            codexScreen.CloseSheet();
+                            state.Codex.SeenVariants.Remove(ContentId.FromSource("variant.rabbit.white"));
+                            state.Codex.SeenVariants.Remove(ContentId.FromSource("variant.rabbit.spotted"));
                         }
                     }
                 }

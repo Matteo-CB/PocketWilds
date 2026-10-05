@@ -324,7 +324,79 @@ def icon_egg():
     return "ICO_Hatch_Egg", c, RUNTIME_ICONS
 
 
-SPRITES = (kit_pill, kit_icon_circle, kit_panel_primary, kit_button_primary, kit_glow, icon_light, icon_egg)
+def kit_dot():
+    """UI_Dot: 48x48 round dot (notification, page markers). White for tinting, soft lower bevel."""
+    size = 48
+    c = Canvas(size, size, cy=24.5)
+    body = sd_circle(c, 19.0)
+    c.over((40, 40, 40), blur(shift(fill(body), 0, 2), 1.5) * 0.25)
+    c.over(lerp((255, 255, 255), (232, 232, 232), np.clip((19.0 - c.y) / 38.0, 0, 1)), fill(body))
+    c.over((255, 255, 255), soft(-body - 2.0, 1.5) * fill(body) * np.clip(c.y / 19.0, 0, 1))
+    return "UI_Dot", c, RUNTIME_KIT
+
+
+def star_points(outer, inner, count=5, oy=0.0, rotation_deg=90.0):
+    points = []
+    for i in range(count * 2):
+        radius = outer if i % 2 == 0 else inner
+        angle = math.radians(rotation_deg) + math.pi * i / count
+        points.append((math.cos(angle) * radius, math.sin(angle) * radius + oy))
+    return points
+
+
+def icon_rarity_star():
+    """ICO_Rarity_Star: 64 px rounded five-point star, white for rarity tinting (shape, not color alone)."""
+    size = 64
+    c = Canvas(size, size, cy=31.0)
+    star = sd_polygon(c, star_points(25.0, 11.5, oy=-1.0)) - 3.0
+    c.over((40, 34, 28), blur(shift(fill(star - 2.5), 0, 2), 1.5) * 0.3)
+    c.over((214, 214, 214), fill(star - 2.5))
+    c.over(lerp((255, 255, 255), (238, 238, 238), np.clip((24.0 - c.y) / 48.0, 0, 1)), fill(star))
+    gloss = sd_ellipse(c, 4.0, 2.4, ox=-4.0, oy=8.0, angle_deg=25.0)
+    c.over((255, 255, 255), fill(gloss) * fill(star))
+    return "ICO_Rarity_Star", c, RUNTIME_ICONS
+
+
+def icon_back():
+    """ICO_Back_Chevron: 96 px soft chevron (round caps), white for tinting."""
+    size = 96
+    c = Canvas(size, size)
+    chevron = sd_polyline(c, [(10.0, 26.0), (-14.0, 0.0), (10.0, -26.0)], 8.0)
+    c.over((255, 255, 255), fill(chevron))
+    return "ICO_Back_Chevron", c, RUNTIME_ICONS
+
+
+def icon_codex():
+    """ICO_Codex_Book: closed storybook with a paw print, warm green cover, cream pages (I-HUD-005)."""
+    size = 128
+    c = Canvas(size, size, cy=63.0)
+    cover = sd_round_rect(c, 38.0, 46.0, 12.0, ox=-2.0)
+    pages = sd_round_rect(c, 36.0, 42.0, 10.0, ox=6.0, oy=-2.0)
+    outline = np.minimum(cover, pages) - 5.0
+    c.over((60, 44, 28), blur(shift(fill(outline), 0, 4), 3.0) * 0.28)
+    c.over(hexrgb("5B4232"), fill(outline))
+    c.over(hexrgb("FFF6E2"), fill(pages))
+    for k in range(3):
+        line = np.abs(c.x - (35.0 + k * 3.2)) - 0.7
+        c.over(hexrgb("E3D2B2"), fill(line) * fill(pages) * (c.y < 36.0) * (c.y > -40.0))
+    t = np.clip((46.0 - c.y) / 92.0, 0, 1)
+    c.over(lerp(hexrgb("8FCB6A"), hexrgb("5E9E4A"), t), fill(cover))
+    spine = sd_round_rect(c, 6.0, 46.0, 4.0, ox=-36.0)
+    c.over(hexrgb("4F8A3F"), fill(spine) * fill(cover))
+    c.over(hexrgb("A9DB86"), soft(-cover - 3.0, 2.0) * fill(cover) * np.clip(c.y / 46.0, 0, 1) * 0.8)
+    # Paw print on the cover.
+    paw = "FFF4D6"
+    c.over(hexrgb(paw), fill(sd_ellipse(c, 11.0, 9.5, ox=0.0, oy=-8.0)))
+    for ox, oy, rx, ry, ang in ((-13.0, 6.0, 4.6, 5.8, 20.0), (-4.5, 13.0, 4.6, 6.0, 5.0),
+                                (5.5, 13.0, 4.6, 6.0, -5.0), (14.0, 6.0, 4.6, 5.8, -20.0)):
+        c.over(hexrgb(paw), fill(sd_ellipse(c, rx, ry, ox=ox, oy=oy, angle_deg=ang)))
+    gloss = sd_ellipse(c, 5.0, 12.0, ox=-24.0, oy=24.0, angle_deg=-10.0)
+    c.over((255, 255, 255), soft(gloss, 2.5) * fill(cover) * 0.35)
+    return "ICO_Codex_Book", c, RUNTIME_ICONS
+
+
+SPRITES = (kit_pill, kit_icon_circle, kit_panel_primary, kit_button_primary, kit_glow, kit_dot,
+           icon_light, icon_egg, icon_rarity_star, icon_back, icon_codex)
 
 
 def main():

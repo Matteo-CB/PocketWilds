@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T00:40:48Z",
+  "updatedUtc": "2026-10-05T01:11:50Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -145,8 +145,8 @@
     {
       "task": "T19",
       "title": "Codex minimal",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Codex minimal: CodexService (biome sections, variants by rarity, owned counts rebuilt only when the collection changes: 50k animals 3.5 ms, reads 0 GC), Codex seen state in the save (schema 3, Migration0002, golden save v3, older saves count everything as seen). Thumbnails rendered by AnimalThumbnailPipeline (real shader and palettes, black/white alpha, shared crop, silhouette from alpha). PF_UI_Codex: virtualized list (5000 species = 1674 rows with 7 row views, worst scroll step 3.7 ms Editor), species sheet, New badges, completion; HUD shortcut + dot; world camera paused while the opaque Codex covers it. Texts en/fr. Tests EditMode 197/197, PlayMode 28/28."
     },
     {
       "task": "T20",
@@ -5831,7 +5831,7 @@
       "family": "UIIcon",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/UI/Icons/",
       "runtimePath": "Assets/_Game/Art/UI/Icons/",
       "validationGates": [
@@ -5839,7 +5839,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T19: ICO_Codex_Book (green storybook with a cream paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; HUD Codex shortcut bottom left with a notification dot (UI_Dot) only when something new is found. | T19: ICO_Codex_Book (green storybook with a cream paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; HUD Codex shortcut bottom left with a notification dot (UI_Dot) only when something new is found. | T19: ICO_Codex_Book (green storybook with a cream paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; HUD Codex shortcut bottom left with a notification dot (UI_Dot) only when something new is found."
     },
     {
       "id": "I-HUD-006",
@@ -5946,7 +5946,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": "SourceArt/UI/",
       "runtimePath": "Assets/_Game/Art/UI/",
       "validationGates": [
@@ -5954,7 +5954,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T19: rarity shown by ICO_Rarity_Star count (1 to 6) + rarity color tokens. Frames UI_Frame_Common..Secret still to do."
     },
     {
       "id": "I-NAV",
@@ -5964,7 +5964,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": "SourceArt/UI/",
       "runtimePath": "Assets/_Game/Art/UI/",
       "validationGates": [
@@ -5972,7 +5972,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T19: ICO_Back_Chevron (1 of 16). Others with their screens."
     },
     {
       "id": "I-CODEX",
@@ -5982,7 +5982,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": "SourceArt/UI/",
       "runtimePath": "Assets/_Game/Art/UI/",
       "validationGates": [
@@ -5990,7 +5990,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T19: species silhouettes generated from the thumbnail capture alpha (AnimalThumbnailPipeline), New badge (pill + localized text), ICO_Rarity_Star. Trait badges come with T26."
     },
     {
       "id": "I-SHOP",
@@ -6204,7 +6204,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
@@ -6213,7 +6213,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 007."
+      "notes": "Local ID for doc 06 SCREEN 007. | T19: PF_UI_Codex list: biome headers + 3-card rows in a virtualized ScrollRect (VirtualListLayout, pooled rows, RectMask2D). 5000 species = 1674 rows bound with 7 row views. Completion bar, New badge, undiscovered = silhouette + ???. Font TEMP. | T19: PF_UI_Codex list: biome headers + 3-card rows in a virtualized ScrollRect (VirtualListLayout, pooled rows, RectMask2D). 5000 species = 1674 rows bound with 7 row views. Completion bar, New badge, undiscovered = silhouette + ???. Font TEMP."
     },
     {
       "id": "I-SCR-008",
@@ -6223,7 +6223,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
@@ -6232,7 +6232,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 008."
+      "notes": "Local ID for doc 06 SCREEN 008. | T19: species sheet inside PF_UI_Codex: portrait, name, owned count, variant slots (12, scrollable) with thumbnail or silhouette, rarity as star count + color, New badges cleared when the sheet is seen. Mastery joins in T20. Font TEMP. | T19: species sheet inside PF_UI_Codex: portrait, name, owned count, variant slots (12, scrollable) with thumbnail or silhouette, rarity as star count + color, New badges cleared when the sheet is seen. Mastery joins in T20. Font TEMP."
     },
     {
       "id": "I-SCR-009",
@@ -8508,7 +8508,7 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Content/",
       "validationGates": [
@@ -8517,7 +8517,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T19: BiomeDefinition (id, display key, order) + BiomeDefinitionAsset + ContentRegistry.Biomes (sorted by order, species with an undefined biome = warning). DEF_Biome_Grassland. Unlock rules and chunks join with world progression. | T19: BiomeDefinition (id, display key, order) + BiomeDefinitionAsset + ContentRegistry.Biomes (sorted by order, species with an undefined biome = warning). DEF_Biome_Grassland. Unlock rules and chunks join with world progression. | T19: BiomeDefinition (id, display key, order) + BiomeDefinitionAsset + ContentRegistry.Biomes (sorted by order, species with an undefined biome = warning). DEF_Biome_Grassland. Unlock rules and chunks join with world progression."
     },
     {
       "id": "M-DEF-EGG",

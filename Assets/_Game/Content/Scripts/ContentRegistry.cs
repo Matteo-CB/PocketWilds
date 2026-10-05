@@ -60,12 +60,19 @@ namespace PocketWilds.Content
     public sealed class ContentRegistry
     {
         public ContentRegistry(ContentTable<SpeciesDefinition> species, ContentTable<VariantDefinition> variants, ContentTable<EggDefinition> eggs,
-            ContentTable<PaletteDefinition> palettes)
+            ContentTable<PaletteDefinition> palettes, ContentTable<BiomeDefinition> biomes)
         {
             Species = species;
             Variants = variants;
             Eggs = eggs;
             Palettes = palettes;
+            Biomes = biomes;
+        }
+
+        public ContentRegistry(ContentTable<SpeciesDefinition> species, ContentTable<VariantDefinition> variants, ContentTable<EggDefinition> eggs,
+            ContentTable<PaletteDefinition> palettes)
+            : this(species, variants, eggs, palettes, ContentTable<BiomeDefinition>.Empty)
+        {
         }
 
         public ContentRegistry(ContentTable<SpeciesDefinition> species, ContentTable<VariantDefinition> variants, ContentTable<EggDefinition> eggs)
@@ -91,6 +98,9 @@ namespace PocketWilds.Content
 
         /// <summary>World palettes (props, ground).</summary>
         public ContentTable<PaletteDefinition> Palettes { get; }
+
+        /// <summary>Biomes in progression order. May be empty in tests; the Codex then uses one section.</summary>
+        public ContentTable<BiomeDefinition> Biomes { get; }
     }
 
     public enum ContentIssueSeverity
@@ -125,6 +135,7 @@ namespace PocketWilds.Content
         private readonly List<VariantDefinition> _variants = new List<VariantDefinition>();
         private readonly List<EggDefinition> _eggs = new List<EggDefinition>();
         private readonly List<PaletteDefinition> _palettes = new List<PaletteDefinition>();
+        private readonly List<BiomeDefinition> _biomes = new List<BiomeDefinition>();
         private readonly Dictionary<uint, string> _seenHashes = new Dictionary<uint, string>();
         private readonly HashSet<uint> _tombstones = new HashSet<uint>();
         private readonly List<ContentIssue> _issues = new List<ContentIssue>();
@@ -214,6 +225,17 @@ namespace PocketWilds.Content
                 _palettes.Add(definition);
         }
 
+        public void AddBiome(BiomeDefinition definition, string sourceId)
+        {
+            if (string.IsNullOrEmpty(definition.DisplayKey))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Biome needs a display key."));
+                return;
+            }
+            if (TryClaim(definition.Id, sourceId))
+                _biomes.Add(definition);
+        }
+
         public ContentRegistry Build()
         {
             var speciesIds = new HashSet<ContentId>();
@@ -233,10 +255,23 @@ namespace PocketWilds.Content
                 }
             }
 
+            if (_biomes.Count > 0)
+            {
+                var biomeIds = new HashSet<ContentId>();
+                foreach (var biome in _biomes)
+                    biomeIds.Add(biome.Id);
+                foreach (var species in _species)
+                {
+                    if (!biomeIds.Contains(species.Biome))
+                        _issues.Add(new ContentIssue(ContentIssueSeverity.Warning, species.Id.ToString(), "Species biome is not defined: it gets no Codex section."));
+                }
+            }
+
             if (HasErrors)
                 throw new InvalidOperationException("Content has errors: " + string.Join("; ", _issues));
+            _biomes.Sort((a, b) => a.Order.CompareTo(b.Order));
             return new ContentRegistry(new ContentTable<SpeciesDefinition>(_species), new ContentTable<VariantDefinition>(_variants),
-                new ContentTable<EggDefinition>(_eggs), new ContentTable<PaletteDefinition>(_palettes));
+                new ContentTable<EggDefinition>(_eggs), new ContentTable<PaletteDefinition>(_palettes), new ContentTable<BiomeDefinition>(_biomes));
         }
 
         private static bool HasPositive(double[] values)

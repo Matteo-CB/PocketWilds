@@ -26,7 +26,8 @@ namespace PocketWilds.Presentation
             IAudioService audio,
             IHapticService haptics,
             OfflineService offline = null,
-            ILocalization localization = null)
+            ILocalization localization = null,
+            CodexService codex = null)
         {
             Clock = clock;
             Content = content;
@@ -42,6 +43,7 @@ namespace PocketWilds.Presentation
             Haptics = haptics ?? NullHapticService.Instance;
             Offline = offline;
             Localization = localization;
+            Codex = codex;
         }
 
         public IGameClock Clock { get; }
@@ -67,6 +69,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>Player-facing text. Null in headless tests: screens fall back to the keys.</summary>
         public ILocalization Localization { get; }
+
+        /// <summary>Codex view model over the collection. Null in headless tests that do not need it.</summary>
+        public CodexService Codex { get; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>
