@@ -32,7 +32,7 @@ namespace PocketWilds.Services.Save
     {
         /// <summary>Bump on any persisted data change, with a migration and updated golden saves.</summary>
         /// <summary>2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids). 4: Pity counters.</summary>
-        public const int CurrentVersion = 5;
+        public const int CurrentVersion = 6;
     }
 
     /// <summary>
@@ -53,6 +53,7 @@ namespace PocketWilds.Services.Save
         private const ushort CodexVersion = 1;
         private const ushort PityVersion = 1;
         private const ushort ShopVersion = 1;
+        private const ushort AnalyticsVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -148,6 +149,11 @@ namespace PocketWilds.Services.Save
                 output.WriteInt32(pair.Value.Impressions);
                 output.WriteInt64(pair.Value.LastShownUnix);
             }
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Analytics, AnalyticsVersion);
+            output.WriteInt64((long)state.Analytics.Milestones);
+            output.WriteInt32(state.Analytics.Sessions);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -291,6 +297,18 @@ namespace PocketWilds.Services.Save
                     ReadPity(pity, state.Pity);
                 if (document.TryGetSection(SaveSectionId.Shop, out var shop))
                     ReadShop(shop, state.Shop);
+                if (document.TryGetSection(SaveSectionId.Analytics, out var analytics))
+                {
+                    RequireVersion(analytics, AnalyticsVersion);
+                    var r = analytics.CreateReader();
+                    state.Analytics.Milestones = (ulong)r.ReadInt64();
+                    state.Analytics.Sessions = r.ReadInt32();
+                }
+                else
+                {
+                    // Saves older than schema 6: milestones already reached never fire again as "first".
+                    AnalyticsState.InferFrom(state);
+                }
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else

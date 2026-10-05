@@ -36,11 +36,15 @@ namespace PocketWilds.Services.Store
         public readonly ContentId Offer;
         public readonly GrantResult Grant;
 
-        public PurchaseOutcome(PurchaseFlowStatus status, ContentId offer, GrantResult grant = default)
+        /// <summary>Given back by a restore (new device): permanent items only, not a new payment.</summary>
+        public readonly bool Restored;
+
+        public PurchaseOutcome(PurchaseFlowStatus status, ContentId offer, GrantResult grant = default, bool restored = false)
         {
             Status = status;
             Offer = offer;
             Grant = grant;
+            Restored = restored;
         }
     }
 
@@ -92,6 +96,9 @@ namespace PocketWilds.Services.Store
 
         /// <summary>Every finished purchase, including late ones (pending approvals, interrupted purchases).</summary>
         public event Action<PurchaseOutcome>? PurchaseFinished;
+
+        /// <summary>A restore finished, with the number of purchases given back.</summary>
+        public event Action<int>? RestoreFinished;
 
         public long NowUnix => _clock.UtcNow.ToUnixTimeSeconds();
 
@@ -197,6 +204,7 @@ namespace PocketWilds.Services.Store
                     PurchaseFinished?.Invoke(outcome);
                 }
             }
+            RestoreFinished?.Invoke(restored);
             return restored;
         }
 
@@ -216,7 +224,7 @@ namespace PocketWilds.Services.Store
                 // Granted in an earlier, saved session: the store only needs the acknowledgement.
                 _provider.FinishTransaction(transaction.TransactionId);
             }
-            return new PurchaseOutcome(PurchaseFlowStatus.Granted, offerId, grant);
+            return new PurchaseOutcome(PurchaseFlowStatus.Granted, offerId, grant, restore);
         }
 
         /// <summary>Transactions granted but not yet acknowledged (waiting for their save).</summary>

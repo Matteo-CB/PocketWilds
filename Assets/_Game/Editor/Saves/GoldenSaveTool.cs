@@ -31,6 +31,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Codex_v3", BuildCodex());
             created += WriteIfMissing("GoldenSave_Pity_v4", BuildPity());
             created += WriteIfMissing("GoldenSave_Shop_v5", BuildShop());
+            created += WriteIfMissing("GoldenSave_Analytics_v6", BuildAnalytics());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -77,6 +78,18 @@ namespace PocketWilds.Editor.Saves
         }
 
         /// <summary>Schema 4: pity counters for an egg and a species.</summary>
+        /// <summary>Schema 6: funnel milestones reached and 9 sessions played.</summary>
+        private static PlayerState BuildAnalytics()
+        {
+            var state = BuildShop();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-000000000041");
+            state.Meta.Revision = 180;
+            state.Analytics.Milestones = (1UL << (int)FunnelMilestone.TutorialStart) | (1UL << (int)FunnelMilestone.FirstHatch)
+                                         | (1UL << (int)FunnelMilestone.CodexOpen) | (1UL << (int)FunnelMilestone.FirstPurchase);
+            state.Analytics.Sessions = 9;
+            return state;
+        }
+
         /// <summary>Schema 5: Starter Pack bought once in the sandbox store, shown twice.</summary>
         private static PlayerState BuildShop()
         {

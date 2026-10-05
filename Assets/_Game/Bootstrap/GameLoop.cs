@@ -1,5 +1,6 @@
 using PocketWilds.Core;
 using PocketWilds.Presentation;
+using PocketWilds.Services.Analytics;
 using UnityEngine;
 
 namespace PocketWilds.Bootstrap
@@ -13,6 +14,7 @@ namespace PocketWilds.Bootstrap
         private const float MaxFrameDelta = 0.5f;
 
         private GameContext _context;
+        private AnalyticsService _analytics;
         private double _economyAccumulator;
         private double _economyInterval = 0.1;
 
@@ -23,6 +25,9 @@ namespace PocketWilds.Bootstrap
             _economyAccumulator = 0.0;
         }
 
+        /// <summary>Analytics gets the raw frame time (performance summaries), not the clamped simulation delta.</summary>
+        public void SetAnalytics(AnalyticsService analytics) => _analytics = analytics;
+
         private void Update()
         {
             if (_context == null)
@@ -30,7 +35,9 @@ namespace PocketWilds.Bootstrap
 
             using (GameProfilerMarkers.GameLoopTick.Auto())
             {
-                float delta = Time.unscaledDeltaTime;
+                float frame = Time.unscaledDeltaTime;
+                _analytics?.Tick(frame);
+                float delta = frame;
                 if (delta > MaxFrameDelta)
                     delta = MaxFrameDelta;
 

@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using PocketWilds.Content;
 using PocketWilds.Core;
+using PocketWilds.Services.Analytics;
 using PocketWilds.Services.Feedback;
 using PocketWilds.Services.Store;
 using PocketWilds.Simulation;
@@ -28,6 +29,7 @@ namespace PocketWilds.Presentation
         private readonly IOfferModalView _offerView;
         private readonly IAudioService _audio;
         private readonly IHapticService _haptics;
+        private readonly IAnalytics _analytics;
         private readonly Action<bool> _setWorldVisible;
         private readonly CancellationToken _lifetime;
         private readonly Action<PurchaseOutcome> _onFinished;
@@ -44,7 +46,7 @@ namespace PocketWilds.Presentation
         private float _modalCloseIn = -1f;
 
         public ShopPresenter(StoreService store, ILocalization text, IShopView shopView, IOfferModalView offerView, IAudioService audio,
-            IHapticService haptics, Action<bool> setWorldVisible, CancellationToken lifetime)
+            IHapticService haptics, Action<bool> setWorldVisible, CancellationToken lifetime, IAnalytics analytics = null)
         {
             _store = store;
             _offers = store.Offers;
@@ -54,6 +56,7 @@ namespace PocketWilds.Presentation
             _offerView = offerView;
             _audio = audio;
             _haptics = haptics;
+            _analytics = analytics ?? NullAnalytics.Instance;
             _setWorldVisible = setWorldVisible;
             _lifetime = lifetime;
             _baseGemsPerEuro = SmallestPackRate();
@@ -103,6 +106,11 @@ namespace PocketWilds.Presentation
             _shopView.Open(this, _text, this);
             _audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
             _setWorldVisible(false);
+            _analytics.ScreenView(ScreenId.Shop);
+            for (int i = 0; i < _featuredCount; i++)
+                _analytics.OfferImpression(_featured[i].Offer, _featured[i].Placement);
+            for (int i = 0; i < _gemCount; i++)
+                _analytics.OfferImpression(_gemPacks[i].Offer, _gemPacks[i].Placement);
         }
 
         /// <summary>
@@ -123,6 +131,8 @@ namespace PocketWilds.Presentation
             _modalOffer = offer.Id;
             _offerView.Open(card, this, _text, this);
             _audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
+            _analytics.ScreenView(ScreenId.OfferModal);
+            _analytics.OfferImpression(offer.Id, offer.Placement);
             return true;
         }
 
@@ -151,6 +161,7 @@ namespace PocketWilds.Presentation
             if (Busy)
                 return;
             _busyOffer = offer;
+            _analytics.OfferClick(offer, _catalog.Offers.TryGet(offer, out var definition) ? definition.Placement : default);
             _haptics.Play(HapticEventId.TapLight);
             RefreshViews();
             _ = BuyAsync(offer);

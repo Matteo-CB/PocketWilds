@@ -2,6 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using PocketWilds.Content;
 using PocketWilds.Core;
+using PocketWilds.Services.Analytics;
 using PocketWilds.Services.Feedback;
 using PocketWilds.Services.Save;
 using PocketWilds.Services.Store;
@@ -31,7 +32,8 @@ namespace PocketWilds.Presentation
             OfflineService offline = null,
             ILocalization localization = null,
             CodexService codex = null,
-            StoreService store = null)
+            StoreService store = null,
+            IAnalytics analytics = null)
         {
             Clock = clock;
             Content = content;
@@ -49,6 +51,7 @@ namespace PocketWilds.Presentation
             Localization = localization;
             Codex = codex;
             Store = store;
+            Analytics = analytics ?? NullAnalytics.Instance;
         }
 
         public IGameClock Clock { get; }
@@ -80,6 +83,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>Shop: offers, grants and the platform store behind one API (T28). Null when no shop runs.</summary>
         public StoreService Store { get; }
+
+        /// <summary>Screens, offers and funnel steps seen by presentation (T29). Never null.</summary>
+        public IAnalytics Analytics { get; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

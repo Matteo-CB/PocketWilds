@@ -363,6 +363,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Codex_v3")]
         [TestCase("GoldenSave_Pity_v4")]
         [TestCase("GoldenSave_Shop_v5")]
+        [TestCase("GoldenSave_Analytics_v6")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -379,11 +380,16 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(SaveSchema.CurrentVersion - 1, result.MigrationsApplied);
                 Assert.IsFalse(state.Offline.HasRate, "Schema 1 has no exit snapshot: the rate is rebuilt.");
             }
-            if (!name.EndsWith("_v4") && !name.EndsWith("_v5"))
+            if (!name.EndsWith("_v4") && !name.EndsWith("_v5") && !name.EndsWith("_v6"))
                 Assert.AreEqual(0, state.Pity.NewSpeciesMisses.Count + state.Pity.VariantMisses.Count, "Older saves start without pity.");
-            if (!name.EndsWith("_v5"))
+            if (!name.EndsWith("_v5") && !name.EndsWith("_v6"))
                 Assert.AreEqual(0, state.Shop.Offers.Count + state.Shop.PaidPurchases, "Older saves start without shop history.");
-            if (!name.EndsWith("_v3") && !name.EndsWith("_v4") && !name.EndsWith("_v5"))
+            if (!name.EndsWith("_v6"))
+            {
+                Assert.AreEqual(0, state.Analytics.Sessions, "Older saves start counting sessions now.");
+                Assert.AreEqual(state.Collection.Count > 0, state.Analytics.Has(FunnelMilestone.FirstHatch), "Veterans never send a first hatch.");
+            }
+            if (!name.EndsWith("_v3") && !name.EndsWith("_v4") && !name.EndsWith("_v5") && !name.EndsWith("_v6"))
             {
                 Assert.IsTrue(state.Codex.SeenSpecies.SetEquals(state.Collection.DiscoveredSpecies), "Older saves: everything found counts as seen.");
                 Assert.IsTrue(state.Codex.SeenVariants.SetEquals(state.Collection.DiscoveredVariants));
@@ -451,6 +457,15 @@ namespace PocketWilds.Tests.EditMode
                     Assert.IsTrue(state.Entitlements.Owned.Contains(ContentId.FromSource("cosmetic.flower_crown")));
                     Assert.IsTrue(state.Entitlements.ProcessedTransactions.Contains("sandbox-0001"));
                     Assert.AreEqual(13, state.Pity.NewSpeciesMisses[ContentId.FromSource("egg.grassland.basic")]);
+                    break;
+
+                case "GoldenSave_Analytics_v6":
+                    Assert.AreEqual(180, state.Meta.Revision);
+                    Assert.AreEqual(9, state.Analytics.Sessions);
+                    Assert.IsTrue(state.Analytics.Has(FunnelMilestone.FirstPurchase));
+                    Assert.IsTrue(state.Analytics.Has(FunnelMilestone.CodexOpen));
+                    Assert.IsFalse(state.Analytics.Has(FunnelMilestone.FirstRare), "Stored milestones are not re-inferred.");
+                    Assert.AreEqual(620, state.Wallet.Gems);
                     break;
 
                 case "GoldenSave_PremiumEntitlements_v1":

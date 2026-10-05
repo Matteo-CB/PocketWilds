@@ -185,6 +185,9 @@ namespace PocketWilds.Simulation
             return Math.Min(_config.PityVariantCap, perMiss * misses);
         }
 
+        /// <summary>Every successful hatch (analytics, achievements). Raised once per animal, never per frame.</summary>
+        public event Action<HatchResult>? Hatched;
+
         public HatchResult Hatch(ContentId eggId)
         {
             using (GameProfilerMarkers.HatchResolve.Auto())
@@ -230,7 +233,9 @@ namespace PocketWilds.Simulation
                 var mastery = _mastery != null ? _mastery.OnAnimalObtained(variant.Species, newSpecies, newVariant) : default;
                 bool priority = newSpecies || newVariant || variant.Rarity >= RarityTier.Rare || mastery.Milestone > 0;
                 _save?.RequestSave(priority ? SaveUrgency.Priority : SaveUrgency.Normal);
-                return new HatchResult(HatchStatus.Hatched, animal, eggId, cost, rolled, newSpecies, newVariant, free, mastery, pity);
+                var result = new HatchResult(HatchStatus.Hatched, animal, eggId, cost, rolled, newSpecies, newVariant, free, mastery, pity);
+                Hatched?.Invoke(result);
+                return result;
             }
         }
 

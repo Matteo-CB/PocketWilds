@@ -1,10 +1,12 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using PocketWilds.Content;
 using PocketWilds.Core;
 using PocketWilds.Presentation;
+using PocketWilds.Services.Analytics;
 using PocketWilds.Services.Device;
 using PocketWilds.Services.Feedback;
 using PocketWilds.Services.Localization;
@@ -12,7 +14,9 @@ using PocketWilds.Services.Save;
 using PocketWilds.Services.Store;
 using PocketWilds.Simulation;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;
+using Debug = UnityEngine.Debug;
 
 namespace PocketWilds.Bootstrap
 {
@@ -52,6 +56,9 @@ namespace PocketWilds.Bootstrap
         private GrantService _grants;
         private OfferService _offers;
         private StoreService _store;
+        private AnalyticsService _analytics;
+        private AnalyticsOutbox _analyticsOutbox;
+        private bool _batterySaver;
         private LocalizationService _localization;
         private QualityService _quality;
         private FrameRateService _frameRate;
@@ -67,6 +74,10 @@ namespace PocketWilds.Bootstrap
         public OfflineReport OfflineAtBoot { get; private set; }
 
         public BootSequence Sequence { get; private set; }
+
+        /// <summary>Analytics (T29). Null before the Analytics step.</summary>
+        public AnalyticsService Analytics => _analytics;
+        public AnalyticsOutbox AnalyticsOutbox => _analyticsOutbox;
 
         private void Awake()
         {
@@ -113,6 +124,7 @@ namespace PocketWilds.Bootstrap
                 _quality.Apply(_options.QualityOverride ?? device.QualityOverride);
                 _frameRate = new FrameRateService();
                 _frameRate.Apply(device.BatterySaver);
+                _batterySaver = device.BatterySaver;
             });
 
             sequence.AddBlocking("ContentRegistry", () =>
@@ -154,12 +166,39 @@ namespace PocketWilds.Bootstrap
                 _store = new StoreService(_content, _offers, CreateStoreProvider(), _clock, _save);
             });
 
+            // Before the store starts: purchases delivered at launch are counted too. Nothing here waits on a network.
+            sequence.AddBlocking("Analytics", () =>
+            {
+                var consent = _options.AnalyticsConsentOverride ?? AnalyticsDeviceStore.LoadConsent();
+                var device = new AnalyticsDeviceInfo
+                {
+                    AnalyticsId = consent == AnalyticsConsent.Denied ? string.Empty : AnalyticsDeviceStore.LoadOrCreateId(),
+                    AppVersion = Application.version,
+                    BuildType = Debug.isDebugBuild ? "development" : "release",
+                    Platform = Application.platform.ToString(),
+                    DeviceModel = SystemInfo.deviceModel,
+                    OperatingSystem = SystemInfo.operatingSystem,
+                    SystemMemoryMb = SystemInfo.systemMemorySize,
+                };
+                // Tests that move the save also keep their batches next to it (never in the real app folder).
+                string directory = _options.AnalyticsDirectory
+                                   ?? (_options.SaveDirectory != null
+                                       ? Path.Combine(_options.SaveDirectory, "Analytics")
+                                       : Path.Combine(Application.persistentDataPath, "Analytics"));
+                _analyticsOutbox = new AnalyticsOutbox(directory, CreateAnalyticsTransport());
+                _analytics = new AnalyticsService(_save.State, _content, _clock, _save, device, _analyticsOutbox, consent);
+                _analytics.Attach(_economy, _hatch, _store);
+                _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
+            });
+
             // Prices and pending purchases load in the background: the sanctuary never waits for the store.
             sequence.AddBackground("Store", cancellationToken => _store.InitializeAsync(cancellationToken));
 
             sequence.AddBlocking("Offline", () =>
             {
                 OfflineAtBoot = _offline.ResolveReturn();
+                _analytics.StartSession(OfflineAtBoot.CreditedSeconds);
+                _analytics.OfflineReturn(OfflineAtBoot);
                 if (OfflineAtBoot.CreditedSeconds > 0.0)
                     GameLog.Info(LogCategory.Save, $"Offline {OfflineAtBoot.CreditedSeconds:F0} s, +{BigValueFormatter.ToDebugString(OfflineAtBoot.Light)} Light");
             });
@@ -170,11 +209,16 @@ namespace PocketWilds.Bootstrap
                 var visuals = new AnimalVisualResolver(_content, _palettes);
                 var catalog = _options.VisualCatalogOverride != null ? _options.VisualCatalogOverride : _visualCatalog;
                 Context = new GameContext(_clock, _content, _save, _economy, _hatch, _quality, _frameRate, _palettes, visuals, catalog,
-                    NullAudioService.Instance, NullHapticService.Instance, _offline, _localization, _codex, _store);
+                    NullAudioService.Instance, NullHapticService.Instance, _offline, _localization, _codex, _store, _analytics);
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
+                _loop.SetAnalytics(_analytics);
                 if (_options.LoadTargetScene)
+                {
+                    var scene = Stopwatch.StartNew();
                     await EnterSceneAsync(_options.TargetScene ?? _targetScene, cancellationToken);
+                    _analytics.LoadTimes(Time.realtimeSinceStartupAsDouble * 1000.0, scene.Elapsed.TotalMilliseconds);
+                }
             });
 
             // Cloud save, Remote Config and analytics register here as background steps when they exist.
@@ -228,12 +272,16 @@ namespace PocketWilds.Bootstrap
             if (paused)
             {
                 _offline.MarkActive();
+                _analytics.EndSession();
                 _save.FlushNow();
+                _analyticsOutbox.WaitIdle(TimeSpan.FromMilliseconds(100));
             }
             else
             {
                 // Away time is paid analytically; the frame loop never replays it.
-                _offline.ResolveReturn();
+                var report = _offline.ResolveReturn();
+                _analytics.StartSession(report.CreditedSeconds);
+                _analytics.OfflineReturn(report);
                 _loop.ResetAccumulators();
             }
         }
@@ -253,8 +301,18 @@ namespace PocketWilds.Bootstrap
 #endif
         }
 
+        /// <summary>
+        /// The analytics backend plugs in here (doc 09 leaves the provider open). Until it is chosen, batches stay on
+        /// the phone, bounded, and are never sent.
+        /// </summary>
+        private IAnalyticsTransport CreateAnalyticsTransport() => _options.AnalyticsTransportOverride ?? NullAnalyticsTransport.Instance;
+
+        private static uint ReadMemoryMb() => (uint)(Profiler.GetTotalAllocatedMemoryLong() >> 20);
+
         private void OnDestroy()
         {
+            _analytics?.Dispose();
+            _analytics = null;
             _store?.Dispose();
             if (_save != null && _offline != null)
                 _save.BeforeSerialize -= _offline.CaptureSnapshot;
@@ -268,7 +326,9 @@ namespace PocketWilds.Bootstrap
             if (State == BootState.Ready)
             {
                 _activeEntry?.Exit();
+                _analytics.EndSession();
                 _save.FlushNow();
+                _analyticsOutbox.WaitIdle(TimeSpan.FromMilliseconds(200));
             }
         }
     }

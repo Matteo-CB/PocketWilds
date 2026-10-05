@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T15:58:41Z",
+  "updatedUtc": "2026-10-05T17:03:36Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -205,8 +205,8 @@
     {
       "task": "T29",
       "title": "Analytics schema",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Analytics schema v1 (doc 09): 15 event ids (session, load time, funnel milestones, hatch, economy per change for Gems and summed flows for Light/Essence, snapshot, screens, offer impressions/clicks, purchase results, restore, perf samples, offline return) as fixed structs in a 512-slot ring, encoded allocation-free as compact positional JSON (header once per batch, content as stable FNV-1a hashes, BigValue as mantissa+exponent), flushed every 60 s / 100 events / on pause and quit to a bounded disk outbox (64 files, background thread, oldest first). Transport interface with NullAnalyticsTransport until a backend is chosen; consent Unknown keeps local, Granted sends, Denied purges and resets the pseudonymous id. Funnel milestones in save schema 6 (Migration0005, inferred for old saves, GoldenSave_Analytics_v6). Ids frozen by WireIds_AreStable; id table Docs/Analytics/T29_Analytics_Ids.csv (no collisions). First real session batch: 11 events, ~900 bytes. 0 B allocated over 5000 frames with events and 100+ batches (test). Windows player P2-Mix3/U1 unchanged vs T28 (main max 2.58 / 7.30 ms, 0 frames over 33 ms, same GC frames). EditMode 315/315 + PlayMode 35/35 (+1 explicit). Consent screen and backend choice are user decisions."
     },
     {
       "task": "T30",
@@ -10370,7 +10370,7 @@
       "family": "EditorTool",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -10378,7 +10378,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "ContentRegistryBuilder already rejects duplicates, collisions and tombstones (runtime side)."
+      "notes": "ContentRegistryBuilder already rejects duplicates, collisions and tombstones (runtime side). | T29: AnalyticsIdTable (Pocket Wilds/Analytics/Export Id Table) lists every content id hash and wire enum value with its source name, test ContentIds_AreUniqueStableHashes_AndExported checks hash = FNV-1a(source id) and no collision. Tombstones and editing UI still to do."
     },
     {
       "id": "ED-012",

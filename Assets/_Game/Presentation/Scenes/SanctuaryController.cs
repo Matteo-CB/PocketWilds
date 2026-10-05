@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using PocketWilds.Content;
 using PocketWilds.Core;
+using PocketWilds.Services.Analytics;
 using PocketWilds.Services.Feedback;
 using PocketWilds.Simulation;
 using UnityEngine;
@@ -134,7 +135,7 @@ namespace PocketWilds.Presentation
             if (context.Store != null && (shopView != null || offerView != null))
             {
                 _shop = new ShopPresenter(context.Store, context.Localization, shopView, offerView, context.Audio, context.Haptics,
-                    SetWorldVisible, _lifetime.Token);
+                    SetWorldVisible, _lifetime.Token, context.Analytics);
                 _shop.Prewarm();
             }
 
@@ -214,7 +215,12 @@ namespace PocketWilds.Presentation
                 if (_context.Codex != null)
                     _hud.SetCodexBadge(_context.Codex.HasNew);
                 if (_shop != null)
-                    _hud.SetShop(_shop.Unlocked, _context.State.Wallet.Gems);
+                {
+                    bool unlocked = _shop.Unlocked;
+                    _hud.SetShop(unlocked, _context.State.Wallet.Gems);
+                    if (unlocked)
+                        _context.Analytics.Milestone(FunnelMilestone.FirstShopExposure);
+                }
                 _hud.Tick(deltaTime);
             }
         }
@@ -323,6 +329,7 @@ namespace PocketWilds.Presentation
             if (_codexView == null || _context.Codex == null || ModalOpen || _hatch.IsPlaying)
                 return;
             _codexView.Open(_context.Codex, _context.Localization, this);
+            _context.Analytics.ScreenView(ScreenId.Codex);
             _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
             SetWorldVisible(false);
         }
@@ -351,6 +358,7 @@ namespace PocketWilds.Presentation
             if (_heldLight.IsZero || _collectTime >= 0f)
                 return;
             _collectTime = 0f;
+            _context.Analytics.Milestone(FunnelMilestone.FirstCollect);
             _context.Audio.Play(AudioEventId.CollectLight, Vector3.zero, default);
             _context.Haptics.Play(HapticEventId.Confirm);
         }
@@ -475,6 +483,7 @@ namespace PocketWilds.Presentation
                 // Already in the wallet (saved at once); the HUD holds it back until Collect.
                 _heldLight = report.Light;
                 _offlineView.Show(report.Light, _context.Localization, this);
+                _context.Analytics.ScreenView(ScreenId.OfflineReturn);
                 _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
             }
             _offlineView.Tick(deltaTime);

@@ -11,6 +11,7 @@ namespace PocketWilds.Services.Save
             new Migration0002AddCodex(),
             new Migration0003AddPity(),
             new Migration0004AddShop(),
+            new Migration0005AddAnalytics(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -66,6 +67,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 4;
         public int ToVersion => 5;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 5 to 6: adds the Analytics section (funnel milestones, session count). A file without it infers the
+    /// milestones from the profile on load (BinarySaveSerializer): nothing to convert here.
+    /// </summary>
+    public sealed class Migration0005AddAnalytics : ISaveMigration
+    {
+        public int FromVersion => 5;
+        public int ToVersion => 6;
 
         public void Apply(SaveDocument document)
         {

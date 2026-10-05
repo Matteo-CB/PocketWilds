@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using PocketWilds.Content;
 using PocketWilds.Core;
 
 namespace PocketWilds.Simulation
@@ -19,6 +20,7 @@ namespace PocketWilds.Simulation
         public CodexState Codex { get; } = new CodexState();
         public PityState Pity { get; } = new PityState();
         public ShopState Shop { get; } = new ShopState();
+        public AnalyticsState Analytics { get; } = new AnalyticsState();
 
         public static PlayerState CreateNew(DateTimeOffset utcNow)
         {
@@ -158,6 +160,82 @@ namespace PocketWilds.Simulation
         public int PaidPurchases;
 
         public OfferRecord Get(ContentId offer) => Offers.TryGetValue(offer, out var record) ? record : default;
+    }
+
+    /// <summary>
+    /// Funnel milestones (doc 09 Analytics: launch to second purchase). Each fires once per profile. Values are bit
+    /// indices and analytics ids: stable, append only, never renumbered.
+    /// </summary>
+    public enum FunnelMilestone : byte
+    {
+        TutorialStart = 0,
+        FirstHatch = 1,
+        FirstCollect = 2,
+        FirstUpgrade = 3,
+        FirstNewSpecies = 4,
+        FirstRare = 5,
+        BiomeUnlock = 6,
+        CodexOpen = 7,
+        FirstShopExposure = 8,
+        FirstRewardedAd = 9,
+        FirstOfferImpression = 10,
+        FirstPurchase = 11,
+        SecondPurchase = 12,
+    }
+
+    /// <summary>Analytics bookkeeping that follows the profile (T29): reached milestones, session count.</summary>
+    public sealed class AnalyticsState
+    {
+        public ulong Milestones;
+        public int Sessions;
+
+        public bool Has(FunnelMilestone milestone) => (Milestones & (1UL << (int)milestone)) != 0;
+
+        /// <summary>Marks a milestone; false when it was already reached (the event must not fire again).</summary>
+        public bool TrySet(FunnelMilestone milestone)
+        {
+            ulong bit = 1UL << (int)milestone;
+            if ((Milestones & bit) != 0)
+                return false;
+            Milestones |= bit;
+            return true;
+        }
+
+        /// <summary>
+        /// Saves older than schema 6: what the profile already did counts as reached, so a veteran never sends
+        /// "first hatch" on update.
+        /// </summary>
+        public static void InferFrom(PlayerState state)
+        {
+            var analytics = state.Analytics;
+            var collection = state.Collection;
+            if (collection.Count > 0)
+            {
+                analytics.TrySet(FunnelMilestone.TutorialStart);
+                analytics.TrySet(FunnelMilestone.FirstHatch);
+            }
+            if (collection.DiscoveredSpecies.Count >= 2)
+                analytics.TrySet(FunnelMilestone.FirstNewSpecies);
+            for (int i = 0; i < collection.Count; i++)
+            {
+                if (collection[i].Rarity >= RarityTier.Rare)
+                {
+                    analytics.TrySet(FunnelMilestone.FirstRare);
+                    break;
+                }
+            }
+            if (state.Codex.SeenSpecies.Count > 0)
+                analytics.TrySet(FunnelMilestone.CodexOpen);
+            if (state.Shop.Offers.Count > 0 || state.Shop.PaidPurchases > 0)
+            {
+                analytics.TrySet(FunnelMilestone.FirstShopExposure);
+                analytics.TrySet(FunnelMilestone.FirstOfferImpression);
+            }
+            if (state.Shop.PaidPurchases >= 1)
+                analytics.TrySet(FunnelMilestone.FirstPurchase);
+            if (state.Shop.PaidPurchases >= 2)
+                analytics.TrySet(FunnelMilestone.SecondPurchase);
+        }
     }
 
     public sealed class EntitlementState

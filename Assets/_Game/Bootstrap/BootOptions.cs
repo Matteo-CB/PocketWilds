@@ -33,6 +33,15 @@ namespace PocketWilds.Bootstrap
         /// <summary>Store provider replacement (tests script purchases with the sandbox store).</summary>
         public PocketWilds.Services.Store.IStoreProvider StoreProviderOverride;
 
+        /// <summary>Analytics batch folder. Null uses Application.persistentDataPath/Analytics.</summary>
+        public string AnalyticsDirectory;
+
+        /// <summary>Consent used instead of the stored choice (tests).</summary>
+        public PocketWilds.Services.Analytics.AnalyticsConsent? AnalyticsConsentOverride;
+
+        /// <summary>Backend replacement (tests capture what would be sent).</summary>
+        public PocketWilds.Services.Analytics.IAnalyticsTransport AnalyticsTransportOverride;
+
         /// <summary>When false, stays in the bootstrap scene after boot (tests).</summary>
         public bool LoadTargetScene = true;
     }
