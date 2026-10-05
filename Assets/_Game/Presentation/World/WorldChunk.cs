@@ -23,6 +23,8 @@ namespace PocketWilds.Presentation
             public bool vertexBrightness;
             [Tooltip("Small decorative prop removed on Low quality (Biomes doc: -35 to 50% density).")]
             public bool secondary;
+            [Tooltip("T33B: the renderer turns around its local Z axis in the shader (windmill sails), no script.")]
+            public bool rotor;
         }
 
         public const int NeutralBrightness = 8;
@@ -99,7 +101,7 @@ namespace PocketWilds.Presentation
                     missing++;
                     continue;
                 }
-                uint data = EnvironmentVisualPacking.Pack(row, binding.brightness, binding.vertexBrightness);
+                uint data = EnvironmentVisualPacking.Pack(row, binding.brightness, binding.vertexBrightness, binding.rotor);
                 if (binding.renderer is MeshRenderer mesh)
                     mesh.SetShaderUserValue(data);
             }
@@ -134,12 +136,15 @@ namespace PocketWilds.Presentation
     public static class EnvironmentVisualPacking
     {
         public const uint VertexBrightnessFlag = 1u << 14;
+        /// <summary>SH_EnvironmentOpaque spins the renderer around its local Z axis (windmill sails).</summary>
+        public const uint RotorFlag = 1u << 15;
 
-        public static uint Pack(int paletteRow, int brightness, bool vertexBrightness = false) =>
+        public static uint Pack(int paletteRow, int brightness, bool vertexBrightness = false, bool rotor = false) =>
             (uint)Mathf.Clamp(paletteRow, 0, PaletteTable.MaxRows - 1) | ((uint)Mathf.Clamp(brightness, 0, 15) << 10)
-            | (vertexBrightness ? VertexBrightnessFlag : 0u);
+            | (vertexBrightness ? VertexBrightnessFlag : 0u) | (rotor ? RotorFlag : 0u);
 
         public static bool UsesVertexBrightness(uint packed) => (packed & VertexBrightnessFlag) != 0u;
+        public static bool IsRotor(uint packed) => (packed & RotorFlag) != 0u;
 
         public static int PaletteRow(uint packed) => (int)(packed & 1023u);
         public static int Brightness(uint packed) => (int)((packed >> 10) & 15u);

@@ -80,6 +80,12 @@ namespace PocketWilds.Benchmarks
             {
                 species = 3, shop = true, measureSeconds = 10f,
             },
+            new PerformanceScenario("W2", "Strip travel: the camera crosses the eight Grassland chunks east and back, 20 animals", 20, QualityTier.Medium)
+            {
+                species = 3, stripTravel = true, measureSeconds = 34f,
+            },
+            new PerformanceScenario("R1", "Light rain over the refuge, 20 animals", 20, QualityTier.Medium) { species = 3, rain = true },
+            new PerformanceScenario("R1-High", "Light rain over the refuge, 20 animals, High tier", 20, QualityTier.High) { species = 3, rain = true },
         };
 
         private static PerformanceScenario[] Filter(PerformanceScenario[] all, string[] args)
@@ -183,6 +189,10 @@ namespace PocketWilds.Benchmarks
                 var probe = scenario.streaming && entry.Streamer != null ? new StreamingProbe(entry) : null;
                 var shopProbe = scenario.shop && entry.Refuge.Shop != null ? new ShopProbe(entry.Refuge, bootstrap.Context) : null;
                 IEnumerator burst = scenario.hatchBurst ? HatchBurst(entry.Refuge, bootstrap.Context) : probe != null ? probe.Travel() : shopProbe?.Run();
+                if (scenario.stripTravel && entry.CameraRig != null)
+                    burst = StripTravel(entry.CameraRig, 7f);
+                if (scenario.rain)
+                    entry.Weather?.Force(1f, 0f);
                 // Garbage left by earlier scenarios (one process, many boots) is collected now, not in a sample.
                 GC.Collect();
                 float until = Time.realtimeSinceStartup + scenario.warmupSeconds;
@@ -232,6 +242,30 @@ namespace PocketWilds.Benchmarks
             foreach (var leftover in Object.FindObjectsByType<GameBootstrap>(FindObjectsSortMode.None))
                 Object.Destroy(leftover.gameObject);
             done(report);
+        }
+
+        /// <summary>T33B: east along the whole strip of chunks, then back to the refuge. No allocation per step.</summary>
+        private static IEnumerator StripTravel(RefugeCameraRig rig, float speed)
+        {
+            const float East = 98f, West = -3.5f;
+            while (true)
+            {
+                var focus = rig.Focus;
+                focus.x = Mathf.MoveTowards(focus.x, East, speed * Time.unscaledDeltaTime);
+                rig.SnapTo(focus);
+                if (Mathf.Abs(focus.x - East) < 0.001f)
+                    break;
+                yield return null;
+            }
+            while (true)
+            {
+                var focus = rig.Focus;
+                focus.x = Mathf.MoveTowards(focus.x, West, speed * Time.unscaledDeltaTime);
+                rig.SnapTo(focus);
+                if (Mathf.Abs(focus.x - West) < 0.001f)
+                    break;
+                yield return null;
+            }
         }
 
         /// <summary>

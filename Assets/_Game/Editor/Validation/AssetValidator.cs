@@ -79,6 +79,8 @@ namespace PocketWilds.Editor.Validation
         {
             "Assets/_Game/Art/Materials/MAT_Environment_Common.mat",
             "Assets/_Game/Art/Materials/MAT_Ground_Grassland.mat",
+            // T33B: the stream and the pond (SH_WaterLite master).
+            "Assets/_Game/Art/Materials/MAT_Water_Grassland.mat",
         };
 
         /// <summary>Biomes doc budgets (triangles, LOD0): name prefix, min, max.</summary>
@@ -101,6 +103,19 @@ namespace PocketWilds.Editor.Validation
             ("GL_Fence_", 24, 400),
             ("GL_HayBale", 24, 400),
             ("GL_BirdBath", 24, 400),
+            // T33B: strip grounds (the stream and pond grounds are finer to carve their beds), landmarks, last props.
+            ("GL_Ground_StreamBend", 200, 8000),
+            ("GL_Ground_PondEdge", 200, 8000),
+            ("GL_Ground_Orchard", 200, 5000),
+            ("GL_Ground_Hill", 200, 5000),
+            ("GL_Ground_WindmillRise", 200, 5000),
+            ("GL_Ground_ForestEdge", 200, 5000),
+            ("GL_Landmark_OldTree_LOD0", 600, 1800),
+            ("GL_Landmark_Windmill_LOD0", 300, 2500),
+            ("GL_Landmark_Windmill_Sails_LOD0", 24, 600),
+            ("GL_WellTiny", 24, 400),
+            ("GL_Edge_", 24, 400),
+            ("GL_StreamStones", 24, 300),
         };
 
         /// <summary>Doc 04: plants and scatter details 20-150 tris (tiny pebbles may go lower), life under 150.</summary>
@@ -445,6 +460,8 @@ namespace PocketWilds.Editor.Validation
 
             ValidateChunk(GrasslandChunkPath, allowed, issues, needsEgg: true);
             ValidateChunk(GrasslandMeadowChunkPath, allowed, issues, needsEgg: false);
+            foreach (var strip in PocketWilds.Editor.Environment.GrasslandPipeline.StripChunkEntries)
+                ValidateChunk(strip.path, allowed, issues, needsEgg: false);
             ValidateChunkSet(issues);
             ValidateLife(issues);
             return issues;

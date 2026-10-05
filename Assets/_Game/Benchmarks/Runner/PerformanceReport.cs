@@ -17,6 +17,10 @@ namespace PocketWilds.Benchmarks
 
         /// <summary>T28: the shop opens, a Gem pack is bought in the sandbox store, the shop closes and reopens.</summary>
         public bool shop;
+        /// <summary>T33B: the camera travels the whole strip of chunks east and back (streaming, water, landmarks).</summary>
+        public bool stripTravel;
+        /// <summary>T33B: a light shower is forced for the whole measure.</summary>
+        public bool rain;
         /// <summary>Grassland species cycled through the save: 1 rabbits only, 2 + squirrels (T23), 3 + hedgehogs (T24).</summary>
         public int species = 1;
         public float warmupSeconds = 2f;

@@ -42,6 +42,8 @@ namespace PocketWilds.Presentation
         public Color cloudLight = new Color(1f, 0.99f, 0.96f);
         public Color cloudShade = new Color(0.78f, 0.82f, 0.92f);
         [Range(0f, 1f)] public float cloudCoverage = 0.45f;
+        [Tooltip("Stars drawn by the sky shader (the night mood of events).")]
+        [Range(0f, 1f)] public float stars;
 
         [Header("Height fog (T33): pools in the low distance")]
         [Range(0f, 1f)] public float heightFogStrength = 0.35f;

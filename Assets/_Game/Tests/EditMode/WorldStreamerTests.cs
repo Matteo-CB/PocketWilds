@@ -288,7 +288,10 @@ namespace PocketWilds.Tests.EditMode
         {
             var set = AssetDatabase.LoadAssetAtPath<WorldChunkSet>(WorldContentPipeline.ChunkSetPath);
             Assert.IsNotNull(set);
-            Assert.AreEqual(2, set.Count);
+            // T33B: the strip runs east of the start: Meadow, StreamBend, Orchard, Hill, WindmillRise, PondEdge, ForestEdge.
+            Assert.AreEqual(8, set.Count);
+            for (int i = 1; i < set.Count; i++)
+                Assert.AreEqual(set.Get(i - 1).origin + new Vector3(14f, 0f, 0f), set.Get(i).origin, set.Get(i).id);
             var settings = AddressableAssetSettingsDefaultObject.GetSettings(false);
             Assert.IsNotNull(settings);
             for (int i = 0; i < set.Count; i++)

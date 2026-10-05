@@ -272,6 +272,8 @@ namespace PocketWilds.Presentation
                     else
                         s.Flying[flying++] = matrix;
                 }
+                s.FlyParams.camera = camera;
+                s.GroundParams.camera = camera;
                 if (flying > 0)
                 {
                     Graphics.RenderMeshInstanced(s.FlyParams, s.Def.mesh, 0, s.Flying, flying);

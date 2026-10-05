@@ -40,6 +40,40 @@ namespace PocketWilds.Editor.Capture
             }
         }
 
+        /// <summary>
+        /// Renders through a throwaway copy of <paramref name="template"/>. Instanced draws (scatter, life, weather) are
+        /// bound to a camera and stay queued for it until the editor frame ends: a fresh camera per shot keeps every
+        /// frame clean of the previous shot's draws. <paramref name="draw"/> issues the draws for that camera.
+        /// </summary>
+        public static string RenderWithFreshCamera(Camera template, int width, int height, string path, System.Action<Camera> draw, int msaa = 4)
+        {
+            var go = new GameObject("CaptureCamera") { hideFlags = HideFlags.HideAndDontSave };
+            try
+            {
+                go.transform.SetPositionAndRotation(template.transform.position, template.transform.rotation);
+                var camera = go.AddComponent<Camera>();
+                camera.CopyFrom(template);
+                camera.enabled = false;
+                var source = template.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+                var data = go.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+                if (data == null)
+                    data = go.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+                if (source != null)
+                {
+                    data.renderPostProcessing = source.renderPostProcessing;
+                    data.antialiasing = source.antialiasing;
+                    data.renderShadows = source.renderShadows;
+                }
+                // First render may compile shader variants: render twice, keep the second.
+                Render(camera, width, height, path, msaa, () => draw?.Invoke(camera));
+                return Render(camera, width, height, path, msaa, () => draw?.Invoke(camera));
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         /// <summary>Renders a camera found by name. Convenience for MCP and batch callers.</summary>
         public static string Render(string cameraName, int width, int height, string fileName)
         {

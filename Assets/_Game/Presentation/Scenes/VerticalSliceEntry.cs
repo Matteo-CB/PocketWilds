@@ -22,6 +22,10 @@ namespace PocketWilds.Presentation
         [Tooltip("Morning and evening moods blended with the day profile over the local time (T33). Optional.")]
         [SerializeField] private LightingProfile _morning;
         [SerializeField] private LightingProfile _evening;
+        [Tooltip("Night mood, only when an event asks for it (T33B). Optional.")]
+        [SerializeField] private LightingProfile _night;
+        [Tooltip("Light rain, rainbow and Magnifique sun rays of the biome (T33B). Optional.")]
+        [SerializeField] private WeatherKit _weatherKit;
         [Tooltip("World densities per quality tier (scatter, ambient life, clouds, height fog).")]
         [SerializeField] private WorldQualityProfile _worldQuality;
         [Tooltip("Butterflies, bees and birds of the biome, spawned at the chunks' VFX anchors (T33). Optional.")]
@@ -51,6 +55,7 @@ namespace PocketWilds.Presentation
         private ScatterRenderer _scatter;
         private AmbientLife _life;
         private WorldAtmosphere _atmosphere;
+        private WeatherSystem _weather;
         private WorldChunk _startChunk;
         private Action<int, ChunkStreamState> _onChunkState;
 
@@ -64,6 +69,7 @@ namespace PocketWilds.Presentation
         public ScatterRenderer Scatter => _scatter;
         public AmbientLife Life => _life;
         public WorldAtmosphere Atmosphere => _atmosphere;
+        public WeatherSystem Weather => _weather;
 
         private WorldQualityProfile.Tier WorldQuality(QualityTier tier) =>
             _worldQuality != null ? _worldQuality.Get(tier) : WorldQualityProfile.Default(tier);
@@ -81,6 +87,7 @@ namespace PocketWilds.Presentation
             _streamer = new WorldStreamer(_chunkSet, new AddressablesChunkSource(), context.Palettes, context.Quality.CurrentTier);
             var worldQuality = WorldQuality(context.Quality.CurrentTier);
             _scatter = new ScatterRenderer(context.Palettes, worldQuality.scatterDensity);
+            _scatter.SetDistanceFade(worldQuality.scatterFadeStart, worldQuality.scatterFadeEnd);
             _life = _ambientLife != null ? new AmbientLife(_ambientLife, context.Palettes, worldQuality.ambientLifeDensity) : null;
             while (!_streamer.PinnedSettled)
             {
@@ -118,8 +125,9 @@ namespace PocketWilds.Presentation
             if (_lighting != null)
             {
                 _lighting.Apply(_sun, camera, tier);
-                _atmosphere = new WorldAtmosphere(_morning, _lighting, _evening, _sun, camera, WorldQuality(tier));
+                _atmosphere = new WorldAtmosphere(_morning, _lighting, _evening, _sun, camera, WorldQuality(tier), _night);
                 _atmosphere.Tick(Time.unscaledTime);
+                _weather = _weatherKit != null ? new WeatherSystem(_weatherKit, _atmosphere, WorldQuality(tier)) : null;
             }
             else
                 PresentationQuality.Apply(tier);
@@ -159,6 +167,7 @@ namespace PocketWilds.Presentation
             _life?.Clear();
             _life = null;
             _atmosphere = null;
+            _weather = null;
             _startChunk = null;
             _context = null;
         }
@@ -228,6 +237,7 @@ namespace PocketWilds.Presentation
             if (_context != null)
                 _streamer?.Tick(Footprint(), Time.unscaledTime);
             _refuge?.Tick(Time.time, Time.deltaTime);
+            _weather?.Tick(Time.unscaledTime);
             _atmosphere?.Tick(Time.unscaledTime);
             var camera = _cameraRig != null ? _cameraRig.Camera : null;
             _scatter?.Render(camera);
@@ -236,6 +246,8 @@ namespace PocketWilds.Presentation
                 _life.Tick(Time.deltaTime, Time.time);
                 _life.Render(camera, Time.time);
             }
+            if (_weather != null && _cameraRig != null)
+                _weather.Render(camera, _cameraRig.Focus);
         }
 
         private void OnDestroy() => Exit();

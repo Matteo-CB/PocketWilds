@@ -15,6 +15,7 @@ namespace PocketWilds.Editor.Lighting
     {
         public const string MorningProfilePath = LightingFolder + "/LP_Grassland_Morning.asset";
         public const string EveningProfilePath = LightingFolder + "/LP_Grassland_Evening.asset";
+        public const string NightProfilePath = LightingFolder + "/LP_Grassland_Night.asset";
 
         [MenuItem("Pocket Wilds/Lighting/Build Moods (T33)", priority = 181)]
         public static void BuildMoods()
@@ -122,6 +123,43 @@ namespace PocketWilds.Editor.Lighting
             evening.gustFrequency = 0.5f;
             evening.flutter = 0.03f;
             EditorUtility.SetDirty(evening);
+
+            // Night (events only, T33B): moonlight, a deep blue that stays readable, stars, a soft moon glow.
+            var night = LoadOrCreate(NightProfilePath);
+            night.sunColor = Hex("9FB4E8");
+            night.sunIntensity = 0.5f;
+            night.sunAngles = new Vector2(52f, 24f);
+            night.shadowStrength = 0.5f;
+            night.ambientTop = Hex("4E5F92");
+            night.ambientEquator = Hex("55618A");
+            night.ambientBottom = Hex("2A3048");
+            night.sky = day.sky;
+            night.skyTop = Hex("1E2C5A");
+            night.skyHorizon = Hex("46598C");
+            night.skyBottom = Hex("2C365E");
+            night.fog = true;
+            night.fogColor = Hex("3A4A78");
+            night.fogStart = 20f;
+            night.fogEnd = 54f;
+            night.sunGlowTint = Hex("C9D8FF");
+            night.sunGlow = 0.35f;
+            night.cloudLight = Hex("7486B0");
+            night.cloudShade = Hex("3E4B74");
+            night.cloudCoverage = 0.28f;
+            night.stars = 1f;
+            night.heightFogStrength = 0.4f;
+            night.heightFogBase = 0f;
+            night.heightFogFalloff = 0.5f;
+            night.heightFogStart = 12f;
+            night.heightFogRange = 24f;
+            night.windStrength = 0.2f;
+            night.windYaw = 30f;
+            night.windSpeed = 1.2f;
+            night.windWaveFrequency = 0.3f;
+            night.gustStrength = 0.25f;
+            night.gustFrequency = 0.4f;
+            night.flutter = 0.02f;
+            EditorUtility.SetDirty(night);
         }
 
         /// <summary>Sets the moods, the world quality and the ambient life kit on the scene entry (SetupScene, BuildMoods).</summary>
@@ -129,6 +167,8 @@ namespace PocketWilds.Editor.Lighting
         {
             entry.FindProperty("_morning").objectReferenceValue = AssetDatabase.LoadAssetAtPath<LightingProfile>(MorningProfilePath);
             entry.FindProperty("_evening").objectReferenceValue = AssetDatabase.LoadAssetAtPath<LightingProfile>(EveningProfilePath);
+            entry.FindProperty("_night").objectReferenceValue = AssetDatabase.LoadAssetAtPath<LightingProfile>(NightProfilePath);
+            entry.FindProperty("_weatherKit").objectReferenceValue = AssetDatabase.LoadAssetAtPath<WeatherKit>(GrasslandPipeline.WeatherKitPath);
             entry.FindProperty("_worldQuality").objectReferenceValue = AssetDatabase.LoadAssetAtPath<WorldQualityProfile>(GrasslandPipeline.WorldQualityPath);
             entry.FindProperty("_ambientLife").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AmbientLifeKit>(GrasslandPipeline.LifeKitPath);
         }

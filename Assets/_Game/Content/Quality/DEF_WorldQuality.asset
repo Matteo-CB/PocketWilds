@@ -18,15 +18,27 @@ MonoBehaviour:
     clouds: 0
     heightFog: 0
     weather: 0.4
+    water: 0
+    sunRays: 0
+    scatterFadeStart: 16
+    scatterFadeEnd: 26
   medium:
     scatterDensity: 0.65
     ambientLifeDensity: 0.6
     clouds: 1
     heightFog: 1
     weather: 0.7
+    water: 1
+    sunRays: 0
+    scatterFadeStart: 22
+    scatterFadeEnd: 34
   high:
     scatterDensity: 1
     ambientLifeDensity: 1
     clouds: 1
     heightFog: 1
     weather: 1
+    water: 2
+    sunRays: 1
+    scatterFadeStart: 30
+    scatterFadeEnd: 46

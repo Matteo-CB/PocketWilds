@@ -34,12 +34,16 @@ namespace PocketWilds.Editor.World
         public const string StartAddress = "chunk.grassland.start";
         public const string MeadowAddress = "chunk.grassland.meadow";
 
-        /// <summary>Chunk prefabs in world order: address, path, origin, pinned.</summary>
+        /// <summary>
+        /// Chunk prefabs in world order: address, path, origin, pinned. T33B: the strip continues east of the meadow
+        /// (StreamBend, Orchard, Hill, WindmillRise, PondEdge, ForestEdge), one chunk every 14 m.
+        /// </summary>
         public static readonly (string address, string path, Vector3 origin, bool pinned)[] GrasslandChunks =
-        {
-            (StartAddress, GrasslandPipeline.ChunkPath, Vector3.zero, true),
-            (MeadowAddress, GrasslandPipeline.MeadowChunkPath, GrasslandPipeline.MeadowOffset, false),
-        };
+            new[]
+            {
+                (StartAddress, GrasslandPipeline.ChunkPath, Vector3.zero, true),
+                (MeadowAddress, GrasslandPipeline.MeadowChunkPath, GrasslandPipeline.MeadowOffset, false),
+            }.Concat(GrasslandPipeline.StripChunkEntries.Select(e => (e.address, e.path, e.origin, false))).ToArray();
 
         [MenuItem("Pocket Wilds/World/Setup Grassland Streaming (T27)", priority = 180)]
         public static void SetupMenu() => Debug.Log("[WorldContent] " + Setup());

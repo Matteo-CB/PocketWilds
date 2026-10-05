@@ -36,6 +36,8 @@ namespace PocketWilds.Presentation
         private readonly PaletteTable _palettes;
         private readonly Plane[] _planes = new Plane[6];
         private float _density = 1f;
+        private float _fadeStart = float.PositiveInfinity;
+        private float _fadeEnd = float.PositiveInfinity;
 
         public ScatterRenderer(PaletteTable palettes, float density = 1f)
         {
@@ -52,6 +54,16 @@ namespace PocketWilds.Presentation
 
         /// <summary>Share of every kind group drawn: 0.3 Fluide, 0.65 Équilibrée, 1 Magnifique.</summary>
         public void SetDensity(float density) => _density = Mathf.Clamp01(density);
+
+        /// <summary>
+        /// LOD by distance (doc 07 "Distance des LOD"): chunks farther than <paramref name="start"/> meters from the
+        /// camera thin out to a quarter at <paramref name="end"/>. Same stable prefix, so nothing pops in place.
+        /// </summary>
+        public void SetDistanceFade(float start, float end)
+        {
+            _fadeStart = start > 0f ? start : float.PositiveInfinity;
+            _fadeEnd = Mathf.Max(_fadeStart + 0.01f, end);
+        }
 
         /// <summary>Builds the chunk's instance matrices (allocates: call when the chunk becomes active).</summary>
         public bool Add(WorldChunk chunk)
@@ -115,18 +127,23 @@ namespace PocketWilds.Presentation
                 return;
             using var marker = GameProfilerMarkers.ScatterRender.Auto();
             GeometryUtility.CalculateFrustumPlanes(camera, _planes);
+            var eye = camera.transform.position;
             for (int e = 0; e < _entries.Count; e++)
             {
                 var entry = _entries[e];
                 if (entry.Chunk == null || !GeometryUtility.TestPlanesAABB(_planes, entry.Bounds))
                     continue;
+                float distance = Mathf.Sqrt(entry.Bounds.SqrDistance(eye));
+                float fade = float.IsPositiveInfinity(_fadeStart) ? 1f : Mathf.Lerp(1f, 0.25f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(_fadeStart, _fadeEnd, distance)));
                 var batches = entry.Batches;
                 for (int b = 0; b < batches.Length; b++)
                 {
                     var batch = batches[b];
-                    int count = Mathf.CeilToInt(batch.Matrices.Length * Mathf.Max(_density, batch.MinDensity) - 0.0001f);
+                    int count = Mathf.CeilToInt(batch.Matrices.Length * Mathf.Max(_density, batch.MinDensity) * fade - 0.0001f);
                     if (count <= 0)
                         continue;
+                    // Bound to this camera: a draw queued for one camera never leaks into another render.
+                    batch.Params.camera = camera;
                     Graphics.RenderMeshInstanced(batch.Params, batch.Mesh, 0, batch.Matrices, count);
                     LastInstances += count;
                     LastDraws++;

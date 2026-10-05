@@ -62,7 +62,7 @@ Shader "PocketWilds/SkyGradient"
             float4 _PW_SunDirection;
             half4 _PW_CloudLight;
             half4 _PW_CloudShade;
-            // x cloud coverage (0 hides clouds on Low), y sun glow.
+            // x cloud coverage (0 hides clouds on Low), y sun glow, z stars (night mood of events).
             float4 _PW_SkyParams;
 
             struct Attributes
@@ -130,6 +130,7 @@ Shader "PocketWilds/SkyGradient"
                 half sun = pow(saturate(dot(d, sunDir)), 24.0) * sunGlow;
                 color += sunTint * sun;
 
+                half cloudMask = 0.0h;
                 // Stylized clouds on a virtual plane above the world: crisp soft-edged puffs, shaded away
                 // from the sun, fading toward the horizon so the diorama silhouette stays clean.
                 if (up > 0.02h && coverage > 0.001h)
@@ -146,7 +147,20 @@ Shader "PocketWilds/SkyGradient"
                     half3 cloudShade = lerp(_CloudShade.rgb, _PW_CloudShade.rgb, blend);
                     half3 cloud = lerp(cloudLight, cloudShade, saturate(core * 0.55h + self * 0.6h)) + sunTint * sun * 0.5h;
                     half fade = saturate((up - 0.02h) * 5.0h);
-                    color = lerp(color, cloud, mask * fade);
+                    cloudMask = mask * fade;
+                    color = lerp(color, cloud, cloudMask);
+                }
+                // Stars: sparse twinkling points on the same virtual plane, hidden by clouds, gone near the horizon.
+                half stars = (half)_PW_SkyParams.z * blend;
+                if (stars > 0.001h && up > 0.05h)
+                {
+                    float2 sp = d.xz / (d.y + 0.35) * 42.0;
+                    float2 cell = floor(sp);
+                    float h = Hash(cell);
+                    float2 f = frac(sp) - 0.5 - (float2(Hash(cell + 17.0), Hash(cell + 31.0)) - 0.5) * 0.6;
+                    half twinkle = (half)(0.65 + 0.35 * sin(_Time.y * (1.5 + h * 3.0) + h * 60.0));
+                    half star = (half)(step(0.972, h) * smoothstep(0.16, 0.02, length(f))) * twinkle;
+                    color += half3(1.0h, 0.97h, 0.9h) * star * stars * saturate((up - 0.05h) * 4.0h) * (1.0h - cloudMask);
                 }
                 return half4(color, 1);
             }

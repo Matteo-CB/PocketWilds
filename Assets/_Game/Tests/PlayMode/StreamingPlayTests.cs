@@ -101,9 +101,9 @@ namespace PocketWilds.Tests.PlayMode
             // not whatever size the test runner's game view has.
             rig.Camera.aspect = 480f / 1040f;
             var egg = entry.StartChunk.EggSpawn.position;
-            // The pan limits now reach the meadow's centre.
-            rig.SnapTo(new Vector3(40f, 0f, egg.z));
-            Assert.AreEqual(17.5f, rig.Focus.x, 0.01f);
+            // T33B: the pan limits reach the far east of the strip (ForestEdge at 98 m, 3.5 m short of its rim).
+            rig.SnapTo(new Vector3(400f, 0f, egg.z));
+            Assert.AreEqual(101.5f, rig.Focus.x, 0.01f);
             rig.SnapTo(new Vector3(-3.5f, 0f, egg.z));
             yield return null;
             // Counted from the portrait frame on: a landscape test view sees the meadow from the egg at boot.

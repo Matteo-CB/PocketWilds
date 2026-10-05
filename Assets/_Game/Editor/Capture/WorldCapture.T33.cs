@@ -85,14 +85,11 @@ namespace PocketWilds.Editor.Capture
                     string Shot(string name, int w, int h)
                     {
                         string path = $"{folder}/{prefix}_{name}.png";
-                        // First render after a tier switch may still compile shader variants: render twice.
-                        void Draw()
+                        return CaptureUtility.RenderWithFreshCamera(camera, w, h, path, cam =>
                         {
-                            scatter.Render(camera);
-                            life?.Render(camera, lifeTime);
-                        }
-                        CaptureUtility.Render(camera, w, h, path, 4, Draw);
-                        return CaptureUtility.Render(camera, w, h, path, 4, Draw);
+                            scatter.Render(cam);
+                            life?.Render(cam, lifeTime);
+                        });
                     }
 
                     for (int level = 0; level < QualitySettings.names.Length; level++)

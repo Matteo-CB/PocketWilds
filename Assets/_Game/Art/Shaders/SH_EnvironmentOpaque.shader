@@ -6,6 +6,8 @@
 // Per-renderer Shader User Value (SRP Batcher compatible, no material clones):
 //   bits 0-9   palette row
 //   bits 10-13 brightness jitter (0-15, 8 = neutral, about +-8%): repeated props never look stamped
+//   bit 14     merged props: brightness per vertex in uv.y
+//   bit 15     rotor (T33B): the renderer turns around its local Z axis (windmill sails), no script
 Shader "PocketWilds/EnvironmentOpaque"
 {
     Properties
@@ -74,13 +76,22 @@ Shader "PocketWilds/EnvironmentOpaque"
             Varyings Vert(Attributes input)
             {
                 Varyings output;
-                VertexPositionInputs position = GetVertexPositionInputs(input.positionOS.xyz);
+                uint data = unity_RendererUserValue;
+                float3 positionOS = input.positionOS.xyz;
+                float3 normalOS = input.normalOS;
+                if ((data & 32768u) != 0u)
+                {
+                    float s, c;
+                    sincos(_Time.y * 0.55, s, c);
+                    positionOS.xy = float2(c * positionOS.x - s * positionOS.y, s * positionOS.x + c * positionOS.y);
+                    normalOS.xy = float2(c * normalOS.x - s * normalOS.y, s * normalOS.x + c * normalOS.y);
+                }
+                VertexPositionInputs position = GetVertexPositionInputs(positionOS);
                 output.positionCS = position.positionCS;
                 output.fogFactor = PW_FogFactor(position.positionCS.z, position.positionWS);
                 output.positionWS = position.positionWS;
-                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                output.normalWS = TransformObjectToWorldNormal(normalOS);
 
-                uint data = unity_RendererUserValue;
                 uint row = data & 1023u;
                 // Bit 14: merged chunk props carry each instance's brightness in uv.y (0..1 = level 0..15).
                 half level = (data & 16384u) != 0u ? saturate(half(input.uv.y)) * 15.0h : half((data >> 10) & 15u);

@@ -10,6 +10,8 @@ namespace PocketWilds.Presentation
         Morning,
         Day,
         Evening,
+        /// <summary>Only when an event asks for it (doc 07: the night stays readable and beautiful).</summary>
+        Night,
     }
 
     /// <summary>
@@ -31,6 +33,7 @@ namespace PocketWilds.Presentation
         private static readonly int CloudLightId = Shader.PropertyToID("_PW_CloudLight");
         private static readonly int CloudShadeId = Shader.PropertyToID("_PW_CloudShade");
         private static readonly int SkyParamsId = Shader.PropertyToID("_PW_SkyParams");
+        private static readonly int WaterQualityId = Shader.PropertyToID("_PW_WaterQuality");
 
         public Color SunColor;
         public float SunIntensity;
@@ -46,6 +49,7 @@ namespace PocketWilds.Presentation
         public float CloudCoverage;
         public float HeightFogStrength, HeightFogBase, HeightFogFalloff, HeightFogStart, HeightFogRange;
         public float WindStrength, WindYaw, WindSpeed, WindWaveFrequency, GustStrength, GustFrequency, Flutter;
+        public float Stars;
 
         public static AtmosphereState From(LightingProfile p) => new AtmosphereState
         {
@@ -79,7 +83,39 @@ namespace PocketWilds.Presentation
             GustStrength = p.gustStrength,
             GustFrequency = p.gustFrequency,
             Flutter = p.flutter,
+            Stars = p.stars,
         };
+
+        /// <summary>
+        /// Light rain over a mood (WeatherSystem, 0 dry to 1 full shower): softer, cooler light, a grey-blue sky
+        /// with more and darker clouds, closer fog, more wind. Pure math on the blended state, no allocation.
+        /// </summary>
+        public static AtmosphereState Rainy(in AtmosphereState s, float rain)
+        {
+            if (rain <= 0f)
+                return s;
+            var r = s;
+            var grey = new Color(0.62f, 0.68f, 0.74f);
+            r.SunIntensity = s.SunIntensity * Mathf.Lerp(1f, 0.62f, rain);
+            r.SunColor = Color.Lerp(s.SunColor, new Color(0.86f, 0.9f, 0.96f), rain * 0.6f);
+            r.ShadowStrength = s.ShadowStrength * Mathf.Lerp(1f, 0.45f, rain);
+            r.AmbientTop = Color.Lerp(s.AmbientTop, new Color(0.62f, 0.67f, 0.74f), rain * 0.5f);
+            r.AmbientEquator = Color.Lerp(s.AmbientEquator, new Color(0.6f, 0.64f, 0.66f), rain * 0.5f);
+            r.SkyTop = Color.Lerp(s.SkyTop, new Color(0.55f, 0.62f, 0.7f), rain * 0.75f);
+            r.SkyHorizon = Color.Lerp(s.SkyHorizon, new Color(0.78f, 0.82f, 0.85f), rain * 0.7f);
+            r.SkyBottom = Color.Lerp(s.SkyBottom, grey, rain * 0.6f);
+            r.FogColor = Color.Lerp(s.FogColor, new Color(0.76f, 0.8f, 0.83f), rain * 0.7f);
+            r.FogStart = s.FogStart * Mathf.Lerp(1f, 0.7f, rain);
+            r.FogEnd = s.FogEnd * Mathf.Lerp(1f, 0.8f, rain);
+            r.SunGlow = s.SunGlow * (1f - rain);
+            r.CloudCoverage = Mathf.Lerp(s.CloudCoverage, 0.78f, rain);
+            r.CloudLight = Color.Lerp(s.CloudLight, new Color(0.86f, 0.88f, 0.9f), rain);
+            r.CloudShade = Color.Lerp(s.CloudShade, new Color(0.58f, 0.62f, 0.7f), rain);
+            r.HeightFogStrength = Mathf.Lerp(s.HeightFogStrength, Mathf.Max(s.HeightFogStrength, 0.55f), rain);
+            r.WindStrength = Mathf.Lerp(s.WindStrength, Mathf.Max(s.WindStrength, 0.55f), rain);
+            r.GustStrength = Mathf.Lerp(s.GustStrength, 0.75f, rain);
+            return r;
+        }
 
         public static AtmosphereState Lerp(in AtmosphereState a, in AtmosphereState b, float t) => new AtmosphereState
         {
@@ -113,6 +149,7 @@ namespace PocketWilds.Presentation
             GustStrength = Mathf.Lerp(a.GustStrength, b.GustStrength, t),
             GustFrequency = Mathf.Lerp(a.GustFrequency, b.GustFrequency, t),
             Flutter = Mathf.Lerp(a.Flutter, b.Flutter, t),
+            Stars = Mathf.Lerp(a.Stars, b.Stars, t),
         };
 
         /// <summary>Sun, ambient and fog of the scene. The shadow switch stays the tier's (LightingProfile.Apply).</summary>
@@ -156,7 +193,8 @@ namespace PocketWilds.Presentation
             Shader.SetGlobalVector(SunDirectionId, new Vector4(sunDirection.x, sunDirection.y, sunDirection.z, 0f));
             Shader.SetGlobalColor(CloudLightId, CloudLight.linear);
             Shader.SetGlobalColor(CloudShadeId, CloudShade.linear);
-            Shader.SetGlobalVector(SkyParamsId, new Vector4(quality.clouds ? CloudCoverage : 0f, SunGlow, 0f, 0f));
+            Shader.SetGlobalVector(SkyParamsId, new Vector4(quality.clouds ? CloudCoverage : 0f, SunGlow, Stars, 0f));
+            Shader.SetGlobalFloat(WaterQualityId, quality.water);
         }
     }
 
@@ -175,22 +213,26 @@ namespace PocketWilds.Presentation
             LightingMood.Day, LightingMood.Day, LightingMood.Evening, LightingMood.Evening,
         };
 
-        private readonly AtmosphereState[] _moods = new AtmosphereState[3];
+        private readonly AtmosphereState[] _moods = new AtmosphereState[4];
         private readonly Light _sun;
         private readonly Camera _camera;
         private WorldQualityProfile.Tier _quality;
         private float _nextApply = float.NegativeInfinity;
         private float _forcedHour = -1f;
         private bool _dirty = true;
+        private float _rain;
+        private bool _night;
 
         public WorldAtmosphere(LightingProfile morning, LightingProfile day, LightingProfile evening, Light sun, Camera camera,
-            in WorldQualityProfile.Tier quality)
+            in WorldQualityProfile.Tier quality, LightingProfile night = null)
         {
             if (day == null)
                 throw new ArgumentNullException(nameof(day));
             _moods[(int)LightingMood.Morning] = AtmosphereState.From(morning != null ? morning : day);
             _moods[(int)LightingMood.Day] = AtmosphereState.From(day);
             _moods[(int)LightingMood.Evening] = AtmosphereState.From(evening != null ? evening : day);
+            _moods[(int)LightingMood.Night] = AtmosphereState.From(night != null ? night : evening != null ? evening : day);
+            HasNight = night != null;
             _sun = sun;
             _camera = camera;
             _quality = quality;
@@ -198,6 +240,29 @@ namespace PocketWilds.Presentation
 
         /// <summary>The hour used by the last apply (0-24).</summary>
         public float Hour { get; private set; }
+        public float Rain => _rain;
+        public bool Night => _night;
+        public bool HasNight { get; }
+
+        /// <summary>WeatherSystem: 0 dry to 1 full shower. Re-applied on the next tick when it moved noticeably.</summary>
+        public void SetRain(float rain)
+        {
+            rain = Mathf.Clamp01(rain);
+            if (Mathf.Abs(rain - _rain) < 0.02f && !(rain == 0f && _rain > 0f))
+                return;
+            _rain = rain;
+            _dirty = true;
+        }
+
+        /// <summary>Events only: the night mood (stars, moonlight) replaces the clock until switched off.</summary>
+        public void SetNight(bool night)
+        {
+            if (_night == night)
+                return;
+            _night = night;
+            _dirty = true;
+            _nextApply = float.NegativeInfinity;
+        }
 
         public void SetQuality(in WorldQualityProfile.Tier quality)
         {
@@ -238,7 +303,8 @@ namespace PocketWilds.Presentation
             using var marker = GameProfilerMarkers.AtmosphereApply.Auto();
             Hour = Mathf.Repeat(hour, 24f);
             Resolve(Hour, out var a, out var b, out float t);
-            var state = AtmosphereState.Lerp(_moods[(int)a], _moods[(int)b], Mathf.SmoothStep(0f, 1f, t));
+            var state = _night ? _moods[(int)LightingMood.Night] : AtmosphereState.Lerp(_moods[(int)a], _moods[(int)b], Mathf.SmoothStep(0f, 1f, t));
+            state = AtmosphereState.Rainy(state, _rain);
             state.ApplyScene(_sun, _camera);
             state.ApplyShaderGlobals(_quality);
             _dirty = false;

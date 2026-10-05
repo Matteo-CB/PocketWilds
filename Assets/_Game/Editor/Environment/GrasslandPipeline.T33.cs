@@ -73,6 +73,7 @@ namespace PocketWilds.Editor.Environment
             Add(set, PaletteButterflyGolden, "4A3A2A", "FFCF3A", "FFF0A8", "4A3A2A", "4A3A2A", "35291E", "FFB52E");
             Add(set, PaletteBee, "3A3030", "EEF4F8", "F2C14E", "3A3030", "3A3030", "2A2424", "EEF4F8");
             Add(set, PaletteBird, "8C6A52", "F2A06A", "6E5242", "E8B64E", "8C6A52", "5A4636", "EADBC4");
+            AddStripPalettes(set);
         }
 
         [MenuItem("Pocket Wilds/Environment/Build Grassland Magnifique (T33)", priority = 175)]
@@ -85,6 +86,8 @@ namespace PocketWilds.Editor.Environment
             var foliage = EnsureFoliageMaterial();
             var kit = EnsureScatterKit(foliage);
             EnsureLifeKit(EnsureLifeMaterial());
+            EnsureWeatherKit();
+            EnsureWaterMaterial();
             var prefabs = BuildMagnifiquePrefabs(env);
             EnsureWorldQuality();
             string start = BuildStartChunkT33(prefabs, kit);
@@ -256,10 +259,17 @@ namespace PocketWilds.Editor.Environment
         private static void EnsureWorldQuality()
         {
             var quality = AssetDatabase.LoadAssetAtPath<WorldQualityProfile>(WorldQualityPath);
-            if (quality != null)
-                return;
-            Directory.CreateDirectory(Path.GetDirectoryName(WorldQualityPath));
-            AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<WorldQualityProfile>(), WorldQualityPath);
+            if (quality == null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(WorldQualityPath));
+                quality = ScriptableObject.CreateInstance<WorldQualityProfile>();
+                AssetDatabase.CreateAsset(quality, WorldQualityPath);
+            }
+            // Reference values live in code (doc 07 table): rerunning the pipeline restores them, new fields included.
+            quality.low = WorldQualityProfile.Default(QualityTier.Low);
+            quality.medium = WorldQualityProfile.Default(QualityTier.Medium);
+            quality.high = WorldQualityProfile.Default(QualityTier.High);
+            EditorUtility.SetDirty(quality);
         }
 
         // ---------------- prop prefabs ----------------
@@ -320,6 +330,12 @@ namespace PocketWilds.Editor.Environment
 
         private static string PaletteFor(string prop) => prop switch
         {
+            _ when prop.StartsWith("GL_Landmark_OldTree", StringComparison.Ordinal) => PaletteOldTree,
+            _ when prop.StartsWith("GL_Landmark_Windmill", StringComparison.Ordinal) => PaletteWindmill,
+            "GL_Fence_B" => PaletteFenceWhite,
+            "GL_WellTiny" => PaletteWell,
+            "GL_Edge_B" => PaletteEdgeRoots,
+            "GL_StreamStones" => PaletteStreamStone,
             "GL_Tree_C" => PaletteBirch,
             "GL_Tree_D" => PaletteFruitTree,
             "GL_Bush_B" => PaletteBushBlossom,
@@ -454,12 +470,11 @@ namespace PocketWilds.Editor.Environment
             var groundMesh = AssetDatabase.LoadAllAssetsAtPath($"{ModelsFolder}/GL_Ground_Core_B.fbx").OfType<Mesh>().First();
             var layout = MeadowLayoutT33();
             var area = new WanderArea(Vector3.zero, 3.5f);
-            const float Power = 5f;
             var rules = new ScatterRules
             {
                 Seed = 3302, Ground = groundMesh, Worn = WornMask(groundMesh),
-                // The west side is joined to the start chunk: scatter runs up to the seam.
-                Inside = p => p.x < 0f ? p.x > -6.95f && Mathf.Abs(p.z) < 6.4f : InsideIsland(p, 0.35f, Power),
+                // T33B: joined on both sides (start to the west, StreamBend to the east): scatter runs up to both seams.
+                Inside = p => Mathf.Abs(p.x) < 6.95f && Mathf.Abs(p.z) < 6.6f,
                 Clear = new Vector3(0f, 0f, -100f), ClearRadius = 0f, Lawn = area.Center, LawnRadius = 2.2f,
                 FlowerPatches = 34, RimPatches = 5, FlowerSingles = 40,
             };
@@ -512,8 +527,8 @@ namespace PocketWilds.Editor.Environment
             var props = Child(root, "Props");
             var groups = new (string prefix, Transform group)[]
             {
-                ("GL_Tree", Child(props, "Trees")), ("GL_Bush", Child(props, "Bushes")), ("GL_Rock", Child(props, "Rocks")),
-                ("GL_", Child(props, "Decor")),
+                ("GL_Landmark", Child(props, "Landmarks")), ("GL_Tree", Child(props, "Trees")), ("GL_Bush", Child(props, "Bushes")),
+                ("GL_Rock", Child(props, "Rocks")), ("GL_", Child(props, "Decor")),
             };
             foreach (var placement in layout)
             {
@@ -524,10 +539,12 @@ namespace PocketWilds.Editor.Environment
                 byte brightness = (byte)(placement.Prop.StartsWith("GL_Tree", StringComparison.Ordinal) ? 6 + rng.Next(5) : 5 + rng.Next(7));
                 foreach (var renderer in instance.GetComponentsInChildren<Renderer>(true))
                 {
+                    // Windmill sails: their own palette (canvas and wood) and the rotor flag (they turn in the shader).
+                    bool sails = renderer.name.Contains("_Sails_");
                     bindings.Add(new WorldChunk.PaletteBinding
                     {
-                        renderer = renderer, paletteId = ContentId.FromSource(placement.Palette).Value,
-                        brightness = brightness, secondary = placement.Secondary,
+                        renderer = renderer, paletteId = ContentId.FromSource(sails ? PaletteWindmillSails : placement.Palette).Value,
+                        brightness = brightness, secondary = placement.Secondary, rotor = sails,
                     });
                 }
             }
@@ -570,6 +587,13 @@ namespace PocketWilds.Editor.Environment
             "GL_Fence_A" => 0.62f,
             "GL_HayBale" => 0.38f,
             "GL_BirdBath" => 0.32f,
+            "GL_Landmark_OldTree" => 0.95f,
+            "GL_Landmark_Windmill" => 1.3f,
+            "GL_Fence_B" => 0.72f,
+            "GL_WellTiny" => 0.58f,
+            "GL_Edge_A" => 0.4f,
+            "GL_Edge_B" => 0.2f,
+            "GL_StreamStones" => 0.0f,
             _ => 0.3f,
         };
 
@@ -589,6 +613,8 @@ namespace PocketWilds.Editor.Environment
             /// <summary>Patches placed first on the lawn rim, inside the gameplay frame.</summary>
             public int RimPatches;
             public int FlowerSingles;
+            /// <summary>T33B: nothing grows here (stream and pond water).</summary>
+            public Func<Vector3, bool> Excluded;
         }
 
         private struct ScatterPoint
@@ -624,10 +650,10 @@ namespace PocketWilds.Editor.Environment
                 foreach (var prop in props)
                 {
                     float d = Vector3.Distance(new Vector3(p.x, 0f, p.z), prop.Position) - PropRadius(prop.Prop) * prop.Scale;
-                    if (prop.Prop == "GL_Log" || prop.Prop == "GL_Fence_A")
+                    if (prop.Prop == "GL_Log" || prop.Prop == "GL_Fence_A" || prop.Prop == "GL_Fence_B")
                     {
                         // Long props: distance to their segment.
-                        var axis = Quaternion.Euler(0f, prop.Yaw, 0f) * Vector3.right * (prop.Prop == "GL_Log" ? 0.5f : 0.6f) * prop.Scale;
+                        var axis = Quaternion.Euler(0f, prop.Yaw, 0f) * Vector3.right * (prop.Prop == "GL_Log" ? 0.5f : prop.Prop == "GL_Fence_B" ? 0.7f : 0.6f) * prop.Scale;
                         var a = prop.Position - axis;
                         var b = prop.Position + axis;
                         var ab = b - a;
@@ -641,7 +667,7 @@ namespace PocketWilds.Editor.Environment
 
             bool Place(int kind, Vector3 p, float scale, double rank, float minClearance = 0.02f)
             {
-                if (kind < 0 || !rules.Inside(p) || Clearance(p) < minClearance)
+                if (kind < 0 || !rules.Inside(p) || Clearance(p) < minClearance || (rules.Excluded != null && rules.Excluded(p)))
                     return false;
                 if (rules.ClearRadius > 0f && Vector3.Distance(new Vector3(p.x, 0f, p.z), new Vector3(rules.Clear.x, 0f, rules.Clear.z)) < rules.ClearRadius)
                     return false;
