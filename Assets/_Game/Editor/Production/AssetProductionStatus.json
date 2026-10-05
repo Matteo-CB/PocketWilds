@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T17:45:29Z",
+  "updatedUtc": "2026-10-05T18:12:54Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -211,8 +211,8 @@
     {
       "task": "T30",
       "title": "Vertical Slice Gate",
-      "status": "PLANNED",
-      "notes": "2026-10-05: the gate also measures the gap to the owner decisions (Magnifique beauty, fonts, ritual, activities) and lists what is missing."
+      "status": "REVIEW",
+      "notes": "Gate run 2026-10-05 (Docs/Gates/T30_Vertical_Slice_Gate.md, T30_Audit.md). Verdict: slice NOT final. Core validated on PC (EditMode 315/315, PlayMode 35/35, full Windows benchmark 15 scenarios at vsync, main thread 1.2-2.4 ms avg, Gate 06/07/08/16/30 clean, statuses reconciled with disk). Blockers: no phone measurements or video, no audio/haptic production, missing feedback VFX and UI pieces (animal sheet, discovery reveal, splash, toasts, modals), TEMP font, beauty below the 2026-10-05 Magnifique bar. Fixes scheduled T31-T34D."
     },
     {
       "task": "T31",
@@ -237,6 +237,30 @@
       "title": "Qualité adaptative et préparation des shaders",
       "status": "PLANNED",
       "notes": ""
+    },
+    {
+      "task": "T34A",
+      "title": "Feedback et écrans de la tranche (VFX de feedback, fiche animal, annonce de découverte, splash, toasts, modales, cadres de rareté)",
+      "status": "PLANNED",
+      "notes": "Added by the T30 gate."
+    },
+    {
+      "task": "T34B",
+      "title": "Audio et haptique de base (SFX créés pour le projet, ambiance Prairie, thème, profils haptiques Android)",
+      "status": "PLANNED",
+      "notes": "Added by the T30 gate."
+    },
+    {
+      "task": "T34C",
+      "title": "Outils et contrôle (BuildValidator, debug LOD et overdraw, captures de référence, benchmark VFX et Codex 5000, groupes Addressables)",
+      "status": "PLANNED",
+      "notes": "Added by the T30 gate."
+    },
+    {
+      "task": "T34D",
+      "title": "Nouveau passage du gate de la tranche verticale",
+      "status": "PLANNED",
+      "notes": "Added by the T30 gate."
     },
     {
       "task": "T35",
@@ -496,7 +520,7 @@
       ],
       "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
-      "runtimePath": "Assets/_Game/Art/Rigs/SmallQuadruped/",
+      "runtimePath": "Assets/_Game/Art/Animations/SmallQuadruped/",
       "validationGates": [
         "G01",
         "G04",
@@ -505,7 +529,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T20:57:15Z",
-      "notes": "Source BL_Rig_SmallQuadruped.blend: 24 deform bones (spec names), FK only, consistent rolls, no control bones exported, sockets HeadTop/Neck/Back/TailBase/Ear_L/Ear_R world-aligned at rest. | T07: rabbit skinned (max 3 influences, rigid head/cheeks, ellipsoid neck blend, ear axis weights). 9 extreme poses captured (SourceArt/Blender/Animals/Rabbit/Captures/T07_pose_sheet.png). FBX export with project preset OK. Second-species bind test pending (T23 Squirrel). | T10: family controller AC_SmallQuadruped (11 states, 7 exit transitions). Clips bind to SK_SmallQuadruped/... paths (preserveHierarchy). | T24: RIG-001 validation met, Rabbit, Squirrel and Hedgehog bind to the unchanged skeleton without runtime code changes (GrasslandSpeciesTests compare bone paths and bind poses). Family library gains AN_SmallQuadruped_Locomotion_Walk (0.8 s loop) and Happy_Bounce (1 s) for low-bodied species, selected per species by AnimatorOverrideController (data). AC_SmallQuadruped untouched.",
+      "notes": "Source BL_Rig_SmallQuadruped.blend: 24 deform bones (spec names), FK only, consistent rolls, no control bones exported, sockets HeadTop/Neck/Back/TailBase/Ear_L/Ear_R world-aligned at rest. | T07: rabbit skinned (max 3 influences, rigid head/cheeks, ellipsoid neck blend, ear axis weights). 9 extreme poses captured (SourceArt/Blender/Animals/Rabbit/Captures/T07_pose_sheet.png). FBX export with project preset OK. Second-species bind test pending (T23 Squirrel). | T10: family controller AC_SmallQuadruped (11 states, 7 exit transitions). Clips bind to SK_SmallQuadruped/... paths (preserveHierarchy). | T24: RIG-001 validation met, Rabbit, Squirrel and Hedgehog bind to the unchanged skeleton without runtime code changes (GrasslandSpeciesTests compare bone paths and bind poses). Family library gains AN_SmallQuadruped_Locomotion_Walk (0.8 s loop) and Happy_Bounce (1 s) for low-bodied species, selected per species by AnimatorOverrideController (data). AC_SmallQuadruped untouched. | T30 audit: runtime path corrected: the skeleton ships in the species FBX and AN_SmallQuadruped.fbx (Art/Animations/SmallQuadruped).",
       "skeleton": "SK_SmallQuadruped",
       "passedGates": [
         "G04"
@@ -4669,7 +4693,7 @@
       "id": "F-VEG-GrassTuft_S/M/L",
       "name": "GrassTuft_S/M/L",
       "family": "Vegetation",
-      "releaseScope": "VerticalSlice",
+      "releaseScope": "SoftLaunch",
       "dependencies": [
         "G-SH-002"
       ],
@@ -4683,13 +4707,13 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Grassland versions are D-BIO-001/GL_GrassTuft_*"
+      "notes": "Grassland versions are D-BIO-001/GL_GrassTuft_* | T30 audit: cross-biome shared base, needed when a second biome reuses it (Forest, T50); the slice uses the Grassland versions D-BIO-001/GL_*. Scope moved to SoftLaunch."
     },
     {
       "id": "F-VEG-Flower_A/B/C",
       "name": "Flower_A/B/C",
       "family": "Vegetation",
-      "releaseScope": "VerticalSlice",
+      "releaseScope": "SoftLaunch",
       "dependencies": [
         "G-SH-002"
       ],
@@ -4703,7 +4727,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Grassland versions are D-BIO-001/GL_Flower_*"
+      "notes": "Grassland versions are D-BIO-001/GL_Flower_* | T30 audit: cross-biome shared base, needed when a second biome reuses it (Forest, T50); the slice uses the Grassland versions D-BIO-001/GL_*. Scope moved to SoftLaunch."
     },
     {
       "id": "F-VEG-LeafCluster",
@@ -4909,7 +4933,7 @@
       "id": "F-ROCK-Shared",
       "name": "Rock_S/M/L shared base",
       "family": "Rock",
-      "releaseScope": "VerticalSlice",
+      "releaseScope": "SoftLaunch",
       "dependencies": [
         "G-SH-002"
       ],
@@ -4923,7 +4947,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Grassland versions are D-BIO-001/GL_Rock_*"
+      "notes": "Grassland versions are D-BIO-001/GL_Rock_* | T30 audit: cross-biome shared base, needed when a second biome reuses it (Forest, T50); the slice uses the Grassland versions D-BIO-001/GL_*. Scope moved to SoftLaunch."
     },
     {
       "id": "F-ROCK-Variants",
@@ -4972,15 +4996,15 @@
       "dependencies": [
         "G-SH-007"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Art/Shaders/SH_SkyGradient.shader",
+      "runtimePath": "Assets/_Game/Art/Lighting/Grassland/MAT_Sky_Grassland.mat",
       "validationGates": [
         "G11"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:04:15Z",
+      "notes": "T30 audit: Grassland sky gradient profile exists (SH_SkyGradient + MAT_Sky_Grassland written from LP_Grassland_Day, T16)."
     },
     {
       "id": "G-SH-001",
@@ -4989,8 +5013,8 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "INTEGRATED",
-      "sourcePath": "Assets/_Game/Art/Shaders/SH_AnimalMaster.shadergraph",
-      "runtimePath": "Assets/_Game/Art/Shaders/",
+      "sourcePath": "Assets/_Game/Art/Shaders/SH_AnimalMaster.shader",
+      "runtimePath": "Assets/_Game/Art/Shaders/SH_AnimalMaster.shader",
       "validationGates": [
         "G06",
         "G07",
@@ -4999,7 +5023,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T21:57:38Z",
-      "notes": "SH_AnimalMaster.shader: palette via Renderer Shader User Value + global _PW_AnimalPalettes, vertex-color regions, wrapped diffuse, main light shadows, SH ambient, rim, eye gloss. SRP Batcher compatible (single UnityPerMaterial CBUFFER). | Unity capture of 6 variants: SourceArt/Blender/Animals/Rabbit/Captures/Unity/ | Used by PF_Animal_Rabbit; no material instances. GPU timing on device pending. | T11: pattern channels A/B read from TEXCOORD0, C/D from TEXCOORD1; per-vertex albedo, SRP Batcher compatible through Renderer Shader User Value.",
+      "notes": "SH_AnimalMaster.shader: palette via Renderer Shader User Value + global _PW_AnimalPalettes, vertex-color regions, wrapped diffuse, main light shadows, SH ambient, rim, eye gloss. SRP Batcher compatible (single UnityPerMaterial CBUFFER). | Unity capture of 6 variants: SourceArt/Blender/Animals/Rabbit/Captures/Unity/ | Used by PF_Animal_Rabbit; no material instances. GPU timing on device pending. | T11: pattern channels A/B read from TEXCOORD0, C/D from TEXCOORD1; per-vertex albedo, SRP Batcher compatible through Renderer Shader User Value. | T30 audit: path corrected, the hand-written HLSL .shader is its own source (no Shader Graph).",
       "passedGates": [
         "G06"
       ]
@@ -5011,8 +5035,8 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "INTEGRATED",
-      "sourcePath": "Assets/_Game/Art/Shaders/SH_EnvironmentOpaque.shadergraph",
-      "runtimePath": "Assets/_Game/Art/Shaders/",
+      "sourcePath": "Assets/_Game/Art/Shaders/SH_EnvironmentOpaque.shader",
+      "runtimePath": "Assets/_Game/Art/Shaders/SH_EnvironmentOpaque.shader",
       "validationGates": [
         "G06",
         "G07",
@@ -5021,7 +5045,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T15: SH_EnvironmentOpaque (palette per vertex: base + R/G/B/A regions + baked occlusion; brightness jitter in the Shader User Value; shares Include/PW_Stylized.hlsl). | T15: SH_EnvironmentOpaque (palette per vertex: base + R/G/B/A regions + baked occlusion; brightness jitter in the Shader User Value; shares Include/PW_Stylized.hlsl). | T15: SH_EnvironmentOpaque (palette per vertex: base + R/G/B/A regions + baked occlusion; brightness jitter in the Shader User Value; shares Include/PW_Stylized.hlsl)."
+      "notes": "T15: SH_EnvironmentOpaque (palette per vertex: base + R/G/B/A regions + baked occlusion; brightness jitter in the Shader User Value; shares Include/PW_Stylized.hlsl). | T15: SH_EnvironmentOpaque (palette per vertex: base + R/G/B/A regions + baked occlusion; brightness jitter in the Shader User Value; shares Include/PW_Stylized.hlsl). | T15: SH_EnvironmentOpaque (palette per vertex: base + R/G/B/A regions + baked occlusion; brightness jitter in the Shader User Value; shares Include/PW_Stylized.hlsl). | T30 audit: path corrected, the hand-written HLSL .shader is its own source (no Shader Graph)."
     },
     {
       "id": "G-SH-003",
@@ -5030,8 +5054,8 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "INTEGRATED",
-      "sourcePath": "Assets/_Game/Art/Shaders/SH_GroundMaster.shadergraph",
-      "runtimePath": "Assets/_Game/Art/Shaders/",
+      "sourcePath": "Assets/_Game/Art/Shaders/SH_GroundMaster.shader",
+      "runtimePath": "Assets/_Game/Art/Shaders/SH_GroundMaster.shader",
       "validationGates": [
         "G06",
         "G07",
@@ -5040,7 +5064,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T15: SH_GroundMaster (palette regions + soft world-space macro variation, receives shadows, no caster pass). | T15: SH_GroundMaster (palette regions + soft world-space macro variation, receives shadows, no caster pass). | T15: SH_GroundMaster (palette regions + soft world-space macro variation, receives shadows, no caster pass)."
+      "notes": "T15: SH_GroundMaster (palette regions + soft world-space macro variation, receives shadows, no caster pass). | T15: SH_GroundMaster (palette regions + soft world-space macro variation, receives shadows, no caster pass). | T15: SH_GroundMaster (palette regions + soft world-space macro variation, receives shadows, no caster pass). | T30 audit: path corrected, the hand-written HLSL .shader is its own source (no Shader Graph)."
     },
     {
       "id": "G-SH-004",
@@ -5087,8 +5111,8 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "PLANNED",
-      "sourcePath": "Assets/_Game/Art/Shaders/SH_RareAura.shadergraph",
-      "runtimePath": "Assets/_Game/Art/Shaders/",
+      "sourcePath": "Assets/_Game/Art/Shaders/SH_RareAura.shader",
+      "runtimePath": "Assets/_Game/Art/Shaders/SH_RareAura.shader",
       "validationGates": [
         "G06",
         "G07",
@@ -5097,7 +5121,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T30 audit: not produced yet."
     },
     {
       "id": "G-SH-007",
@@ -5106,8 +5130,8 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "INTEGRATED",
-      "sourcePath": "Assets/_Game/Art/Shaders/SH_SkyGradient.shadergraph",
-      "runtimePath": "Assets/_Game/Art/Shaders/",
+      "sourcePath": "Assets/_Game/Art/Shaders/SH_SkyGradient.shader",
+      "runtimePath": "Assets/_Game/Art/Shaders/SH_SkyGradient.shader",
       "validationGates": [
         "G06",
         "G07",
@@ -5116,7 +5140,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material)."
+      "notes": "T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T30 audit: path corrected, the hand-written HLSL .shader is its own source (no Shader Graph)."
     },
     {
       "id": "G-SH-008",
@@ -5125,8 +5149,8 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "INTEGRATED",
-      "sourcePath": "Assets/_Game/Art/Shaders/SH_AdditiveVFXLite.shadergraph",
-      "runtimePath": "Assets/_Game/Art/Shaders/",
+      "sourcePath": "Assets/_Game/Art/Shaders/SH_AdditiveVFXLite.shader",
+      "runtimePath": "Assets/_Game/Art/Shaders/SH_AdditiveVFXLite.shader",
       "validationGates": [
         "G06",
         "G07",
@@ -5135,7 +5159,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T22:54:49Z",
-      "notes": "T14: SH_AdditiveVFXLite, additive unlit, one R8 atlas (T_VFX_SparkAtlas 128x64: soft dot, star), tile picked by texture sheet animation; MAT_VFX_AdditiveLite shared by every hatch effect. | Reviewed in T14 hatch sheets. | Shared by VFX_Crack, VFX_HatchCommon, VFX_HatchRare.",
+      "notes": "T14: SH_AdditiveVFXLite, additive unlit, one R8 atlas (T_VFX_SparkAtlas 128x64: soft dot, star), tile picked by texture sheet animation; MAT_VFX_AdditiveLite shared by every hatch effect. | Reviewed in T14 hatch sheets. | Shared by VFX_Crack, VFX_HatchCommon, VFX_HatchRare. | T30 audit: path corrected, the hand-written HLSL .shader is its own source (no Shader Graph).",
       "passedGates": [
         "G06",
         "G10"
@@ -5441,7 +5465,7 @@
       "family": "Texture",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/Shaders/Textures/",
       "validationGates": [
@@ -5449,7 +5473,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T11: Rabbit patterns use per-vertex masks (UV0 PW_Masks, MaskA/MaskB; UV1 reserved for MaskC/MaskD) instead of a texture: no sample, no unwrap, no extra memory. Texture kept PLANNED only if Codex close-up review (T19) needs crisper patterns."
+      "notes": "T11: Rabbit patterns use per-vertex masks (UV0 PW_Masks, MaskA/MaskB; UV1 reserved for MaskC/MaskD) instead of a texture: no sample, no unwrap, no extra memory. Texture kept PLANNED only if Codex close-up review (T19) needs crisper patterns. | T30 audit: replaced by per-vertex masks (PW_Masks UV0, T11): no texture needed; revive only if a close-up review asks for finer patterns."
     },
     {
       "id": "G-TEX-NOISE",
@@ -5457,7 +5481,7 @@
       "family": "Texture",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/Shaders/Textures/",
       "validationGates": [
@@ -5465,7 +5489,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T30 audit: ground macro variation is computed in the shader; a noise texture is made only if a later shader needs one (FoliageWind may, T33)."
     },
     {
       "id": "G-TEX-WATERNOISE",
@@ -5489,15 +5513,15 @@
       "family": "Texture",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/Shaders/Textures/",
+      "runtimePath": "Assets/_Game/Art/VFX/Textures/T_VFX_SparkAtlas.png",
       "validationGates": [
         "G07"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:04:15Z",
+      "notes": "T30 audit: merged into the single R8 atlas T_VFX_SparkAtlas (soft dot + star tiles, T14): one texture instead of two."
     },
     {
       "id": "G-TEX-SOFTCIRCLE",
@@ -5505,15 +5529,15 @@
       "family": "Texture",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/Shaders/Textures/",
+      "runtimePath": "Assets/_Game/Art/VFX/Textures/T_VFX_SparkAtlas.png",
       "validationGates": [
         "G07"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:04:15Z",
+      "notes": "T30 audit: merged into the single R8 atlas T_VFX_SparkAtlas (soft dot + star tiles, T14): one texture instead of two."
     },
     {
       "id": "G-TEX-PETAL",
@@ -6056,14 +6080,14 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "INTEGRATED",
-      "sourcePath": "SourceArt/UI/Icons/",
-      "runtimePath": "Assets/_Game/Art/UI/Icons/",
+      "sourcePath": "SourceArt/UI/Masters/ICO_Currency_Light@4x.png",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_Currency_Light.png",
       "validationGates": [
         "G12"
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340."
+      "notes": "T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T30 audit: path corrected to the generated master (pw_ui_sprites.py) and runtime sprite."
     },
     {
       "id": "I-HUD-002",
@@ -6104,14 +6128,14 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "INTEGRATED",
-      "sourcePath": "SourceArt/UI/Icons/",
-      "runtimePath": "Assets/_Game/Art/UI/Icons/",
+      "sourcePath": "SourceArt/UI/Masters/ICO_Hatch_Egg@4x.png",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_Hatch_Egg.png",
       "validationGates": [
         "G12"
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T17: ICO_Hatch_Egg (Grassland basic egg, zigzag band, hairline crack) from pw_ui_sprites.py, 160 px, Atlas_CommonHUD; hatch button icon. Reviewed in Unity captures. | T17: ICO_Hatch_Egg (Grassland basic egg, zigzag band, hairline crack) from pw_ui_sprites.py, 160 px, Atlas_CommonHUD; hatch button icon. Reviewed in Unity captures. | T17: ICO_Hatch_Egg (Grassland basic egg, zigzag band, hairline crack) from pw_ui_sprites.py, 160 px, Atlas_CommonHUD; hatch button icon. Reviewed in Unity captures."
+      "notes": "T17: ICO_Hatch_Egg (Grassland basic egg, zigzag band, hairline crack) from pw_ui_sprites.py, 160 px, Atlas_CommonHUD; hatch button icon. Reviewed in Unity captures. | T17: ICO_Hatch_Egg (Grassland basic egg, zigzag band, hairline crack) from pw_ui_sprites.py, 160 px, Atlas_CommonHUD; hatch button icon. Reviewed in Unity captures. | T17: ICO_Hatch_Egg (Grassland basic egg, zigzag band, hairline crack) from pw_ui_sprites.py, 160 px, Atlas_CommonHUD; hatch button icon. Reviewed in Unity captures. | T30 audit: path corrected to the generated master (pw_ui_sprites.py) and runtime sprite."
     },
     {
       "id": "I-HUD-005",
@@ -6120,14 +6144,14 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "INTEGRATED",
-      "sourcePath": "SourceArt/UI/Icons/",
-      "runtimePath": "Assets/_Game/Art/UI/Icons/",
+      "sourcePath": "SourceArt/UI/Masters/ICO_Codex_Book@4x.png",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_Codex_Book.png",
       "validationGates": [
         "G12"
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T19: ICO_Codex_Book (green storybook with a cream paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; HUD Codex shortcut bottom left with a notification dot (UI_Dot) only when something new is found. | T19: ICO_Codex_Book (green storybook with a cream paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; HUD Codex shortcut bottom left with a notification dot (UI_Dot) only when something new is found. | T19: ICO_Codex_Book (green storybook with a cream paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; HUD Codex shortcut bottom left with a notification dot (UI_Dot) only when something new is found."
+      "notes": "T19: ICO_Codex_Book (green storybook with a cream paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; HUD Codex shortcut bottom left with a notification dot (UI_Dot) only when something new is found. | T19: ICO_Codex_Book (green storybook with a cream paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; HUD Codex shortcut bottom left with a notification dot (UI_Dot) only when something new is found. | T19: ICO_Codex_Book (green storybook with a cream paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; HUD Codex shortcut bottom left with a notification dot (UI_Dot) only when something new is found. | T30 audit: path corrected to the generated master (pw_ui_sprites.py) and runtime sprite."
     },
     {
       "id": "I-HUD-006",
@@ -6200,14 +6224,14 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "PLANNED",
-      "sourcePath": "SourceArt/UI/Icons/",
-      "runtimePath": "Assets/_Game/Art/UI/Icons/",
+      "sourcePath": "SourceArt/UI/Masters/ICO_Favorite_Heart@4x.png",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_Favorite_Heart.png",
       "validationGates": [
         "G12"
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T30 audit: path corrected to the generated master (pw_ui_sprites.py) and runtime sprite."
     },
     {
       "id": "I-KIT",
@@ -8302,7 +8326,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/PF_UI_Button_Primary.prefab",
       "validationGates": [
@@ -8310,8 +8334,8 @@
         "G13"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: covered by UiPipeline code builders (HUD, Codex, Shop share one helper set); a standalone prefab is made only when a screen needs to reuse it at runtime."
     },
     {
       "id": "K-PF-UI-Button_Icon",
@@ -8321,7 +8345,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/PF_UI_Button_Icon.prefab",
       "validationGates": [
@@ -8329,8 +8353,8 @@
         "G13"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: covered by UiPipeline code builders (HUD, Codex, Shop share one helper set); a standalone prefab is made only when a screen needs to reuse it at runtime."
     },
     {
       "id": "K-PF-UI-CurrencyChip",
@@ -8340,7 +8364,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/PF_UI_CurrencyChip.prefab",
       "validationGates": [
@@ -8348,8 +8372,8 @@
         "G13"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: covered by UiPipeline code builders (HUD, Codex, Shop share one helper set); a standalone prefab is made only when a screen needs to reuse it at runtime."
     },
     {
       "id": "K-PF-UI-ProductCard",
@@ -8397,7 +8421,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/PF_UI_SpeciesCard.prefab",
       "validationGates": [
@@ -8405,8 +8429,8 @@
         "G13"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: covered by UiPipeline code builders (HUD, Codex, Shop share one helper set); a standalone prefab is made only when a screen needs to reuse it at runtime."
     },
     {
       "id": "K-PF-UI-VariantCell",
@@ -8416,7 +8440,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/PF_UI_VariantCell.prefab",
       "validationGates": [
@@ -8424,8 +8448,8 @@
         "G13"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: covered by UiPipeline code builders (HUD, Codex, Shop share one helper set); a standalone prefab is made only when a screen needs to reuse it at runtime."
     },
     {
       "id": "K-PF-UI-DecorCard",
@@ -8511,7 +8535,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/PF_UI_RarityFrame.prefab",
       "validationGates": [
@@ -8519,8 +8543,8 @@
         "G13"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: covered by UiPipeline code builders (HUD, Codex, Shop share one helper set); a standalone prefab is made only when a screen needs to reuse it at runtime."
     },
     {
       "id": "K-PF-UI-ProgressBar",
@@ -8530,7 +8554,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/PF_UI_ProgressBar.prefab",
       "validationGates": [
@@ -8538,8 +8562,8 @@
         "G13"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: covered by UiPipeline code builders (HUD, Codex, Shop share one helper set); a standalone prefab is made only when a screen needs to reuse it at runtime."
     },
     {
       "id": "K-PF-CAMERA",
@@ -8634,15 +8658,15 @@
       "family": "Scene",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "BLOCKOUT",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Scenes/SC_VerticalSlice_Grassland.unity",
       "validationGates": [
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Shell only: camera, sun, VerticalSliceEntry. No art yet. | T15: start chunk placed under World, VerticalSliceEntry binds palettes and quality density; gameplay camera framing on the egg spawn (pitch 40, 13.8 m, FOV 30)."
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "Shell only: camera, sun, VerticalSliceEntry. No art yet. | T15: start chunk placed under World, VerticalSliceEntry binds palettes and quality density; gameplay camera framing on the egg spawn (pitch 40, 13.8 m, FOV 30). | T30 audit: the playable slice scene used by every PlayMode test and the benchmark; chunks stream from Addressables (T27)."
     },
     {
       "id": "L-SC-003",
@@ -8698,15 +8722,15 @@
       "family": "Scene",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "BLOCKOUT",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Scenes/Benchmarks/SC_Benchmark_Animals.unity",
       "validationGates": [
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Driver uses TEMP cube placeholder until PF_Animal_Rabbit exists. | T12: driver runs real PF_Animal_Rabbit views (pool + palettes + AnimalScheduler), 70 rabbits = P3 (30 A + 40 B) by default, P1/P2 via _animalCount, optional pool churn. Still no ground: P0 decor arrives with the Grassland kit (T15)."
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "Driver uses TEMP cube placeholder until PF_Animal_Rabbit exists. | T12: driver runs real PF_Animal_Rabbit views (pool + palettes + AnimalScheduler), 70 rabbits = P3 (30 A + 40 B) by default, P1/P2 via _animalCount, optional pool churn. Still no ground: P0 decor arrives with the Grassland kit (T15). | T30 audit: SC_Benchmark_Animals exists and is used by the benchmark runner."
     },
     {
       "id": "L-SC-007",
@@ -8714,15 +8738,15 @@
       "family": "Scene",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "BLOCKOUT",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Scenes/Benchmarks/SC_Benchmark_UI.unity",
       "validationGates": [
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Empty shell until Codex (T19)."
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "Empty shell until Codex (T19). | T30 audit: SC_Benchmark_UI exists (Codex scroll benchmark); a 5000-entry UI scenario is still R-BENCH-5K."
     },
     {
       "id": "L-SC-008",
@@ -8762,16 +8786,16 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "BLOCKOUT",
+      "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/",
+      "runtimePath": "Assets/_Game/Content/Species/",
       "validationGates": [
         "G16",
         "G18"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Runtime SpeciesDefinition + registry exist (T01); authoring DEF_Species assets come with T10. | DEF_Species_Rabbit + DEF_ContentDatabase + DEF_AnimalVisualCatalog created by AnimalPipeline. | T11: GameBootstrap builds the shipped registry from DEF_ContentDatabase (scene reference in SC_Bootstrap); errors stop the boot. AnimalPaletteTable + AnimalVisualResolver live in GameContext."
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "Runtime SpeciesDefinition + registry exist (T01); authoring DEF_Species assets come with T10. | DEF_Species_Rabbit + DEF_ContentDatabase + DEF_AnimalVisualCatalog created by AnimalPipeline. | T11: GameBootstrap builds the shipped registry from DEF_ContentDatabase (scene reference in SC_Bootstrap); errors stop the boot. AnimalPaletteTable + AnimalVisualResolver live in GameContext. | T30 audit: DEF_Species_Rabbit/Squirrel/Hedgehog exist and load through DEF_ContentDatabase (Gate 16: 0 issues); data asset, art review not applicable."
     },
     {
       "id": "M-DEF-PALETTE",
@@ -8779,16 +8803,16 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/",
+      "runtimePath": "Assets/_Game/Content/Palettes/DEF_Palettes_Grassland.asset",
       "validationGates": [
         "G16",
         "G18"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: palette table exists and drives all variants (PaletteTable)."
     },
     {
       "id": "M-DEF-BIOME",
@@ -8849,14 +8873,14 @@
       "dependencies": [],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/",
+      "runtimePath": null,
       "validationGates": [
         "G16",
         "G18"
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T30 audit: events exist as code (AudioEventId enum, IAudioService); no data registry or clips yet."
     },
     {
       "id": "M-DEF-VFXEVENT",
@@ -8866,7 +8890,7 @@
       "dependencies": [],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/",
+      "runtimePath": null,
       "validationGates": [
         "G16",
         "G18"
@@ -8917,7 +8941,7 @@
       "dependencies": [],
       "status": "BLOCKOUT",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/",
+      "runtimePath": null,
       "validationGates": [
         "G16",
         "G18"
@@ -8934,14 +8958,14 @@
       "dependencies": [],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/",
+      "runtimePath": null,
       "validationGates": [
         "G16",
         "G18"
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T30 audit: events exist as code (HapticEventId, IHapticService null); no data profiles yet."
     },
     {
       "id": "M-DEF-CAPTURE",
@@ -8951,7 +8975,7 @@
       "dependencies": [],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/",
+      "runtimePath": null,
       "validationGates": [
         "G16",
         "G18"
@@ -8968,7 +8992,7 @@
       "dependencies": [],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/",
+      "runtimePath": null,
       "validationGates": [
         "G16",
         "G18"
@@ -8983,16 +9007,16 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "BLOCKOUT",
+      "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/",
+      "runtimePath": "Assets/_Game/Art/Lighting/Grassland/LP_Grassland_Day.asset",
       "validationGates": [
         "G16",
         "G18"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T16: LightingProfile ScriptableObject (sun, trilight ambient, sky colors + material, linear fog); Grassland profile generated by LightingPipeline. Other biomes later."
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T16: LightingProfile ScriptableObject (sun, trilight ambient, sky colors + material, linear fog); Grassland profile generated by LightingPipeline. Other biomes later. | T30 audit: Grassland day profile + volume profile + sky material (T16). Morning/evening/night moods are new targets (doc 07, T33)."
     },
     {
       "id": "N-GRP-Bootstrap",
@@ -9034,13 +9058,13 @@
       "dependencies": [],
       "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Addressables/",
+      "runtimePath": "Assets/AddressableAssetsData/AssetGroups/Biome_Grassland_Chunks.asset",
       "validationGates": [
         "G17"
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T27: groups Biome_Grassland_Chunks (pack separately: chunk.grassland.start, chunk.grassland.meadow) and Biome_Grassland_Kit (pack together: 6 standalone kit meshes, 2 materials, 2 shaders), label biome_grassland, built with every player build. Assets/AddressableAssetsData, set up by Pocket Wilds/World/Setup Grassland Streaming. Build layout: 0 duplicated assets; analyze rules bundle and scene duplicates: none."
+      "notes": "T27: groups Biome_Grassland_Chunks (pack separately: chunk.grassland.start, chunk.grassland.meadow) and Biome_Grassland_Kit (pack together: 6 standalone kit meshes, 2 materials, 2 shaders), label biome_grassland, built with every player build. Assets/AddressableAssetsData, set up by Pocket Wilds/World/Setup Grassland Streaming. Build layout: 0 duplicated assets; analyze rules bundle and scene duplicates: none. | T30 audit: runtime path corrected to the real group assets (Biome_Grassland_Chunks, Biome_Grassland_Kit)."
     },
     {
       "id": "N-GRP-Biome_Forest",
@@ -10390,15 +10414,15 @@
       "family": "EditorTool",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
         "G16"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: AnimalPipeline + pw_species.py steps build a species end to end (Squirrel in about 20 min); a generic wizard window is still to do."
     },
     {
       "id": "ED-002",
@@ -10422,15 +10446,15 @@
       "family": "EditorTool",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
         "G33"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: EggPipeline (Build Egg Family, Update Egg Definitions) covers the slice eggs; generic wizard still to do."
     },
     {
       "id": "ED-004",
@@ -10502,15 +10526,15 @@
       "family": "EditorTool",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
         "G33"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: capture tools exist: WorldCapture, HatchCapture, HudCapture, ShopCapture, AnimalThumbnailPipeline (menus Pocket Wilds/Capture/*)."
     },
     {
       "id": "ED-009",
@@ -10518,15 +10542,15 @@
       "family": "EditorTool",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
         "G33"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T18:03:08Z",
+      "notes": "T30 audit: PerformanceBaselineRunner + Windows benchmark build (-pw-benchmark) cover P0-P5, S, W1, U1."
     },
     {
       "id": "ED-010",
