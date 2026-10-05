@@ -808,7 +808,7 @@ class Glyphs:
         h = self.h
         y = self._math_y()
         w = self.dw * 0.86
-        g = 70 + self.s.w * 0.6
+        g = 60 + self.s.w * (1 + self.s.inflate)  # the gap stays open in Bold and in the puffy Black
         return [self.line(h, y + g / 2, w - h, y + g / 2), self.line(h, y - g / 2, w - h, y - g / 2)], "P", "P"
 
     def g_multiply(self):
@@ -1189,12 +1189,12 @@ class Glyphs:
     def g_Ldot(self):
         shapes, a, b = self.g_L()
         s, h = self.s, self.h
-        return shapes + [self.dot(h + 160, s.cap * 0.46)], a, b
+        return shapes + [self.dot(2 * h + self.dr + 60, s.cap * 0.46)], a, b
 
     def g_ldot(self):
         shapes, a, b = self.g_l()
         s, h = self.s, self.h
-        return shapes + [self.dot(h + 160, s.xh * 0.55)], a, "P"
+        return shapes + [self.dot(2 * h + self.dr + 44, s.xh * 0.55)], a, "P"
 
     def g_IJ(self):
         I, J = self.g_I()[0], self.g_J()[0]
@@ -1435,6 +1435,36 @@ class Glyphs:
         c = a + hh
         return [self.line(c - a, y - a, c + a, y + a, 1.1), self.line(c - a, y + a, c + a, y - a, 1.1)], "P", "P"
 
+    # ---------------- pictograms (private use area, doc 05) ----------------
+
+    def g_paw(self):
+        """U+E000: one pad and four toes."""
+        C = self.s.cap
+        r = min(self.h * 0.7, C * 0.06)
+        w = C * 0.98
+        cx = w / 2
+        pad = [_se(cx, C * 0.24, w * 0.29 - r, C * 0.19 - r, a, 2.4) for a in range(0, 360, 10)]
+        toe = C * 0.10
+        toes = [Dot(cx - w * 0.34, C * 0.57, toe), Dot(cx - w * 0.12, C * 0.80, toe),
+                Dot(cx + w * 0.12, C * 0.80, toe), Dot(cx + w * 0.34, C * 0.57, toe)]
+        return self.fill(pad, r) + toes, "R", "R"
+
+    def g_leaf(self):
+        """U+E003: a plump leaf tipped to the right, with its stem."""
+        C = self.s.cap
+        r = self.h * 0.6
+        L, b = C * 0.95, C * 0.30
+        pts = []
+        for i in range(0, 37):
+            t = math.pi * i / 36
+            pts.append((L * (1 - math.cos(t)) / 2, b * math.sin(t) ** 0.9))
+        for i in range(1, 36):
+            t = math.pi * (36 - i) / 36
+            pts.append((L * (1 - math.cos(t)) / 2, -b * 0.75 * math.sin(t) ** 0.9))
+        leaf = [_rotate(sh, 40, 0, 0) for sh in self.fill(pts, r)]
+        stem = self.line(-C * 0.12, -C * 0.10, C * 0.05, C * 0.04, 0.8)
+        return [_shift(sh, C * 0.14, C * 0.12) for sh in leaf + [stem]], "R", "R"
+
     # ---------------- composition ----------------
 
     def make(self, ch):
@@ -1635,6 +1665,8 @@ CHARS.update({
     "₡": "g_colonsign", "₲": "g_guarani", "₵": "g_cedi",
     "←": "g_arrowleft", "↑": "g_arrowup", "→": "g_arrowright", "↓": "g_arrowdown",
     "★": "g_blackstar", "☆": "g_whitestar", "♥": "g_heart", "✓": "g_check", "✕": "g_crossmark",
+    # Private use area: pictograms for rich text in titles and rewards (<U+E000> paw, star, heart, leaf).
+    "\ue000": "g_paw", "\ue001": "g_blackstar", "\ue002": "g_heart", "\ue003": "g_leaf",
 })
 
 # Combining marks (NFD) -> accent drawn by Glyphs.accent.
@@ -1672,7 +1704,7 @@ def charset():
     every store currency, arrows and the few symbols the UI uses. Spaces are in SPACES."""
     chars = [chr(c) for c in range(0x21, 0x7F)] + [chr(c) for c in range(0xA1, 0x100) if c != 0xAD]
     chars += [chr(c) for c in range(0x100, 0x180)] + list("ȘșȚțȷ")
-    chars += list("–—‘’‚“”„•…‹›‰−€₫₱₪฿₦₴₸₡₲₵₩₽₹₺←↑→↓★☆♥✓✕™")
+    chars += list("–—‘’‚“”„•…‹›‰−€₫₱₪฿₦₴₸₡₲₵₩₽₹₺←↑→↓★☆♥✓✕™") + ["\ue000", "\ue001", "\ue002", "\ue003"]
     out = []
     for c in chars:
         if c not in out:

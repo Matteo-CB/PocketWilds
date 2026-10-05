@@ -66,7 +66,8 @@ FAMILIES = {
     ],
 }
 VERSION = "1.000"
-COPYRIGHT = "Copyright 2026 Pocket Wilds. Rights holder to be confirmed by the project owner."
+COPYRIGHT = "Copyright 2026 HiddenLab. All rights reserved."
+MANUFACTURER = "HiddenLab"
 
 SB = {"S": 66.0, "R": 42.0, "D": 14.0, "O": 26.0, "P": 46.0}
 
@@ -262,6 +263,8 @@ def write_font(style: Style, order, cmap, data, pairs, path):
         "psName": (family + "-" + sub).replace(" ", ""),
         "version": f"Version {VERSION}",
         "copyright": COPYRIGHT,
+        "manufacturer": MANUFACTURER,
+        "designer": MANUFACTURER,
         "typographicFamily": family,
         "typographicSubfamily": sub,
     })

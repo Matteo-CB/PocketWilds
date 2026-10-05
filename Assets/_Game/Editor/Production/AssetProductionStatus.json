@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T19:40:00Z",
+  "updatedUtc": "2026-10-05T20:30:00Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -217,14 +217,14 @@
     {
       "task": "T31",
       "title": "Police Pocket Round",
-      "status": "REVIEW",
-      "notes": "Owner chose Caline for the interface and Guimauve for titles (2026-10-05, after the T31 review page). Pocket Round built in Regular, SemiBold, Bold: 360 characters (Basic Latin, Latin-1, Latin Extended-A, Romanian comma letters, typography, 20 store currencies, arrows, star, heart, check, cross), accents composed from Unicode decomposition, about 2,200 kerning pairs per weight (base pairs plus accented right letters, collision-checked). Unity: FontPipeline builds static 1024 SDF atlases (sampled at 60/58/54 px), mobile SDF shader, non-readable atlas, kerning read from the build's .kern.tsv (TextCore's GPOS import returned stale tables after a reimport), rebuilds keep GUIDs. FontCoverageTests (6) pass: whole charset, every localized string (fr, en), 56 store price formats, every BigValue format; EditMode 321/321. Proofs in TestResults/Fonts/Final, readability capture TestResults/Captures/T31_font_readability.png (720x1520, 12 to 32 dp, light/dark/meadow). Pending: reading check on a real phone; memory is 1 MB per weight atlas (TEMP font: one 1 MB atlas plus a dynamic fallback), so the T32 styles decide which weights load."
+      "status": "DONE",
+      "notes": "Owner chose Caline for the interface and Guimauve for titles (2026-10-05, after the T31 review page). Pocket Round built in Regular, SemiBold, Bold: 360 characters (Basic Latin, Latin-1, Latin Extended-A, Romanian comma letters, typography, 20 store currencies, arrows, star, heart, check, cross), accents composed from Unicode decomposition, about 2,200 kerning pairs per weight (base pairs plus accented right letters, collision-checked). Unity: FontPipeline builds static 1024 SDF atlases (sampled at 60/58/54 px), mobile SDF shader, non-readable atlas, kerning read from the build's .kern.tsv (TextCore's GPOS import returned stale tables after a reimport), rebuilds keep GUIDs. FontCoverageTests (6) pass: whole charset, every localized string (fr, en), 56 store price formats, every BigValue format; EditMode 321/321. Proofs in TestResults/Fonts/Final, readability capture TestResults/Captures/T31_font_readability.png (720x1520, 12 to 32 dp, light/dark/meadow). Pending: reading check on a real phone; memory is 1 MB per weight atlas (TEMP font: one 1 MB atlas plus a dynamic fallback), so the T32 styles decide which weights load. Closed with T32: Pocket Round is used by every UI label; the phone reading check moves to the device matrix (T66)."
     },
     {
       "task": "T32",
       "title": "Police Pocket Plush et styles",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Pocket Plush built from the Guimauve candidate (Black, 368 characters incl. pictograms U+E000-E003 paw, star, heart, leaf; 1,878 kerning pairs, sampled at 54 px). Rights holder HiddenLab in every font name table. DEF_TextStyles (TextStyleSheet, 9 roles: Display, Heading, Subheading, Body, Button, Label, NumberLarge, NumberSmall, Caption; sizes in canvas units, minimum 36 = 14 dp on the reference phone) and material presets (Plush Outline, Plush Shadow, Round Bold Shadow). UiPipeline and ShopUiPipeline build every label from a role; all 7 UI prefabs rebuilt; Best value badge became a top ribbon, New badge widened; dynamic price glyph prewarm removed. LiberationSans deleted from the project, TMP defaults to Pocket Round Regular with no fallback. Candidate review tools (FontReview, Candidates) removed. Tests: UiTypographyTests (4) + FontCoverageTests (6, now both families); EditMode 325/325, PlayMode 35 passed + 1 explicit skip. Captures T32_* (HUD, offline, Codex list and sheet, shop, offer, text styles, readability). Windows player benchmark (Docs/Performance/Baselines/T32_player_windows_ui.json, P0/P2/U1): main thread means unchanged vs T30 (P2 1.46 ms vs 1.51), no dropped frame at vsync, texture memory 26.0 MB vs 23.1 MB (+2.9 MB: four 1 MB static atlases replace the 1 MB TEMP atlas), GC unchanged; one U1 render-thread spike of 12.5 ms was not reproduced on a rerun (4.5 ms max, T30 4.0). Follow-up: HUD BigValue numbers ignore French separators (pre-existing, task suggested)."
     },
     {
       "task": "T33",
@@ -13988,7 +13988,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-05T19:40:00Z",
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). T31: built from the owner's choice (Caline); 3 weights, 360 characters, static TMP assets, FontCoverageTests pass. UI switches from LiberationSans in T32. Phone reading check pending."
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). T31: built from the owner's choice (Caline); 3 weights, 360 characters, static TMP assets, FontCoverageTests pass. UI switches from LiberationSans in T32. Phone reading check pending. T32: used by every UI label through DEF_TextStyles; copyright HiddenLab."
     },
     {
       "id": "T-FONT-002",
@@ -13998,15 +13998,15 @@
       "dependencies": [
         "R-TOOL-FONTBUILD"
       ],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Fonts/PocketPlush/",
-      "runtimePath": "Assets/_Game/Art/UI/Fonts/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Fonts/Build/PocketPlush-Black.ttf",
+      "runtimePath": "Assets/_Game/Art/UI/Fonts/PocketPlush/PocketPlush-Black SDF.asset",
       "validationGates": [
         "G12"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). Owner chose the Guimauve candidate (2026-10-05); built as Pocket Plush Black in T32."
+      "lastValidationUtc": "2026-10-05T20:30:00Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). Owner chose the Guimauve candidate (2026-10-05); built as Pocket Plush Black in T32. T32: built, used by Heading, Display and NumberLarge styles; FontCoverageTests pass."
     },
     {
       "id": "T-FONT-003",
@@ -14017,15 +14017,15 @@
         "T-FONT-001",
         "T-FONT-002"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/FontPipeline.cs",
+      "runtimePath": "Assets/_Game/Art/UI/Fonts/DEF_TextStyles.asset",
       "validationGates": [
         "G12"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026')."
+      "lastValidationUtc": "2026-10-05T20:30:00Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). T32: DEF_TextStyles + presets; LiberationSans removed from prefabs, TMP settings and project; UiTypographyTests pass."
     },
     {
       "id": "T-FONT-004",

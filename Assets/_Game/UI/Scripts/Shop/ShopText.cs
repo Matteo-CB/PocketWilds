@@ -21,15 +21,6 @@ namespace PocketWilds.UI
             _ => UiTextKeys.ShopNothingToRestore,
         };
 
-        /// <summary>Characters store prices and amounts use, added to the font atlas before any price arrives.</summary>
-        public const string PriceCharacters = "0123456789,.+%\u00A0 \u20AC$\u00A3\u00A5";
-
-        public static void PrewarmGlyphs(TMP_Text label)
-        {
-            if (label != null && label.font != null)
-                label.font.TryAddCharacters(PriceCharacters);
-        }
-
         public static char GroupSeparator(ILocalization text) => text != null && text.Language == "fr" ? ' ' : ',';
 
         public static string Grouped(long value, char separator)

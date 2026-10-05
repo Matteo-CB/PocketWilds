@@ -49,8 +49,6 @@ namespace PocketWilds.Editor.UI
         public const string ContentDatabasePath = "Assets/_Game/Content/DEF_ContentDatabase.asset";
         public const string HatchConfigPath = "Assets/_Game/Content/Visuals/DEF_HatchPresentation.asset";
         public const string ScenePath = "Assets/_Game/Scenes/SC_VerticalSlice_Grassland.unity";
-        // TEMP font (LiberationSans, OFL, shipped with TMP Essentials) until the UI typeface is chosen.
-        public const string FontPath = "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset";
 
         public static readonly Vector2 ReferenceResolution = new Vector2(1080f, 2340f);
 
@@ -217,9 +215,8 @@ namespace PocketWilds.Editor.UI
             var circle = AssetDatabase.LoadAssetAtPath<Sprite>(CirclePath);
             var lightIcon = AssetDatabase.LoadAssetAtPath<Sprite>(LightIconPath);
             var eggIcon = AssetDatabase.LoadAssetAtPath<Sprite>(EggIconPath);
-            var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
-            if (pill == null || circle == null || lightIcon == null || eggIcon == null || font == null)
-                throw new InvalidOperationException("HUD sprites or font missing.");
+            if (pill == null || circle == null || lightIcon == null || eggIcon == null)
+                throw new InvalidOperationException("HUD sprites missing.");
 
             var root = new GameObject("PF_UI_HUD_Main", typeof(RectTransform));
             try
@@ -248,10 +245,10 @@ namespace PocketWilds.Editor.UI
                 Stretch(chipBack.rectTransform);
                 var chipIcon = AddImage("Icon", chip, lightIcon, Color.white, Image.Type.Simple);
                 Place(chipIcon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(70f, 2f), new Vector2(104f, 104f));
-                var value = AddText("Value", chip, font, 64f, FontStyles.Bold, tokens.textPrimary, "0");
+                var value = AddText("Value", chip, TextRole.NumberLarge, 64f, tokens.textPrimary, "0");
                 Place(value.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(132f, 14f), new Vector2(250f, 70f));
-                var rate = AddText("Rate", chip, font, 34f, FontStyles.Bold, tokens.textSecondary, "+0/s");
-                Place(rate.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(134f, -34f), new Vector2(250f, 40f));
+                var rate = AddText("Rate", chip, TextRole.NumberSmall, 36f, tokens.textSecondary, "+0/s");
+                Place(rate.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(134f, -36f), new Vector2(250f, 44f));
 
                 // Hatch action: bottom center in the thumb zone, own canvas + raycaster.
                 var action = Rect("HatchAction", safe);
@@ -288,7 +285,7 @@ namespace PocketWilds.Editor.UI
                 Stretch(costBack.rectTransform);
                 var costIcon = AddImage("Icon", costRow, lightIcon, Color.white, Image.Type.Simple);
                 Place(costIcon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(46f, 3f), new Vector2(62f, 62f));
-                var cost = AddText("Value", costRow, font, 46f, FontStyles.Bold, tokens.textPrimary, "10");
+                var cost = AddText("Value", costRow, TextRole.NumberSmall, 46f, tokens.textPrimary, "10");
                 Place(cost.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(84f, 3f), new Vector2(132f, 60f));
 
                 hud.SetReferences(tokens, safe, chip, value, rate, button, hatchRoot, buttonImage, egg, costRow.gameObject, cost);
@@ -330,7 +327,7 @@ namespace PocketWilds.Editor.UI
                 Stretch(gemsBack.rectTransform);
                 var gemsIcon = AddImage("Icon", gemsChip, AssetDatabase.LoadAssetAtPath<Sprite>(GemsIconPath), Color.white, Image.Type.Simple);
                 Place(gemsIcon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(52f, 2f), new Vector2(76f, 76f));
-                var gemsValue = AddText("Value", gemsChip, font, 48f, FontStyles.Bold, tokens.textPrimary, "0");
+                var gemsValue = AddText("Value", gemsChip, TextRole.NumberSmall, 48f, tokens.textPrimary, "0");
                 Place(gemsValue.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(98f, 4f), new Vector2(130f, 64f));
                 gemsChip.gameObject.SetActive(false);
                 hud.SetShopReferences(shopButton, shopRoot, gemsChip, gemsValue);
@@ -350,7 +347,7 @@ namespace PocketWilds.Editor.UI
                 glowGroup.alpha = 0f;
                 var masteryIcon = AddImage("Icon", masteryRoot, AssetDatabase.LoadAssetAtPath<Sprite>(MasteryIconPath), Color.white, Image.Type.Simple);
                 Place(masteryIcon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(66f, 4f), new Vector2(100f, 100f));
-                var masteryLevel = AddText("Level", masteryRoot, font, 46f, FontStyles.Bold, tokens.textPrimary, "1");
+                var masteryLevel = AddText("Level", masteryRoot, TextRole.NumberSmall, 46f, tokens.textPrimary, "1");
                 Place(masteryLevel.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(124f, 2f), new Vector2(80f, 64f));
                 var toastBar = AddImage("Bar", masteryRoot, pill, tokens.panelSecondary, Image.Type.Sliced);
                 toastBar.pixelsPerUnitMultiplier = 5f;
@@ -358,7 +355,7 @@ namespace PocketWilds.Editor.UI
                 var toastFill = AddImage("Fill", toastBar.rectTransform, pill, tokens.currencyLight, Image.Type.Sliced);
                 toastFill.pixelsPerUnitMultiplier = 5f;
                 LeftFill(toastFill.rectTransform, 26f);
-                var masteryXp = AddText("Xp", masteryRoot, font, 40f, FontStyles.Bold, new Color(0.88f, 0.54f, 0.17f, 1f), "+2");
+                var masteryXp = AddText("Xp", masteryRoot, TextRole.NumberSmall, 40f, new Color(0.88f, 0.54f, 0.17f, 1f), "+2");
                 masteryXp.alignment = TextAlignmentOptions.MidlineRight;
                 Place(masteryXp.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-26f, 2f), new Vector2(90f, 60f));
                 hud.SetMasteryReferences(masteryRoot, masteryGroup, masteryIcon.rectTransform, masteryLevel, masteryXp,
@@ -383,9 +380,8 @@ namespace PocketWilds.Editor.UI
             var button = AssetDatabase.LoadAssetAtPath<Sprite>(ButtonPrimaryPath);
             var glow = AssetDatabase.LoadAssetAtPath<Sprite>(GlowPath);
             var lightIcon = AssetDatabase.LoadAssetAtPath<Sprite>(LightIconPath);
-            var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
-            if (panel == null || button == null || glow == null || lightIcon == null || font == null)
-                throw new InvalidOperationException("Offline return sprites or font missing.");
+            if (panel == null || button == null || glow == null || lightIcon == null)
+                throw new InvalidOperationException("Offline return sprites missing.");
 
             var root = new GameObject("PF_UI_OfflineReturn", typeof(RectTransform));
             try
@@ -417,14 +413,11 @@ namespace PocketWilds.Editor.UI
                 var icon = AddImage("Icon", card, lightIcon, Color.white, Image.Type.Simple);
                 Place(icon.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, 24f), new Vector2(200f, 200f));
 
-                var title = AddText("Title", card, font, 56f, FontStyles.Bold, tokens.textSecondary, "Welcome back");
+                var title = AddText("Title", card, TextRole.Subheading, 56f, tokens.textSecondary, "Welcome back", 44f);
                 title.alignment = TextAlignmentOptions.Center;
-                title.enableAutoSizing = true;
-                title.fontSizeMin = 40f;
-                title.fontSizeMax = 56f;
                 Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -168f), new Vector2(680f, 76f));
 
-                var amount = AddText("Amount", card, font, 124f, FontStyles.Bold, tokens.textPrimary, "+0");
+                var amount = AddText("Amount", card, TextRole.NumberLarge, 124f, tokens.textPrimary, "+0");
                 amount.alignment = TextAlignmentOptions.Center;
                 Place(amount.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -272f), new Vector2(700f, 140f));
 
@@ -444,11 +437,8 @@ namespace PocketWilds.Editor.UI
                 var navigation = collect.navigation;
                 navigation.mode = Navigation.Mode.None;
                 collect.navigation = navigation;
-                var label = AddText("Label", collectImage.rectTransform, font, 58f, FontStyles.Bold, tokens.textPrimary, "Collect");
+                var label = AddText("Label", collectImage.rectTransform, TextRole.Button, 58f, tokens.textPrimary, "Collect", 44f);
                 label.alignment = TextAlignmentOptions.Center;
-                label.enableAutoSizing = true;
-                label.fontSizeMin = 40f;
-                label.fontSizeMax = 58f;
                 Place(label.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 8f), new Vector2(400f, 100f));
 
                 screen.SetReferences(canvas, content.gameObject, group, card, icon.rectTransform, title, amount, collect, label);
@@ -491,10 +481,9 @@ namespace PocketWilds.Editor.UI
             var circle = AssetDatabase.LoadAssetAtPath<Sprite>(CirclePath);
             var star = AssetDatabase.LoadAssetAtPath<Sprite>(StarPath);
             var back = AssetDatabase.LoadAssetAtPath<Sprite>(BackIconPath);
-            var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
             var visuals = AssetDatabase.LoadAssetAtPath<CodexVisualCatalog>("Assets/_Game/Content/Visuals/DEF_CodexVisuals.asset");
-            if (panel == null || pill == null || circle == null || star == null || back == null || font == null || visuals == null)
-                throw new InvalidOperationException("Codex sprites, font or DEF_CodexVisuals missing (run Render Animal Thumbnails).");
+            if (panel == null || pill == null || circle == null || star == null || back == null || visuals == null)
+                throw new InvalidOperationException("Codex sprites or DEF_CodexVisuals missing (run Render Animal Thumbnails).");
 
             var root = new GameObject("PF_UI_Codex", typeof(RectTransform));
             try
@@ -532,7 +521,7 @@ namespace PocketWilds.Editor.UI
                 ConfigureButton(backButton, backImage);
                 var chevron = AddImage("Chevron", backImage.rectTransform, back, tokens.textPrimary, Image.Type.Simple);
                 Place(chevron.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-4f, 6f), new Vector2(64f, 64f));
-                var title = AddText("Title", header, font, 76f, FontStyles.Bold, tokens.textPrimary, "Codex");
+                var title = AddText("Title", header, TextRole.Heading, 76f, tokens.textPrimary, "Codex");
                 title.alignment = TextAlignmentOptions.Center;
                 Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -100f), new Vector2(600f, 100f));
                 var progressBack = AddImage("ProgressBack", header, pill, tokens.panelSecondary, Image.Type.Sliced);
@@ -546,7 +535,7 @@ namespace PocketWilds.Editor.UI
                 fillRect.pivot = new Vector2(0f, 0.5f);
                 fillRect.anchoredPosition = Vector2.zero;
                 fillRect.sizeDelta = new Vector2(44f, 0f);
-                var progressLabel = AddText("ProgressLabel", header, font, 42f, FontStyles.Bold, tokens.textSecondary, "0/0");
+                var progressLabel = AddText("ProgressLabel", header, TextRole.NumberSmall, 42f, tokens.textSecondary, "0/0");
                 Place(progressLabel.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, 0.5f), new Vector2(238f, -202f), new Vector2(200f, 60f));
 
                 // Virtualized list.
@@ -568,8 +557,8 @@ namespace PocketWilds.Editor.UI
                 var scroll = viewport.gameObject.AddComponent<ScrollRect>();
                 ConfigureScroll(scroll, viewport, listContent);
 
-                var headerRow = BuildHeaderRow(listContent, font, tokens);
-                var cardRow = BuildCardRow(listContent, font, tokens, panel, pill);
+                var headerRow = BuildHeaderRow(listContent, tokens);
+                var cardRow = BuildCardRow(listContent, tokens, panel, pill);
 
                 // Species sheet, scrollable for species with many variants.
                 var sheetRect = Rect("Sheet", safe);
@@ -594,17 +583,17 @@ namespace PocketWilds.Editor.UI
                 Place(portraitBack.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -20f), new Vector2(500f, 500f));
                 var portrait = AddImage("Portrait", portraitBack.rectTransform, null, Color.white, Image.Type.Simple);
                 Place(portrait.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 6f), new Vector2(440f, 440f));
-                var sheetName = AddText("Name", sheetContent, font, 72f, FontStyles.Bold, tokens.textPrimary, "Rabbit");
+                var sheetName = AddText("Name", sheetContent, TextRole.Heading, 72f, tokens.textPrimary, "Rabbit");
                 sheetName.alignment = TextAlignmentOptions.Center;
                 Place(sheetName.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -585f), new Vector2(900f, 96f));
-                var owned = AddText("Owned", sheetContent, font, 44f, FontStyles.Bold, tokens.textSecondary, "x0");
+                var owned = AddText("Owned", sheetContent, TextRole.NumberSmall, 44f, tokens.textSecondary, "x0");
                 owned.alignment = TextAlignmentOptions.Center;
                 Place(owned.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -655f), new Vector2(400f, 60f));
                 var masteryRow = Rect("Mastery", sheetContent);
                 Place(masteryRow, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -728f), new Vector2(760f, 84f));
                 var rowIcon = AddImage("Icon", masteryRow, AssetDatabase.LoadAssetAtPath<Sprite>(MasteryIconPath), Color.white, Image.Type.Simple);
                 Place(rowIcon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-322f, 2f), new Vector2(80f, 80f));
-                var rowLevel = AddText("Level", masteryRow, font, 46f, FontStyles.Bold, tokens.textPrimary, "1");
+                var rowLevel = AddText("Level", masteryRow, TextRole.NumberSmall, 46f, tokens.textPrimary, "1");
                 Place(rowLevel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f), new Vector2(-272f, 2f), new Vector2(90f, 64f));
                 var rowBar = AddImage("Bar", masteryRow, pill, tokens.panelSecondary, Image.Type.Sliced);
                 rowBar.pixelsPerUnitMultiplier = 4.4f;
@@ -612,11 +601,11 @@ namespace PocketWilds.Editor.UI
                 var rowFill = AddImage("Fill", rowBar.rectTransform, pill, tokens.currencyLight, Image.Type.Sliced);
                 rowFill.pixelsPerUnitMultiplier = 4.4f;
                 LeftFill(rowFill.rectTransform, 30f);
-                var rowXp = AddText("Xp", masteryRow, font, 36f, FontStyles.Bold, tokens.textSecondary, "0/20");
+                var rowXp = AddText("Xp", masteryRow, TextRole.NumberSmall, 36f, tokens.textSecondary, "0/20");
                 rowXp.alignment = TextAlignmentOptions.MidlineRight;
                 Place(rowXp.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(1f, 0.5f), new Vector2(380f, 2f), new Vector2(180f, 56f));
 
-                var variantsTitle = AddText("VariantsTitle", sheetContent, font, 46f, FontStyles.Bold, tokens.textSecondary, "Variants");
+                var variantsTitle = AddText("VariantsTitle", sheetContent, TextRole.Subheading, 46f, tokens.textSecondary, "Variants");
                 Place(variantsTitle.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(64f, -812f), new Vector2(600f, 60f));
 
                 var slots = new CodexVariantSlotView[12];
@@ -625,7 +614,7 @@ namespace PocketWilds.Editor.UI
                     int column = i % CodexScreen.SheetColumns;
                     int row = i / CodexScreen.SheetColumns;
                     var position = new Vector2(60f + column * 330f, -(CodexScreen.SheetSlotsTop + row * CodexScreen.SheetSlotPitch));
-                    slots[i] = BuildSlot(sheetContent, "Slot" + i, position, font, tokens, panel, pill, star);
+                    slots[i] = BuildSlot(sheetContent, "Slot" + i, position, tokens, panel, pill, star);
                 }
                 sheetRect.gameObject.SetActive(false);
 
@@ -657,14 +646,14 @@ namespace PocketWilds.Editor.UI
             scroll.scrollSensitivity = 40f;
         }
 
-        private static CodexHeaderView BuildHeaderRow(RectTransform parent, TMP_FontAsset font, UiColorTokens tokens)
+        private static CodexHeaderView BuildHeaderRow(RectTransform parent, UiColorTokens tokens)
         {
             var rect = Rect("HeaderRowTemplate", parent);
             TopStretch(rect, CodexScreen.HeaderRowHeight);
             var view = rect.gameObject.AddComponent<CodexHeaderView>();
-            var title = AddText("Title", rect, font, 50f, FontStyles.Bold, tokens.textPrimary, "Meadow");
+            var title = AddText("Title", rect, TextRole.Subheading, 50f, tokens.textPrimary, "Meadow");
             Place(title.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(64f, 18f), new Vector2(600f, 70f));
-            var count = AddText("Count", rect, font, 40f, FontStyles.Bold, tokens.textSecondary, "0/0");
+            var count = AddText("Count", rect, TextRole.NumberSmall, 40f, tokens.textSecondary, "0/0");
             count.alignment = TextAlignmentOptions.MidlineRight;
             Place(count.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-64f, 20f), new Vector2(300f, 64f));
             view.SetReferences(rect, title, count);
@@ -672,7 +661,7 @@ namespace PocketWilds.Editor.UI
             return view;
         }
 
-        private static CodexCardRow BuildCardRow(RectTransform parent, TMP_FontAsset font, UiColorTokens tokens, Sprite panel, Sprite pill)
+        private static CodexCardRow BuildCardRow(RectTransform parent, UiColorTokens tokens, Sprite panel, Sprite pill)
         {
             var rect = Rect("CardRowTemplate", parent);
             TopStretch(rect, CodexScreen.CardRowHeight);
@@ -690,16 +679,13 @@ namespace PocketWilds.Editor.UI
                 ConfigureButton(button, cardBack);
                 var thumb = AddImage("Thumbnail", card, null, Color.white, Image.Type.Simple);
                 Place(thumb.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -22f), new Vector2(240f, 240f));
-                var name = AddText("Name", card, font, 40f, FontStyles.Bold, tokens.textPrimary, "Rabbit");
+                var name = AddText("Name", card, TextRole.Label, 42f, tokens.textPrimary, "Rabbit", 36f);
                 name.alignment = TextAlignmentOptions.Center;
-                name.enableAutoSizing = true;
-                name.fontSizeMin = 28f;
-                name.fontSizeMax = 40f;
                 Place(name.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -296f), new Vector2(270f, 56f));
-                var count = AddText("Count", card, font, 32f, FontStyles.Bold, tokens.textSecondary, "0/0");
+                var count = AddText("Count", card, TextRole.NumberSmall, 36f, tokens.textSecondary, "0/0");
                 count.alignment = TextAlignmentOptions.Center;
                 Place(count.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -350f), new Vector2(200f, 46f));
-                var badge = BuildBadge(card, font, tokens, pill, out var badgeLabel);
+                var badge = BuildBadge(card, tokens, pill, out var badgeLabel);
                 var view = card.gameObject.AddComponent<CodexCardView>();
                 view.SetReferences(cardBack, thumb, name, count, badge, badgeLabel, button);
                 cards[c] = view;
@@ -709,7 +695,7 @@ namespace PocketWilds.Editor.UI
             return row;
         }
 
-        private static CodexVariantSlotView BuildSlot(RectTransform parent, string name, Vector2 position, TMP_FontAsset font, UiColorTokens tokens,
+        private static CodexVariantSlotView BuildSlot(RectTransform parent, string name, Vector2 position, UiColorTokens tokens,
             Sprite panel, Sprite pill, Sprite star)
         {
             var slot = Rect(name, parent);
@@ -719,11 +705,8 @@ namespace PocketWilds.Editor.UI
             Stretch(back.rectTransform);
             var thumb = AddImage("Thumbnail", slot, null, Color.white, Image.Type.Simple);
             Place(thumb.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -16f), new Vector2(200f, 200f));
-            var label = AddText("Name", slot, font, 36f, FontStyles.Bold, tokens.textPrimary, "Brown");
+            var label = AddText("Name", slot, TextRole.Label, 40f, tokens.textPrimary, "Brown", 36f);
             label.alignment = TextAlignmentOptions.Center;
-            label.enableAutoSizing = true;
-            label.fontSizeMin = 26f;
-            label.fontSizeMax = 36f;
             Place(label.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -246f), new Vector2(270f, 52f));
             var stars = new Image[6];
             for (int i = 0; i < stars.Length; i++)
@@ -732,24 +715,21 @@ namespace PocketWilds.Editor.UI
                 Place(stars[i].rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f),
                     new Vector2((i - 2.5f) * CodexVariantSlotView.StarPitch, -300f), new Vector2(36f, 36f));
             }
-            var badge = BuildBadge(slot, font, tokens, pill, out var badgeLabel);
+            var badge = BuildBadge(slot, tokens, pill, out var badgeLabel);
             var view = slot.gameObject.AddComponent<CodexVariantSlotView>();
             view.SetReferences(back, thumb, label, stars, badge, badgeLabel);
             slot.gameObject.SetActive(false);
             return view;
         }
 
-        private static GameObject BuildBadge(RectTransform parent, TMP_FontAsset font, UiColorTokens tokens, Sprite pill, out TMP_Text label)
+        private static GameObject BuildBadge(RectTransform parent, UiColorTokens tokens, Sprite pill, out TMP_Text label)
         {
             var badge = AddImage("NewBadge", parent, pill, tokens.accentPrimary, Image.Type.Sliced);
             badge.pixelsPerUnitMultiplier = 2.2f;
-            Place(badge.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(10f, 14f), new Vector2(150f, 56f));
-            var text = AddText("Label", badge.rectTransform, font, 28f, FontStyles.Bold, tokens.textPrimary, "New");
+            Place(badge.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(14f, 18f), new Vector2(200f, 60f));
+            var text = AddText("Label", badge.rectTransform, TextRole.Label, 36f, tokens.textPrimary, "New");
             text.alignment = TextAlignmentOptions.Center;
-            text.enableAutoSizing = true;
-            text.fontSizeMin = 20f;
-            text.fontSizeMax = 28f;
-            Place(text.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 3f), new Vector2(136f, 44f));
+            Place(text.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 3f), new Vector2(184f, 48f));
             badge.gameObject.SetActive(false);
             label = text;
             return badge.gameObject;
@@ -890,13 +870,23 @@ namespace PocketWilds.Editor.UI
             return image;
         }
 
-        internal static TextMeshProUGUI AddText(string name, Transform parent, TMP_FontAsset font, float size, FontStyles style, Color color, string text)
+        private static TextStyleSheet styles;
+
+        /// <summary>DEF_TextStyles, loaded once per domain (FontPipeline builds it).</summary>
+        internal static TextStyleSheet Styles => styles != null ? styles : styles = FontPipeline.LoadStyles();
+
+        /// <summary>
+        /// A label in one of the doc 05 roles (font, material and size range from DEF_TextStyles). With
+        /// <paramref name="autoSizeMin"/> above zero the label shrinks to fit, never under the role minimum.
+        /// </summary>
+        internal static TextMeshProUGUI AddText(string name, Transform parent, TextRole role, float size, Color color, string text,
+            float autoSizeMin = 0f)
         {
             var label = Rect(name, parent).gameObject.AddComponent<TextMeshProUGUI>();
-            label.font = font;
-            label.fontSharedMaterial = font.material;
-            label.fontSize = size;
-            label.fontStyle = style;
+            if (autoSizeMin > 0f)
+                Styles.ApplyAutoSize(label, role, size, autoSizeMin);
+            else
+                Styles.Apply(label, role, size);
             label.color = color;
             label.alignment = TextAlignmentOptions.MidlineLeft;
             label.textWrappingMode = TextWrappingModes.NoWrap;

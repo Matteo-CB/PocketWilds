@@ -71,7 +71,6 @@ namespace PocketWilds.UI
             if (IsOpen)
                 return;
             Open(card, model, text, actions);
-            ShopText.PrewarmGlyphs(_toastLabel);
             Canvas.ForceUpdateCanvases();
             Close();
         }

@@ -3,6 +3,7 @@ using System.IO;
 using System.Globalization;
 using System.Text;
 using PocketWilds.Editor.Capture;
+using PocketWilds.UI;
 using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -29,6 +30,10 @@ namespace PocketWilds.Editor.UI
         public const int AtlasSize = 1024;
         public const string MobileShader = "TextMeshPro/Mobile/Distance Field";
         public static readonly string[] RoundWeights = { "Regular", "SemiBold", "Bold" };
+        public static readonly string[] PlushWeights = { "Black" };
+        public const string StylesPath = Folder + "/DEF_TextStyles.asset";
+        public const string OutlinePreset = "Outline";
+        public const string ShadowPreset = "Shadow";
 
         public static string AssetPath(string family, string weight) => $"{Folder}/{family}/{family}-{weight} SDF.asset";
 
@@ -41,8 +46,121 @@ namespace PocketWilds.Editor.UI
             return File.ReadAllText(Path.Combine(root, SourceFolder, "charset.txt"), Encoding.UTF8);
         }
 
-        [MenuItem("Pocket Wilds/UI/Fonts/Build Pocket Round", priority = 230)]
-        public static void BuildRoundMenu() => Debug.Log("[FontPipeline] " + Build(Round, RoundWeights));
+        [MenuItem("Pocket Wilds/UI/Fonts/Build Fonts and Styles", priority = 230)]
+        public static void BuildAllMenu() => Debug.Log("[FontPipeline] " + BuildAll());
+
+        /// <summary>Both families, their material presets, DEF_TextStyles and the TMP defaults (T32).</summary>
+        public static string BuildAll()
+        {
+            string round = Build(Round, RoundWeights);
+            string plush = Build(Plush, PlushWeights);
+            BuildPresets();
+            var styles = BuildStyleSheet();
+            SetTmpDefaults();
+            AssetDatabase.SaveAssets();
+            return $"{round}; {plush}; {styles.styles.Count} text styles";
+        }
+
+        public static string MaterialPath(string family, string weight, string preset) =>
+            $"{Folder}/{family}/{family}-{weight} SDF {preset}.mat";
+
+        public static Material LoadPreset(string family, string weight, string preset) =>
+            AssetDatabase.LoadAssetAtPath<Material>(MaterialPath(family, weight, preset));
+
+        /// <summary>
+        /// Material presets share the font's atlas (TMP shows them in the font's material list): Pocket Plush with a
+        /// brown outline and a soft shadow for titles over the world, Pocket Plush and Pocket Round Bold with a soft shadow
+        /// for numbers. Outlines and shadows live here, never in the fonts.
+        /// </summary>
+        public static void BuildPresets()
+        {
+            var outline = new Color(0.36f, 0.23f, 0.14f, 1f);
+            var shadow = new Color(0.22f, 0.13f, 0.07f, 1f);
+            Preset(Plush, "Black", OutlinePreset, m =>
+            {
+                m.EnableKeyword("OUTLINE_ON");
+                m.SetColor(ShaderUtilities.ID_OutlineColor, outline);
+                m.SetFloat(ShaderUtilities.ID_OutlineWidth, 0.24f);
+                Underlay(m, new Color(shadow.r, shadow.g, shadow.b, 0.45f), -0.9f, 0.3f, 0.35f);
+            });
+            Preset(Plush, "Black", ShadowPreset, m => Underlay(m, new Color(shadow.r, shadow.g, shadow.b, 0.32f), -0.7f, 0.1f, 0.5f));
+            Preset(Round, "Bold", ShadowPreset, m => Underlay(m, new Color(shadow.r, shadow.g, shadow.b, 0.32f), -0.7f, 0.1f, 0.5f));
+        }
+
+        private static void Underlay(Material m, Color color, float offsetY, float dilate, float softness)
+        {
+            m.EnableKeyword("UNDERLAY_ON");
+            m.SetColor(ShaderUtilities.ID_UnderlayColor, color);
+            m.SetFloat(ShaderUtilities.ID_UnderlayOffsetX, 0f);
+            m.SetFloat(ShaderUtilities.ID_UnderlayOffsetY, offsetY);
+            m.SetFloat(ShaderUtilities.ID_UnderlayDilate, dilate);
+            m.SetFloat(ShaderUtilities.ID_UnderlaySoftness, softness);
+        }
+
+        private static Material Preset(string family, string weight, string preset, System.Action<Material> setup)
+        {
+            var font = Load(family, weight);
+            string path = MaterialPath(family, weight, preset);
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(font.material);
+                AssetDatabase.CreateAsset(material, path);
+            }
+            else
+            {
+                material.shader = font.material.shader;
+                material.CopyPropertiesFromMaterial(font.material);
+                material.shaderKeywords = font.material.shaderKeywords;
+            }
+            material.name = Path.GetFileNameWithoutExtension(path);
+            setup(material);
+            ShaderUtilities.UpdateShaderRatios(material);
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        /// <summary>DEF_TextStyles: doc 05 roles. Sizes in canvas units at 1080 x 2340, never below 36 for readable text.</summary>
+        public static TextStyleSheet BuildStyleSheet()
+        {
+            var sheet = AssetDatabase.LoadAssetAtPath<TextStyleSheet>(StylesPath);
+            if (sheet == null)
+            {
+                sheet = ScriptableObject.CreateInstance<TextStyleSheet>();
+                AssetDatabase.CreateAsset(sheet, StylesPath);
+            }
+            var plush = Load(Plush, "Black");
+            sheet.styles = new List<TextStyleSheet.Style>
+            {
+                Style(TextRole.Display, plush, LoadPreset(Plush, "Black", OutlinePreset), 96f, 160f),
+                Style(TextRole.Heading, plush, null, 60f, 90f),
+                Style(TextRole.Subheading, Load(Round, "Bold"), null, 44f, 56f),
+                Style(TextRole.Body, Load(Round, "Regular"), null, 38f, 48f),
+                Style(TextRole.Button, Load(Round, "Bold"), null, 44f, 64f),
+                Style(TextRole.Label, Load(Round, "Bold"), null, 36f, 46f),
+                Style(TextRole.NumberLarge, plush, LoadPreset(Plush, "Black", ShadowPreset), 56f, 140f),
+                Style(TextRole.NumberSmall, Load(Round, "Bold"), null, 36f, 52f),
+                Style(TextRole.Caption, Load(Round, "SemiBold"), null, 36f, 42f),
+            };
+            EditorUtility.SetDirty(sheet);
+            return sheet;
+        }
+
+        private static TextStyleSheet.Style Style(TextRole role, TMP_FontAsset font, Material material, float min, float max) =>
+            new TextStyleSheet.Style { role = role, font = font, material = material, minSize = min, maxSize = max };
+
+        public static TextStyleSheet LoadStyles() =>
+            AssetDatabase.LoadAssetAtPath<TextStyleSheet>(StylesPath) ?? throw new System.InvalidOperationException("Missing " + StylesPath + ": run Build Fonts and Styles.");
+
+        /// <summary>New TMP texts default to Pocket Round Regular; no fallback font (the static atlases cover doc 05).</summary>
+        public static void SetTmpDefaults()
+        {
+            var settings = new SerializedObject(TMP_Settings.instance);
+            settings.FindProperty("m_defaultFontAsset").objectReferenceValue = Load(Round, "Regular");
+            settings.FindProperty("m_fallbackFontAssets").ClearArray();
+            settings.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(TMP_Settings.instance);
+        }
 
         public static string Build(string family, string[] weights)
         {
@@ -193,73 +311,29 @@ namespace PocketWilds.Editor.UI
             EditorUtility.SetDirty(regular);
         }
 
-        // ---------------- readability proof ----------------
+        // ---------------- proof captures ----------------
 
         /// <summary>Smallest target phone of the Performance Bible: 720 x 1520 at about 2 px per dp.</summary>
         public const int ProofWidth = 720;
         public const int ProofHeight = 1520;
         public const float PixelsPerDp = 2f;
 
+        private static readonly Color Cream = new Color(1f, 0.98f, 0.94f);
+        private static readonly Color Ink = new Color(0.24f, 0.17f, 0.12f);
+        private static readonly Color Meadow = new Color(0.45f, 0.66f, 0.34f);
+
         [MenuItem("Pocket Wilds/UI/Fonts/Readability Capture", priority = 231)]
         public static void ReadabilityMenu() => Debug.Log("[FontPipeline] " + CaptureReadability("T31"));
 
+        [MenuItem("Pocket Wilds/UI/Fonts/Text Styles Capture", priority = 232)]
+        public static void StylesMenu() => Debug.Log("[FontPipeline] " + CaptureStyles("T32"));
+
         /// <summary>
         /// Pocket Round at 12 to 32 dp in its three weights, on the cream panel, on the dark panel and on the meadow
-        /// green, rendered at the smallest target resolution. Built in a temporary scene that is closed unsaved.
+        /// green, rendered at the smallest target resolution.
         /// </summary>
         public static string CaptureReadability(string prefix)
         {
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
-            try
-            {
-                var cameraObject = new GameObject("ProofCamera");
-                MoveToScene(cameraObject, scene);
-                var camera = cameraObject.AddComponent<Camera>();
-                camera.orthographic = true;
-                camera.orthographicSize = ProofHeight / 2f;
-                camera.clearFlags = CameraClearFlags.SolidColor;
-                camera.backgroundColor = new Color(0.98f, 0.96f, 0.92f);
-                camera.cullingMask = 1 << 5;
-                camera.nearClipPlane = 0.1f;
-                camera.farClipPlane = 100f;
-                cameraObject.transform.position = new Vector3(20000f, 0f, -10f);
-
-                var canvasObject = new GameObject("ProofCanvas", typeof(RectTransform));
-                MoveToScene(canvasObject, scene);
-                canvasObject.layer = 5;
-                var canvas = canvasObject.AddComponent<Canvas>();
-                canvas.renderMode = RenderMode.WorldSpace;
-                var rect = (RectTransform)canvasObject.transform;
-                rect.sizeDelta = new Vector2(ProofWidth, ProofHeight);
-                rect.position = new Vector3(20000f, 0f, 0f);
-
-                Panel(rect, 0, 0.42f, new Color(1f, 0.98f, 0.94f), new Color(0.24f, 0.17f, 0.12f));
-                Panel(rect, 0.42f, 0.71f, new Color(0.24f, 0.17f, 0.12f), new Color(1f, 0.97f, 0.9f));
-                Panel(rect, 0.71f, 1f, new Color(0.45f, 0.66f, 0.34f), Color.white);
-                Canvas.ForceUpdateCanvases();
-                string path = $"{CaptureUtility.DefaultFolder}/{prefix}_font_readability.png";
-                return CaptureUtility.Render(camera, ProofWidth, ProofHeight, path, 4, Canvas.ForceUpdateCanvases);
-            }
-            finally
-            {
-                EditorSceneManager.CloseScene(scene, true);
-            }
-        }
-
-        private static void MoveToScene(GameObject go, UnityEngine.SceneManagement.Scene scene) =>
-            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, scene);
-
-        private static void Panel(RectTransform canvas, float top, float bottom, Color background, Color ink)
-        {
-            var panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
-            panel.layer = 5;
-            var rect = (RectTransform)panel.transform;
-            rect.SetParent(canvas, false);
-            rect.anchorMin = new Vector2(0f, 1f - bottom);
-            rect.anchorMax = new Vector2(1f, 1f - top);
-            rect.offsetMin = rect.offsetMax = Vector2.zero;
-            panel.GetComponent<Image>().color = background;
-
             var rows = new (float dp, string weight, string text)[]
             {
                 (12, "Regular", "12 dp · Le lapin roux s'endort près des fleurs."),
@@ -270,28 +344,130 @@ namespace PocketWilds.Editor.UI
                 (24, "Bold", "24 dp · Bon retour ! 12 400"),
                 (32, "Bold", "32 dp · Hérisson"),
             };
-            float y = -14f;
-            foreach (var row in rows)
+            return Proof($"{prefix}_font_readability", ProofWidth, ProofHeight, canvas =>
             {
-                var label = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
-                label.layer = 5;
-                var labelRect = (RectTransform)label.transform;
-                labelRect.SetParent(rect, false);
-                labelRect.anchorMin = new Vector2(0f, 1f);
-                labelRect.anchorMax = new Vector2(1f, 1f);
-                labelRect.pivot = new Vector2(0f, 1f);
-                float size = row.dp * PixelsPerDp;
-                labelRect.offsetMin = new Vector2(24f, y - size * 1.4f);
-                labelRect.offsetMax = new Vector2(-24f, y);
-                var text = label.GetComponent<TextMeshProUGUI>();
-                text.font = Load(Round, row.weight);
-                text.fontSize = size;
-                text.color = ink;
-                text.textWrappingMode = TextWrappingModes.NoWrap;
-                text.overflowMode = TextOverflowModes.Ellipsis;
-                text.text = row.text;
-                y -= size * 1.4f + 8f;
+                foreach (var (top, bottom, back, ink) in new[] { (0f, 0.42f, Cream, Ink), (0.42f, 0.71f, Ink, Cream), (0.71f, 1f, Meadow, Color.white) })
+                {
+                    var panel = Panel(canvas, top, bottom, back);
+                    float y = -14f;
+                    foreach (var row in rows)
+                    {
+                        float size = row.dp * PixelsPerDp;
+                        var text = Line(panel, ref y, size * 1.4f);
+                        text.font = Load(Round, row.weight);
+                        text.fontSharedMaterial = text.font.material;
+                        text.fontSize = size;
+                        text.color = ink;
+                        text.text = row.text;
+                    }
+                }
+            });
+        }
+
+        /// <summary>
+        /// Every DEF_TextStyles role with its font and material preset, on the cream panel and over the meadow green,
+        /// at the 1080 x 2340 reference (canvas units = pixels).
+        /// </summary>
+        public static string CaptureStyles(string prefix)
+        {
+            var styles = LoadStyles();
+            var rows = new (TextRole role, float size, string text)[]
+            {
+                (TextRole.Display, 120f, "Nouvelle espèce !"),
+                (TextRole.Heading, 76f, "Boutique \uE000\uE001\uE002\uE003"),
+                (TextRole.Subheading, 50f, "À la une · Variantes"),
+                (TextRole.Body, 42f, "Le lapin roux s'endort près des fleurs."),
+                (TextRole.Button, 56f, "Récolter"),
+                (TextRole.Label, 40f, "Meilleure offre · Hérisson"),
+                (TextRole.NumberLarge, 110f, "+24,8 K"),
+                (TextRole.NumberSmall, 44f, "12 400 · 1,99 € · 3/6"),
+                (TextRole.Caption, 38f, "Offre unique · Acheté"),
+            };
+            return Proof($"{prefix}_text_styles", 1080, 2340, canvas =>
+            {
+                foreach (var (top, bottom, back, ink) in new[] { (0f, 0.5f, Cream, Ink), (0.5f, 1f, Meadow, new Color(1f, 0.98f, 0.92f)) })
+                {
+                    var panel = Panel(canvas, top, bottom, back);
+                    float y = -24f;
+                    foreach (var row in rows)
+                    {
+                        var text = Line(panel, ref y, row.size * 1.25f);
+                        styles.Apply(text, row.role, row.size);
+                        text.color = ink;
+                        text.text = row.role + "  " + row.text;
+                    }
+                }
+            });
+        }
+
+        /// <summary>Renders a world-space canvas of the given pixel size in a temporary scene, closed unsaved.</summary>
+        private static string Proof(string name, int width, int height, System.Action<RectTransform> fill)
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            try
+            {
+                var cameraObject = new GameObject("ProofCamera");
+                MoveToScene(cameraObject, scene);
+                var camera = cameraObject.AddComponent<Camera>();
+                camera.orthographic = true;
+                camera.orthographicSize = height / 2f;
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = Cream;
+                camera.cullingMask = 1 << 5;
+                camera.nearClipPlane = 0.1f;
+                camera.farClipPlane = 100f;
+                cameraObject.transform.position = new Vector3(20000f, 0f, -10f);
+
+                var canvasObject = new GameObject("ProofCanvas", typeof(RectTransform));
+                MoveToScene(canvasObject, scene);
+                canvasObject.layer = 5;
+                canvasObject.AddComponent<Canvas>().renderMode = RenderMode.WorldSpace;
+                var rect = (RectTransform)canvasObject.transform;
+                rect.sizeDelta = new Vector2(width, height);
+                rect.position = new Vector3(20000f, 0f, 0f);
+                fill(rect);
+                Canvas.ForceUpdateCanvases();
+                string path = $"{CaptureUtility.DefaultFolder}/{name}.png";
+                return CaptureUtility.Render(camera, width, height, path, 4, Canvas.ForceUpdateCanvases);
             }
+            finally
+            {
+                EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        private static void MoveToScene(GameObject go, UnityEngine.SceneManagement.Scene scene) =>
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, scene);
+
+        private static RectTransform Panel(RectTransform canvas, float top, float bottom, Color background)
+        {
+            var panel = new GameObject("Panel", typeof(RectTransform), typeof(Image));
+            panel.layer = 5;
+            var rect = (RectTransform)panel.transform;
+            rect.SetParent(canvas, false);
+            rect.anchorMin = new Vector2(0f, 1f - bottom);
+            rect.anchorMax = new Vector2(1f, 1f - top);
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            panel.GetComponent<Image>().color = background;
+            return rect;
+        }
+
+        private static TextMeshProUGUI Line(RectTransform panel, ref float y, float height)
+        {
+            var label = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            label.layer = 5;
+            var rect = (RectTransform)label.transform;
+            rect.SetParent(panel, false);
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.offsetMin = new Vector2(24f, y - height);
+            rect.offsetMax = new Vector2(-24f, y);
+            y -= height + 8f;
+            var text = label.GetComponent<TextMeshProUGUI>();
+            text.textWrappingMode = TextWrappingModes.NoWrap;
+            text.overflowMode = TextOverflowModes.Ellipsis;
+            return text;
         }
     }
 }

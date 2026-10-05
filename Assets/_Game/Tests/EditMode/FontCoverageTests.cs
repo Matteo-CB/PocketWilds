@@ -12,8 +12,8 @@ using UnityEditor;
 namespace PocketWilds.Tests.EditMode
 {
     /// <summary>
-    /// T31 (doc 05): Pocket Round shows every shipped string, every store price format and every game number without a
-    /// missing glyph, from a static atlas (no glyph generation while the game runs).
+    /// T31/T32 (doc 05): Pocket Round and Pocket Plush show every shipped string, every store price format and every game
+    /// number without a missing glyph, from static atlases (no glyph generation while the game runs).
     /// </summary>
     public class FontCoverageTests
     {
@@ -42,7 +42,11 @@ namespace PocketWilds.Tests.EditMode
             new NumberFormatSettings(',', ' '),
         };
 
-        private static IEnumerable<TMP_FontAsset> RoundWeights() => FontPipeline.RoundWeights.Select(w => FontPipeline.Load(FontPipeline.Round, w));
+        /// <summary>Every shipped font asset with its family and weight.</summary>
+        private static IEnumerable<(string family, string weight)> ShippedFonts() =>
+            FontPipeline.RoundWeights.Select(w => (FontPipeline.Round, w)).Concat(FontPipeline.PlushWeights.Select(w => (FontPipeline.Plush, w)));
+
+        private static IEnumerable<TMP_FontAsset> FontAssets() => ShippedFonts().Select(f => FontPipeline.Load(f.family, f.weight));
 
         private static string Missing(TMP_FontAsset font, string text)
         {
@@ -59,7 +63,7 @@ namespace PocketWilds.Tests.EditMode
 
         private static void AssertCovers(string label, IEnumerable<string> texts)
         {
-            foreach (var font in RoundWeights())
+            foreach (var font in FontAssets())
             {
                 foreach (string text in texts)
                 {
@@ -70,12 +74,12 @@ namespace PocketWilds.Tests.EditMode
         }
 
         [Test]
-        public void PocketRound_IsStatic_OneAtlasPerWeight_NoSourceFontInBuilds()
+        public void ShippedFonts_AreStatic_OneAtlasPerWeight_NoSourceFontInBuilds()
         {
-            foreach (string weight in FontPipeline.RoundWeights)
+            foreach (var (family, weight) in ShippedFonts())
             {
-                var font = FontPipeline.Load(FontPipeline.Round, weight);
-                Assert.IsNotNull(font, "Missing " + FontPipeline.AssetPath(FontPipeline.Round, weight));
+                var font = FontPipeline.Load(family, weight);
+                Assert.IsNotNull(font, "Missing " + FontPipeline.AssetPath(family, weight));
                 Assert.AreEqual(AtlasPopulationMode.Static, font.atlasPopulationMode, font.name);
                 Assert.AreEqual(1, font.atlasTextures.Length, font.name + ": one atlas texture");
                 Assert.AreEqual(FontPipeline.AtlasSize, font.atlasWidth, font.name);
@@ -85,7 +89,7 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(0f, font.boldSpacing, font.name + ": real weights, no faux-bold spacing");
                 Assert.AreEqual(FontPipeline.MobileShader, font.material.shader.name, font.name);
                 string kern = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(UnityEngine.Application.dataPath)!,
-                    FontPipeline.SourceFolder, $"{FontPipeline.Round}-{weight}.kern.tsv");
+                    FontPipeline.SourceFolder, $"{family}-{weight}.kern.tsv");
                 int expected = System.IO.File.ReadAllLines(kern).Count(l => l.Length > 0 && l[0] != '#');
                 Assert.Greater(expected, 1000, kern);
                 Assert.AreEqual(expected, font.fontFeatureTable.glyphPairAdjustmentRecords.Count, font.name + ": every kerning pair of the build");
@@ -101,7 +105,7 @@ namespace PocketWilds.Tests.EditMode
         }
 
         [Test]
-        public void PocketRound_HasTheWholeDoc05CharacterSet()
+        public void ShippedFonts_HaveTheWholeDoc05CharacterSet()
         {
             AssertCovers("charset.txt", new[] { FontPipeline.Charset() });
         }

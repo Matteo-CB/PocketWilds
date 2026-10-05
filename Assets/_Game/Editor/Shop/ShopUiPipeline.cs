@@ -34,7 +34,6 @@ namespace PocketWilds.Editor.Shop
         private sealed class Kit
         {
             public UiColorTokens Tokens;
-            public TMP_FontAsset Font;
             public Sprite Panel, Pill, Circle, Button, Glow, Dot, Gem, Close, Back;
         }
 
@@ -65,7 +64,6 @@ namespace PocketWilds.Editor.Shop
             var kit = new Kit
             {
                 Tokens = UiPipeline.EnsureTokens(),
-                Font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(UiPipeline.FontPath),
                 Panel = AssetDatabase.LoadAssetAtPath<Sprite>(UiPipeline.PanelPath),
                 Pill = AssetDatabase.LoadAssetAtPath<Sprite>(UiPipeline.PillPath),
                 Circle = AssetDatabase.LoadAssetAtPath<Sprite>(UiPipeline.CirclePath),
@@ -76,9 +74,9 @@ namespace PocketWilds.Editor.Shop
                 Close = AssetDatabase.LoadAssetAtPath<Sprite>(UiPipeline.CloseIconPath),
                 Back = AssetDatabase.LoadAssetAtPath<Sprite>(UiPipeline.BackIconPath),
             };
-            if (kit.Font == null || kit.Panel == null || kit.Pill == null || kit.Circle == null || kit.Button == null || kit.Gem == null
+            if (kit.Panel == null || kit.Pill == null || kit.Circle == null || kit.Button == null || kit.Gem == null
                 || kit.Close == null || kit.Back == null || kit.Dot == null || kit.Glow == null)
-                throw new InvalidOperationException("Shop sprites or font missing: run SourceArt/UI/Tools/pw_ui_sprites.py first.");
+                throw new InvalidOperationException("Shop sprites missing: run SourceArt/UI/Tools/pw_ui_sprites.py first.");
             return kit;
         }
 
@@ -135,7 +133,7 @@ namespace PocketWilds.Editor.Shop
             UiPipeline.Place(background.rectTransform, anchor, pivot, position, size);
             var button = background.gameObject.AddComponent<Button>();
             UiPipeline.ConfigureButton(button, background);
-            price = UiPipeline.AddText("Price", background.rectTransform, kit.Font, fontSize, FontStyles.Bold, kit.Tokens.textPrimary, "0,99 €");
+            price = UiPipeline.AddText("Price", background.rectTransform, TextRole.Button, fontSize, kit.Tokens.textPrimary, "0,99 €");
             price.alignment = TextAlignmentOptions.Center;
             UiPipeline.Place(price.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 4f), size - new Vector2(40f, 10f));
             priceGem = UiPipeline.AddImage("Gem", background.rectTransform, kit.Gem, Color.white, Image.Type.Simple);
@@ -158,7 +156,7 @@ namespace PocketWilds.Editor.Shop
             var chip = UiPipeline.AddImage(name, parent, kit.Pill, color, Image.Type.Sliced);
             chip.pixelsPerUnitMultiplier = 1.6f;
             UiPipeline.Place(chip.rectTransform, anchor, pivot, position, size);
-            label = UiPipeline.AddText("Label", chip.rectTransform, kit.Font, fontSize, FontStyles.Bold, Color.white, sample);
+            label = UiPipeline.AddText("Label", chip.rectTransform, TextRole.Label, fontSize, Color.white, sample);
             label.alignment = TextAlignmentOptions.Center;
             UiPipeline.Stretch(label.rectTransform);
             label.rectTransform.offsetMin = new Vector2(12f, 4f);
@@ -185,13 +183,13 @@ namespace PocketWilds.Editor.Shop
                 UiPipeline.Place(art.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -150f), new Vector2(220f, 220f));
                 var titleIcon = UiPipeline.AddImage("TitleGem", rect, kit.Gem, Color.white, Image.Type.Simple);
                 UiPipeline.Place(titleIcon.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-80f, -306f), new Vector2(58f, 58f));
-                var title = UiPipeline.AddText("Amount", rect, kit.Font, 62f, FontStyles.Bold, kit.Tokens.textPrimary, "550");
+                var title = UiPipeline.AddText("Amount", rect, TextRole.NumberLarge, 62f, kit.Tokens.textPrimary, "550");
                 title.alignment = TextAlignmentOptions.Center;
                 UiPipeline.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(20f, -304f), new Vector2(360f, 80f));
-                var badge = Chip(kit, rect, "Badge", kit.Tokens.currencyGems, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -18f),
-                    new Vector2(250f, 62f), 32f, "Best value", out var badgeLabel);
-                var bonus = Chip(kit, rect, "Bonus", kit.Tokens.success, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-18f, -18f),
-                    new Vector2(136f, 62f), 34f, "+30%", out var bonusLabel);
+                var badge = Chip(kit, rect, "Badge", kit.Tokens.currencyGems, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -14f),
+                    new Vector2(430f, 62f), 38f, "Best value", out var badgeLabel);
+                var bonus = Chip(kit, rect, "Bonus", kit.Tokens.success, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-14f, -88f),
+                    new Vector2(136f, 62f), 38f, "+30%", out var bonusLabel);
                 var buy = BuyButton(kit, rect, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(380f, 104f), 44f,
                     out var buyBack, out var price, out var priceGem, out var wait);
                 view.SetReferences(kit.Tokens, art, null, title, null, null, bonus, bonusLabel, badge, badgeLabel, buy, buyBack, price, priceGem, wait,
@@ -248,18 +246,18 @@ namespace PocketWilds.Editor.Shop
                 UiPipeline.Place(art.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(200f, 14f), new Vector2(artSize, artSize));
                 gemBadge = UiPipeline.AddImage("GemsBadge", rect, kit.Gem, Color.white, Image.Type.Simple);
                 UiPipeline.Place(gemBadge.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(300f, -100f), new Vector2(110f, 110f));
-                title = UiPipeline.AddText("Title", rect, kit.Font, titleSize, FontStyles.Bold, kit.Tokens.textPrimary, "Starter Pack");
+                title = UiPipeline.AddText("Title", rect, TextRole.Heading, titleSize, kit.Tokens.textPrimary, "Starter Pack");
                 UiPipeline.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(390f, -46f), new Vector2(540f, 76f));
-                contents = UiPipeline.AddText("Contents", rect, kit.Font, 40f, FontStyles.Bold, kit.Tokens.textSecondary, "500 Gems + Flower Crown");
+                contents = UiPipeline.AddText("Contents", rect, TextRole.Body, 40f, kit.Tokens.textSecondary, "500 Gems + Flower Crown");
                 contents.textWrappingMode = TextWrappingModes.Normal;
                 contents.alignment = TextAlignmentOptions.TopLeft;
                 UiPipeline.Place(contents.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(392f, -130f), new Vector2(530f, 110f));
-                caption = UiPipeline.AddText("Caption", rect, kit.Font, 34f, FontStyles.Normal, kit.Tokens.textSecondary, "One-time offer");
+                caption = UiPipeline.AddText("Caption", rect, TextRole.Caption, 36f, kit.Tokens.textSecondary, "One-time offer");
                 UiPipeline.Place(caption.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(392f, -246f), new Vector2(530f, 50f));
                 buy = BuyButton(kit, rect, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-34f, 30f), new Vector2(400f, 108f), 46f,
                     out buyBack, out price, out priceGem, out wait);
                 badge = Chip(kit, rect, "Badge", kit.Tokens.success, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-22f, -22f),
-                    new Vector2(220f, 62f), 32f, "Owned", out badgeLabel);
+                    new Vector2(220f, 62f), 38f, "Owned", out badgeLabel);
             }
             else
             {
@@ -270,20 +268,20 @@ namespace PocketWilds.Editor.Shop
                 UiPipeline.Place(art.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -270f), new Vector2(artSize, artSize));
                 gemBadge = UiPipeline.AddImage("GemsBadge", rect, kit.Gem, Color.white, Image.Type.Simple);
                 UiPipeline.Place(gemBadge.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(160f, -400f), new Vector2(150f, 150f));
-                title = UiPipeline.AddText("Title", rect, kit.Font, titleSize, FontStyles.Bold, kit.Tokens.textPrimary, "Starter Pack");
+                title = UiPipeline.AddText("Title", rect, TextRole.Heading, titleSize, kit.Tokens.textPrimary, "Starter Pack");
                 title.alignment = TextAlignmentOptions.Center;
                 UiPipeline.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -560f), new Vector2(820f, 96f));
-                contents = UiPipeline.AddText("Contents", rect, kit.Font, 46f, FontStyles.Bold, kit.Tokens.textSecondary, "500 Gems + Flower Crown");
+                contents = UiPipeline.AddText("Contents", rect, TextRole.Body, 46f, kit.Tokens.textSecondary, "500 Gems + Flower Crown");
                 contents.alignment = TextAlignmentOptions.Center;
                 contents.textWrappingMode = TextWrappingModes.Normal;
                 UiPipeline.Place(contents.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -656f), new Vector2(800f, 120f));
-                caption = UiPipeline.AddText("Caption", rect, kit.Font, 38f, FontStyles.Normal, kit.Tokens.textSecondary, "One-time offer");
+                caption = UiPipeline.AddText("Caption", rect, TextRole.Caption, 38f, kit.Tokens.textSecondary, "One-time offer");
                 caption.alignment = TextAlignmentOptions.Center;
                 UiPipeline.Place(caption.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -746f), new Vector2(800f, 56f));
                 buy = BuyButton(kit, rect, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(560f, 136f), 58f,
                     out buyBack, out price, out priceGem, out wait);
                 badge = Chip(kit, rect, "Badge", kit.Tokens.success, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f),
-                    new Vector2(240f, 64f), 34f, "Owned", out badgeLabel);
+                    new Vector2(240f, 64f), 40f, "Owned", out badgeLabel);
             }
             view.SetReferences(kit.Tokens, art, null, title, contents, caption, null, null, badge, badgeLabel, buy, buyBack, price, priceGem, wait,
                 null, gemBadge.gameObject);
@@ -333,14 +331,14 @@ namespace PocketWilds.Editor.Shop
                 UiPipeline.ConfigureButton(backButton, backImage);
                 var chevron = UiPipeline.AddImage("Chevron", backImage.rectTransform, kit.Back, kit.Tokens.textPrimary, Image.Type.Simple);
                 UiPipeline.Place(chevron.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-4f, 6f), new Vector2(64f, 64f));
-                var title = UiPipeline.AddText("Title", header, kit.Font, 76f, FontStyles.Bold, kit.Tokens.textPrimary, "Shop");
+                var title = UiPipeline.AddText("Title", header, TextRole.Heading, 76f, kit.Tokens.textPrimary, "Shop");
                 title.alignment = TextAlignmentOptions.Center;
                 UiPipeline.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -100f), new Vector2(520f, 100f));
                 var gemsChip = UiPipeline.AddImage("Gems", header, kit.Pill, kit.Tokens.panelPrimary, Image.Type.Sliced);
                 UiPipeline.Place(gemsChip.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(-40f, -100f), new Vector2(260f, 100f));
                 var gemIcon = UiPipeline.AddImage("Icon", gemsChip.rectTransform, kit.Gem, Color.white, Image.Type.Simple);
                 UiPipeline.Place(gemIcon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(52f, 2f), new Vector2(76f, 76f));
-                var gemsLabel = UiPipeline.AddText("Value", gemsChip.rectTransform, kit.Font, 48f, FontStyles.Bold, kit.Tokens.textPrimary, "0");
+                var gemsLabel = UiPipeline.AddText("Value", gemsChip.rectTransform, TextRole.NumberSmall, 48f, kit.Tokens.textPrimary, "0");
                 UiPipeline.Place(gemsLabel.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(98f, 4f), new Vector2(150f, 64f));
 
                 var viewport = UiPipeline.Rect("Viewport", safe);
@@ -363,7 +361,7 @@ namespace PocketWilds.Editor.Shop
                 var scroll = viewport.gameObject.AddComponent<ScrollRect>();
                 UiPipeline.ConfigureScroll(scroll, viewport, list);
 
-                var featuredHeader = UiPipeline.AddText("FeaturedHeader", list, kit.Font, 50f, FontStyles.Bold, kit.Tokens.textSecondary, "Featured");
+                var featuredHeader = UiPipeline.AddText("FeaturedHeader", list, TextRole.Subheading, 50f, kit.Tokens.textSecondary, "Featured");
                 featuredHeader.alignment = TextAlignmentOptions.BottomLeft;
                 var featured = new ShopCardView[FeaturedSlots];
                 for (int i = 0; i < featured.Length; i++)
@@ -371,7 +369,7 @@ namespace PocketWilds.Editor.Shop
                     featured[i] = ((GameObject)PrefabUtility.InstantiatePrefab(widePrefab.gameObject, list)).GetComponent<ShopCardView>();
                     featured[i].name = "Featured" + i;
                 }
-                var gemsHeader = UiPipeline.AddText("GemsHeader", list, kit.Font, 50f, FontStyles.Bold, kit.Tokens.textSecondary, "Gems");
+                var gemsHeader = UiPipeline.AddText("GemsHeader", list, TextRole.Subheading, 50f, kit.Tokens.textSecondary, "Gems");
                 gemsHeader.alignment = TextAlignmentOptions.BottomLeft;
                 var gems = new ShopCardView[GemSlots];
                 for (int i = 0; i < gems.Length; i++)
@@ -386,7 +384,7 @@ namespace PocketWilds.Editor.Shop
                 UiPipeline.Place(restoreImage.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(560f, 96f));
                 var restoreButton = restoreRoot.gameObject.AddComponent<Button>();
                 UiPipeline.ConfigureButton(restoreButton, restoreImage);
-                var restoreLabel = UiPipeline.AddText("Label", restoreImage.rectTransform, kit.Font, 40f, FontStyles.Bold, kit.Tokens.textSecondary, "Restore purchases");
+                var restoreLabel = UiPipeline.AddText("Label", restoreImage.rectTransform, TextRole.Button, 44f, kit.Tokens.textSecondary, "Restore purchases");
                 restoreLabel.alignment = TextAlignmentOptions.Center;
                 UiPipeline.Stretch(restoreLabel.rectTransform);
                 // Everything in the scrolled list is clipped by the viewport mask (the kit helpers default to unmasked).
@@ -400,7 +398,7 @@ namespace PocketWilds.Editor.Shop
                 toastGroup.interactable = false;
                 var toastBack = UiPipeline.AddImage("Background", toast, kit.Pill, kit.Tokens.panelPrimary, Image.Type.Sliced);
                 UiPipeline.Stretch(toastBack.rectTransform);
-                var toastLabel = UiPipeline.AddText("Label", toast, kit.Font, 42f, FontStyles.Bold, kit.Tokens.textPrimary, "Thank you. +550 Gems");
+                var toastLabel = UiPipeline.AddText("Label", toast, TextRole.Label, 42f, kit.Tokens.textPrimary, "Thank you. +550 Gems");
                 toastLabel.alignment = TextAlignmentOptions.Center;
                 UiPipeline.Stretch(toastLabel.rectTransform);
 
@@ -457,7 +455,7 @@ namespace PocketWilds.Editor.Shop
                 toastGroup.interactable = false;
                 var toastBack = UiPipeline.AddImage("Background", toast, kit.Pill, kit.Tokens.panelPrimary, Image.Type.Sliced);
                 UiPipeline.Stretch(toastBack.rectTransform);
-                var toastLabel = UiPipeline.AddText("Label", toast, kit.Font, 42f, FontStyles.Bold, kit.Tokens.textPrimary, "Thank you. +500 Gems");
+                var toastLabel = UiPipeline.AddText("Label", toast, TextRole.Label, 42f, kit.Tokens.textPrimary, "Thank you. +500 Gems");
                 toastLabel.alignment = TextAlignmentOptions.Center;
                 UiPipeline.Stretch(toastLabel.rectTransform);
 

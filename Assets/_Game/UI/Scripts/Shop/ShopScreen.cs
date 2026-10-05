@@ -85,7 +85,6 @@ namespace PocketWilds.UI
             if (IsOpen)
                 return;
             Open(model, text, actions);
-            ShopText.PrewarmGlyphs(_title);
             Canvas.ForceUpdateCanvases();
             Close();
         }
