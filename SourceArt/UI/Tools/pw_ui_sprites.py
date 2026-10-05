@@ -395,8 +395,29 @@ def icon_codex():
     return "ICO_Codex_Book", c, RUNTIME_ICONS
 
 
+def icon_mastery():
+    """ICO_Mastery_StarPaw (I-HUD-009): plump golden star carrying a paw print. Species mastery."""
+    size = 128
+    c = Canvas(size, size, cy=62.0)
+    star = sd_polygon(c, star_points(52.0, 27.0, oy=-2.0)) - 7.0
+    outline = star - 5.0
+    c.over((80, 52, 20), blur(shift(fill(outline), 0, 4), 3.0) * 0.28)
+    c.over(hexrgb("C9782A"), fill(outline))
+    t = np.clip((50.0 - c.y) / 100.0, 0, 1)
+    c.over(lerp(hexrgb("FFE48A"), hexrgb("F7B23B"), t), fill(star))
+    c.over(hexrgb("E99A30"), soft(-star - 6.0, 6.0) * np.clip(-c.y / 40.0, 0, 1) * fill(star) * 0.8)
+    paw = "8A5A2E"
+    c.over(hexrgb(paw), fill(sd_ellipse(c, 10.5, 9.0, ox=0.0, oy=-9.0)))
+    for ox, oy, rx, ry, ang in ((-12.5, 4.0, 4.2, 5.4, 20.0), (-4.2, 10.5, 4.2, 5.6, 5.0),
+                                (4.8, 10.5, 4.2, 5.6, -5.0), (13.0, 4.0, 4.2, 5.4, -20.0)):
+        c.over(hexrgb(paw), fill(sd_ellipse(c, rx, ry, ox=ox, oy=oy, angle_deg=ang)))
+    gloss = sd_ellipse(c, 6.0, 3.4, ox=-10.0, oy=22.0, angle_deg=30.0)
+    c.over((255, 255, 255), fill(gloss) * fill(star) * 0.7)
+    return "ICO_Mastery_StarPaw", c, RUNTIME_ICONS
+
+
 SPRITES = (kit_pill, kit_icon_circle, kit_panel_primary, kit_button_primary, kit_glow, kit_dot,
-           icon_light, icon_egg, icon_rarity_star, icon_back, icon_codex)
+           icon_light, icon_egg, icon_rarity_star, icon_back, icon_codex, icon_mastery)
 
 
 def main():

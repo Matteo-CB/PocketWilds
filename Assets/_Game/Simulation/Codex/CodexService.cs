@@ -84,6 +84,7 @@ namespace PocketWilds.Simulation
         private readonly PlayerState _state;
         private readonly ContentRegistry _content;
         private readonly ISaveScheduler? _save;
+        private readonly MasteryService? _mastery;
 
         private readonly CodexSection[] _sections;
         private readonly int[] _speciesOrder;     // Codex index -> species dense index
@@ -99,8 +100,9 @@ namespace PocketWilds.Simulation
         private int _stampCount = -1;
         private int _stampDiscoveredVariants = -1;
 
-        public CodexService(PlayerState state, ContentRegistry content, ISaveScheduler? save)
+        public CodexService(PlayerState state, ContentRegistry content, ISaveScheduler? save, MasteryService? mastery = null)
         {
+            _mastery = mastery;
             _state = state;
             _content = content;
             _save = save;
@@ -246,6 +248,15 @@ namespace PocketWilds.Simulation
             return new CodexSpeciesEntry(definition.Id, definition.DisplayKey, discovered, isNew, _speciesOwned[s],
                 _variantsFound[s], _variantCount[s]);
         }
+
+        /// <summary>Mastery of a species (level, XP in level, XP for next). Empty without a mastery service.</summary>
+        public MasteryProgress GetMastery(int codexIndex)
+        {
+            var species = _content.Species[_speciesOrder[codexIndex]].Id;
+            return _mastery != null ? _mastery.Get(species) : default;
+        }
+
+        public bool HasMastery => _mastery != null;
 
         public int GetVariantCount(int codexIndex) => _variantCount[_speciesOrder[codexIndex]];
 

@@ -41,6 +41,7 @@ namespace PocketWilds.Editor.UI
         public const string StarPath = IconFolder + "/ICO_Rarity_Star.png";
         public const string BackIconPath = IconFolder + "/ICO_Back_Chevron.png";
         public const string CodexIconPath = IconFolder + "/ICO_Codex_Book.png";
+        public const string MasteryIconPath = IconFolder + "/ICO_Mastery_StarPaw.png";
         public const string LocalizationFolder = "Assets/_Game/Content/Localization";
         public const string ContentDatabasePath = "Assets/_Game/Content/DEF_ContentDatabase.asset";
         public const string HatchConfigPath = "Assets/_Game/Content/Visuals/DEF_HatchPresentation.asset";
@@ -120,7 +121,7 @@ namespace PocketWilds.Editor.UI
         public static void ReimportSprites()
         {
             foreach (var path in new[] { PillPath, CirclePath, PanelPath, ButtonPrimaryPath, GlowPath, DotPath, LightIconPath, EggIconPath,
-                         StarPath, BackIconPath, CodexIconPath })
+                         StarPath, BackIconPath, CodexIconPath, MasteryIconPath })
             {
                 if (!File.Exists(path))
                     throw new FileNotFoundException("Run SourceArt/UI/Tools/pw_ui_sprites.py first.", path);
@@ -274,6 +275,35 @@ namespace PocketWilds.Editor.UI
                 Place(badge.rectTransform, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-26f, -26f), new Vector2(46f, 46f));
                 badge.gameObject.SetActive(false);
                 hud.SetShortcutReferences(codexButton, codexRoot, badge.gameObject);
+
+                // Mastery toast above the hatch action: own canvas, animated only while shown.
+                var masteryRoot = Rect("Mastery", safe);
+                masteryRoot.gameObject.AddComponent<Canvas>();
+                var masteryGroup = masteryRoot.gameObject.AddComponent<CanvasGroup>();
+                masteryGroup.interactable = false;
+                masteryGroup.blocksRaycasts = false;
+                Place(masteryRoot, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 452f), new Vector2(500f, 110f));
+                var toastBack = AddImage("Background", masteryRoot, pill, tokens.panelPrimary, Image.Type.Sliced);
+                Stretch(toastBack.rectTransform);
+                var toastGlow = AddImage("Glow", masteryRoot, AssetDatabase.LoadAssetAtPath<Sprite>(GlowPath), new Color(1f, 0.84f, 0.42f, 0.95f), Image.Type.Simple);
+                Place(toastGlow.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(66f, 4f), new Vector2(230f, 230f));
+                var glowGroup = toastGlow.gameObject.AddComponent<CanvasGroup>();
+                glowGroup.alpha = 0f;
+                var masteryIcon = AddImage("Icon", masteryRoot, AssetDatabase.LoadAssetAtPath<Sprite>(MasteryIconPath), Color.white, Image.Type.Simple);
+                Place(masteryIcon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(66f, 4f), new Vector2(100f, 100f));
+                var masteryLevel = AddText("Level", masteryRoot, font, 46f, FontStyles.Bold, tokens.textPrimary, "1");
+                Place(masteryLevel.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(124f, 2f), new Vector2(80f, 64f));
+                var toastBar = AddImage("Bar", masteryRoot, pill, tokens.panelSecondary, Image.Type.Sliced);
+                toastBar.pixelsPerUnitMultiplier = 5f;
+                Place(toastBar.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(212f, 0f), new Vector2(168f, 26f));
+                var toastFill = AddImage("Fill", toastBar.rectTransform, pill, tokens.currencyLight, Image.Type.Sliced);
+                toastFill.pixelsPerUnitMultiplier = 5f;
+                LeftFill(toastFill.rectTransform, 26f);
+                var masteryXp = AddText("Xp", masteryRoot, font, 40f, FontStyles.Bold, new Color(0.88f, 0.54f, 0.17f, 1f), "+2");
+                masteryXp.alignment = TextAlignmentOptions.MidlineRight;
+                Place(masteryXp.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-26f, 2f), new Vector2(90f, 60f));
+                hud.SetMasteryReferences(masteryRoot, masteryGroup, masteryIcon.rectTransform, masteryLevel, masteryXp,
+                    toastBar.rectTransform, toastFill.rectTransform, glowGroup);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(HudPrefabPath));
                 return PrefabUtility.SaveAsPrefabAsset(root, HudPrefabPath).GetComponent<SanctuaryHud>();
@@ -511,8 +541,24 @@ namespace PocketWilds.Editor.UI
                 var owned = AddText("Owned", sheetContent, font, 44f, FontStyles.Bold, tokens.textSecondary, "x0");
                 owned.alignment = TextAlignmentOptions.Center;
                 Place(owned.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -655f), new Vector2(400f, 60f));
+                var masteryRow = Rect("Mastery", sheetContent);
+                Place(masteryRow, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -728f), new Vector2(760f, 84f));
+                var rowIcon = AddImage("Icon", masteryRow, AssetDatabase.LoadAssetAtPath<Sprite>(MasteryIconPath), Color.white, Image.Type.Simple);
+                Place(rowIcon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-322f, 2f), new Vector2(80f, 80f));
+                var rowLevel = AddText("Level", masteryRow, font, 46f, FontStyles.Bold, tokens.textPrimary, "1");
+                Place(rowLevel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f), new Vector2(-272f, 2f), new Vector2(90f, 64f));
+                var rowBar = AddImage("Bar", masteryRow, pill, tokens.panelSecondary, Image.Type.Sliced);
+                rowBar.pixelsPerUnitMultiplier = 4.4f;
+                Place(rowBar.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f), new Vector2(-170f, 0f), new Vector2(360f, 30f));
+                var rowFill = AddImage("Fill", rowBar.rectTransform, pill, tokens.currencyLight, Image.Type.Sliced);
+                rowFill.pixelsPerUnitMultiplier = 4.4f;
+                LeftFill(rowFill.rectTransform, 30f);
+                var rowXp = AddText("Xp", masteryRow, font, 36f, FontStyles.Bold, tokens.textSecondary, "0/20");
+                rowXp.alignment = TextAlignmentOptions.MidlineRight;
+                Place(rowXp.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(1f, 0.5f), new Vector2(380f, 2f), new Vector2(180f, 56f));
+
                 var variantsTitle = AddText("VariantsTitle", sheetContent, font, 46f, FontStyles.Bold, tokens.textSecondary, "Variants");
-                Place(variantsTitle.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(64f, -722f), new Vector2(600f, 60f));
+                Place(variantsTitle.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(64f, -812f), new Vector2(600f, 60f));
 
                 var slots = new CodexVariantSlotView[12];
                 for (int i = 0; i < slots.Length; i++)
@@ -527,6 +573,7 @@ namespace PocketWilds.Editor.UI
                 screen.SetReferences(tokens, visuals, content.gameObject, group, safe, backButton, title, progressBack.rectTransform,
                     fillRect, progressLabel, scroll, viewport, listContent, headerRow, cardRow, sheetRect.gameObject, sheetScroll,
                     sheetContent, portrait, sheetName, owned, variantsTitle, slots);
+                screen.SetMasteryReferences(masteryRow.gameObject, rowLevel, rowBar.rectTransform, rowFill.rectTransform, rowXp);
                 content.gameObject.SetActive(false);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(CodexPrefabPath));
@@ -647,6 +694,16 @@ namespace PocketWilds.Editor.UI
             badge.gameObject.SetActive(false);
             label = text;
             return badge.gameObject;
+        }
+
+        /// <summary>Progress fill growing from the left edge of its bar (width set at runtime).</summary>
+        private static void LeftFill(RectTransform rect, float height)
+        {
+            rect.anchorMin = new Vector2(0f, 0f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(height, 0f);
         }
 
         private static void TopStretch(RectTransform rect, float height)

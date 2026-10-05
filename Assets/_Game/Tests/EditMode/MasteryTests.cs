@@ -1,0 +1,156 @@
+using NUnit.Framework;
+using PocketWilds.Content;
+using PocketWilds.Core;
+using PocketWilds.Editor.UI;
+using PocketWilds.Services.Save;
+using PocketWilds.Simulation;
+using UnityEditor;
+using UnityEngine;
+
+namespace PocketWilds.Tests.EditMode
+{
+    /// <summary>T20: species mastery (doc 02 XP table and curve), duplicates always progress, no useless hatch.</summary>
+    public class MasteryTests
+    {
+        private static readonly ContentId Rabbit = ContentId.FromSource("species.rabbit");
+        private static readonly ContentId Basic = ContentId.FromSource("egg.grassland.basic");
+
+        private static (PlayerState state, EconomyService economy, MasteryService mastery) Create()
+        {
+            var state = PlayerState.CreateNew(TestUtil.T0);
+            var economy = new EconomyService(state, TestUtil.ThreeSpecies(), EconomyConfig.Default, null);
+            return (state, economy, new MasteryService(state, EconomyConfig.Default, economy));
+        }
+
+        [Test]
+        public void XpCurve_FollowsTheDoc()
+        {
+            var (_, _, mastery) = Create();
+            Assert.AreEqual(20, mastery.XpForNext(0), "Undiscovered to level 1.");
+            Assert.AreEqual(51, mastery.XpForNext(1));
+            Assert.AreEqual(88, mastery.XpForNext(2));
+            Assert.AreEqual(176, mastery.XpForNext(4));
+            Assert.AreEqual(25, mastery.XpFor(MasteryReason.Discovery));
+            Assert.AreEqual(15, mastery.XpFor(MasteryReason.NewVariant));
+            Assert.AreEqual(2, mastery.XpFor(MasteryReason.Duplicate));
+            Assert.AreEqual(4, mastery.XpFor(MasteryReason.Birth));
+        }
+
+        [Test]
+        public void Discovery_Duplicates_AndVariants_AddUp()
+        {
+            var (state, _, mastery) = Create();
+            var first = mastery.OnAnimalObtained(Rabbit, true, true);
+            Assert.AreEqual(MasteryReason.Discovery, first.Reason);
+            Assert.AreEqual(25, first.Xp);
+            Assert.AreEqual(0, first.Before.Level);
+            Assert.AreEqual(1, first.After.Level, "The first rabbit already levels the species up.");
+            Assert.AreEqual(5, first.After.Xp);
+            Assert.IsTrue(first.LeveledUp);
+
+            var duplicate = mastery.OnAnimalObtained(Rabbit, false, false);
+            Assert.AreEqual(MasteryReason.Duplicate, duplicate.Reason);
+            Assert.AreEqual(2, duplicate.Xp);
+            Assert.AreEqual(7, duplicate.After.Xp);
+            Assert.IsFalse(duplicate.LeveledUp);
+
+            var variant = mastery.OnAnimalObtained(Rabbit, false, true);
+            Assert.AreEqual(15, variant.Xp);
+            Assert.AreEqual(22, mastery.Get(Rabbit).Xp);
+            Assert.AreEqual(1, state.Mastery.GetLevel(Rabbit));
+        }
+
+        [Test]
+        public void BigGain_CrossesSeveralLevels_AndReportsTheMilestone()
+        {
+            var (state, _, mastery) = Create();
+            // 20 + 51 + 88 + 130 + 176 = 465 XP to reach level 5.
+            var gain = mastery.AddXp(Rabbit, MasteryReason.Birth, 500);
+            Assert.AreEqual(5, gain.After.Level);
+            Assert.AreEqual(35, gain.After.Xp);
+            Assert.AreEqual(5, gain.LevelsGained);
+            Assert.AreEqual(5, gain.Milestone);
+            Assert.AreEqual(mastery.XpForNext(5), gain.After.XpForNext);
+
+            var small = mastery.AddXp(Rabbit, MasteryReason.Duplicate, 2);
+            Assert.AreEqual(0, small.Milestone, "A milestone is reported once, when crossed.");
+            Assert.IsFalse(mastery.AddXp(Rabbit, MasteryReason.Duplicate, 0).HasGain);
+            Assert.IsTrue(MasteryService.IsMilestone(10, 5));
+            Assert.IsFalse(MasteryService.IsMilestone(0, 5));
+        }
+
+        [Test]
+        public void LevelUps_RaiseProduction_ByTheDocMultiplier()
+        {
+            var (state, economy, mastery) = Create();
+            uint id = state.Collection.Add(new AnimalInstance { Species = Rabbit });
+            state.Collection.TryGet(id, out var animal);
+            economy.OnAnimalAdded(animal);
+            double before = economy.GetLightPerSecond().ToDoubleClamped();
+            mastery.AddXp(Rabbit, MasteryReason.Birth, 500); // level 5
+            double after = economy.GetLightPerSecond().ToDoubleClamped();
+            Assert.AreEqual(before * (1.0 + 0.015 * 5), after, 1e-9);
+        }
+
+        [Test]
+        public void EveryHatch_GivesProgress_NoHatchIsUseless()
+        {
+            var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(UiPipeline.ContentDatabasePath);
+            var content = database.CreateBuilder().Build();
+            var state = PlayerState.CreateNew(TestUtil.T0);
+            var economy = new EconomyService(state, content, EconomyConfig.Default, null);
+            var mastery = new MasteryService(state, EconomyConfig.Default, economy);
+            var hatch = new HatchService(state, content, economy, new FakeGameClock(TestUtil.T0), null, mastery);
+            economy.Grant(CurrencyId.Light, BigValue.FromMantissaExponent(1.0, 300), EconomyReason.Reward);
+
+            double rate = 0.0;
+            int totalXp = 0;
+            for (int i = 0; i < 2000; i++)
+            {
+                var result = hatch.Hatch(Basic);
+                Assert.IsTrue(result.Succeeded);
+                Assert.GreaterOrEqual(result.Mastery.Xp, 2, "Duplicates always give species XP.");
+                if (i == 0)
+                    Assert.AreEqual(MasteryReason.Discovery, result.Mastery.Reason);
+                totalXp += result.Mastery.Xp;
+                double now = economy.GetLightPerSecond().ToDoubleClamped();
+                Assert.Greater(now, rate, "Each animal also adds production.");
+                rate = now;
+            }
+            // Same total whatever the split between levels: XP is never lost on a level up.
+            int spent = 0;
+            var progress = mastery.Get(Rabbit);
+            for (int level = 0; level < progress.Level; level++)
+                spent += mastery.XpForNext(level);
+            Assert.AreEqual(totalXp, spent + progress.Xp);
+            Assert.Greater(progress.Level, 5);
+        }
+
+        [Test]
+        public void Mastery_SurvivesTheSaveFile()
+        {
+            var (state, _, mastery) = Create();
+            mastery.AddXp(Rabbit, MasteryReason.Birth, 300);
+            var serializer = new BinarySaveSerializer();
+            var writer = new ByteBufferWriter();
+            serializer.Serialize(state, writer);
+            var bytes = writer.WrittenSpan.ToArray();
+            var loaded = serializer.Deserialize(serializer.ReadDocument(bytes, bytes.Length));
+            var reloaded = new MasteryService(loaded, EconomyConfig.Default, null);
+            Assert.AreEqual(mastery.Get(Rabbit).Level, reloaded.Get(Rabbit).Level);
+            Assert.AreEqual(mastery.Get(Rabbit).Xp, reloaded.Get(Rabbit).Xp);
+        }
+
+        [Test]
+        public void HudPrefab_HasAPassiveMasteryToast()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(UiPipeline.HudPrefabPath);
+            var toast = prefab.transform.Find("SafeArea/Mastery");
+            Assert.IsNotNull(toast);
+            Assert.IsNotNull(toast.GetComponent<Canvas>(), "Animated on its own canvas.");
+            Assert.IsFalse(toast.GetComponent<CanvasGroup>().blocksRaycasts, "Never blocks a touch.");
+            foreach (var graphic in toast.GetComponentsInChildren<UnityEngine.UI.Graphic>(true))
+                Assert.IsFalse(graphic.raycastTarget, graphic.name);
+        }
+    }
+}

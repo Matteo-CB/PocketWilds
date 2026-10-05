@@ -71,6 +71,15 @@ namespace PocketWilds.Simulation
         public double MasteryXpBase { get; set; } = 20.0;
         public double MasteryXpExponent { get; set; } = 1.35;
 
+        /// <summary>Species XP per acquisition (doc 02): first discovery, new variant, duplicate, birth.</summary>
+        public int MasteryXpDiscovery { get; set; } = 25;
+        public int MasteryXpNewVariant { get; set; } = 15;
+        public int MasteryXpDuplicate { get; set; } = 2;
+        public int MasteryXpBirth { get; set; } = 4;
+
+        /// <summary>Significant milestones every N levels; small economic steps in between.</summary>
+        public int MasteryMilestoneEvery { get; set; } = 5;
+
         public double RenewalExponent { get; set; } = 0.42;
 
         /// <summary>Production is applied at this cadence, not every frame.</summary>

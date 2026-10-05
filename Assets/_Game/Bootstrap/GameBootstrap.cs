@@ -45,6 +45,7 @@ namespace PocketWilds.Bootstrap
         private SaveLoadResult _loadResult;
         private EconomyService _economy;
         private HatchService _hatch;
+        private MasteryService _mastery;
         private OfflineService _offline;
         private CodexService _codex;
         private LocalizationService _localization;
@@ -139,9 +140,10 @@ namespace PocketWilds.Bootstrap
             sequence.AddBlocking("Simulation", () =>
             {
                 _economy = new EconomyService(_save.State, _content, EconomyConfig.Default, _save);
-                _hatch = new HatchService(_save.State, _content, _economy, _clock, _save);
+                _mastery = new MasteryService(_save.State, _economy.Config, _economy);
+                _hatch = new HatchService(_save.State, _content, _economy, _clock, _save, _mastery);
                 _offline = new OfflineService(_save.State, _economy, _clock);
-                _codex = new CodexService(_save.State, _content, _save);
+                _codex = new CodexService(_save.State, _content, _save, _mastery);
                 _save.BeforeSerialize += _offline.CaptureSnapshot;
             });
 

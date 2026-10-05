@@ -66,6 +66,20 @@ namespace PocketWilds.Editor.Capture
                     Frame(hud, camera, refresh, BigValue.FromDouble(37), BigValue.FromDouble(1.2), BigValue.FromDouble(12), false, true, $"{prefix}_hud_affordable", results);
                     Frame(hud, camera, refresh, BigValue.FromDouble(4250), BigValue.FromDouble(86), BigValue.FromDouble(18400), false, false, $"{prefix}_hud_waiting", results);
 
+                    // Mastery toast caught just after a level up (3 to 4 on a new variant).
+                    var gain = new MasteryGain(ContentId.FromSource("species.rabbit"), MasteryReason.NewVariant, 15,
+                        new MasteryProgress(3, 80, 88), new MasteryProgress(4, 7, 130), 0);
+                    hud.SetLight(BigValue.FromDouble(37), BigValue.FromDouble(1.2));
+                    hud.SetEgg(BigValue.FromDouble(12), false, true);
+                    hud.ShowMastery(gain);
+                    for (int i = 0; i < 9; i++)
+                        hud.Tick(0.05f);
+                    string masteryPath = $"{CaptureUtility.DefaultFolder}/{prefix}_hud_mastery.png";
+                    CaptureUtility.Render(camera, 1080, 2340, masteryPath, 4, refresh);
+                    results.Add(CaptureUtility.Render(camera, 1080, 2340, masteryPath, 4, refresh));
+                    for (int i = 0; i < 60; i++)
+                        hud.Tick(0.05f);
+
                     // Offline return screen over the HUD, in each shipped language.
                     var offline = Object.FindAnyObjectByType<OfflineReturnScreen>();
                     if (offline != null)
@@ -123,11 +137,13 @@ namespace PocketWilds.Editor.Capture
                         state.Collection.DiscoveredSpecies.Add(rabbit);
                         state.Codex.SeenSpecies.Add(rabbit);
                         state.Codex.SeenVariants.Add(ContentId.FromSource("variant.rabbit.brown"));
+                        state.Mastery.Species[rabbit] = new SpeciesMastery { Level = 3, Xp = 40 };
+                        var mastery = new MasteryService(state, EconomyConfig.Default, null);
                         var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath);
                         foreach (string language in UiPipeline.Languages)
                         {
                             var text = new LocalizationService(database.localization, language, SystemLanguage.English);
-                            var codex = new CodexService(state, registry, null);
+                            var codex = new CodexService(state, registry, null, mastery);
                             codexScreen.Open(codex, text, null);
                             refreshCodex();
                             for (int i = 0; i < 10; i++)

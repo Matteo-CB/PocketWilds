@@ -27,6 +27,9 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>A UI panel opens (soft whoosh).</summary>
         PanelOpen = 11,
+
+        /// <summary>Species mastery level up (the species travels as context).</summary>
+        MasteryLevelUp = 12,
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>

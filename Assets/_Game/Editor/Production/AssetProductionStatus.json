@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T01:11:50Z",
+  "updatedUtc": "2026-10-05T01:28:37Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -151,8 +151,8 @@
     {
       "task": "T20",
       "title": "Mastery & duplicates",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Mastery & duplicates: MasteryService (doc 02 XP: discovery 25, new variant 15, duplicate 2, birth 4; XP to level L = round(20 x L^1.35); multi-level gains; milestones every 5; production x(1 + 0.015 x level) through the economy). HatchResult carries the gain; every hatch gives >= 2 XP and more production (2000-hatch test). HUD mastery toast after each reveal (level, bar, +XP, level-up pop), Codex sheet mastery row. Tests EditMode 204/204, PlayMode 29/29."
     },
     {
       "task": "T21",
@@ -5412,7 +5412,7 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/VFX/VFX_MasteryLevelUp.prefab",
       "validationGates": [
@@ -5421,7 +5421,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T20: level up is shown by the toast glow (UI_Glow_Soft) and icon pop; particle VFX_MasteryLevelUp still to do."
     },
     {
       "id": "H-VFX-010",
@@ -5895,7 +5895,7 @@
       "family": "UIIcon",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/UI/Icons/",
       "runtimePath": "Assets/_Game/Art/UI/Icons/",
       "validationGates": [
@@ -5903,7 +5903,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T20: ICO_Mastery_StarPaw (plump golden star with a paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; used by the HUD mastery toast and the Codex sheet. | T20: ICO_Mastery_StarPaw (plump golden star with a paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; used by the HUD mastery toast and the Codex sheet. | T20: ICO_Mastery_StarPaw (plump golden star with a paw print) from pw_ui_sprites.py, 128 px, Atlas_CommonHUD; used by the HUD mastery toast and the Codex sheet."
     },
     {
       "id": "I-HUD-010",
@@ -6242,7 +6242,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
@@ -6251,7 +6251,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 009."
+      "notes": "Local ID for doc 06 SCREEN 009. | T20: mastery shown in the HUD toast (level, XP bar, +XP, level-up pop and glow) and in the Codex species sheet (level, bar, XP/next). The dedicated milestone track screen (PF_UI_Mastery) comes with milestone rewards."
     },
     {
       "id": "I-SCR-010",
@@ -6812,7 +6812,7 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": "SourceArt/Audio/",
       "runtimePath": "Assets/_Game/Art/Audio/",
       "validationGates": [
@@ -6820,7 +6820,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T20: hook AudioEventId.MasteryLevelUp emitted with the species as context (no clip yet); haptic Confirm, Rare on milestones."
     },
     {
       "id": "J-SFX-REWARD-003",

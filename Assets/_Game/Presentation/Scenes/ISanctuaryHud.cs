@@ -18,6 +18,9 @@ namespace PocketWilds.Presentation
         /// <summary>"Not yet" feedback on the currency chip and the hatch button.</summary>
         void PulseNotEnough();
 
+        /// <summary>Species mastery after a hatch: level, XP bar, "+XP". Duplicates always show progress.</summary>
+        void ShowMastery(in PocketWilds.Simulation.MasteryGain gain);
+
         /// <summary>Small dot on the Codex shortcut: something found and not looked at yet.</summary>
         void SetCodexBadge(bool visible);
 

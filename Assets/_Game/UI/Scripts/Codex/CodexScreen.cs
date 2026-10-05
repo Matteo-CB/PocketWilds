@@ -20,7 +20,7 @@ namespace PocketWilds.UI
         public const float HeaderRowHeight = 112f;
         public const float CardRowHeight = 428f;
         public const int SheetColumns = 3;
-        public const float SheetSlotsTop = 760f;
+        public const float SheetSlotsTop = 860f;
         public const float SheetSlotPitch = 364f;
         private const int Overscan = 1;
         private const float FadeSeconds = 0.14f;
@@ -68,12 +68,19 @@ namespace PocketWilds.UI
         [SerializeField] private TMP_Text _sheetOwned;
         [SerializeField] private TMP_Text _sheetVariantsTitle;
         [SerializeField] private CodexVariantSlotView[] _slots;
+        [SerializeField] private GameObject _sheetMastery;
+        [SerializeField] private TMP_Text _sheetMasteryLevel;
+        [SerializeField] private RectTransform _sheetMasteryBar;
+        [SerializeField] private RectTransform _sheetMasteryFill;
+        [SerializeField] private TMP_Text _sheetMasteryXp;
 
         private readonly VirtualListLayout _layout = new VirtualListLayout();
         private readonly Stack<CodexHeaderView> _freeHeaders = new Stack<CodexHeaderView>();
         private readonly Stack<CodexCardRow> _freeCardRows = new Stack<CodexCardRow>();
         private readonly UiNumberText _numbers = new UiNumberText();
         private readonly SafeAreaFitter _safeFitter = new SafeAreaFitter();
+        private readonly UiNumberText _masteryLevelText = new UiNumberText();
+        private readonly UiNumberText _masteryXpText = new UiNumberText();
         private Row[] _rows = new Row[0];
         private CodexHeaderView[] _headerAt = new CodexHeaderView[0];
         private CodexCardRow[] _cardRowAt = new CodexCardRow[0];
@@ -182,6 +189,7 @@ namespace PocketWilds.UI
             _sheet.SetActive(true);
             _sheetName.text = Text(entry.DisplayKey);
             _numbers.SetCount(_sheetOwned, entry.Owned, 'x');
+            BindMastery(codexIndex);
             _sheetPortrait.sprite = PortraitOf(codexIndex, entry.Species);
             _sheetPortrait.enabled = _sheetPortrait.sprite != null;
 
@@ -210,6 +218,24 @@ namespace PocketWilds.UI
             _codex.MarkSeen(codexIndex);
         }
 
+        public int SheetMasteryLevel { get; private set; }
+
+        private void BindMastery(int codexIndex)
+        {
+            bool show = _codex.HasMastery;
+            _sheetMastery.SetActive(show);
+            if (!show)
+                return;
+            var mastery = _codex.GetMastery(codexIndex);
+            SheetMasteryLevel = mastery.Level;
+            _masteryLevelText.SetCount(_sheetMasteryLevel, mastery.Level);
+            _masteryXpText.SetRatio(_sheetMasteryXp, mastery.Xp, mastery.XpForNext);
+            float width = _sheetMasteryBar.rect.width;
+            float height = _sheetMasteryBar.rect.height;
+            _sheetMasteryFill.gameObject.SetActive(mastery.Xp > 0);
+            _sheetMasteryFill.sizeDelta = new Vector2(Mathf.Max(height, width * mastery.Fraction), _sheetMasteryFill.sizeDelta.y);
+        }
+
         public void CloseSheet()
         {
             if (_sheetIndex < 0)
@@ -227,6 +253,16 @@ namespace PocketWilds.UI
             _closing = true;
             if (ReduceMotion)
                 FinishClose();
+        }
+
+        /// <summary>Prefab builder hook for the mastery row of the species sheet.</summary>
+        public void SetMasteryReferences(GameObject row, TMP_Text level, RectTransform bar, RectTransform fill, TMP_Text xp)
+        {
+            _sheetMastery = row;
+            _sheetMasteryLevel = level;
+            _sheetMasteryBar = bar;
+            _sheetMasteryFill = fill;
+            _sheetMasteryXp = xp;
         }
 
         /// <summary>Scroll the list to a row (tests and "jump to species").</summary>
@@ -265,6 +301,7 @@ namespace PocketWilds.UI
             GameObject sheet, ScrollRect sheetScroll, RectTransform sheetContent, Image sheetPortrait, TMP_Text sheetName,
             TMP_Text sheetOwned, TMP_Text sheetVariantsTitle, CodexVariantSlotView[] slots)
         {
+            _slots = slots;
             _safeArea = safeArea;
             _sheetScroll = sheetScroll;
             _sheetContent = sheetContent;

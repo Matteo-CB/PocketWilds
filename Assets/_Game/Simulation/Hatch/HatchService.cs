@@ -26,9 +26,19 @@ namespace PocketWilds.Simulation
         public readonly bool NewVariant;
         public readonly bool WasFree;
 
+        /// <summary>Species XP from this hatch (duplicates included): no hatch is ever wasted.</summary>
+        public readonly MasteryGain Mastery;
+
         public HatchResult(HatchStatus status, AnimalInstance animal, ContentId egg, BigValue cost, RarityTier rolledTier,
             bool newSpecies, bool newVariant, bool wasFree)
+            : this(status, animal, egg, cost, rolledTier, newSpecies, newVariant, wasFree, default)
         {
+        }
+
+        public HatchResult(HatchStatus status, AnimalInstance animal, ContentId egg, BigValue cost, RarityTier rolledTier,
+            bool newSpecies, bool newVariant, bool wasFree, MasteryGain mastery)
+        {
+            Mastery = mastery;
             Status = status;
             Animal = animal;
             Egg = egg;
@@ -65,13 +75,16 @@ namespace PocketWilds.Simulation
         private readonly EconomyService _economy;
         private readonly IGameClock _clock;
         private readonly ISaveScheduler? _save;
+        private readonly MasteryService? _mastery;
         private readonly uint _profileSeed;
 
         /// <summary>Variant dense indices per species and rarity tier, built once.</summary>
         private readonly Dictionary<ContentId, int[][]> _variantsBySpeciesTier;
 
-        public HatchService(PlayerState state, ContentRegistry content, EconomyService economy, IGameClock clock, ISaveScheduler? save)
+        public HatchService(PlayerState state, ContentRegistry content, EconomyService economy, IGameClock clock, ISaveScheduler? save,
+            MasteryService? mastery = null)
         {
+            _mastery = mastery;
             _state = state;
             _content = content;
             _economy = economy;
@@ -165,8 +178,10 @@ namespace PocketWilds.Simulation
                 bool newSpecies = _state.Collection.DiscoveredSpecies.Add(variant.Species);
                 bool newVariant = _state.Collection.DiscoveredVariants.Add(variant.Id);
                 _economy.OnAnimalAdded(animal);
-                _save?.RequestSave(newSpecies || newVariant || variant.Rarity >= RarityTier.Rare ? SaveUrgency.Priority : SaveUrgency.Normal);
-                return new HatchResult(HatchStatus.Hatched, animal, eggId, cost, rolled, newSpecies, newVariant, free);
+                var mastery = _mastery != null ? _mastery.OnAnimalObtained(variant.Species, newSpecies, newVariant) : default;
+                bool priority = newSpecies || newVariant || variant.Rarity >= RarityTier.Rare || mastery.Milestone > 0;
+                _save?.RequestSave(priority ? SaveUrgency.Priority : SaveUrgency.Normal);
+                return new HatchResult(HatchStatus.Hatched, animal, eggId, cost, rolled, newSpecies, newVariant, free, mastery);
             }
         }
 

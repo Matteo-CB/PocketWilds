@@ -1,5 +1,6 @@
 using PocketWilds.Core;
 using PocketWilds.Presentation;
+using PocketWilds.Simulation;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -32,6 +33,16 @@ namespace PocketWilds.UI
         [SerializeField] private GameObject _costRow;
         [SerializeField] private TMP_Text _costLabel;
 
+        [Header("Mastery toast")]
+        [SerializeField] private RectTransform _masteryRoot;
+        [SerializeField] private CanvasGroup _masteryGroup;
+        [SerializeField] private RectTransform _masteryIcon;
+        [SerializeField] private TMP_Text _masteryLevel;
+        [SerializeField] private TMP_Text _masteryXp;
+        [SerializeField] private RectTransform _masteryBar;
+        [SerializeField] private RectTransform _masteryFill;
+        [SerializeField] private CanvasGroup _masteryGlow;
+
         [Header("Shortcuts")]
         [SerializeField] private Button _codexButton;
         [SerializeField] private RectTransform _codexRoot;
@@ -51,6 +62,17 @@ namespace PocketWilds.UI
         private Rect _appliedSafeArea;
         private Vector2Int _appliedScreen;
         private bool _badgeShown;
+        private readonly UiNumberText _masteryLevelText = new UiNumberText();
+        private readonly UiNumberText _masteryXpText = new UiNumberText();
+        private MasteryGain _mastery;
+        private float _masteryTime = -1f;
+        private bool _masteryLevelShown;
+
+        private const float ToastIn = 0.18f;
+        private const float ToastFillStart = 0.15f;
+        private const float ToastFill = 0.45f;
+        private const float ToastHold = 1.9f;
+        private const float ToastOut = 0.25f;
 
         /// <summary>Reduce Motion: no breathing or shaking, states stay readable through color.</summary>
         public bool ReduceMotion { get; set; }
@@ -74,6 +96,8 @@ namespace PocketWilds.UI
             if (_codexButton != null)
                 _codexButton.onClick.AddListener(OnCodexPressed);
             _badgeShown = _codexBadge != null && _codexBadge.activeSelf;
+            if (_masteryRoot != null)
+                _masteryRoot.gameObject.SetActive(false);
             FitSafeArea();
         }
 
@@ -114,6 +138,24 @@ namespace PocketWilds.UI
         }
 
         public void PulseNotEnough() => _pulse = 0f;
+
+        public bool MasteryVisible => _masteryTime >= 0f;
+        public int MasteryLevelShown { get; private set; }
+
+        public void ShowMastery(in MasteryGain gain)
+        {
+            if (!_bound || _masteryRoot == null || !gain.HasGain)
+                return;
+            _mastery = gain;
+            _masteryTime = 0f;
+            _masteryLevelShown = false;
+            _masteryRoot.gameObject.SetActive(true);
+            MasteryLevelShown = gain.Before.Level;
+            _masteryLevelText.SetCount(_masteryLevel, gain.Before.Level);
+            _masteryXpText.SetCount(_masteryXp, gain.Xp, '+');
+            SetMasteryFill(gain.Before.Fraction);
+            _masteryGlow.alpha = 0f;
+        }
 
         public void SetCodexBadge(bool visible)
         {
@@ -156,6 +198,71 @@ namespace PocketWilds.UI
             var current = _hatchRoot.localScale;
             if (current.x != scale)
                 _hatchRoot.localScale = new Vector3(scale, scale, 1f);
+            TickMastery(unscaledDeltaTime);
+        }
+
+        /// <summary>
+        /// Toast timeline: appear, bar fills toward the new XP; on a level up it fills to the end, the level
+        /// number pops with a glow, then the bar refills from zero. Holds briefly, fades out.
+        /// </summary>
+        private void TickMastery(float deltaTime)
+        {
+            if (_masteryTime < 0f)
+                return;
+            _masteryTime += deltaTime;
+            float t = _masteryTime;
+            float appear = Mathf.Clamp01(t / ToastIn);
+            float fade = Mathf.Clamp01((ToastHold + ToastOut - t) / ToastOut);
+            _masteryGroup.alpha = Mathf.Min(appear, fade);
+            float pop = 1f;
+
+            float fill = Mathf.Clamp01((t - ToastFillStart) / ToastFill);
+            float eased = 1f - (1f - fill) * (1f - fill);
+            if (!_mastery.LeveledUp)
+            {
+                SetMasteryFill(Mathf.Lerp(_mastery.Before.Fraction, _mastery.After.Fraction, eased));
+            }
+            else if (fill < 0.55f)
+            {
+                SetMasteryFill(Mathf.Lerp(_mastery.Before.Fraction, 1f, eased / 0.7975f));
+            }
+            else
+            {
+                if (!_masteryLevelShown)
+                {
+                    _masteryLevelShown = true;
+                    MasteryLevelShown = _mastery.After.Level;
+                    _masteryLevelText.SetCount(_masteryLevel, _mastery.After.Level);
+                }
+                float after = Mathf.Clamp01((fill - 0.55f) / 0.45f);
+                SetMasteryFill(Mathf.Lerp(0f, _mastery.After.Fraction, after));
+                float since = (fill - 0.55f) * ToastFill;
+                float glow = Mathf.Clamp01(1f - since / 0.6f);
+                _masteryGlow.alpha = glow;
+                if (!ReduceMotion)
+                    pop = 1f + 0.18f * glow * glow;
+            }
+            if (!ReduceMotion)
+            {
+                float enter = 0.85f + 0.15f * (1f - (1f - appear) * (1f - appear));
+                _masteryRoot.localScale = new Vector3(enter, enter, 1f);
+                _masteryIcon.localScale = new Vector3(pop, pop, 1f);
+            }
+            if (t >= ToastHold + ToastOut)
+            {
+                _masteryTime = -1f;
+                _masteryRoot.gameObject.SetActive(false);
+            }
+        }
+
+        private void SetMasteryFill(float fraction)
+        {
+            float width = _masteryBar.rect.width;
+            float height = _masteryBar.rect.height;
+            bool visible = fraction > 0.001f;
+            if (_masteryFill.gameObject.activeSelf != visible)
+                _masteryFill.gameObject.SetActive(visible);
+            _masteryFill.sizeDelta = new Vector2(Mathf.Max(height, width * Mathf.Clamp01(fraction)), _masteryFill.sizeDelta.y);
         }
 
         public bool IsOverUi(Vector2 screenPosition) =>
@@ -197,6 +304,20 @@ namespace PocketWilds.UI
             _safeArea.anchorMax = new Vector2(safe.xMax / screen.x, safe.yMax / screen.y);
             _safeArea.offsetMin = Vector2.zero;
             _safeArea.offsetMax = Vector2.zero;
+        }
+
+        /// <summary>Prefab builder hook for the mastery toast (Editor UiPipeline).</summary>
+        public void SetMasteryReferences(RectTransform root, CanvasGroup group, RectTransform icon, TMP_Text level, TMP_Text xp,
+            RectTransform bar, RectTransform fill, CanvasGroup glow)
+        {
+            _masteryRoot = root;
+            _masteryGroup = group;
+            _masteryIcon = icon;
+            _masteryLevel = level;
+            _masteryXp = xp;
+            _masteryBar = bar;
+            _masteryFill = fill;
+            _masteryGlow = glow;
         }
 
         /// <summary>Prefab builder hook for the shortcut row (Editor UiPipeline).</summary>

@@ -55,6 +55,8 @@ namespace PocketWilds.Presentation
         private BigValue _eggCost;
         private BigValue _heldLight;
         private BigValue _heldAtCollect;
+        private MasteryGain _pendingMastery;
+        private bool _masteryShown = true;
         private float _collectTime = -1f;
 
         public SanctuaryController(GameContext context, WorldChunk chunk, SanctuaryCameraRig rig, ISanctuaryHud hud,
@@ -242,6 +244,8 @@ namespace PocketWilds.Presentation
             _context.Visuals.TryResolve(result.Animal, reveal.position, reveal.eulerAngles.y, out var snapshot);
             if (!_animals.TryAcquire(_rabbitHandle, snapshot, out _hatchingAnimal))
                 _hatchingAnimal = null;
+            _pendingMastery = result.Mastery;
+            _masteryShown = false;
             _hatchingInstance = result.Animal.InstanceId;
             _hatchingSeed = result.Animal.Seed;
 
@@ -291,12 +295,27 @@ namespace PocketWilds.Presentation
             _context.Haptics.Play(HapticEventId.Confirm);
         }
 
-        void IHatchListener.OnHatchRevealed()
+        void IHatchListener.OnHatchRevealed() => ShowMastery();
+
+        /// <summary>Species progress right after the reveal: every hatch moves something forward.</summary>
+        private void ShowMastery()
         {
+            if (_masteryShown)
+                return;
+            _masteryShown = true;
+            if (!_pendingMastery.HasGain)
+                return;
+            _hud?.ShowMastery(_pendingMastery);
+            if (_pendingMastery.LeveledUp)
+            {
+                _context.Audio.Play(AudioEventId.MasteryLevelUp, Vector3.zero, _pendingMastery.Species);
+                _context.Haptics.Play(_pendingMastery.Milestone > 0 ? HapticEventId.Rare : HapticEventId.Confirm);
+            }
         }
 
         public void OnHatchFinished()
         {
+            ShowMastery();
             _lastHatchEnd = _time;
             if (_waitingEgg != null)
             {
