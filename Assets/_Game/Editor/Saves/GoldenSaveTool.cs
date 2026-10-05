@@ -30,6 +30,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Offline_v2", BuildOffline());
             created += WriteIfMissing("GoldenSave_Codex_v3", BuildCodex());
             created += WriteIfMissing("GoldenSave_Pity_v4", BuildPity());
+            created += WriteIfMissing("GoldenSave_Shop_v5", BuildShop());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -76,6 +77,20 @@ namespace PocketWilds.Editor.Saves
         }
 
         /// <summary>Schema 4: pity counters for an egg and a species.</summary>
+        /// <summary>Schema 5: Starter Pack bought once in the sandbox store, shown twice.</summary>
+        private static PlayerState BuildShop()
+        {
+            var state = BuildPity();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-000000000031");
+            state.Meta.Revision = 150;
+            state.Wallet.Gems = 620;
+            state.Entitlements.Owned.Add(ContentId.FromSource("cosmetic.flower_crown"));
+            state.Entitlements.ProcessedTransactions.Add("sandbox-0001");
+            state.Shop.PaidPurchases = 1;
+            state.Shop.Offers[ContentId.FromSource("offer.starter.001")] = new OfferRecord { Purchases = 1, Impressions = 2, LastShownUnix = 1791000000 };
+            return state;
+        }
+
         private static PlayerState BuildPity()
         {
             var state = BuildCodex();

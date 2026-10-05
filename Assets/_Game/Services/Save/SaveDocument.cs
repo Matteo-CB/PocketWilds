@@ -18,6 +18,7 @@ namespace PocketWilds.Services.Save
         Offline = 9,
         Codex = 10,
         Pity = 11,
+        Shop = 12,
     }
 
     public sealed class SaveSection

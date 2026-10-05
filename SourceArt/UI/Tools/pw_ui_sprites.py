@@ -18,6 +18,7 @@ SS = 4
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 RUNTIME_KIT = os.path.join(ROOT, "Assets", "_Game", "Art", "UI", "Kit")
 RUNTIME_ICONS = os.path.join(ROOT, "Assets", "_Game", "Art", "UI", "Icons")
+RUNTIME_SHOP = os.path.join(ROOT, "Assets", "_Game", "Art", "UI", "Shop")  # Atlas_Shop: shop-only art
 MASTERS = os.path.join(ROOT, "SourceArt", "UI", "Masters")
 
 
@@ -416,12 +417,146 @@ def icon_mastery():
     return "ICO_Mastery_StarPaw", c, RUNTIME_ICONS
 
 
+# ---------------------------------------------------------------- shop icons (T28)
+
+def draw_gem(c, ox, oy, s, shadow=True):
+    """One rounded brilliant-cut gem centered on (ox, oy), s = scale (1 = 88 px wide)."""
+    u = 44.0 * s
+    pts = [(-0.55, 0.62), (0.55, 0.62), (0.95, 0.18), (0.0, -0.92), (-0.95, 0.18)]
+    body = sd_polygon(c, [(ox + x * u, oy + y * u) for x, y in pts]) - 3.0 * s
+    outline = body - 4.0 * s
+    if shadow:
+        c.over((30, 40, 72), blur(shift(fill(outline), 0, 3.0 * s), 2.5 * s) * 0.28)
+    c.over(hexrgb("3B5FAE"), fill(outline))
+    inside = fill(body)
+    t = np.clip(((oy + 0.62 * u) - c.y) / (1.54 * u), 0, 1)
+    c.over(lerp(hexrgb("D6ECFF"), hexrgb("5A8FE0"), t), inside)
+    ly = c.y - oy
+    lx = c.x - ox
+    pavilion = inside * (ly <= 0.18 * u)
+    c.over(hexrgb("4777CF"), pavilion * (lx < 0) * 0.55)
+    c.over(hexrgb("9CC6F7"), pavilion * (lx >= 0) * 0.35)
+    table = sd_polygon(c, [(ox - 0.34 * u, oy + 0.62 * u), (ox + 0.34 * u, oy + 0.62 * u),
+                           (ox + 0.22 * u, oy + 0.30 * u), (ox - 0.22 * u, oy + 0.30 * u)])
+    c.over(hexrgb("F0F8FF"), fill(table) * inside * 0.85)
+    for a, b in (((-0.95, 0.18), (0.95, 0.18)), ((-0.22, 0.30), (0.0, -0.92)), ((0.22, 0.30), (0.0, -0.92)),
+                 ((-0.55, 0.62), (-0.22, 0.30)), ((0.55, 0.62), (0.22, 0.30)), ((-0.22, 0.30), (0.22, 0.30))):
+        line = sd_polyline(c, [(ox + a[0] * u, oy + a[1] * u), (ox + b[0] * u, oy + b[1] * u)], 1.0 * max(s, 0.7))
+        c.over((255, 255, 255), fill(line) * fill(body + 1.5 * s) * 0.4)
+    gloss = sd_ellipse(c, 6.0 * s, 3.2 * s, ox=ox - 0.48 * u, oy=oy + 0.36 * u, angle_deg=28.0)
+    c.over((255, 255, 255), fill(gloss) * inside * 0.9)
+
+
+def icon_gem():
+    """ICO_Currency_Gems: one rounded faceted gem, the premium currency (CurrencyGems token blue)."""
+    c = Canvas(128, 128, cy=66.0)
+    draw_gem(c, 0.0, 0.0, 1.22)
+    return "ICO_Currency_Gems", c, RUNTIME_ICONS
+
+
+# Pile layouts per pack tier, back to front: (x, y, scale). One composition, more gems per tier (UI doc
+# SCREEN 015: never six unrelated illustrations).
+GEM_PILES = (
+    ((0.0, 0.0, 1.45),),
+    ((18.0, 16.0, 0.95), (-12.0, -10.0, 1.15)),
+    ((-24.0, 16.0, 0.9), (24.0, 16.0, 0.9), (0.0, -14.0, 1.15)),
+    ((-34.0, 24.0, 0.72), (0.0, 30.0, 0.7), (34.0, 24.0, 0.72), (-18.0, -10.0, 0.98), (18.0, -10.0, 0.98)),
+    ((-36.0, 30.0, 0.66), (0.0, 34.0, 0.64), (36.0, 30.0, 0.66), (-20.0, 6.0, 0.84), (20.0, 6.0, 0.84), (0.0, -24.0, 1.05)),
+    ((-54.0, 34.0, 0.58), (-18.0, 38.0, 0.58), (18.0, 38.0, 0.58), (54.0, 34.0, 0.58),
+     (-36.0, 10.0, 0.76), (0.0, 12.0, 0.76), (36.0, 10.0, 0.76), (-18.0, -20.0, 0.95), (18.0, -20.0, 0.95)),
+)
+
+
+def icon_gem_pack(tier):
+    """ICO_GemPack_0n: the gem pile for pack tier n (1 smallest). Bigger tiers sit on a soft glow."""
+    c = Canvas(192, 192, cy=100.0)
+    pile = GEM_PILES[tier - 1]
+    lowest = min(y - 40.0 * s for _, y, s in pile)
+    c.over((40, 52, 90), blur(fill(sd_ellipse(c, 30.0 + 10.0 * tier, 8.0, oy=lowest - 2.0)), 4.0) * 0.22)
+    if tier >= 4:
+        glow = sd_circle(c, 40.0 + 6.0 * tier)
+        c.over(hexrgb("CFE6FF"), soft(glow, 26.0) * 0.55)
+    for x, y, s in pile:
+        draw_gem(c, x, y, s, shadow=False)
+    return "ICO_GemPack_%02d" % tier, c, RUNTIME_SHOP
+
+
+def icon_shop_bag():
+    """ICO_Shop_Bag: soft peach shopping bag with a round handle and a small gem emblem."""
+    c = Canvas(128, 128, cy=60.0)
+    bag = sd_round_rect(c, 40.0, 38.0, 14.0, oy=-14.0)
+    handle = np.abs(sd_ellipse(c, 22.0, 24.0, oy=18.0)) - 4.5
+    handle = np.where(c.y > 14.0, handle, 1e3)
+    outline = np.minimum(bag - 5.0, handle - 4.0)
+    c.over((80, 40, 30), blur(shift(fill(outline), 0, 4), 3.0) * 0.28)
+    c.over(hexrgb("9C5A3C"), fill(outline))
+    c.over(hexrgb("F7C9A0"), fill(handle))
+    t = np.clip((24.0 - c.y) / 76.0, 0, 1)
+    c.over(lerp(hexrgb("FFD7B0"), hexrgb("F49B6B"), t), fill(bag))
+    rim = sd_round_rect(c, 40.0, 5.0, 4.0, oy=20.0)
+    c.over(hexrgb("FFE6CC"), fill(rim) * fill(bag) * 0.9)
+    c.over(hexrgb("E48356"), soft(-bag - 5.0, 5.0) * np.clip(-(c.y + 14.0) / 34.0, 0, 1) * fill(bag) * 0.7)
+    draw_gem(c, 0.0, -18.0, 0.42, shadow=False)
+    gloss = sd_ellipse(c, 5.0, 11.0, ox=-26.0, oy=-6.0, angle_deg=-8.0)
+    c.over((255, 255, 255), soft(gloss, 2.5) * fill(bag) * 0.45)
+    return "ICO_Shop_Bag", c, RUNTIME_ICONS
+
+
+def icon_flower_crown():
+    """ICO_Cosmetic_FlowerCrown: a leafy wreath seen slightly from above, five plump flowers on its front."""
+    c = Canvas(160, 160, cy=86.0)
+    rx, ry, oy = 56.0, 24.0, -2.0
+    ring = np.abs(sd_ellipse(c, rx, ry, oy=oy)) - 8.0
+    back = c.y > oy
+    c.over((40, 60, 30), blur(shift(fill(ring - 4.0), 0, 5), 3.5) * 0.25)
+    c.over(hexrgb("456F33"), fill(ring - 4.0))
+    c.over(hexrgb("5E9447"), fill(ring) * back)
+    c.over(lerp(hexrgb("A4D67E"), hexrgb("6AA84F"), np.clip((oy - c.y) / 30.0, 0, 1)), fill(ring) * (~back))
+    # Leaves along the wreath, back ones darker.
+    for k in range(16):
+        a = math.tau * k / 16.0
+        lx, ly = math.cos(a) * rx, math.sin(a) * ry + oy
+        leaf = sd_ellipse(c, 10.0, 5.0, ox=lx, oy=ly, angle_deg=math.degrees(a) + 90.0 + (24.0 if k % 2 else -24.0))
+        front = ly < oy
+        c.over(hexrgb("456F33"), fill(leaf - 2.0))
+        c.over(hexrgb("93D06B") if front and k % 2 else hexrgb("7CBB5A") if front else hexrgb("5E9447"), fill(leaf))
+    # Flowers on the front arc, back to front.
+    flowers = ((-48.0, -8.0, "FFFFFF", "F2C94C", 13.0), (48.0, -8.0, "F7DF7A", "F29C4C", 13.0),
+               (-26.0, -20.0, "F3B4CC", "F2C94C", 15.0), (26.0, -20.0, "C9B4EE", "F2C94C", 15.0),
+               (0.0, -25.0, "F7A8BE", "FFE07A", 17.0))
+    for fx, fy, petal, heart, r in flowers:
+        petals = None
+        for p in range(5):
+            a = math.tau * p / 5.0 + math.pi / 2.0
+            d = sd_circle(c, r * 0.5, fx + math.cos(a) * r * 0.6, fy + math.sin(a) * r * 0.6)
+            petals = d if petals is None else np.minimum(petals, d)
+        c.over((60, 40, 40), blur(shift(fill(petals), 0, 2), 1.5) * 0.25)
+        c.over(hexrgb("A0705A"), fill(petals - 2.2) * 0.8)
+        c.over(lerp(hexrgb(petal), hexrgb(petal), np.zeros_like(c.y)), fill(petals))
+        c.over(hexrgb("FFFFFF"), soft(-petals - 2.5, 2.0) * fill(petals) * np.clip((c.y - fy) / r, 0, 1) * 0.5)
+        c.over(hexrgb(heart), fill(sd_circle(c, r * 0.3, fx, fy)))
+        c.over((255, 255, 255), fill(sd_circle(c, r * 0.11, fx - r * 0.1, fy + r * 0.12)) * 0.75)
+    return "ICO_Cosmetic_FlowerCrown", c, RUNTIME_SHOP
+
+
+def icon_close():
+    """ICO_Close_X: 96 px soft cross (round caps), white for tinting."""
+    c = Canvas(96, 96)
+    cross = np.minimum(sd_polyline(c, [(-20.0, -20.0), (20.0, 20.0)], 7.0), sd_polyline(c, [(-20.0, 20.0), (20.0, -20.0)], 7.0))
+    c.over((255, 255, 255), fill(cross))
+    return "ICO_Close_X", c, RUNTIME_ICONS
+
+
+SHOP_SPRITES = (icon_gem, icon_shop_bag, icon_flower_crown, icon_close) + tuple(
+    (lambda n: (lambda: icon_gem_pack(n)))(n) for n in range(1, 7))
+
+
 SPRITES = (kit_pill, kit_icon_circle, kit_panel_primary, kit_button_primary, kit_glow, kit_dot,
-           icon_light, icon_egg, icon_rarity_star, icon_back, icon_codex, icon_mastery)
+           icon_light, icon_egg, icon_rarity_star, icon_back, icon_codex, icon_mastery) + SHOP_SPRITES
 
 
 def main():
-    for folder in (RUNTIME_KIT, RUNTIME_ICONS, MASTERS):
+    for folder in (RUNTIME_KIT, RUNTIME_ICONS, RUNTIME_SHOP, MASTERS):
         os.makedirs(folder, exist_ok=True)
     for build in SPRITES:
         name, canvas, folder = build()

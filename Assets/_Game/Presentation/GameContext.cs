@@ -4,6 +4,7 @@ using PocketWilds.Content;
 using PocketWilds.Core;
 using PocketWilds.Services.Feedback;
 using PocketWilds.Services.Save;
+using PocketWilds.Services.Store;
 using PocketWilds.Simulation;
 
 namespace PocketWilds.Presentation
@@ -29,7 +30,8 @@ namespace PocketWilds.Presentation
             IHapticService haptics,
             OfflineService offline = null,
             ILocalization localization = null,
-            CodexService codex = null)
+            CodexService codex = null,
+            StoreService store = null)
         {
             Clock = clock;
             Content = content;
@@ -46,6 +48,7 @@ namespace PocketWilds.Presentation
             Offline = offline;
             Localization = localization;
             Codex = codex;
+            Store = store;
         }
 
         public IGameClock Clock { get; }
@@ -74,6 +77,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>Codex view model over the collection. Null in headless tests that do not need it.</summary>
         public CodexService Codex { get; }
+
+        /// <summary>Shop: offers, grants and the platform store behind one API (T28). Null when no shop runs.</summary>
+        public StoreService Store { get; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

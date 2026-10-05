@@ -24,6 +24,9 @@ namespace PocketWilds.Presentation
         /// <summary>Small dot on the Codex shortcut: something found and not looked at yet.</summary>
         void SetCodexBadge(bool visible);
 
+        /// <summary>Shop shortcut and Gems chip, shown once the shop is unlocked (after onboarding).</summary>
+        void SetShop(bool unlocked, long gems);
+
         void Tick(float unscaledDeltaTime);
 
         /// <summary>True when a screen point lands on an interactive HUD element (world taps ignore it).</summary>
@@ -36,5 +39,7 @@ namespace PocketWilds.Presentation
         void RequestHatch();
 
         void OpenCodex();
+
+        void OpenShop();
     }
 }

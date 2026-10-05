@@ -74,13 +74,22 @@ namespace PocketWilds.Services.Save
     /// priority saves, and a synchronous flush for pause/quit. Serialization happens on the main
     /// thread into a reused buffer (measured by Save.Serialize); disk IO runs on a worker thread.
     /// </summary>
-    public sealed class SaveService : ISaveScheduler, IDisposable
+    public sealed class SaveService : ISaveScheduler, ISaveWrites, IDisposable
     {
         /// <summary>
         /// Raised on the main thread right before each serialization, after Meta.LastSaveUtc is set.
         /// Lets simulation write snapshots that must match the save time (offline rate, time mark).
         /// </summary>
         public event Action<PlayerState>? BeforeSerialize;
+
+        /// <summary>Main thread: the snapshot with this number reached the disk (see <see cref="SerializedCount"/>).</summary>
+        public event Action<long>? Written;
+
+        private long _serializedCount;
+        private long _writingCount;
+
+        /// <summary>Snapshots serialized so far. A change made now is in every snapshot numbered above this.</summary>
+        public long SerializedCount => _serializedCount;
 
         private readonly SaveFileStore _store;
         private readonly ISaveSerializer _serializer;
@@ -278,6 +287,7 @@ namespace PocketWilds.Services.Save
             PollWrite();
 
             SerializeState();
+            _writingCount = _serializedCount;
             try
             {
                 _store.WriteAtomic(_writer.Buffer, _writer.Length);
@@ -310,6 +320,7 @@ namespace PocketWilds.Services.Save
         private void BeginBackgroundWrite()
         {
             SerializeState();
+            _writingCount = _serializedCount;
             _worker.Begin(_writer.Buffer, _writer.Length);
         }
 
@@ -317,6 +328,7 @@ namespace PocketWilds.Services.Save
         {
             var state = State;
             double now = _clock.SessionSeconds;
+            _serializedCount++;
             state.Meta.Revision++;
             state.Meta.LastSaveUtc = _clock.UtcNow;
             state.Meta.AppVersion = _options.AppVersion;
@@ -351,6 +363,7 @@ namespace PocketWilds.Services.Save
         {
             _consecutiveFailures = 0;
             LastWriteError = null;
+            Written?.Invoke(_writingCount);
         }
 
         private void OnWriteFailed(Exception ex)

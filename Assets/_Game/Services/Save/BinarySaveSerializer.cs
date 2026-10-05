@@ -32,7 +32,7 @@ namespace PocketWilds.Services.Save
     {
         /// <summary>Bump on any persisted data change, with a migration and updated golden saves.</summary>
         /// <summary>2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids). 4: Pity counters.</summary>
-        public const int CurrentVersion = 4;
+        public const int CurrentVersion = 5;
     }
 
     /// <summary>
@@ -52,6 +52,7 @@ namespace PocketWilds.Services.Save
         private const ushort OfflineVersion = 1;
         private const ushort CodexVersion = 1;
         private const ushort PityVersion = 1;
+        private const ushort ShopVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -135,6 +136,18 @@ namespace PocketWilds.Services.Save
             mark = BeginSection(output, SaveSectionId.Pity, PityVersion);
             WriteCounters(output, state.Pity.NewSpeciesMisses);
             WriteCounters(output, state.Pity.VariantMisses);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Shop, ShopVersion);
+            output.WriteInt32(state.Shop.PaidPurchases);
+            output.WriteInt32(state.Shop.Offers.Count);
+            foreach (var pair in state.Shop.Offers)
+            {
+                output.WriteContentId(pair.Key);
+                output.WriteInt32(pair.Value.Purchases);
+                output.WriteInt32(pair.Value.Impressions);
+                output.WriteInt64(pair.Value.LastShownUnix);
+            }
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -276,6 +289,8 @@ namespace PocketWilds.Services.Save
                     ReadOffline(offline, state.Offline);
                 if (document.TryGetSection(SaveSectionId.Pity, out var pity))
                     ReadPity(pity, state.Pity);
+                if (document.TryGetSection(SaveSectionId.Shop, out var shop))
+                    ReadShop(shop, state.Shop);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -339,6 +354,19 @@ namespace PocketWilds.Services.Save
             {
                 var id = r.ReadContentId();
                 pity.VariantMisses[id] = r.ReadInt32();
+            }
+        }
+
+        private static void ReadShop(SaveSection section, ShopState shop)
+        {
+            RequireVersion(section, ShopVersion);
+            var r = section.CreateReader();
+            shop.PaidPurchases = r.ReadInt32();
+            int offers = ReadCount(ref r);
+            for (int i = 0; i < offers; i++)
+            {
+                var id = r.ReadContentId();
+                shop.Offers[id] = new OfferRecord { Purchases = r.ReadInt32(), Impressions = r.ReadInt32(), LastShownUnix = r.ReadInt64() };
             }
         }
 

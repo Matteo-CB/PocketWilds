@@ -30,6 +30,9 @@ namespace PocketWilds.Bootstrap
         /// <summary>Wall clock replacement (tests that simulate time away).</summary>
         public PocketWilds.Core.IGameClock ClockOverride;
 
+        /// <summary>Store provider replacement (tests script purchases with the sandbox store).</summary>
+        public PocketWilds.Services.Store.IStoreProvider StoreProviderOverride;
+
         /// <summary>When false, stays in the bootstrap scene after boot (tests).</summary>
         public bool LoadTargetScene = true;
     }

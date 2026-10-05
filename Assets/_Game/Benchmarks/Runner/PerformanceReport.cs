@@ -14,6 +14,9 @@ namespace PocketWilds.Benchmarks
         public bool hatchBurst;
         /// <summary>T27: the camera crosses into the meadow chunk and back twice (streaming in and out).</summary>
         public bool streaming;
+
+        /// <summary>T28: the shop opens, a Gem pack is bought in the sandbox store, the shop closes and reopens.</summary>
+        public bool shop;
         /// <summary>Grassland species cycled through the save: 1 rabbits only, 2 + squirrels (T23), 3 + hedgehogs (T24).</summary>
         public int species = 1;
         public float warmupSeconds = 2f;
@@ -79,6 +82,19 @@ namespace PocketWilds.Benchmarks
         public float meshMemoryMb;
 
         public StreamingResult streaming;
+        public ShopResult shop;
+    }
+
+    /// <summary>T28: CPU time of the frames that open, buy in, close and reopen the shop.</summary>
+    [Serializable]
+    public struct ShopResult
+    {
+        public bool valid;
+        public float firstOpenFrameMs;
+        public float purchaseFrameMs;
+        public float closeFrameMs;
+        public float reopenFrameMs;
+        public long gemsAfter;
     }
 
     /// <summary>T27 chunk streaming: transitions, their frame cost, and memory with the meadow out, in, out.</summary>

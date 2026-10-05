@@ -9,6 +9,7 @@ using PocketWilds.Services.Device;
 using PocketWilds.Services.Feedback;
 using PocketWilds.Services.Localization;
 using PocketWilds.Services.Save;
+using PocketWilds.Services.Store;
 using PocketWilds.Simulation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -48,6 +49,9 @@ namespace PocketWilds.Bootstrap
         private MasteryService _mastery;
         private OfflineService _offline;
         private CodexService _codex;
+        private GrantService _grants;
+        private OfferService _offers;
+        private StoreService _store;
         private LocalizationService _localization;
         private QualityService _quality;
         private FrameRateService _frameRate;
@@ -145,7 +149,13 @@ namespace PocketWilds.Bootstrap
                 _offline = new OfflineService(_save.State, _economy, _clock);
                 _codex = new CodexService(_save.State, _content, _save, _mastery);
                 _save.BeforeSerialize += _offline.CaptureSnapshot;
+                _grants = new GrantService(_content, _save.State, _save);
+                _offers = new OfferService(_content, _save.State, _grants, _save);
+                _store = new StoreService(_content, _offers, CreateStoreProvider(), _clock, _save);
             });
+
+            // Prices and pending purchases load in the background: the sanctuary never waits for the store.
+            sequence.AddBackground("Store", cancellationToken => _store.InitializeAsync(cancellationToken));
 
             sequence.AddBlocking("Offline", () =>
             {
@@ -160,7 +170,7 @@ namespace PocketWilds.Bootstrap
                 var visuals = new AnimalVisualResolver(_content, _palettes);
                 var catalog = _options.VisualCatalogOverride != null ? _options.VisualCatalogOverride : _visualCatalog;
                 Context = new GameContext(_clock, _content, _save, _economy, _hatch, _quality, _frameRate, _palettes, visuals, catalog,
-                    NullAudioService.Instance, NullHapticService.Instance, _offline, _localization, _codex);
+                    NullAudioService.Instance, NullHapticService.Instance, _offline, _localization, _codex, _store);
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 if (_options.LoadTargetScene)
@@ -228,8 +238,24 @@ namespace PocketWilds.Bootstrap
             }
         }
 
+        /// <summary>
+        /// The real platform store plugs in here. Until then the editor and development builds use the sandbox
+        /// store (fake Gems), and a release build gets no store at all rather than free Gems.
+        /// </summary>
+        private IStoreProvider CreateStoreProvider()
+        {
+            if (_options.StoreProviderOverride != null)
+                return _options.StoreProviderOverride;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return new SandboxStoreProvider(_localization.Language);
+#else
+            return new UnavailableStoreProvider();
+#endif
+        }
+
         private void OnDestroy()
         {
+            _store?.Dispose();
             if (_save != null && _offline != null)
                 _save.BeforeSerialize -= _offline.CaptureSnapshot;
             _save?.Dispose();

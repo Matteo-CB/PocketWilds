@@ -15,6 +15,9 @@ namespace PocketWilds.Content
         public List<PaletteSetAsset> paletteSets = new List<PaletteSetAsset>();
         public List<BiomeDefinitionAsset> biomes = new List<BiomeDefinitionAsset>();
 
+        [Tooltip("Store products, offers and grantable items (T28).")]
+        public List<ShopCatalogAsset> shopCatalogs = new List<ShopCatalogAsset>();
+
         [Tooltip("Player-facing text, one table per language (LOC_en first: it is the fallback).")]
         public List<LocalizationTableAsset> localization = new List<LocalizationTableAsset>();
 
@@ -50,6 +53,11 @@ namespace PocketWilds.Content
                     continue;
                 foreach (var entry in set.palettes)
                     builder.AddPalette(entry.ToRuntime(), entry.sourceId);
+            }
+            foreach (var catalog in shopCatalogs)
+            {
+                if (catalog != null)
+                    catalog.AddTo(builder);
             }
             return builder;
         }

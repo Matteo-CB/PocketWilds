@@ -10,6 +10,7 @@ namespace PocketWilds.Services.Save
             new Migration0001AddOffline(),
             new Migration0002AddCodex(),
             new Migration0003AddPity(),
+            new Migration0004AddShop(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -51,6 +52,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 3;
         public int ToVersion => 4;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 4 to 5: adds the Shop section (offer purchases, impressions, paid purchase count). A file
+    /// without it starts with no shop history; Gems and owned items were already in Wallet and Entitlements.
+    /// </summary>
+    public sealed class Migration0004AddShop : ISaveMigration
+    {
+        public int FromVersion => 4;
+        public int ToVersion => 5;
 
         public void Apply(SaveDocument document)
         {

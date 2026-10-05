@@ -42,6 +42,9 @@ namespace PocketWilds.Editor.UI
         public const string BackIconPath = IconFolder + "/ICO_Back_Chevron.png";
         public const string CodexIconPath = IconFolder + "/ICO_Codex_Book.png";
         public const string MasteryIconPath = IconFolder + "/ICO_Mastery_StarPaw.png";
+        public const string GemsIconPath = IconFolder + "/ICO_Currency_Gems.png";
+        public const string ShopIconPath = IconFolder + "/ICO_Shop_Bag.png";
+        public const string CloseIconPath = IconFolder + "/ICO_Close_X.png";
         public const string LocalizationFolder = "Assets/_Game/Content/Localization";
         public const string ContentDatabasePath = "Assets/_Game/Content/DEF_ContentDatabase.asset";
         public const string HatchConfigPath = "Assets/_Game/Content/Visuals/DEF_HatchPresentation.asset";
@@ -63,6 +66,25 @@ namespace PocketWilds.Editor.UI
             { UiTextKeys.CodexVariants, "Variants", "Variantes" },
             { UiTextKeys.CodexNew, "New", "Nouveau" },
             { UiTextKeys.CodexUnknown, "???", "???" },
+            // Shop (T28). Writing Bible: what you get, the price, one-time or not; no pressure words.
+            { UiTextKeys.ShopTitle, "Shop", "Boutique" },
+            { UiTextKeys.ShopFeatured, "Featured", "À la une" },
+            { UiTextKeys.ShopGems, "Gems", "Gemmes" },
+            { UiTextKeys.ShopBestValue, "Best value", "Meilleure offre" },
+            { UiTextKeys.ShopOwned, "Owned", "Acheté" },
+            { UiTextKeys.ShopOneTime, "One-time offer", "Offre unique" },
+            { UiTextKeys.ShopContentsGems, "{0} Gems", "{0} Gemmes" },
+            { UiTextKeys.ShopRestore, "Restore purchases", "Restaurer les achats" },
+            { UiTextKeys.ShopThanks, "Thank you. +{0} Gems", "Merci. +{0} Gemmes" },
+            { UiTextKeys.ShopThanksItem, "Thank you", "Merci" },
+            { UiTextKeys.ShopFailed, "Purchase failed. Try again.", "Achat impossible. Réessaie." },
+            { UiTextKeys.ShopPending, "Purchase pending. It will arrive soon.", "Achat en attente. Il arrivera bientôt." },
+            { UiTextKeys.ShopUnavailable, "Shop unavailable. Try again later.", "Boutique indisponible. Réessaie plus tard." },
+            { UiTextKeys.ShopNotEnoughGems, "Not enough Gems.", "Pas assez de Gemmes." },
+            { UiTextKeys.ShopRestored, "Purchases restored", "Achats restaurés" },
+            { UiTextKeys.ShopNothingToRestore, "Nothing to restore", "Rien à restaurer" },
+            { "shop.starter_pack.title", "Starter Pack", "Pack de départ" },
+            { "entitlement.cosmetic.flower_crown.name", "Flower Crown", "Couronne de fleurs" },
             // Content names (display keys of biome, species and variant definitions).
             { "biome.grassland.name", "Meadow", "Prairie" },
             { "species.rabbit.name", "Rabbit", "Lapin" },
@@ -290,6 +312,29 @@ namespace PocketWilds.Editor.UI
                 badge.gameObject.SetActive(false);
                 hud.SetShortcutReferences(codexButton, codexRoot, badge.gameObject);
 
+                // Shop (T28): bottom right, mirror of the Codex; Gems chip top right. Hidden until the shop unlocks.
+                var shopRoot = Rect("Shop", shortcuts);
+                Place(shopRoot, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-52f, 132f), new Vector2(176f, 176f));
+                var shopImage = AddImage("Button", shopRoot, circle, tokens.panelPrimary, Image.Type.Simple);
+                shopImage.raycastTarget = true;
+                Stretch(shopImage.rectTransform);
+                var shopButton = shopImage.gameObject.AddComponent<Button>();
+                ConfigureButton(shopButton, shopImage);
+                var bagIcon = AddImage("Icon", shopImage.rectTransform, AssetDatabase.LoadAssetAtPath<Sprite>(ShopIconPath), Color.white, Image.Type.Simple);
+                Place(bagIcon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 6f), new Vector2(112f, 112f));
+                shopRoot.gameObject.SetActive(false);
+                var gemsChip = Rect("GemsChip", safe);
+                gemsChip.gameObject.AddComponent<Canvas>();
+                Place(gemsChip, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-36f, -60f), new Vector2(236f, 100f));
+                var gemsBack = AddImage("Background", gemsChip, pill, tokens.panelPrimary, Image.Type.Sliced);
+                Stretch(gemsBack.rectTransform);
+                var gemsIcon = AddImage("Icon", gemsChip, AssetDatabase.LoadAssetAtPath<Sprite>(GemsIconPath), Color.white, Image.Type.Simple);
+                Place(gemsIcon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(52f, 2f), new Vector2(76f, 76f));
+                var gemsValue = AddText("Value", gemsChip, font, 48f, FontStyles.Bold, tokens.textPrimary, "0");
+                Place(gemsValue.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(98f, 4f), new Vector2(130f, 64f));
+                gemsChip.gameObject.SetActive(false);
+                hud.SetShopReferences(shopButton, shopRoot, gemsChip, gemsValue);
+
                 // Mastery toast above the hatch action: own canvas, animated only while shown.
                 var masteryRoot = Rect("Mastery", safe);
                 masteryRoot.gameObject.AddComponent<Canvas>();
@@ -419,7 +464,7 @@ namespace PocketWilds.Editor.UI
             }
         }
 
-        private static void ConfigureButton(Button button, Image target)
+        internal static void ConfigureButton(Button button, Image target)
         {
             button.targetGraphic = target;
             button.transition = Selectable.Transition.ColorTint;
@@ -599,7 +644,7 @@ namespace PocketWilds.Editor.UI
             }
         }
 
-        private static void ConfigureScroll(ScrollRect scroll, RectTransform viewport, RectTransform content)
+        internal static void ConfigureScroll(ScrollRect scroll, RectTransform viewport, RectTransform content)
         {
             scroll.viewport = viewport;
             scroll.content = content;
@@ -711,7 +756,7 @@ namespace PocketWilds.Editor.UI
         }
 
         /// <summary>Progress fill growing from the left edge of its bar (width set at runtime).</summary>
-        private static void LeftFill(RectTransform rect, float height)
+        internal static void LeftFill(RectTransform rect, float height)
         {
             rect.anchorMin = new Vector2(0f, 0f);
             rect.anchorMax = new Vector2(0f, 1f);
@@ -729,7 +774,7 @@ namespace PocketWilds.Editor.UI
             rect.sizeDelta = new Vector2(0f, height);
         }
 
-        private static void AddScaler(GameObject root)
+        internal static void AddScaler(GameObject root)
         {
             var scaler = root.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -805,7 +850,7 @@ namespace PocketWilds.Editor.UI
 
         // ---------------- Helpers ----------------
 
-        private static RectTransform Rect(string name, Transform parent)
+        internal static RectTransform Rect(string name, Transform parent)
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.layer = 5; // UI
@@ -814,7 +859,7 @@ namespace PocketWilds.Editor.UI
             return rect;
         }
 
-        private static void Stretch(RectTransform rect)
+        internal static void Stretch(RectTransform rect)
         {
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
@@ -822,7 +867,7 @@ namespace PocketWilds.Editor.UI
             rect.offsetMax = Vector2.zero;
         }
 
-        private static void Place(RectTransform rect, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size)
+        internal static void Place(RectTransform rect, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size)
         {
             rect.anchorMin = anchor;
             rect.anchorMax = anchor;
@@ -831,7 +876,7 @@ namespace PocketWilds.Editor.UI
             rect.sizeDelta = size;
         }
 
-        private static Image AddImage(string name, Transform parent, Sprite sprite, Color color, Image.Type type)
+        internal static Image AddImage(string name, Transform parent, Sprite sprite, Color color, Image.Type type)
         {
             var image = Rect(name, parent).gameObject.AddComponent<Image>();
             image.sprite = sprite;
@@ -845,7 +890,7 @@ namespace PocketWilds.Editor.UI
             return image;
         }
 
-        private static TextMeshProUGUI AddText(string name, Transform parent, TMP_FontAsset font, float size, FontStyles style, Color color, string text)
+        internal static TextMeshProUGUI AddText(string name, Transform parent, TMP_FontAsset font, float size, FontStyles style, Color color, string text)
         {
             var label = Rect(name, parent).gameObject.AddComponent<TextMeshProUGUI>();
             label.font = font;

@@ -362,6 +362,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Offline_v2")]
         [TestCase("GoldenSave_Codex_v3")]
         [TestCase("GoldenSave_Pity_v4")]
+        [TestCase("GoldenSave_Shop_v5")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -378,9 +379,11 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(SaveSchema.CurrentVersion - 1, result.MigrationsApplied);
                 Assert.IsFalse(state.Offline.HasRate, "Schema 1 has no exit snapshot: the rate is rebuilt.");
             }
-            if (!name.EndsWith("_v4"))
+            if (!name.EndsWith("_v4") && !name.EndsWith("_v5"))
                 Assert.AreEqual(0, state.Pity.NewSpeciesMisses.Count + state.Pity.VariantMisses.Count, "Older saves start without pity.");
-            if (!name.EndsWith("_v3") && !name.EndsWith("_v4"))
+            if (!name.EndsWith("_v5"))
+                Assert.AreEqual(0, state.Shop.Offers.Count + state.Shop.PaidPurchases, "Older saves start without shop history.");
+            if (!name.EndsWith("_v3") && !name.EndsWith("_v4") && !name.EndsWith("_v5"))
             {
                 Assert.IsTrue(state.Codex.SeenSpecies.SetEquals(state.Collection.DiscoveredSpecies), "Older saves: everything found counts as seen.");
                 Assert.IsTrue(state.Codex.SeenVariants.SetEquals(state.Collection.DiscoveredVariants));
@@ -435,6 +438,19 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(13, state.Pity.NewSpeciesMisses[ContentId.FromSource("egg.grassland.basic")]);
                     Assert.AreEqual(7, state.Pity.VariantMisses[ContentId.FromSource("species.rabbit")]);
                     Assert.AreEqual(1, state.Codex.SeenSpecies.Count);
+                    break;
+
+                case "GoldenSave_Shop_v5":
+                    Assert.AreEqual(150, state.Meta.Revision);
+                    Assert.AreEqual(620, state.Wallet.Gems);
+                    Assert.AreEqual(1, state.Shop.PaidPurchases);
+                    var starter = state.Shop.Get(ContentId.FromSource("offer.starter.001"));
+                    Assert.AreEqual(1, starter.Purchases);
+                    Assert.AreEqual(2, starter.Impressions);
+                    Assert.AreEqual(1791000000L, starter.LastShownUnix);
+                    Assert.IsTrue(state.Entitlements.Owned.Contains(ContentId.FromSource("cosmetic.flower_crown")));
+                    Assert.IsTrue(state.Entitlements.ProcessedTransactions.Contains("sandbox-0001"));
+                    Assert.AreEqual(13, state.Pity.NewSpeciesMisses[ContentId.FromSource("egg.grassland.basic")]);
                     break;
 
                 case "GoldenSave_PremiumEntitlements_v1":

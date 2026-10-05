@@ -1,0 +1,201 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 451e66e96982d38488eaabf5c4132cb2, type: 3}
+  m_Name: DEF_ShopCatalog
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.ShopCatalogAsset
+  unlockMinAnimals: 3
+  products:
+  - sourceId: product.gems.tier01
+    storeSku: pw_gems_tier01
+    kind: 0
+    referencePriceCents: 99
+    gems: 100
+    entitlements: []
+  - sourceId: product.gems.tier02
+    storeSku: pw_gems_tier02
+    kind: 0
+    referencePriceCents: 499
+    gems: 550
+    entitlements: []
+  - sourceId: product.gems.tier03
+    storeSku: pw_gems_tier03
+    kind: 0
+    referencePriceCents: 999
+    gems: 1150
+    entitlements: []
+  - sourceId: product.gems.tier04
+    storeSku: pw_gems_tier04
+    kind: 0
+    referencePriceCents: 1999
+    gems: 2400
+    entitlements: []
+  - sourceId: product.gems.tier05
+    storeSku: pw_gems_tier05
+    kind: 0
+    referencePriceCents: 4999
+    gems: 6250
+    entitlements: []
+  - sourceId: product.gems.tier06
+    storeSku: pw_gems_tier06
+    kind: 0
+    referencePriceCents: 9999
+    gems: 13000
+    entitlements: []
+  - sourceId: product.starter.001
+    storeSku: pw_starter_001
+    kind: 1
+    referencePriceCents: 199
+    gems: 500
+    entitlements:
+    - cosmetic.flower_crown
+  offers:
+  - sourceId: offer.gems.tier01
+    displayKey: 
+    placement: 1
+    priority: 60
+    product: product.gems.tier01
+    gemCost: 0
+    gemCostEntitlements: []
+    purchaseLimit: 0
+    cooldownSeconds: 0
+    startUnixSeconds: 0
+    endUnixSeconds: 0
+    minAnimals: 0
+    minDiscoveredSpecies: 0
+    segment: 0
+    badge: 0
+    artKey: ICO_GemPack_01
+    experimentId: 
+  - sourceId: offer.gems.tier02
+    displayKey: 
+    placement: 1
+    priority: 50
+    product: product.gems.tier02
+    gemCost: 0
+    gemCostEntitlements: []
+    purchaseLimit: 0
+    cooldownSeconds: 0
+    startUnixSeconds: 0
+    endUnixSeconds: 0
+    minAnimals: 0
+    minDiscoveredSpecies: 0
+    segment: 0
+    badge: 0
+    artKey: ICO_GemPack_02
+    experimentId: 
+  - sourceId: offer.gems.tier03
+    displayKey: 
+    placement: 1
+    priority: 40
+    product: product.gems.tier03
+    gemCost: 0
+    gemCostEntitlements: []
+    purchaseLimit: 0
+    cooldownSeconds: 0
+    startUnixSeconds: 0
+    endUnixSeconds: 0
+    minAnimals: 0
+    minDiscoveredSpecies: 0
+    segment: 0
+    badge: 0
+    artKey: ICO_GemPack_03
+    experimentId: 
+  - sourceId: offer.gems.tier04
+    displayKey: 
+    placement: 1
+    priority: 30
+    product: product.gems.tier04
+    gemCost: 0
+    gemCostEntitlements: []
+    purchaseLimit: 0
+    cooldownSeconds: 0
+    startUnixSeconds: 0
+    endUnixSeconds: 0
+    minAnimals: 0
+    minDiscoveredSpecies: 0
+    segment: 0
+    badge: 0
+    artKey: ICO_GemPack_04
+    experimentId: 
+  - sourceId: offer.gems.tier05
+    displayKey: 
+    placement: 1
+    priority: 20
+    product: product.gems.tier05
+    gemCost: 0
+    gemCostEntitlements: []
+    purchaseLimit: 0
+    cooldownSeconds: 0
+    startUnixSeconds: 0
+    endUnixSeconds: 0
+    minAnimals: 0
+    minDiscoveredSpecies: 0
+    segment: 0
+    badge: 0
+    artKey: ICO_GemPack_05
+    experimentId: 
+  - sourceId: offer.gems.tier06
+    displayKey: 
+    placement: 1
+    priority: 10
+    product: product.gems.tier06
+    gemCost: 0
+    gemCostEntitlements: []
+    purchaseLimit: 0
+    cooldownSeconds: 0
+    startUnixSeconds: 0
+    endUnixSeconds: 0
+    minAnimals: 0
+    minDiscoveredSpecies: 0
+    segment: 0
+    badge: 1
+    artKey: ICO_GemPack_06
+    experimentId: 
+  - sourceId: offer.starter.001
+    displayKey: shop.starter_pack.title
+    placement: 0
+    priority: 100
+    product: product.starter.001
+    gemCost: 0
+    gemCostEntitlements: []
+    purchaseLimit: 1
+    cooldownSeconds: 0
+    startUnixSeconds: 0
+    endUnixSeconds: 0
+    minAnimals: 5
+    minDiscoveredSpecies: 2
+    segment: 1
+    badge: 0
+    artKey: ICO_Cosmetic_FlowerCrown
+    experimentId: 
+  - sourceId: offer.starter.moment
+    displayKey: shop.starter_pack.title
+    placement: 2
+    priority: 100
+    product: product.starter.001
+    gemCost: 0
+    gemCostEntitlements: []
+    purchaseLimit: 1
+    cooldownSeconds: 259200
+    startUnixSeconds: 0
+    endUnixSeconds: 0
+    minAnimals: 5
+    minDiscoveredSpecies: 2
+    segment: 1
+    badge: 0
+    artKey: ICO_Cosmetic_FlowerCrown
+    experimentId: 
+  entitlements:
+  - sourceId: cosmetic.flower_crown
+    kind: 0
+    displayKey: entitlement.cosmetic.flower_crown.name
+    iconKey: ICO_Cosmetic_FlowerCrown

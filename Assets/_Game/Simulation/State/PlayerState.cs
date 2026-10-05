@@ -18,6 +18,7 @@ namespace PocketWilds.Simulation
         public OfflineState Offline { get; } = new OfflineState();
         public CodexState Codex { get; } = new CodexState();
         public PityState Pity { get; } = new PityState();
+        public ShopState Shop { get; } = new ShopState();
 
         public static PlayerState CreateNew(DateTimeOffset utcNow)
         {
@@ -138,6 +139,25 @@ namespace PocketWilds.Simulation
 
         /// <summary>Empty means "follow the device language".</summary>
         public string LanguageCode = string.Empty;
+    }
+
+    /// <summary>Per-offer history: purchases (limits), last time shown (moment cooldown), impressions.</summary>
+    public struct OfferRecord
+    {
+        public int Purchases;
+        public int Impressions;
+        public long LastShownUnix;
+    }
+
+    /// <summary>Shop history (T28). Grants themselves live in Wallet.Gems and EntitlementState.</summary>
+    public sealed class ShopState
+    {
+        public Dictionary<ContentId, OfferRecord> Offers { get; } = new Dictionary<ContentId, OfferRecord>();
+
+        /// <summary>Real-money purchases granted (doc 09 segments: payer or not).</summary>
+        public int PaidPurchases;
+
+        public OfferRecord Get(ContentId offer) => Offers.TryGetValue(offer, out var record) ? record : default;
     }
 
     public sealed class EntitlementState

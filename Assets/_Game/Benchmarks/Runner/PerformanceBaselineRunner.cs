@@ -75,6 +75,10 @@ namespace PocketWilds.Benchmarks
             {
                 species = 3, streaming = true, measureSeconds = 28f,
             },
+            new PerformanceScenario("U1", "Shop: open, buy a Gem pack (sandbox), close, reopen, 20 animals", 20, QualityTier.Medium)
+            {
+                species = 3, shop = true, measureSeconds = 10f,
+            },
         };
 
         private static PerformanceScenario[] Filter(PerformanceScenario[] all, string[] args)
@@ -176,7 +180,8 @@ namespace PocketWilds.Benchmarks
                 // Everything the measure needs is created before the warmup: its allocations never land in a sample.
                 var sampler = new FrameSampler(Mathf.CeilToInt(scenario.measureSeconds * 240f) + 64);
                 var probe = scenario.streaming && entry.Streamer != null ? new StreamingProbe(entry) : null;
-                IEnumerator burst = scenario.hatchBurst ? HatchBurst(entry.Sanctuary, bootstrap.Context) : probe?.Travel();
+                var shopProbe = scenario.shop && entry.Sanctuary.Shop != null ? new ShopProbe(entry.Sanctuary, bootstrap.Context) : null;
+                IEnumerator burst = scenario.hatchBurst ? HatchBurst(entry.Sanctuary, bootstrap.Context) : probe != null ? probe.Travel() : shopProbe?.Run();
                 // Garbage left by earlier scenarios (one process, many boots) is collected now, not in a sample.
                 GC.Collect();
                 float until = Time.realtimeSinceStartup + scenario.warmupSeconds;
@@ -188,11 +193,18 @@ namespace PocketWilds.Benchmarks
                     yield return null;
                     sampler.Sample();
                     probe?.AfterSample(sampler.LastCpuMs);
+                    shopProbe?.AfterSample(sampler.LastCpuMs);
                     if (burst != null && !burst.MoveNext())
                         burst = null;
                 }
                 var result = sampler.Finish(scenario, entry.Sanctuary.VisibleAnimals, Time.realtimeSinceStartup - start);
                 sampler.Dispose();
+                if (shopProbe != null)
+                {
+                    result.shop = shopProbe.Finish();
+                    Debug.Log($"[Benchmark] {scenario.id} shop: first open {result.shop.firstOpenFrameMs:F2} ms, purchase {result.shop.purchaseFrameMs:F2} ms, " +
+                              $"close {result.shop.closeFrameMs:F2} ms, reopen {result.shop.reopenFrameMs:F2} ms, Gems {result.shop.gemsAfter}");
+                }
                 if (probe != null)
                 {
                     // Unmeasured: name the meshes and bundles in memory with the meadow out, in, out.
@@ -449,6 +461,83 @@ namespace PocketWilds.Benchmarks
                 _tick.Dispose();
                 _mesh.Dispose();
                 _assets.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// U1: the shop as a player uses it, through the sanctuary and the sandbox store. Each action's cost lands in
+        /// the next sampled frame, which is recorded.
+        /// </summary>
+        private sealed class ShopProbe
+        {
+            private readonly SanctuaryController _sanctuary;
+            private readonly GameContext _context;
+            private ShopResult _result;
+            private int _pending = -1;
+
+            public ShopProbe(SanctuaryController sanctuary, GameContext context)
+            {
+                _sanctuary = sanctuary;
+                _context = context;
+                _result.valid = true;
+            }
+
+            public IEnumerator Run()
+            {
+                float t = 0f;
+                while ((t += Time.unscaledDeltaTime) < 1.5f)
+                    yield return null;
+                _sanctuary.OpenShop();
+                _pending = 0;
+                for (t = 0f; (t += Time.unscaledDeltaTime) < 2f;)
+                    yield return null;
+                _sanctuary.Shop.Buy(PocketWilds.Core.ContentId.FromSource("offer.gems.tier01"));
+                // The sandbox store answers after its simulated latency: the grant frame is the one to measure.
+                long gems = _context.State.Wallet.Gems;
+                while (_context.State.Wallet.Gems == gems && (t += Time.unscaledDeltaTime) < 6f)
+                    yield return null;
+                _pending = 1;
+                for (t = 0f; (t += Time.unscaledDeltaTime) < 1.5f;)
+                    yield return null;
+                _sanctuary.Shop.CloseShop();
+                _pending = 2;
+                for (t = 0f; (t += Time.unscaledDeltaTime) < 1f;)
+                    yield return null;
+                _sanctuary.OpenShop();
+                _pending = 3;
+                for (t = 0f; (t += Time.unscaledDeltaTime) < 1f;)
+                    yield return null;
+                _sanctuary.Shop.CloseShop();
+            }
+
+            private int _window;
+            private int _action = -1;
+
+            /// <summary>Worst frame within 20 frames of each action (frame timings arrive a few frames late).</summary>
+            public void AfterSample(float cpuMs)
+            {
+                if (_pending >= 0)
+                {
+                    _action = _pending;
+                    _pending = -1;
+                    _window = 20;
+                }
+                if (_window <= 0 || _action < 0)
+                    return;
+                _window--;
+                switch (_action)
+                {
+                    case 0: _result.firstOpenFrameMs = Mathf.Max(_result.firstOpenFrameMs, cpuMs); break;
+                    case 1: _result.purchaseFrameMs = Mathf.Max(_result.purchaseFrameMs, cpuMs); break;
+                    case 2: _result.closeFrameMs = Mathf.Max(_result.closeFrameMs, cpuMs); break;
+                    case 3: _result.reopenFrameMs = Mathf.Max(_result.reopenFrameMs, cpuMs); break;
+                }
+            }
+
+            public ShopResult Finish()
+            {
+                _result.gemsAfter = _context.State.Wallet.Gems;
+                return _result;
             }
         }
 

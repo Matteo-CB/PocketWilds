@@ -48,6 +48,12 @@ namespace PocketWilds.UI
         [SerializeField] private RectTransform _codexRoot;
         [SerializeField] private GameObject _codexBadge;
 
+        [Header("Shop (T28): shown once unlocked")]
+        [SerializeField] private Button _shopButton;
+        [SerializeField] private RectTransform _shopRoot;
+        [SerializeField] private RectTransform _gemsChip;
+        [SerializeField] private TMP_Text _gemsLabel;
+
         private ISanctuaryActions _actions;
         private BigValueText _light;
         private BigValueText _rate;
@@ -62,6 +68,9 @@ namespace PocketWilds.UI
         private Rect _appliedSafeArea;
         private Vector2Int _appliedScreen;
         private bool _badgeShown;
+        private bool _shopShown;
+        private long _gemsShown = -1;
+        private BigValueText _gems;
         private readonly UiNumberText _masteryLevelText = new UiNumberText();
         private readonly UiNumberText _masteryXpText = new UiNumberText();
         private MasteryGain _mastery;
@@ -95,6 +104,12 @@ namespace PocketWilds.UI
             _hatchButton.onClick.AddListener(OnHatchPressed);
             if (_codexButton != null)
                 _codexButton.onClick.AddListener(OnCodexPressed);
+            if (_shopButton != null)
+            {
+                _shopButton.onClick.AddListener(OnShopPressed);
+                _gems = new BigValueText(_gemsLabel);
+                _shopShown = _shopRoot.gameObject.activeSelf;
+            }
             _badgeShown = _codexBadge != null && _codexBadge.activeSelf;
             if (_masteryRoot != null)
                 _masteryRoot.gameObject.SetActive(false);
@@ -166,6 +181,26 @@ namespace PocketWilds.UI
         }
 
         public bool CodexBadgeVisible => _badgeShown;
+
+        public bool ShopVisible => _shopShown;
+        public string GemsText => _gemsLabel != null ? _gemsLabel.text : string.Empty;
+
+        public void SetShop(bool unlocked, long gems)
+        {
+            if (!_bound || _shopRoot == null)
+                return;
+            if (unlocked != _shopShown)
+            {
+                _shopShown = unlocked;
+                _shopRoot.gameObject.SetActive(unlocked);
+                _gemsChip.gameObject.SetActive(unlocked);
+            }
+            if (unlocked && gems != _gemsShown)
+            {
+                _gemsShown = gems;
+                _gems.Set(BigValue.FromDouble(gems));
+            }
+        }
 
         public void Tick(float unscaledDeltaTime)
         {
@@ -268,7 +303,9 @@ namespace PocketWilds.UI
         public bool IsOverUi(Vector2 screenPosition) =>
             RectTransformUtility.RectangleContainsScreenPoint(_hatchRoot, screenPosition, null)
             || RectTransformUtility.RectangleContainsScreenPoint(_lightChip, screenPosition, null)
-            || (_codexRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_codexRoot, screenPosition, null));
+            || (_codexRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_codexRoot, screenPosition, null))
+            || (_shopShown && (RectTransformUtility.RectangleContainsScreenPoint(_shopRoot, screenPosition, null)
+                               || RectTransformUtility.RectangleContainsScreenPoint(_gemsChip, screenPosition, null)));
 
         /// <summary>Prefab builder hook (Editor UiPipeline).</summary>
         public void SetReferences(UiColorTokens tokens, RectTransform safeArea, RectTransform lightChip, TMP_Text lightLabel,
@@ -332,12 +369,25 @@ namespace PocketWilds.UI
 
         private void OnCodexPressed() => _actions?.OpenCodex();
 
+        private void OnShopPressed() => _actions?.OpenShop();
+
+        /// <summary>Prefab builder hook for the shop shortcut and Gems chip (Editor ShopUiPipeline).</summary>
+        public void SetShopReferences(Button shopButton, RectTransform shopRoot, RectTransform gemsChip, TMP_Text gemsLabel)
+        {
+            _shopButton = shopButton;
+            _shopRoot = shopRoot;
+            _gemsChip = gemsChip;
+            _gemsLabel = gemsLabel;
+        }
+
         private void OnDestroy()
         {
             if (_hatchButton != null)
                 _hatchButton.onClick.RemoveListener(OnHatchPressed);
             if (_codexButton != null)
                 _codexButton.onClick.RemoveListener(OnCodexPressed);
+            if (_shopButton != null)
+                _shopButton.onClick.RemoveListener(OnShopPressed);
         }
     }
 }

@@ -44,7 +44,7 @@ namespace PocketWilds.Tests.EditMode
 
             var graphics = prefab.GetComponentsInChildren<Graphic>(true);
             var targets = graphics.Where(g => g.raycastTarget).ToArray();
-            Assert.AreEqual(2, targets.Length, "Only the hatch button and the Codex shortcut catch touches.");
+            Assert.AreEqual(3, targets.Length, "Only the hatch button and the Codex and shop shortcuts catch touches.");
             Assert.IsTrue(targets.All(t => t.GetComponent<Button>() != null));
             var shortcuts = prefab.transform.Find("SafeArea/Shortcuts");
             Assert.IsNotNull(shortcuts.GetComponent<Canvas>(), "Shortcuts rebuild on their own canvas.");

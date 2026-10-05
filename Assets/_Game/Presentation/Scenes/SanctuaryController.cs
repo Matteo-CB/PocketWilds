@@ -24,6 +24,9 @@ namespace PocketWilds.Presentation
         private const float AnimalTapRadius = 0.34f;
         private const float CollectCountSeconds = 0.8f;
 
+        /// <summary>Delay after a hatch before a moment offer may show: the new animal has landed first.</summary>
+        private const float MomentOfferDelay = 1.6f;
+
         private readonly GameContext _context;
         private readonly WorldChunk _chunk;
         private readonly SanctuaryCameraRig _rig;
@@ -64,10 +67,12 @@ namespace PocketWilds.Presentation
         private MasteryGain _pendingMastery;
         private bool _masteryShown = true;
         private float _collectTime = -1f;
+        private readonly ShopPresenter _shop;
+        private float _momentOfferTime = -1f;
 
         public SanctuaryController(GameContext context, WorldChunk chunk, SanctuaryCameraRig rig, ISanctuaryHud hud,
             HatchPresentationConfig hatchConfig, string eggSourceId, Transform root, IOfflineReturnView offlineView = null,
-            ICodexView codexView = null)
+            ICodexView codexView = null, IShopView shopView = null, IOfferModalView offerView = null)
         {
             _context = context;
             _chunk = chunk;
@@ -126,6 +131,13 @@ namespace PocketWilds.Presentation
             _scheduler = new AnimalScheduler(_visibleBudget + 2, settings, chunk.WanderArea);
             _scheduler.SetInterests(chunk.GetWorldInterests());
 
+            if (context.Store != null && (shopView != null || offerView != null))
+            {
+                _shop = new ShopPresenter(context.Store, context.Localization, shopView, offerView, context.Audio, context.Haptics,
+                    SetWorldVisible, _lifetime.Token);
+                _shop.Prewarm();
+            }
+
             SpawnSavedAnimals();
             WarmupSpares();
             PresentEgg();
@@ -156,9 +168,11 @@ namespace PocketWilds.Presentation
 
         public bool OfflineScreenOpen => _offlineView != null && _offlineView.IsOpen;
         public bool CodexOpen => _codexView != null && _codexView.IsOpen;
+        public bool ShopOpen => _shop != null && (_shop.ShopOpen || _shop.OfferOpen);
+        public ShopPresenter Shop => _shop;
 
         /// <summary>A screen covers the sanctuary: world touches and hatching wait.</summary>
-        public bool ModalOpen => OfflineScreenOpen || CodexOpen;
+        public bool ModalOpen => OfflineScreenOpen || CodexOpen || ShopOpen;
 
         /// <summary>Collected offline Light is still counting into the HUD.</summary>
         public bool OfflineCollecting => _collectTime >= 0f;
@@ -174,6 +188,15 @@ namespace PocketWilds.Presentation
 
             UpdateOfflineReturn(deltaTime);
             _codexView?.Tick(deltaTime);
+            if (_shop != null)
+            {
+                _shop.Tick(deltaTime);
+                if (_momentOfferTime >= 0f && time >= _momentOfferTime && !ModalOpen && !_hatch.IsPlaying)
+                {
+                    _momentOfferTime = -1f;
+                    _shop.TryShowMomentOffer();
+                }
+            }
 
             if (_rig != null)
                 _scheduler.SetFocus(_rig.Focus);
@@ -190,6 +213,8 @@ namespace PocketWilds.Presentation
                 _hud.SetEgg(_eggCost, free, free || economy.CanSpend(CurrencyId.Light, _eggCost));
                 if (_context.Codex != null)
                     _hud.SetCodexBadge(_context.Codex.HasNew);
+                if (_shop != null)
+                    _hud.SetShop(_shop.Unlocked, _context.State.Wallet.Gems);
                 _hud.Tick(deltaTime);
             }
         }
@@ -304,6 +329,14 @@ namespace PocketWilds.Presentation
 
         public void CodexClosed() => SetWorldVisible(true);
 
+        /// <summary>HUD shortcut. Like the Codex, the shop is opaque: the world camera stops while it is open.</summary>
+        public void OpenShop()
+        {
+            if (_shop == null || ModalOpen || _hatch.IsPlaying)
+                return;
+            _shop.OpenShop();
+        }
+
         private void SetWorldVisible(bool visible)
         {
             if (_rig != null && _rig.Camera != null)
@@ -357,6 +390,8 @@ namespace PocketWilds.Presentation
             _rig?.ReturnToWorld();
             _hud?.SetHatching(false);
             _nextEggTime = _time + NextEggDelay;
+            // A hatch is a happy moment (doc 09): the only time a moment offer may appear.
+            _momentOfferTime = _time + MomentOfferDelay;
         }
 
         /// <summary>
@@ -421,6 +456,7 @@ namespace PocketWilds.Presentation
 
         public void Dispose()
         {
+            _shop?.Dispose();
             _lifetime.Cancel();
             _lifetime.Dispose();
             _hatch.Clear();
@@ -433,7 +469,7 @@ namespace PocketWilds.Presentation
         {
             if (_offlineView == null)
                 return;
-            if (!_offlineView.IsOpen && !CodexOpen && _collectTime < 0f && !_hatch.IsPlaying
+            if (!_offlineView.IsOpen && !CodexOpen && !ShopOpen && _collectTime < 0f && !_hatch.IsPlaying
                 && _context.Offline != null && _context.Offline.TryTakePending(out var report))
             {
                 // Already in the wallet (saved at once); the HUD holds it back until Collect.

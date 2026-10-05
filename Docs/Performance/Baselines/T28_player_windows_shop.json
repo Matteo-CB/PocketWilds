@@ -1,0 +1,252 @@
+{
+    "buildType": "Player (development)",
+    "unityVersion": "6000.3.8f1",
+    "appVersion": "0.1.0",
+    "device": "B450 AORUS ELITE (Gigabyte Technology Co., Ltd.)",
+    "os": "Windows 11  (10.0.26200)",
+    "cpu": "AMD Ryzen 7 5800X 8-Core Processor  x16",
+    "gpu": "NVIDIA GeForce RTX 5060 Ti",
+    "graphicsApi": "Direct3D12",
+    "systemMemoryMb": 32691,
+    "screenWidth": 480,
+    "screenHeight": 1040,
+    "timestampUtc": "2026-10-05 15:57:01Z",
+    "scenarios": [
+        {
+            "id": "P2-Mix3",
+            "label": "20 animals, rabbits, squirrels and hedgehogs",
+            "tier": "Medium",
+            "rabbitsInSave": 20,
+            "visibleAnimals": 20,
+            "frames": 480,
+            "rejectedTimings": 0,
+            "seconds": 8.00097370147705,
+            "cpuFrameMs": {
+                "valid": true,
+                "mean": 16.668682098388673,
+                "p50": 16.666200637817384,
+                "p95": 16.713499069213868,
+                "p99": 16.882999420166017,
+                "max": 17.615400314331056
+            },
+            "mainThreadMs": {
+                "valid": true,
+                "mean": 1.4386076927185059,
+                "p50": 1.4026999473571778,
+                "p95": 1.791200041770935,
+                "p99": 2.1816999912261965,
+                "max": 2.853100061416626
+            },
+            "renderThreadMs": {
+                "valid": true,
+                "mean": 0.46140792965888979,
+                "p50": 0.4422999918460846,
+                "p95": 0.5910000205039978,
+                "p99": 0.6769999861717224,
+                "max": 1.7773000001907349
+            },
+            "gpuMs": {
+                "valid": true,
+                "mean": 0.27618134021759035,
+                "p50": 0.25062400102615359,
+                "p95": 0.43827199935913088,
+                "p99": 0.464383989572525,
+                "max": 0.46592000126838686
+            },
+            "simulationMs": {
+                "valid": true,
+                "mean": 0.017577292397618295,
+                "p50": 0.011599999852478505,
+                "p95": 0.01939999870955944,
+                "p99": 0.12280000001192093,
+                "max": 1.051200032234192
+            },
+            "animationMs": {
+                "valid": true,
+                "mean": 0.20137707889080048,
+                "p50": 0.1973000019788742,
+                "p95": 0.2378000020980835,
+                "p99": 0.2799000144004822,
+                "max": 0.5203999876976013
+            },
+            "uiMs": {
+                "valid": true,
+                "mean": 0.049520622938871387,
+                "p50": 0.04800000041723251,
+                "p95": 0.06270000338554383,
+                "p99": 0.07199999690055847,
+                "max": 0.1216999962925911
+            },
+            "gcBytes": {
+                "valid": true,
+                "mean": 33.84583282470703,
+                "p50": 0.0,
+                "p95": 0.0,
+                "p99": 0.0,
+                "max": 9496.0
+            },
+            "framesWithGc": 3,
+            "spikesOver33Ms": 0,
+            "batches": 78.50833129882813,
+            "setPassCalls": 20.0,
+            "drawCalls": 78.5250015258789,
+            "triangles": 91496.5546875,
+            "totalUsedMemoryMb": 231.3640899658203,
+            "totalReservedMemoryMb": 366.7621154785156,
+            "gcUsedMemoryMb": 5.6875,
+            "textureMemoryMb": 23.091815948486329,
+            "meshMemoryMb": 1.4063167572021485,
+            "streaming": {
+                "valid": false,
+                "loads": 0,
+                "activations": 0,
+                "deactivations": 0,
+                "releases": 0,
+                "failures": 0,
+                "lateActivations": 0,
+                "transitionFrames": 0,
+                "transitionFrameMaxMs": 0.0,
+                "streamerTickMaxMs": 0.0,
+                "meshMemoryReleasedMb": 0.0,
+                "meshMemoryLoadedMb": 0.0,
+                "meshMemoryReleasedAgainMb": 0.0,
+                "meshMemoryReleasedFinalMb": 0.0,
+                "assetCountReleased": 0,
+                "assetCountLoaded": 0,
+                "assetCountReleasedAgain": 0,
+                "meadowMeshesBefore": 0,
+                "meadowMeshesLoaded": 0,
+                "meadowMeshesAfter": 0,
+                "bundlesBefore": 0,
+                "bundlesLoaded": 0,
+                "bundlesAfter": 0
+            },
+            "shop": {
+                "valid": false,
+                "firstOpenFrameMs": 0.0,
+                "purchaseFrameMs": 0.0,
+                "closeFrameMs": 0.0,
+                "reopenFrameMs": 0.0,
+                "gemsAfter": 0
+            }
+        },
+        {
+            "id": "U1",
+            "label": "Shop: open, buy a Gem pack (sandbox), close, reopen, 20 animals",
+            "tier": "Medium",
+            "rabbitsInSave": 20,
+            "visibleAnimals": 20,
+            "frames": 600,
+            "rejectedTimings": 0,
+            "seconds": 10.002096176147461,
+            "cpuFrameMs": {
+                "valid": true,
+                "mean": 16.670276641845704,
+                "p50": 16.666400909423829,
+                "p95": 16.772600173950197,
+                "p99": 16.93869972229004,
+                "max": 17.249500274658204
+            },
+            "mainThreadMs": {
+                "valid": true,
+                "mean": 1.2550522089004517,
+                "p50": 1.2037999629974366,
+                "p95": 2.080899953842163,
+                "p99": 2.740999937057495,
+                "max": 7.127500057220459
+            },
+            "renderThreadMs": {
+                "valid": true,
+                "mean": 0.3982888460159302,
+                "p50": 0.37209999561309817,
+                "p95": 0.6819999814033508,
+                "p99": 1.3249000310897828,
+                "max": 4.805500030517578
+            },
+            "gpuMs": {
+                "valid": true,
+                "mean": 0.22979840636253358,
+                "p50": 0.24089600145816804,
+                "p95": 0.4490239918231964,
+                "p99": 0.7011839747428894,
+                "max": 0.8133119940757752
+            },
+            "simulationMs": {
+                "valid": true,
+                "mean": 0.013749666512012482,
+                "p50": 0.011900000274181366,
+                "p95": 0.01899999938905239,
+                "p99": 0.02879999950528145,
+                "max": 0.3781999945640564
+            },
+            "animationMs": {
+                "valid": true,
+                "mean": 0.1418808400630951,
+                "p50": 0.17469999194145204,
+                "p95": 0.26910001039505007,
+                "p99": 0.34209999442100527,
+                "max": 0.49549999833106997
+            },
+            "uiMs": {
+                "valid": true,
+                "mean": 0.11160050332546234,
+                "p50": 0.10080000013113022,
+                "p95": 0.20890000462532044,
+                "p99": 0.2669999897480011,
+                "max": 0.8259999752044678
+            },
+            "gcBytes": {
+                "valid": true,
+                "mean": 124.66666412353516,
+                "p50": 0.0,
+                "p95": 0.0,
+                "p99": 5710.0,
+                "max": 20842.0
+            },
+            "framesWithGc": 14,
+            "spikesOver33Ms": 0,
+            "batches": 49.49833297729492,
+            "setPassCalls": 16.53333282470703,
+            "drawCalls": 49.50166702270508,
+            "triangles": 47398.7578125,
+            "totalUsedMemoryMb": 232.1531524658203,
+            "totalReservedMemoryMb": 366.8829650878906,
+            "gcUsedMemoryMb": 6.0625,
+            "textureMemoryMb": 23.091815948486329,
+            "meshMemoryMb": 1.4128665924072266,
+            "streaming": {
+                "valid": false,
+                "loads": 0,
+                "activations": 0,
+                "deactivations": 0,
+                "releases": 0,
+                "failures": 0,
+                "lateActivations": 0,
+                "transitionFrames": 0,
+                "transitionFrameMaxMs": 0.0,
+                "streamerTickMaxMs": 0.0,
+                "meshMemoryReleasedMb": 0.0,
+                "meshMemoryLoadedMb": 0.0,
+                "meshMemoryReleasedAgainMb": 0.0,
+                "meshMemoryReleasedFinalMb": 0.0,
+                "assetCountReleased": 0,
+                "assetCountLoaded": 0,
+                "assetCountReleasedAgain": 0,
+                "meadowMeshesBefore": 0,
+                "meadowMeshesLoaded": 0,
+                "meadowMeshesAfter": 0,
+                "bundlesBefore": 0,
+                "bundlesLoaded": 0,
+                "bundlesAfter": 0
+            },
+            "shop": {
+                "valid": true,
+                "firstOpenFrameMs": 16.76810073852539,
+                "purchaseFrameMs": 16.73240089416504,
+                "closeFrameMs": 16.849199295043947,
+                "reopenFrameMs": 16.70170021057129,
+                "gemsAfter": 100
+            }
+        }
+    ]
+}

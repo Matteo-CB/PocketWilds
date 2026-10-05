@@ -30,6 +30,9 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>Species mastery level up (the species travels as context).</summary>
         MasteryLevelUp = 12,
+
+        /// <summary>A purchase was granted (shop, offer).</summary>
+        PurchaseComplete = 13,
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>

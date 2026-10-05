@@ -33,6 +33,10 @@ namespace PocketWilds.Presentation
         [SerializeField] private MonoBehaviour _offlineReturn;
         [Tooltip("Codex screen implementing ICodexView (UI assembly).")]
         [SerializeField] private MonoBehaviour _codex;
+        [Tooltip("Shop screen implementing IShopView (UI assembly).")]
+        [SerializeField] private MonoBehaviour _shop;
+        [Tooltip("Offer modal implementing IOfferModalView (UI assembly).")]
+        [SerializeField] private MonoBehaviour _offerModal;
 
         private GameContext _context;
         private SanctuaryController _sanctuary;
@@ -99,7 +103,7 @@ namespace PocketWilds.Presentation
             if (_startChunk != null && _hatchConfig != null && context.VisualCatalog != null && context.Content.Eggs.TryGet(ContentId.FromSource(_eggId), out _))
             {
                 _sanctuary = new SanctuaryController(context, _startChunk, _cameraRig, _hud as ISanctuaryHud, _hatchConfig, _eggId, transform,
-                    _offlineReturn as IOfflineReturnView, _codex as ICodexView);
+                    _offlineReturn as IOfflineReturnView, _codex as ICodexView, _shop as IShopView, _offerModal as IOfferModalView);
                 var input = _cameraRig != null ? _cameraRig.GetComponent<SanctuaryCameraInput>() : null;
                 if (input != null)
                     input.SetTapHandler(this);
