@@ -17,6 +17,10 @@ namespace PocketWilds.Core
         public static readonly ProfilerMarker SchedulerTickB = new ProfilerMarker(ProfilerCategory.Scripts, "Scheduler.TickB");
         public static readonly ProfilerMarker SaveSerialize = new ProfilerMarker(ProfilerCategory.Scripts, "Save.Serialize");
         public static readonly ProfilerMarker WorldChunkActivate = new ProfilerMarker(ProfilerCategory.Scripts, "WorldStreamer.Activate");
+        public static readonly ProfilerMarker WorldStreamerTick = new ProfilerMarker(ProfilerCategory.Scripts, "WorldStreamer.Tick");
+        public static readonly ProfilerMarker WorldStreamerLoad = new ProfilerMarker(ProfilerCategory.Scripts, "WorldStreamer.Load");
+        public static readonly ProfilerMarker WorldStreamerDeactivate = new ProfilerMarker(ProfilerCategory.Scripts, "WorldStreamer.Deactivate");
+        public static readonly ProfilerMarker WorldStreamerRelease = new ProfilerMarker(ProfilerCategory.Scripts, "WorldStreamer.Release");
         public static readonly ProfilerMarker UICodexBind = new ProfilerMarker(ProfilerCategory.Gui, "UI.CodexBind");
         public static readonly ProfilerMarker CodexRefresh = new ProfilerMarker(ProfilerCategory.Scripts, "Codex.Refresh");
         public static readonly ProfilerMarker PoolAcquire = new ProfilerMarker(ProfilerCategory.Scripts, "Pool.Acquire");

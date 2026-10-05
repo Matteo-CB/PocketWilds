@@ -71,6 +71,10 @@ namespace PocketWilds.Benchmarks
             new PerformanceScenario("S50-Mix", "50 animals, 25 rabbits + 25 squirrels", 50, QualityTier.Medium) { species = 2 },
             new PerformanceScenario("P2-Mix3", "20 animals, rabbits, squirrels and hedgehogs", 20, QualityTier.Medium) { species = 3 },
             new PerformanceScenario("S50-Mix3", "50 animals, rabbits, squirrels and hedgehogs", 50, QualityTier.Medium) { species = 3 },
+            new PerformanceScenario("W1", "Chunk streaming: meadow in and out twice, 20 animals", 20, QualityTier.Medium)
+            {
+                species = 3, streaming = true, measureSeconds = 28f,
+            },
         };
 
         private static PerformanceScenario[] Filter(PerformanceScenario[] all, string[] args)
@@ -171,7 +175,8 @@ namespace PocketWilds.Benchmarks
 
                 // Everything the measure needs is created before the warmup: its allocations never land in a sample.
                 var sampler = new FrameSampler(Mathf.CeilToInt(scenario.measureSeconds * 240f) + 64);
-                IEnumerator burst = scenario.hatchBurst ? HatchBurst(entry.Sanctuary, bootstrap.Context) : null;
+                var probe = scenario.streaming && entry.Streamer != null ? new StreamingProbe(entry) : null;
+                IEnumerator burst = scenario.hatchBurst ? HatchBurst(entry.Sanctuary, bootstrap.Context) : probe?.Travel();
                 // Garbage left by earlier scenarios (one process, many boots) is collected now, not in a sample.
                 GC.Collect();
                 float until = Time.realtimeSinceStartup + scenario.warmupSeconds;
@@ -182,11 +187,25 @@ namespace PocketWilds.Benchmarks
                 {
                     yield return null;
                     sampler.Sample();
+                    probe?.AfterSample(sampler.LastCpuMs);
                     if (burst != null && !burst.MoveNext())
                         burst = null;
                 }
                 var result = sampler.Finish(scenario, entry.Sanctuary.VisibleAnimals, Time.realtimeSinceStartup - start);
                 sampler.Dispose();
+                if (probe != null)
+                {
+                    // Unmeasured: name the meshes and bundles in memory with the meadow out, in, out.
+                    yield return probe.ReleaseCheck();
+                    result.streaming = probe.Finish();
+                    probe.Dispose();
+                    Debug.Log($"[Benchmark] {scenario.id} streaming: loads {result.streaming.loads}, releases {result.streaming.releases}, " +
+                              $"late {result.streaming.lateActivations}, transition frames {result.streaming.transitionFrames} " +
+                              $"(max {result.streaming.transitionFrameMaxMs:F2} ms), tick max {result.streaming.streamerTickMaxMs:F2} ms, " +
+                              $"mesh {result.streaming.meshMemoryReleasedMb:F2} / {result.streaming.meshMemoryLoadedMb:F2} / {result.streaming.meshMemoryReleasedAgainMb:F2} MB, " +
+                              $"meadow meshes {result.streaming.meadowMeshesBefore} / {result.streaming.meadowMeshesLoaded} / {result.streaming.meadowMeshesAfter}, " +
+                              $"bundles {result.streaming.bundlesBefore} / {result.streaming.bundlesLoaded} / {result.streaming.bundlesAfter}");
+                }
                 report.scenarios.Add(result);
                 Debug.Log($"[Benchmark] {scenario.id} {scenario.label} ({scenario.tier}): visible {result.visibleAnimals}, " +
                           $"CPU {result.cpuFrameMs.mean:F2} ms (p95 {result.cpuFrameMs.p95:F2}), main {result.mainThreadMs.mean:F2}, " +
@@ -276,6 +295,160 @@ namespace PocketWilds.Benchmarks
                     yield return null;
                 sanctuary.RequestHatch(); // speed up the reveal
                 yield return null;
+            }
+        }
+
+        /// <summary>
+        /// W1: drives the camera like a finger drag (6 m/s) from the west end of the start chunk to the meadow's
+        /// centre and back, twice, and records streamer transitions, their frame cost and memory checkpoints with
+        /// allocation-free recorders. The name-level release check runs after the measure.
+        /// </summary>
+        private sealed class StreamingProbe : IDisposable
+        {
+            private const float Speed = 6f;
+            private const float West = -3.5f;
+            private const float MeadowCentre = 14f;
+            private readonly WorldStreamer _streamer;
+            private readonly SanctuaryCameraRig _rig;
+            private readonly int _meadow;
+            private readonly Action<int, ChunkStreamState> _onState;
+            private readonly WorldStreamerStats _before;
+            private ProfilerRecorder _tick, _mesh, _assets;
+            private StreamingResult _result;
+            private bool _transition;
+
+            public StreamingProbe(VerticalSliceEntry entry)
+            {
+                _streamer = entry.Streamer;
+                _rig = entry.CameraRig;
+                _meadow = _streamer.IndexOf("chunk.grassland.meadow");
+                _onState = (index, state) => _transition = true;
+                _streamer.StateChanged += _onState;
+                _tick = ProfilerRecorder.StartNew(ProfilerCategory.Scripts, "WorldStreamer.Tick", 1);
+                _mesh = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "Mesh Memory", 1);
+                _assets = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "Asset Count", 1);
+                _rig.SnapTo(new Vector3(West, 0f, _rig.Focus.z));
+                _before = _streamer.Stats;
+                _result.valid = true;
+            }
+
+            private float MeshMb => _mesh.Valid ? _mesh.LastValue / (1024f * 1024f) : 0f;
+            private long Assets => _assets.Valid ? _assets.LastValue : 0;
+
+            private bool Step(float x)
+            {
+                var focus = _rig.Focus;
+                focus.x = Mathf.MoveTowards(focus.x, x, Speed * Time.unscaledDeltaTime);
+                _rig.SnapTo(focus);
+                return Mathf.Abs(focus.x - x) < 0.001f;
+            }
+
+            /// <summary>Stepped once per sampled frame (no nested iterators: the runner calls MoveNext itself).</summary>
+            public IEnumerator Travel()
+            {
+                float t = 0f;
+                while ((t += Time.unscaledDeltaTime) < 1f)
+                    yield return null;
+                _result.meshMemoryReleasedMb = MeshMb;
+                _result.assetCountReleased = Assets;
+                for (int cycle = 0; cycle < 2; cycle++)
+                {
+                    while (!Step(MeadowCentre))
+                        yield return null;
+                    for (t = 0f; (t += Time.unscaledDeltaTime) < 2f;)
+                        yield return null;
+                    if (cycle == 0)
+                    {
+                        _result.meshMemoryLoadedMb = MeshMb;
+                        _result.assetCountLoaded = Assets;
+                    }
+                    while (!Step(West))
+                        yield return null;
+                    for (t = 0f; (t += Time.unscaledDeltaTime) < 5f;)
+                        yield return null;
+                    if (cycle == 0)
+                    {
+                        _result.meshMemoryReleasedAgainMb = MeshMb;
+                        _result.assetCountReleasedAgain = Assets;
+                    }
+                    else
+                    {
+                        _result.meshMemoryReleasedFinalMb = MeshMb;
+                    }
+                }
+            }
+
+            public void AfterSample(float cpuMs)
+            {
+                if (_tick.Valid)
+                    _result.streamerTickMaxMs = Mathf.Max(_result.streamerTickMaxMs, _tick.LastValue * 1e-6f);
+                if (!_transition)
+                    return;
+                _transition = false;
+                _result.transitionFrames++;
+                _result.transitionFrameMaxMs = Mathf.Max(_result.transitionFrameMaxMs, cpuMs);
+            }
+
+            private static int MeadowMeshes()
+            {
+                int count = 0;
+                foreach (var mesh in Resources.FindObjectsOfTypeAll<Mesh>())
+                    if (mesh.name.StartsWith("MSH_Chunk_Grassland_Meadow", StringComparison.Ordinal) || mesh.name == "GL_Ground_Core_B")
+                        count++;
+                return count;
+            }
+
+            private static int Bundles()
+            {
+                int count = 0;
+                foreach (var _ in AssetBundle.GetAllLoadedAssetBundles())
+                    count++;
+                return count;
+            }
+
+            private IEnumerator WaitFor(ChunkStreamState state, float seconds)
+            {
+                float until = Time.realtimeSinceStartup + seconds;
+                while (_streamer.GetState(_meadow) != state && Time.realtimeSinceStartup < until)
+                    yield return null;
+                yield return null; // deferred Destroy and bundle unload settle
+            }
+
+            public IEnumerator ReleaseCheck()
+            {
+                yield return WaitFor(ChunkStreamState.Unloaded, 8f);
+                _result.meadowMeshesBefore = MeadowMeshes();
+                _result.bundlesBefore = Bundles();
+                while (!Step(MeadowCentre))
+                    yield return null;
+                yield return WaitFor(ChunkStreamState.Active, 5f);
+                _result.meadowMeshesLoaded = MeadowMeshes();
+                _result.bundlesLoaded = Bundles();
+                while (!Step(West))
+                    yield return null;
+                yield return WaitFor(ChunkStreamState.Unloaded, 8f);
+                _result.meadowMeshesAfter = MeadowMeshes();
+                _result.bundlesAfter = Bundles();
+            }
+
+            public StreamingResult Finish()
+            {
+                var stats = _streamer.Stats;
+                _result.loads = stats.loads - _before.loads;
+                _result.activations = stats.activations - _before.activations;
+                _result.deactivations = stats.deactivations - _before.deactivations;
+                _result.releases = stats.releases - _before.releases;
+                _result.failures = stats.failures - _before.failures;
+                _result.lateActivations = stats.lateActivations - _before.lateActivations;
+                return _result;
+            }
+
+            public void Dispose()
+            {
+                _streamer.StateChanged -= _onState;
+                _tick.Dispose();
+                _mesh.Dispose();
+                _assets.Dispose();
             }
         }
 
@@ -381,6 +554,8 @@ namespace PocketWilds.Benchmarks
                 _drawSum += _drawCalls.Valid ? _drawCalls.LastValue : 0;
                 _triSum += _triangles.Valid ? _triangles.LastValue : 0;
             }
+
+            public float LastCpuMs => _count > 0 ? _cpu[_count - 1] : 0f;
 
             private static float Ms(ProfilerRecorder recorder) => recorder.Valid ? recorder.LastValue * 1e-6f : 0f;
 

@@ -74,6 +74,7 @@ namespace PocketWilds.Editor.Validation
 
         public const string GrasslandPrefabFolder = "Assets/_Game/Prefabs/Environment/Grassland";
         public const string GrasslandChunkPath = "Assets/_Game/Prefabs/World/Chunks/Grassland/PF_Chunk_Grassland_Start.prefab";
+        public const string GrasslandMeadowChunkPath = "Assets/_Game/Prefabs/World/Chunks/Grassland/PF_Chunk_Grassland_Meadow.prefab";
         public static readonly string[] EnvironmentMaterialPaths =
         {
             "Assets/_Game/Art/Materials/MAT_Environment_Common.mat",
@@ -425,28 +426,69 @@ namespace PocketWilds.Editor.Validation
                 }
             }
 
-            var chunk = AssetDatabase.LoadAssetAtPath<GameObject>(GrasslandChunkPath);
+            ValidateChunk(GrasslandChunkPath, allowed, issues, needsEgg: true);
+            ValidateChunk(GrasslandMeadowChunkPath, allowed, issues, needsEgg: false);
+            ValidateChunkSet(issues);
+            return issues;
+        }
+
+        private static void ValidateChunk(string path, HashSet<Material> allowed, List<ValidationIssue> issues, bool needsEgg)
+        {
+            var chunk = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (chunk == null)
             {
-                issues.Add(new ValidationIssue(IssueSeverity.Error, GrasslandChunkPath, "Load", "Start chunk missing."));
-                return issues;
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Load", "Chunk missing."));
+                return;
             }
-            CheckPlainProps(chunk, GrasslandChunkPath, allowed, issues, allowChunkRoot: true);
+            CheckPlainProps(chunk, path, allowed, issues, allowChunkRoot: true);
             var world = chunk.GetComponent<WorldChunk>();
             if (world == null)
             {
-                issues.Add(new ValidationIssue(IssueSeverity.Error, GrasslandChunkPath, "WorldChunk", "Chunk root must carry WorldChunk."));
-                return issues;
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "WorldChunk", "Chunk root must carry WorldChunk."));
+                return;
             }
             var bound = new HashSet<Renderer>();
             for (int i = 0; i < world.BindingCount; i++)
                 bound.Add(world.GetBinding(i).renderer);
             foreach (var renderer in chunk.GetComponentsInChildren<Renderer>(true))
                 if (!bound.Contains(renderer))
-                    issues.Add(new ValidationIssue(IssueSeverity.Error, GrasslandChunkPath, "Palette", renderer.name + " has no palette binding."));
-            if (world.EggSpawn == null || world.AnimalSpawns.Length < 3)
-                issues.Add(new ValidationIssue(IssueSeverity.Error, GrasslandChunkPath, "Points", "Start chunk needs an egg spawn and 3 animal spawns."));
-            return issues;
+                    issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Palette", renderer.name + " has no palette binding."));
+            if ((needsEgg && world.EggSpawn == null) || world.AnimalSpawns.Length < 3)
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Points", needsEgg
+                    ? "Start chunk needs an egg spawn and 3 animal spawns." : "Chunk needs 3 animal spawns."));
+        }
+
+        /// <summary>T27: every chunk of the set is an Addressable prefab whose address is the chunk id.</summary>
+        private static void ValidateChunkSet(List<ValidationIssue> issues)
+        {
+            const string setPath = PocketWilds.Editor.World.WorldContentPipeline.ChunkSetPath;
+            var set = AssetDatabase.LoadAssetAtPath<WorldChunkSet>(setPath);
+            if (set == null)
+            {
+                issues.Add(new ValidationIssue(IssueSeverity.Error, setPath, "Load", "Chunk set missing (Pocket Wilds/World/Setup Grassland Streaming)."));
+                return;
+            }
+            var settings = UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject.GetSettings(false);
+            int pinned = 0;
+            var ids = new HashSet<string>();
+            for (int i = 0; i < set.Count; i++)
+            {
+                var entry = set.Get(i);
+                if (entry.pinned)
+                    pinned++;
+                if (string.IsNullOrEmpty(entry.id) || !ids.Add(entry.id))
+                    issues.Add(new ValidationIssue(IssueSeverity.Error, setPath, "Id", $"Chunk {i} has an empty or duplicate id."));
+                string guid = entry.prefab != null ? entry.prefab.AssetGUID : null;
+                var asset = string.IsNullOrEmpty(guid) ? null : settings?.FindAssetEntry(guid);
+                if (asset == null)
+                    issues.Add(new ValidationIssue(IssueSeverity.Error, setPath, "Addressable", $"{entry.id}: prefab is not Addressable."));
+                else if (asset.address != entry.id)
+                    issues.Add(new ValidationIssue(IssueSeverity.Error, setPath, "Addressable", $"{entry.id}: address is {asset.address}."));
+                else if (AssetDatabase.LoadAssetAtPath<GameObject>(asset.AssetPath)?.GetComponent<WorldChunk>() == null)
+                    issues.Add(new ValidationIssue(IssueSeverity.Error, setPath, "WorldChunk", $"{entry.id}: prefab has no WorldChunk."));
+            }
+            if (pinned != 1)
+                issues.Add(new ValidationIssue(IssueSeverity.Error, setPath, "Pinned", $"Exactly one pinned chunk expected, found {pinned}."));
         }
 
         private static void CheckPlainProps(GameObject root, string path, HashSet<Material> allowed, List<ValidationIssue> issues, bool allowChunkRoot)

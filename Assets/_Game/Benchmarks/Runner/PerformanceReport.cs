@@ -12,6 +12,8 @@ namespace PocketWilds.Benchmarks
         public int rabbits;
         public PocketWilds.Core.QualityTier tier;
         public bool hatchBurst;
+        /// <summary>T27: the camera crosses into the meadow chunk and back twice (streaming in and out).</summary>
+        public bool streaming;
         /// <summary>Grassland species cycled through the save: 1 rabbits only, 2 + squirrels (T23), 3 + hedgehogs (T24).</summary>
         public int species = 1;
         public float warmupSeconds = 2f;
@@ -75,6 +77,40 @@ namespace PocketWilds.Benchmarks
         public float gcUsedMemoryMb;
         public float textureMemoryMb;
         public float meshMemoryMb;
+
+        public StreamingResult streaming;
+    }
+
+    /// <summary>T27 chunk streaming: transitions, their frame cost, and memory with the meadow out, in, out.</summary>
+    [Serializable]
+    public struct StreamingResult
+    {
+        public bool valid;
+        public int loads;
+        public int activations;
+        public int deactivations;
+        public int releases;
+        public int failures;
+        public int lateActivations;
+        /// <summary>Frames where a chunk changed state (load start, staged, active, inactive, released).</summary>
+        public int transitionFrames;
+        public float transitionFrameMaxMs;
+        /// <summary>WorldStreamer.Tick per frame (includes load, bind, activate and release work).</summary>
+        public float streamerTickMaxMs;
+        public float meshMemoryReleasedMb;
+        public float meshMemoryLoadedMb;
+        public float meshMemoryReleasedAgainMb;
+        public float meshMemoryReleasedFinalMb;
+        public long assetCountReleased;
+        public long assetCountLoaded;
+        public long assetCountReleasedAgain;
+        /// <summary>After the measure: meadow-only meshes in memory and loaded bundles, out / in / out.</summary>
+        public int meadowMeshesBefore;
+        public int meadowMeshesLoaded;
+        public int meadowMeshesAfter;
+        public int bundlesBefore;
+        public int bundlesLoaded;
+        public int bundlesAfter;
     }
 
     /// <summary>Machine-readable baseline (Performance Test Matrix: JSON per version).</summary>

@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using PocketWilds.Content;
 using PocketWilds.Core;
 using PocketWilds.Services.Feedback;
@@ -79,5 +81,14 @@ namespace PocketWilds.Presentation
     {
         void Enter(GameContext context);
         void Exit();
+    }
+
+    /// <summary>
+    /// Optional on a scene entry: asynchronous preparation (pinned world chunks...) that the bootstrap awaits
+    /// before Enter, while the loading screen is still up.
+    /// </summary>
+    public interface ISceneEntryPreparation
+    {
+        Task PrepareAsync(GameContext context, CancellationToken cancellationToken);
     }
 }

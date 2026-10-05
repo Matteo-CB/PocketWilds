@@ -28,6 +28,13 @@ namespace PocketWilds.Editor.Environment
         public const string ModelsFolder = "Assets/_Game/Art/Environment/Grassland/Models";
         public const string PrefabsFolder = "Assets/_Game/Prefabs/Environment/Grassland";
         public const string ChunkPath = "Assets/_Game/Prefabs/World/Chunks/Grassland/PF_Chunk_Grassland_Start.prefab";
+        public const string MeadowChunkPath = "Assets/_Game/Prefabs/World/Chunks/Grassland/PF_Chunk_Grassland_Meadow.prefab";
+
+        /// <summary>
+        /// Meadow chunk origin relative to the start chunk: one chunk east. Both grounds were built with that side
+        /// joined (pw_grassland.build_ground joins): square, flat, the same contour vertices, so they meet exactly.
+        /// </summary>
+        public static readonly Vector3 MeadowOffset = new Vector3(14f, 0f, 0f);
         public const string BakedFolder = "Assets/_Game/Art/Environment/Grassland/Baked";
         public const string PalettesPath = "Assets/_Game/Content/Palettes/DEF_Palettes_Grassland.asset";
 
@@ -141,7 +148,7 @@ namespace PocketWilds.Editor.Environment
             foreach (var size in new[] { "S", "M", "L" })
             {
                 result["GL_GrassTuft_" + size] = SaveSingle(meshes["GL_GrassTuft_" + size], env, ShadowCastingMode.Off, SmallPropCull);
-                result["GL_Rock_" + size] = SaveSingle(meshes["GL_Rock_" + size], env, ShadowCastingMode.On, size == "S" ? SmallPropCull : 0.006f);
+                result["GL_Rock_" + size] = SaveSingle(KitMesh(meshes["GL_Rock_" + size]), env, ShadowCastingMode.On, size == "S" ? SmallPropCull : 0.006f);
             }
             foreach (var kind in new[] { "A", "B", "C" })
                 result["GL_Flower_" + kind] = SaveSingle(meshes["GL_Flower_" + kind], env, ShadowCastingMode.Off, SmallPropCull);
@@ -179,7 +186,7 @@ namespace PocketWilds.Editor.Environment
                 {
                     var child = new GameObject("GL_Tree_A_LOD" + lod);
                     child.transform.SetParent(go.transform, false);
-                    renderers[lod] = AddRenderer(child, meshes["GL_Tree_A_LOD" + lod], material, lod < 2 ? ShadowCastingMode.On : ShadowCastingMode.Off);
+                    renderers[lod] = AddRenderer(child, KitMesh(meshes["GL_Tree_A_LOD" + lod]), material, lod < 2 ? ShadowCastingMode.On : ShadowCastingMode.Off);
                 }
                 var group = go.AddComponent<LODGroup>();
                 group.SetLODs(new[]
@@ -196,6 +203,88 @@ namespace PocketWilds.Editor.Environment
             {
                 Object.DestroyImmediate(go);
             }
+        }
+
+        public const string KitMeshFolder = BakedFolder + "/Kit";
+
+        /// <summary>
+        /// Standalone copy of a kit mesh that several chunks share (trees, rocks). The Addressables kit bundle owns
+        /// it explicitly; the FBX itself stays out of bundles because its model prefab drags the URP Lit material.
+        /// </summary>
+        private static Mesh KitMesh(Mesh source)
+        {
+            Directory.CreateDirectory(KitMeshFolder);
+            string path = $"{KitMeshFolder}/{source.name}.asset";
+            var copy = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (copy == null)
+            {
+                copy = new Mesh();
+                AssetDatabase.CreateAsset(copy, path);
+            }
+            EditorUtility.CopySerialized(source, copy);
+            copy.name = source.name;
+            MakeRuntimeOnly(copy);
+            return copy;
+        }
+
+        /// <summary>Read/Write off (asset validator baseline): the player keeps no CPU copy of the vertices.</summary>
+        private static void MakeRuntimeOnly(Mesh mesh)
+        {
+            var serialized = new SerializedObject(mesh);
+            var readable = serialized.FindProperty("m_IsReadable");
+            if (readable != null && readable.boolValue)
+            {
+                readable.boolValue = false;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+            EditorUtility.SetDirty(mesh);
+        }
+
+        /// <summary>
+        /// T27: kit trees and rocks move to standalone meshes (shared by every chunk, one owner bundle) and every
+        /// baked chunk mesh drops Read/Write. Rewires the kit prefabs only: chunk prefabs follow through their
+        /// nested prefab instances, nothing is re-laid out.
+        /// </summary>
+        [MenuItem("Pocket Wilds/Environment/Bake Kit Meshes (T27)", priority = 174)]
+        public static void BakeKitMeshes()
+        {
+            var meshes = new Dictionary<string, Mesh>();
+            foreach (var guid in AssetDatabase.FindAssets("t:Model", new[] { ModelsFolder }))
+                foreach (var mesh in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GUIDToAssetPath(guid)).OfType<Mesh>())
+                    meshes[mesh.name] = mesh;
+            int rewired = 0;
+            foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { PrefabsFolder }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (!path.Contains("PF_GL_Tree") && !path.Contains("PF_GL_Rock"))
+                    continue;
+                var root = PrefabUtility.LoadPrefabContents(path);
+                try
+                {
+                    foreach (var filter in root.GetComponentsInChildren<MeshFilter>(true))
+                    {
+                        var current = filter.sharedMesh;
+                        if (current != null && meshes.TryGetValue(current.name, out var source))
+                        {
+                            filter.sharedMesh = KitMesh(source);
+                            rewired++;
+                        }
+                    }
+                    PrefabUtility.SaveAsPrefabAsset(root, path);
+                }
+                finally
+                {
+                    PrefabUtility.UnloadPrefabContents(root);
+                }
+            }
+            int baked = 0;
+            foreach (var guid in AssetDatabase.FindAssets("t:Mesh", new[] { BakedFolder }))
+            {
+                MakeRuntimeOnly(AssetDatabase.LoadAssetAtPath<Mesh>(AssetDatabase.GUIDToAssetPath(guid)));
+                baked++;
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[GrasslandPipeline] {rewired} kit renderers on standalone meshes, {baked} baked meshes without Read/Write.");
         }
 
         private static MeshRenderer AddRenderer(GameObject go, Mesh mesh, Material material, ShadowCastingMode shadows)
@@ -225,10 +314,10 @@ namespace PocketWilds.Editor.Environment
         }
 
         /// <summary>Superellipse footprint of GL_Ground_Core_A (power 4, half size 7 m).</summary>
-        private static bool InsideIsland(Vector3 p, float margin)
+        private static bool InsideIsland(Vector3 p, float margin, float power = 4f)
         {
             float half = 7f - margin;
-            return Mathf.Pow(Mathf.Abs(p.x) / half, 4f) + Mathf.Pow(Mathf.Abs(p.z) / half, 4f) <= 1f;
+            return Mathf.Pow(Mathf.Abs(p.x) / half, power) + Mathf.Pow(Mathf.Abs(p.z) / half, power) <= 1f;
         }
 
         /// <summary>Center of the painted clearing (vertex color B) of the ground mesh.</summary>
@@ -378,61 +467,7 @@ namespace PocketWilds.Editor.Environment
                     renderer = ground.GetComponent<Renderer>(), paletteId = ContentId.FromSource(PaletteGround).Value, brightness = WorldChunk.NeutralBrightness,
                 });
 
-                var props = Child(root.transform, "Props");
-                var groups = new Dictionary<string, Transform>
-                {
-                    ["GL_Tree"] = Child(props, "Trees"), ["GL_Rock"] = Child(props, "Rocks"),
-                    ["GL_Grass"] = Child(props, "Grass"), ["GL_Flower"] = Child(props, "Flowers"),
-                };
-                // Grass tufts and flowers are merged per palette and density class (one renderer each):
-                // ~190 small renderers became about a dozen draws. Each instance keeps its brightness in uv.y.
-                var merged = new Dictionary<(string palette, bool secondary, string group), List<(Mesh mesh, Matrix4x4 matrix, byte brightness)>>();
-                foreach (var placement in layout)
-                {
-                    var group = groups.First(g => placement.Prop.StartsWith(g.Key, StringComparison.Ordinal)).Value;
-                    bool mergeable = placement.Prop.StartsWith("GL_Grass", StringComparison.Ordinal)
-                                     || placement.Prop.StartsWith("GL_Flower", StringComparison.Ordinal);
-                    if (mergeable)
-                    {
-                        byte level = (byte)(5 + rng.Next(7));
-                        var key = (placement.Palette, placement.Secondary, group.name);
-                        if (!merged.TryGetValue(key, out var list))
-                            merged[key] = list = new List<(Mesh, Matrix4x4, byte)>();
-                        var matrix = Matrix4x4.TRS(placement.Position, Quaternion.Euler(0f, placement.Yaw, 0f), Vector3.one * placement.Scale);
-                        list.Add((prefabs[placement.Prop].GetComponent<MeshFilter>().sharedMesh, matrix, level));
-                        continue;
-                    }
-                    var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefabs[placement.Prop], group);
-                    instance.transform.SetLocalPositionAndRotation(placement.Position, Quaternion.Euler(0f, placement.Yaw, 0f));
-                    instance.transform.localScale = Vector3.one * placement.Scale;
-                    byte brightness = (byte)(placement.Prop.StartsWith("GL_Tree", StringComparison.Ordinal) ? 6 + rng.Next(5) : 5 + rng.Next(7));
-                    foreach (var renderer in instance.GetComponentsInChildren<Renderer>(true))
-                    {
-                        bindings.Add(new WorldChunk.PaletteBinding
-                        {
-                            renderer = renderer, paletteId = ContentId.FromSource(placement.Palette).Value,
-                            brightness = brightness, secondary = placement.Secondary,
-                        });
-                    }
-                }
-
-                var env = prefabs["GL_Rock_S"].GetComponent<MeshRenderer>().sharedMaterial;
-                Directory.CreateDirectory(BakedFolder);
-                int index = 0;
-                foreach (var pair in merged.OrderBy(p => p.Key.group).ThenBy(p => p.Key.palette).ThenBy(p => p.Key.secondary))
-                {
-                    string shortName = pair.Key.palette.Substring(pair.Key.palette.LastIndexOf('.') + 1);
-                    string name = $"Merged_{shortName}_{(pair.Key.secondary ? "Secondary" : "Primary")}";
-                    var mesh = MergeProps(pair.Value, $"MSH_Chunk_Grassland_Start_{index++:00}_{shortName}");
-                    var go = new GameObject(name);
-                    go.transform.SetParent(groups.First(g => g.Value.name == pair.Key.group).Value, false);
-                    var renderer = AddRenderer(go, mesh, env, ShadowCastingMode.Off);
-                    bindings.Add(new WorldChunk.PaletteBinding
-                    {
-                        renderer = renderer, paletteId = ContentId.FromSource(pair.Key.palette).Value,
-                        brightness = WorldChunk.NeutralBrightness, secondary = pair.Key.secondary, vertexBrightness = true,
-                    });
-                }
+                ComposeProps(root.transform, layout, prefabs, rng, "MSH_Chunk_Grassland_Start", bindings);
 
                 var spawns = Child(root.transform, "SpawnPoints");
                 var eggSpawn = Point(spawns, "EggSpawn", egg);
@@ -466,6 +501,248 @@ namespace PocketWilds.Editor.Environment
             {
                 Object.DestroyImmediate(root);
             }
+        }
+
+        /// <summary>
+        /// Props of a chunk: trees and rocks as prefab instances, grass tufts and flowers merged per palette and
+        /// density class (one renderer each; each instance keeps its brightness in uv.y). Fills the palette bindings.
+        /// </summary>
+        private static void ComposeProps(Transform root, List<Placement> layout, Dictionary<string, GameObject> prefabs, Random rng,
+            string meshPrefix, List<WorldChunk.PaletteBinding> bindings)
+        {
+            var props = Child(root, "Props");
+            var groups = new Dictionary<string, Transform>
+            {
+                ["GL_Tree"] = Child(props, "Trees"), ["GL_Rock"] = Child(props, "Rocks"),
+                ["GL_Grass"] = Child(props, "Grass"), ["GL_Flower"] = Child(props, "Flowers"),
+            };
+            var merged = new Dictionary<(string palette, bool secondary, string group), List<(Mesh mesh, Matrix4x4 matrix, byte brightness)>>();
+            foreach (var placement in layout)
+            {
+                var group = groups.First(g => placement.Prop.StartsWith(g.Key, StringComparison.Ordinal)).Value;
+                bool mergeable = placement.Prop.StartsWith("GL_Grass", StringComparison.Ordinal)
+                                 || placement.Prop.StartsWith("GL_Flower", StringComparison.Ordinal);
+                if (mergeable)
+                {
+                    byte level = (byte)(5 + rng.Next(7));
+                    var key = (placement.Palette, placement.Secondary, group.name);
+                    if (!merged.TryGetValue(key, out var list))
+                        merged[key] = list = new List<(Mesh, Matrix4x4, byte)>();
+                    var matrix = Matrix4x4.TRS(placement.Position, Quaternion.Euler(0f, placement.Yaw, 0f), Vector3.one * placement.Scale);
+                    list.Add((prefabs[placement.Prop].GetComponent<MeshFilter>().sharedMesh, matrix, level));
+                    continue;
+                }
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefabs[placement.Prop], group);
+                instance.transform.SetLocalPositionAndRotation(placement.Position, Quaternion.Euler(0f, placement.Yaw, 0f));
+                instance.transform.localScale = Vector3.one * placement.Scale;
+                byte brightness = (byte)(placement.Prop.StartsWith("GL_Tree", StringComparison.Ordinal) ? 6 + rng.Next(5) : 5 + rng.Next(7));
+                foreach (var renderer in instance.GetComponentsInChildren<Renderer>(true))
+                {
+                    bindings.Add(new WorldChunk.PaletteBinding
+                    {
+                        renderer = renderer, paletteId = ContentId.FromSource(placement.Palette).Value,
+                        brightness = brightness, secondary = placement.Secondary,
+                    });
+                }
+            }
+
+            var env = prefabs["GL_Rock_S"].GetComponent<MeshRenderer>().sharedMaterial;
+            Directory.CreateDirectory(BakedFolder);
+            int index = 0;
+            foreach (var pair in merged.OrderBy(p => p.Key.group).ThenBy(p => p.Key.palette).ThenBy(p => p.Key.secondary))
+            {
+                string shortName = pair.Key.palette.Substring(pair.Key.palette.LastIndexOf('.') + 1);
+                string name = $"Merged_{shortName}_{(pair.Key.secondary ? "Secondary" : "Primary")}";
+                var mesh = MergeProps(pair.Value, $"{meshPrefix}_{index++:00}_{shortName}");
+                var go = new GameObject(name);
+                go.transform.SetParent(groups.First(g => g.Value.name == pair.Key.group).Value, false);
+                var renderer = AddRenderer(go, mesh, env, ShadowCastingMode.Off);
+                bindings.Add(new WorldChunk.PaletteBinding
+                {
+                    renderer = renderer, paletteId = ContentId.FromSource(pair.Key.palette).Value,
+                    brightness = WorldChunk.NeutralBrightness, secondary = pair.Key.secondary, vertexBrightness = true,
+                });
+            }
+        }
+
+        // ---------------- Meadow chunk (T27) ----------------
+
+        /// <summary>
+        /// PF_Chunk_Grassland_Meadow (Biomes doc: denser flowers, tree side framing) on GL_Ground_Core_B, east of the
+        /// start chunk. Builds only this chunk: the start chunk and the kit prefabs are left untouched.
+        /// </summary>
+        [MenuItem("Pocket Wilds/Environment/Build Meadow Chunk (T27)", priority = 173)]
+        public static void BuildMeadowChunk()
+        {
+            var prefabs = new Dictionary<string, GameObject>();
+            foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { PrefabsFolder }))
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid));
+                prefabs[prefab.name.Substring(3)] = prefab; // PF_GL_Rock_S -> GL_Rock_S
+            }
+            var groundMaterial = AssetDatabase.LoadAssetAtPath<Material>(GroundMaterialPath);
+            var groundMesh = AssetDatabase.LoadAllAssetsAtPath($"{ModelsFolder}/GL_Ground_Core_B.fbx").OfType<Mesh>().FirstOrDefault()
+                             ?? throw new InvalidOperationException("GL_Ground_Core_B.fbx is not imported. Export it from BL_Biome_Grassland_Core.blend.");
+            prefabs["GL_Ground_Core_B"] = SaveSingle(groundMesh, groundMaterial, ShadowCastingMode.Off, cull: 0f);
+
+            var centers = new List<Vector3>();
+            var layout = MeadowLayout(groundMesh, centers);
+            var rng = new Random(9157);
+            var root = new GameObject("PF_Chunk_Grassland_Meadow");
+            try
+            {
+                var chunk = root.AddComponent<WorldChunk>();
+                var bindings = new List<WorldChunk.PaletteBinding>();
+                var ground = (GameObject)PrefabUtility.InstantiatePrefab(prefabs["GL_Ground_Core_B"], root.transform);
+                ground.name = "Ground";
+                bindings.Add(new WorldChunk.PaletteBinding
+                {
+                    renderer = ground.GetComponent<Renderer>(), paletteId = ContentId.FromSource(PaletteGround).Value, brightness = WorldChunk.NeutralBrightness,
+                });
+                ComposeProps(root.transform, layout, prefabs, rng, "MSH_Chunk_Grassland_Meadow", bindings);
+
+                var area = new WanderArea(Vector3.zero, 3.5f);
+                var spawns = Child(root.transform, "SpawnPoints");
+                var animals = new[]
+                {
+                    Point(spawns, "AnimalSpawn_01", new Vector3(-1.2f, 0f, 1.0f)),
+                    Point(spawns, "AnimalSpawn_02", new Vector3(1.4f, 0f, -0.6f)),
+                    Point(spawns, "AnimalSpawn_03", new Vector3(0.2f, 0f, 2.2f)),
+                };
+                var anchors = Child(root.transform, "VFXAnchors");
+                var vfxAnchors = new[] { Point(anchors, "VFX_Butterfly_01", new Vector3(1.8f, 0.6f, 2.6f)) };
+                var linksRoot = Child(root.transform, "ChunkLinks");
+                var links = new[] { Point(linksRoot, "Link_W", new Vector3(-7f, 0f, 0f)), Point(linksRoot, "Link_E", new Vector3(7f, 0f, 0f)) };
+                chunk.SetAuthoring(bindings.ToArray(), area, null, animals, InterestsFrom(layout, centers, area), vfxAnchors, links);
+                PrefabUtility.SaveAsPrefabAsset(root, MeadowChunkPath);
+                AssetDatabase.SaveAssets();
+                Debug.Log($"[GrasslandPipeline] PF_Chunk_Grassland_Meadow: {layout.Count} placements, {bindings.Count} renderers.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        /// <summary>Worn ground (vertex color B: the path of GL_Ground_Core_B) under a point, from the nearest vertex.</summary>
+        private static Func<Vector3, float> WornMask(Mesh ground)
+        {
+            var vertices = ground.vertices;
+            var colors = ground.colors32;
+            return p =>
+            {
+                float best = float.MaxValue;
+                byte worn = 0;
+                for (int i = 0; i < vertices.Length && i < colors.Length; i++)
+                {
+                    float dx = vertices[i].x - p.x, dz = vertices[i].z - p.z;
+                    float d = dx * dx + dz * dz;
+                    if (d < best)
+                    {
+                        best = d;
+                        worn = colors[i].b;
+                    }
+                }
+                return worn / 255f;
+            };
+        }
+
+        private static List<Placement> MeadowLayout(Mesh ground, List<Vector3> patchCenters)
+        {
+            var worn = WornMask(ground);
+            const float Power = 5f;
+            var list = new List<Placement>();
+            var rng = new Random(2711);
+
+            // Trees frame the meadow on its far sides; a tree and a big rock sit on the two ends of the seam with the
+            // start chunk, where the barely rounded corners leave a small notch.
+            (float x, float z, float yaw, float scale)[] trees =
+            {
+                (-6.4f, 6.1f, 40f, 0.95f), (-2.4f, 5.4f, 200f, 0.85f), (2.6f, 5.8f, 120f, 1.0f), (5.6f, 3.9f, 300f, 0.9f),
+                (5.4f, -4.2f, 15f, 0.85f), (1.6f, -5.6f, 250f, 0.8f),
+            };
+            foreach (var t in trees)
+                list.Add(new Placement { Prop = "GL_Tree_A", Position = new Vector3(t.x, 0f, t.z), Yaw = t.yaw, Scale = t.scale, Palette = PaletteTree });
+            (string size, float x, float z, float yaw, float scale)[] rocks =
+            {
+                ("L", -6.5f, -6.1f, 80f, 1.1f), ("M", -5.8f, -5.2f, 10f, 0.9f), ("S", 3.3f, 1.6f, 140f, 1f), ("M", -3.2f, -2.6f, 300f, 1f),
+                ("S", 4.4f, -1.9f, 60f, 1.1f), ("L", 6.1f, 1.2f, 220f, 0.9f), ("S", -4.1f, 3.4f, 20f, 1f),
+            };
+            foreach (var r in rocks)
+                list.Add(new Placement { Prop = "GL_Rock_" + r.size, Position = new Vector3(r.x, 0f, r.z), Yaw = r.yaw, Scale = r.scale, Palette = PaletteRock });
+
+            var anchors = list.Select(p => p.Position).ToList();
+            // The west side is joined to the start chunk: props may stand right on the seam, which hides it.
+            bool Inside(Vector3 p) => p.x < 0f ? p.x > -7.05f && Mathf.Abs(p.z) < 6.3f : InsideIsland(p, 0.6f, Power);
+            bool Free(Vector3 p)
+            {
+                if (!Inside(p) || worn(p) > 0.2f)
+                    return false;
+                foreach (var placed in list)
+                {
+                    float min = placed.Prop.StartsWith("GL_Tree", StringComparison.Ordinal) ? 0.55f
+                        : placed.Prop.StartsWith("GL_Rock_L", StringComparison.Ordinal) ? 0.6f
+                        : placed.Prop.StartsWith("GL_Rock", StringComparison.Ordinal) ? 0.35f : 0.22f;
+                    if (Vector3.Distance(placed.Position, p) < min * placed.Scale)
+                        return false;
+                }
+                return true;
+            }
+
+            string[] tufts = { "GL_GrassTuft_S", "GL_GrassTuft_M", "GL_GrassTuft_M", "GL_GrassTuft_L" };
+            foreach (var anchor in anchors)
+            {
+                int around = 3 + rng.Next(3);
+                for (int i = 0; i < around; i++)
+                {
+                    float a = (float)(rng.NextDouble() * Math.PI * 2.0);
+                    float d = 0.45f + (float)rng.NextDouble() * 0.5f;
+                    var p = anchor + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d);
+                    if (Free(p))
+                        list.Add(Tuft(rng, tufts, p, secondary: rng.NextDouble() < 0.3));
+                }
+            }
+            for (int i = 0; i < 16; i++)
+            {
+                var p = new Vector3(-7f + (float)rng.NextDouble() * 0.5f, 0f, -6f + i * 0.8f + (float)(rng.NextDouble() - 0.5) * 0.5f);
+                if (Free(p))
+                    list.Add(Tuft(rng, tufts, p, secondary: rng.NextDouble() < 0.4));
+            }
+            for (int attempt = 0; attempt < 900 && list.Count(p => p.Prop.StartsWith("GL_Grass", StringComparison.Ordinal)) < 200; attempt++)
+            {
+                var p = new Vector3((float)(rng.NextDouble() * 13.0 - 6.5), 0f, (float)(rng.NextDouble() * 13.0 - 6.5));
+                if (Free(p))
+                    list.Add(Tuft(rng, tufts, p, secondary: rng.NextDouble() < 0.5));
+            }
+
+            // Denser flower patches than the start chunk: this is the meadow you walk into.
+            string[] kinds = { "GL_Flower_A", "GL_Flower_A", "GL_Flower_B", "GL_Flower_C" };
+            int patches = 0;
+            for (int attempt = 0; attempt < 700 && patches < 44; attempt++)
+            {
+                var center = new Vector3((float)(rng.NextDouble() * 12.0 - 6.0), 0f, (float)(rng.NextDouble() * 12.0 - 6.0));
+                if (!Free(center))
+                    continue;
+                string kind = kinds[rng.Next(kinds.Length)];
+                string palette = kind == "GL_Flower_B" ? FlowerPalettes[3 + rng.Next(2)]
+                    : kind == "GL_Flower_C" ? FlowerPalettes[2]
+                    : FlowerPalettes[rng.Next(2)];
+                int count = 6 + rng.Next(6);
+                for (int i = 0; i < count; i++)
+                {
+                    var p = center + new Vector3((float)(rng.NextDouble() - 0.5) * 0.8f, 0f, (float)(rng.NextDouble() - 0.5) * 0.8f);
+                    if (!Free(p))
+                        continue;
+                    list.Add(new Placement
+                    {
+                        Prop = kind, Position = p, Yaw = (float)(rng.NextDouble() * 360.0), Scale = 1.3f + (float)rng.NextDouble() * 0.3f,
+                        Palette = palette, Secondary = i >= 2 && rng.NextDouble() < 0.6,
+                    });
+                }
+                patchCenters?.Add(center);
+                patches++;
+            }
+            return list;
         }
 
         /// <summary>
@@ -520,8 +797,7 @@ namespace PocketWilds.Editor.Environment
             merged.SetUVs(0, uvs);
             merged.SetTriangles(triangles, 0);
             merged.RecalculateBounds();
-            merged.UploadMeshData(false);
-            EditorUtility.SetDirty(merged);
+            MakeRuntimeOnly(merged);
             return merged;
         }
 
@@ -533,6 +809,14 @@ namespace PocketWilds.Editor.Environment
         {
             var centers = new List<Vector3>();
             var layout = Layout(egg, centers);
+            var points = new List<InterestPoint>(InterestsFrom(layout, centers, area));
+            if (Vector3.Distance(egg + new Vector3(-1.7f, 0f, -1.3f), area.Center) <= area.Radius + 0.2f)
+                points.Add(new InterestPoint(egg + new Vector3(-1.7f, 0f, -1.3f), 0f, InterestKind.Eat));
+            return points.ToArray();
+        }
+
+        private static InterestPoint[] InterestsFrom(List<Placement> layout, List<Vector3> centers, WanderArea area)
+        {
             var result = new List<InterestPoint>();
             void Add(Vector3 position, float standOff, InterestKind kind)
             {
@@ -553,7 +837,6 @@ namespace PocketWilds.Editor.Environment
             }
             foreach (var c in centers)
                 Add(c, 0.16f, InterestKind.Eat);
-            Add(egg + new Vector3(-1.7f, 0f, -1.3f), 0f, InterestKind.Eat);
             return result.ToArray();
         }
 

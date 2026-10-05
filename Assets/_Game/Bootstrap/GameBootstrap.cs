@@ -199,6 +199,8 @@ namespace PocketWilds.Bootstrap
             {
                 if (root.TryGetComponent<ISceneEntry>(out var entry))
                 {
+                    if (entry is ISceneEntryPreparation preparation)
+                        await preparation.PrepareAsync(Context, cancellationToken);
                     _activeEntry = entry;
                     entry.Enter(Context);
                     return;

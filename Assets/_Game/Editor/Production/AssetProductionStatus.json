@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T04:54:09Z",
+  "updatedUtc": "2026-10-05T14:49:23Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -193,8 +193,8 @@
     {
       "task": "T27",
       "title": "Chunk streaming",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Two grassland chunks streamed through Addressables (N-GRP-BIOME-GRASSLAND: one bundle per chunk + shared kit bundle, 0 duplicates). PF_Chunk_Grassland_Meadow on GL_Ground_Core_B, 14 m east; both grounds rebuilt with a joined, square, flat side sharing the same 60 seam vertices, grass patches in world space: no visible seam (TestResults/Captures/T27_seam_*.png). WorldStreamer (plain class, camera ground footprint): preload 4 m (async load + InstantiateAsync inactive, palettes bound), activate 1 m, deactivate 2 m, release after 4 s beyond 6 m; one transition of each kind per tick; markers WorldStreamer.*; pinned start chunk loaded before Enter (ISceneEntryPreparation). Windows player W1 (two trips): 0 frames over 33 ms, max 17.3 ms (vsync), main max 3.28 ms (3.27 without streaming), streamer tick max 0.61 ms, late activations 0; mesh memory 1.29 -> 2.13 -> 1.29 MB twice, meadow meshes 0/13/0, bundles 3/4/3. Docs/Performance/T27_Streaming.md. EditMode 278/278, PlayMode 32/32 (+1 explicit). Device measurement pending like T22-T26."
     },
     {
       "task": "T28",
@@ -3177,7 +3177,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3189,7 +3189,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T27: pw_grassland.build_ground(seed 97, power 5, clearing off, east-west worn path, joins +X, origin -14). Joined west side square and flat, same 15 top + 45 wall seam vertices as Core_A's east side (test GroundSeam_StartAndMeadowShareTheSameEdgeVertices); grass patches in world space so they continue across the seam. 1456 tris."
     },
     {
       "id": "D-BIO-001/GL_Edge_A",
@@ -3698,7 +3698,7 @@
       "dependencies": [
         "D-BIO-001/GL_Ground_Core_A"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/World/Chunks/Grassland/PF_Chunk_Grassland_Meadow.prefab",
       "validationGates": [
@@ -3708,7 +3708,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T27: GrasslandPipeline.BuildMeadowChunk on GL_Ground_Core_B at +14 m east of the start chunk. Trees framing north/south, tree and big rock on the seam ends, tufts straddling the seam, 44 flower patches (denser than Start), 341 placements, 38 renderers (merged grass/flowers per palette). Wander area, 3 spawns, interest points, links W/E. Addressable chunk.grassland.meadow (385 KB bundle on Windows). Captures TestResults/Captures/T27_seam_*.png, T27_meadow_gameplay.png."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_PondEdge",
@@ -8762,7 +8762,7 @@
       "family": "Addressables",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Addressables/",
       "validationGates": [
@@ -8770,7 +8770,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T27: groups Biome_Grassland_Chunks (pack separately: chunk.grassland.start, chunk.grassland.meadow) and Biome_Grassland_Kit (pack together: 6 standalone kit meshes, 2 materials, 2 shaders), label biome_grassland, built with every player build. Assets/AddressableAssetsData, set up by Pocket Wilds/World/Setup Grassland Streaming. Build layout: 0 duplicated assets; analyze rules bundle and scene duplicates: none."
     },
     {
       "id": "N-GRP-Biome_Forest",

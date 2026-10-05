@@ -575,7 +575,34 @@ def superellipse(theta, power=4.0):
     return c * r, s * r
 
 
-def build_ground(collections, rings=10, segments=56, seed=41):
+PATCH_SEED = 41         # light/dark grass patches share one world-space field across the biome
+
+
+def _contour(theta, power, joins):
+    """Superellipse, except on a joined half: a true square, so the corners of both chunks meet exactly."""
+    c, s = math.cos(theta), math.sin(theta)
+    if ("+X" if c > 0.0 else "-X") in joins:
+        m = max(abs(c), abs(s))
+        return c / m, s / m
+    return superellipse(theta, power)
+
+
+def _join_weight(x, joins, start=4.6, end=6.4):
+    """1 near a joined side: no rolls, no rim drop, so both chunks meet flat at z = 0 on the same vertices."""
+    w = 0.0
+    if "+X" in joins:
+        w = max(w, smoothstep(start, end, x))
+    if "-X" in joins:
+        w = max(w, smoothstep(start, end, -x))
+    return w
+
+
+def build_ground(collections, rings=10, segments=56, seed=41, name="GL_Ground_Core_A", power=4.0, clearing=True,
+                 joins=(), origin=(0.0, 0.0)):
+    """Core_A: start island with the egg clearing. Core_B (T27): squarer contour and a worn path running
+    east-west instead of the clearing. `joins` lists the sides (Blender "+X"/"-X") glued to a neighbour chunk:
+    square contour, flat edge, same contour vertices on both sides. `origin` is the chunk position in Blender
+    world space, so the grass patches continue across the seam."""
     bm = bmesh.new()
     center = bm.verts.new((0.0, 0.0, 0.0))
     radii = [GROUND_HALF * (i / rings) ** 0.9 for i in range(1, rings + 1)]
@@ -584,14 +611,15 @@ def build_ground(collections, rings=10, segments=56, seed=41):
         ring = []
         for j in range(segments):
             theta = j / segments * math.tau
-            sx, sy = superellipse(theta)
+            sx, sy = _contour(theta, power, joins)
             x, y = sx * r, sy * r
             dist = math.hypot(x, y)
-            # Flat play area, gentle rolls outside it, soft rounded lip at the rim.
-            rolls = smoothstep(GROUND_FLAT_RADIUS * 0.85, GROUND_FLAT_RADIUS * 1.25, dist)
+            join = _join_weight(x, joins)
+            # Flat play area, gentle rolls outside it, soft rounded lip at the rim (none on a joined side).
+            rolls = smoothstep(GROUND_FLAT_RADIUS * 0.85, GROUND_FLAT_RADIUS * 1.25, dist) * (1.0 - join)
             z = rolls * 0.22 * (0.5 + 0.5 * wave_noise(Vector((x * 0.25, y * 0.25, 0.0)), seed))
             if ri == rings - 1:
-                z -= 0.06
+                z -= 0.06 * (1.0 - join)
             ring.append(bm.verts.new((x, y, z)))
         grid.append(ring)
     for j in range(segments):
@@ -608,9 +636,11 @@ def build_ground(collections, rings=10, segments=56, seed=41):
         ring = []
         for j in range(segments):
             theta = j / segments * math.tau
-            sx, sy = superellipse(theta)
+            sx, sy = _contour(theta, power, joins)
+            # A joined side keeps its wall on the seam plane: no gap opens between the two soil walls.
+            keep = _join_weight(sx * GROUND_HALF, joins)
             r = GROUND_HALF - inset
-            ring.append(bm.verts.new((sx * r, sy * r, -depth)))
+            ring.append(bm.verts.new((sx * (GROUND_HALF - inset * (1.0 - keep)), sy * r, -depth)))
         for j in range(segments):
             n = (j + 1) % segments
             bm.faces.new((previous[j], ring[j], ring[n], previous[n]))
@@ -621,18 +651,25 @@ def build_ground(collections, rings=10, segments=56, seed=41):
         bm.faces.new((previous[n], previous[j], bottom))
     bm.normal_update()
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    obj = object_from_bmesh("GL_Ground_Core_A", bm, collections)
+    obj = object_from_bmesh(name, bm, collections)
     mark_sharp_by_angle(obj, 50.0)
 
     def regions(co, n, i):
         if co.z < -0.12:
             return (0.0, 0.0, 0.0, 1.0)  # soil wall
-        light = smoothstep(0.25, 0.75, wave_noise(Vector((co.x * 0.35, co.y * 0.35, 1.0)), seed + 1))
-        dark = smoothstep(0.35, 0.85, wave_noise(Vector((co.x * 0.3, co.y * 0.3, 2.0)), seed + 2))
-        # A soft worn clearing where the egg waits, in the middle of the play area.
-        clearing = 1.0 - smoothstep(0.7, 1.35, math.hypot(co.x, co.y + 0.6))
+        wx, wy = co.x + origin[0], co.y + origin[1]
+        light = smoothstep(0.25, 0.75, wave_noise(Vector((wx * 0.35, wy * 0.35, 1.0)), PATCH_SEED + 1))
+        dark = smoothstep(0.35, 0.85, wave_noise(Vector((wx * 0.3, wy * 0.3, 2.0)), PATCH_SEED + 2))
+        if clearing:
+            # A soft worn clearing where the egg waits, in the middle of the play area.
+            worn = 1.0 - smoothstep(0.7, 1.35, math.hypot(co.x, co.y + 0.6))
+        else:
+            # A faint path crossing east-west: the meadow continues from one chunk to the next.
+            # It fades out before a joined side: the neighbour has its own ground story.
+            wobble = 0.35 * math.sin(co.x * 0.45 + seed)
+            worn = 0.7 * (1.0 - smoothstep(0.35, 0.9, abs(co.y - wobble))) * (1.0 - _join_weight(co.x, joins, 4.2, 6.6))
         soil_lip = smoothstep(-0.02, -0.12, co.z)
-        return (light * 0.85, dark * 0.75, clearing * 0.5, soil_lip)
+        return (light * 0.85, dark * 0.75, worn * 0.5, soil_lip)
 
     def occlusion(co, n, i):
         lip = smoothstep(-0.05, -0.2, co.z) * (1.0 - smoothstep(-0.6, -1.0, co.z)) * 0.35

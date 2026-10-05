@@ -252,8 +252,8 @@ namespace PocketWilds.Editor.Lighting
 
             // Bake the Medium reference into the saved scene so the editor view matches the game.
             profile.Apply(sun, rig.Camera, QualityTier.Medium);
-            if (entry.StartChunk != null && entry.StartChunk.EggSpawn != null)
-                rig.SnapTo(entry.StartChunk.EggSpawn.position);
+            // The start chunk is streamed (T27): frame the egg spawn read from the chunk prefab.
+            rig.SnapTo(PocketWilds.Editor.World.WorldContentPipeline.StartEggSpawn());
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
         }

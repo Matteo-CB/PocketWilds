@@ -168,7 +168,7 @@ namespace PocketWilds.Tests.PlayMode
 
             var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
             Assert.IsNotNull(entry);
-            Assert.IsNotNull(entry.StartChunk, "SC_VerticalSlice_Grassland must reference its start chunk.");
+            Assert.IsNotNull(entry.StartChunk, "SC_VerticalSlice_Grassland must stream its start chunk before Enter.");
             Assert.IsTrue(bootstrap.Context.Palettes.TryGetRow(ContentId.FromSource("palette.grassland.ground"), out int row));
             var ground = entry.StartChunk.transform.Find("Ground").GetComponent<MeshRenderer>();
             Assert.AreEqual(row, EnvironmentVisualPacking.PaletteRow(ground.GetShaderUserValue()));

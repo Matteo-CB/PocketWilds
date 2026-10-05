@@ -5,6 +5,7 @@ using PocketWilds.Editor.Animals;
 using PocketWilds.Editor.Eggs;
 using PocketWilds.Presentation;
 using PocketWilds.Simulation;
+using PocketWilds.Editor.World;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -39,7 +40,7 @@ namespace PocketWilds.Editor.Capture
             {
                 try
                 {
-                    var chunk = Object.FindAnyObjectByType<WorldChunk>();
+                    var chunk = SceneChunk();
                     var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                     var sun = Object.FindAnyObjectByType<Light>();
                     chunk.Bind(palettes);
@@ -103,7 +104,7 @@ namespace PocketWilds.Editor.Capture
             string result;
             using (var palettes = new PaletteTable(registry))
             {
-                Object.FindAnyObjectByType<WorldChunk>().Bind(palettes);
+                SceneChunk().Bind(palettes);
                 var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                 var camera = Camera.main;
                 entry.Lighting.Apply(Object.FindAnyObjectByType<Light>(), camera, QualityTier.Medium);
@@ -115,6 +116,74 @@ namespace PocketWilds.Editor.Capture
             }
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             return result;
+        }
+
+        /// <summary>
+        /// The start chunk for a capture: streamed at runtime since T27, so tools instance the prefab in the open
+        /// scene (reopened from disk afterwards, never saved).
+        /// </summary>
+        internal static WorldChunk SceneChunk()
+        {
+            var existing = Object.FindAnyObjectByType<WorldChunk>();
+            return existing != null ? existing : WorldContentPipeline.SpawnForTools(WorldContentPipeline.StartAddress);
+        }
+
+        [MenuItem("Pocket Wilds/Capture/Chunk Seam (T27)", priority = 525)]
+        public static void CaptureSeamMenu() => Debug.Log("[WorldCapture] " + CaptureSeam("T27"));
+
+        /// <summary>Start and meadow chunks side by side: overview, three-quarter view on the seam, gameplay frames.</summary>
+        public static string CaptureSeam(string prefix)
+        {
+            var active = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (active.path != ScenePath && !string.IsNullOrEmpty(active.path) && active.isDirty)
+                return "refused: save or discard changes in " + active.path;
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var registry = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath).CreateBuilder().Build();
+            var results = new List<string>();
+            using (var palettes = new PaletteTable(registry))
+            {
+                try
+                {
+                    var start = SceneChunk();
+                    var meadow = WorldContentPipeline.SpawnForTools(WorldContentPipeline.MeadowAddress);
+                    var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
+                    var camera = Camera.main;
+                    entry.Lighting.Apply(Object.FindAnyObjectByType<Light>(), camera, QualityTier.Medium);
+                    foreach (var chunk in new[] { start, meadow })
+                    {
+                        chunk.Bind(palettes);
+                        chunk.ApplyQuality(QualityTier.Medium);
+                    }
+                    var position = camera.transform.position;
+                    var rotation = camera.transform.rotation;
+                    float fov = camera.fieldOfView, far = camera.farClipPlane;
+                    var egg = start.EggSpawn.position;
+                    float seam = meadow.transform.position.x * 0.5f;
+                    string folder = CaptureUtility.DefaultFolder;
+
+                    camera.farClipPlane = 200f;
+                    camera.fieldOfView = 50f;
+                    camera.transform.position = new Vector3(seam, 16f, -14f);
+                    camera.transform.LookAt(new Vector3(seam, 0f, 0f));
+                    CaptureUtility.Render(camera, 1400, 900, $"{folder}/{prefix}_seam_overview.png");
+                    results.Add(CaptureUtility.Render(camera, 1400, 900, $"{folder}/{prefix}_seam_overview.png"));
+                    camera.fieldOfView = fov;
+                    camera.transform.position = new Vector3(seam - 1.5f, 4.5f, -9.5f);
+                    camera.transform.LookAt(new Vector3(seam, 0.2f, 0.5f));
+                    results.Add(CaptureUtility.Render(camera, 1200, 760, $"{folder}/{prefix}_seam_threequarter.png"));
+                    camera.transform.SetPositionAndRotation(position + new Vector3(seam - egg.x, 0f, 0f), rotation);
+                    results.Add(CaptureUtility.Render(camera, 540, 1170, $"{folder}/{prefix}_seam_gameplay.png"));
+                    camera.transform.SetPositionAndRotation(position + new Vector3(meadow.transform.position.x - egg.x, 0f, 0f), rotation);
+                    results.Add(CaptureUtility.Render(camera, 540, 1170, $"{folder}/{prefix}_meadow_gameplay.png"));
+                    camera.transform.SetPositionAndRotation(position, rotation);
+                    camera.farClipPlane = far;
+                }
+                finally
+                {
+                    EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+                }
+            }
+            return string.Join(", ", results);
         }
 
         private static readonly string[] RabbitMix = { "rabbit.brown", "rabbit.white", "rabbit.grey", "rabbit.spotted", "rabbit.black", "rabbit.sakura" };
@@ -143,7 +212,7 @@ namespace PocketWilds.Editor.Capture
             {
                 try
                 {
-                    var chunk = Object.FindAnyObjectByType<WorldChunk>();
+                    var chunk = SceneChunk();
                     var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                     var camera = Camera.main;
                     chunk.Bind(palettes);
@@ -212,7 +281,7 @@ namespace PocketWilds.Editor.Capture
             {
                 try
                 {
-                    var chunk = Object.FindAnyObjectByType<WorldChunk>();
+                    var chunk = SceneChunk();
                     var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                     var camera = Camera.main;
                     chunk.Bind(palettes);
@@ -284,7 +353,7 @@ namespace PocketWilds.Editor.Capture
             {
                 try
                 {
-                    var chunk = Object.FindAnyObjectByType<WorldChunk>();
+                    var chunk = SceneChunk();
                     var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                     var camera = Camera.main;
                     chunk.Bind(palettes);

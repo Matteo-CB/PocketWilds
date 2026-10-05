@@ -48,6 +48,10 @@ namespace PocketWilds.Editor.Build
             var report = BuildWindows();
             if (report.summary.result != BuildResult.Succeeded)
                 throw new Exception("Windows benchmark build failed: " + report.summary.result);
+            // The streamed world needs its bundles next to the catalog (T27).
+            string content = Path.Combine(Path.GetDirectoryName(WindowsBenchmarkPath), "PocketWilds-bench_Data", "StreamingAssets", "aa");
+            if (!Directory.Exists(content) || Directory.GetFiles(content, "*.bundle", SearchOption.AllDirectories).Length == 0)
+                throw new Exception("Windows benchmark build has no Addressables bundles in " + content);
         }
 
         public const string WindowsBenchmarkPath = OutputFolder + "/Windows/PocketWilds-bench.exe";
@@ -66,6 +70,11 @@ namespace PocketWilds.Editor.Build
             };
             var activeTarget = EditorUserBuildSettings.activeBuildTarget;
             var activeGroup = BuildPipeline.GetBuildTargetGroup(activeTarget);
+            // Addressables resolve [BuildTarget] from the active target: building Windows content while the editor
+            // is on Android wrote Windows bundles under aa/Android and shipped a catalog without them (T27).
+            if (activeTarget != BuildTarget.StandaloneWindows64)
+                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
+            PrepareAddressables();
             var report = BuildPipeline.BuildPlayer(options);
             var summary = report.summary;
             Debug.Log($"[Build] Windows benchmark: {summary.result}, {summary.totalSize / (1024f * 1024f):F1} MB, " +
@@ -74,6 +83,20 @@ namespace PocketWilds.Editor.Build
             if (EditorUserBuildSettings.activeBuildTarget != activeTarget)
                 EditorUserBuildSettings.SwitchActiveBuildTarget(activeGroup, activeTarget);
             return report;
+        }
+
+        /// <summary>
+        /// The player build rebuilds the Addressables content (setting stored in AddressableAssetSettings, T27).
+        /// The build layout stays on: it feeds the duplicate review and keeps Addressables from opening its
+        /// first-build modal prompt in an unattended build.
+        /// </summary>
+        private static void PrepareAddressables()
+        {
+            var settings = UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject.GetSettings(false);
+            if (settings == null)
+                throw new Exception("Addressables are not set up: run Pocket Wilds/World/Setup Grassland Streaming.");
+            settings.BuildAddressablesWithPlayerBuild = UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer;
+            UnityEditor.AddressableAssets.Settings.ProjectConfigData.GenerateBuildLayout = true;
         }
 
         private static BuildReport BuildAndroid(bool development)
@@ -93,6 +116,7 @@ namespace PocketWilds.Editor.Build
                 options = development ? BuildOptions.Development | BuildOptions.ConnectWithProfiler : BuildOptions.None,
             };
 
+            PrepareAddressables();
             var report = BuildPipeline.BuildPlayer(options);
             var summary = report.summary;
             Debug.Log($"[Build] Android {(development ? "development" : "release")}: {summary.result}, " +

@@ -40,7 +40,7 @@ namespace PocketWilds.Editor.Capture
             {
                 try
                 {
-                    var chunk = Object.FindAnyObjectByType<WorldChunk>();
+                    var chunk = WorldCapture.SceneChunk();
                     var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                     var hud = Object.FindAnyObjectByType<SanctuaryHud>();
                     var camera = Camera.main;
