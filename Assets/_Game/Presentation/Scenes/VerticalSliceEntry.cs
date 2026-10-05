@@ -23,6 +23,8 @@ namespace PocketWilds.Presentation
         [SerializeField] private string _eggId = "egg.grassland.basic";
         [Tooltip("HUD component implementing ISanctuaryHud (UI assembly).")]
         [SerializeField] private MonoBehaviour _hud;
+        [Tooltip("Offline return screen implementing IOfflineReturnView (UI assembly).")]
+        [SerializeField] private MonoBehaviour _offlineReturn;
 
         private GameContext _context;
         private SanctuaryController _sanctuary;
@@ -57,7 +59,8 @@ namespace PocketWilds.Presentation
 
             if (_startChunk != null && _hatchConfig != null && context.VisualCatalog != null && context.Content.Eggs.TryGet(ContentId.FromSource(_eggId), out _))
             {
-                _sanctuary = new SanctuaryController(context, _startChunk, _cameraRig, _hud as ISanctuaryHud, _hatchConfig, _eggId, transform);
+                _sanctuary = new SanctuaryController(context, _startChunk, _cameraRig, _hud as ISanctuaryHud, _hatchConfig, _eggId, transform,
+                    _offlineReturn as IOfflineReturnView);
                 var input = _cameraRig != null ? _cameraRig.GetComponent<SanctuaryCameraInput>() : null;
                 if (input != null)
                     input.SetTapHandler(this);

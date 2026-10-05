@@ -20,6 +20,12 @@ namespace PocketWilds.Bootstrap
         /// <summary>Visual catalog used when the bootstrap has none assigned (tests creating it from code).</summary>
         public AnimalVisualCatalog VisualCatalogOverride;
 
+        /// <summary>Text tables used when the bootstrap has no content database (tests).</summary>
+        public LocalizationTableAsset[] LocalizationOverride;
+
+        /// <summary>Wall clock replacement (tests that simulate time away).</summary>
+        public PocketWilds.Core.IGameClock ClockOverride;
+
         /// <summary>When false, stays in the bootstrap scene after boot (tests).</summary>
         public bool LoadTargetScene = true;
     }

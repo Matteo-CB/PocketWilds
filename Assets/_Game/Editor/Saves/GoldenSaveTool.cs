@@ -27,6 +27,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_New_v1", BuildNew());
             created += WriteIfMissing("GoldenSave_Day7_v1", BuildDay7());
             created += WriteIfMissing("GoldenSave_PremiumEntitlements_v1", BuildPremium());
+            created += WriteIfMissing("GoldenSave_Offline_v2", BuildOffline());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -69,6 +70,31 @@ namespace PocketWilds.Editor.Saves
             state.Meta.LastKnownSessionId = new Guid("5e55e55e-0000-4000-8000-000000000001");
             state.Meta.Revision = 1;
             state.Meta.AppVersion = "0.1.0";
+            return state;
+        }
+
+        /// <summary>Schema 2: exit snapshot with a known rate and a time high-water mark.</summary>
+        private static PlayerState BuildOffline()
+        {
+            var state = new PlayerState();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-000000000018");
+            state.Meta.CreatedUtc = BaseTime;
+            state.Meta.LastSaveUtc = BaseTime.AddDays(10);
+            state.Meta.LastKnownSessionId = new Guid("5e55e55e-0000-4000-8000-000000000018");
+            state.Meta.Revision = 77;
+            state.Meta.AppVersion = "0.2.0";
+            state.Wallet.Light = BigValue.FromDouble(5000);
+            state.Wallet.LifetimeLight = BigValue.FromDouble(90000);
+            state.Collection.Add(new AnimalInstance
+            {
+                Species = ContentId.FromSource("species.rabbit"),
+                Variant = ContentId.FromSource("variant.rabbit.brown"),
+                Seed = 18u,
+                CreatedUtcSeconds = (uint)BaseTime.ToUnixTimeSeconds(),
+            });
+            state.Offline.RateAtSave = BigValue.FromDouble(12.5);
+            state.Offline.HasRate = true;
+            state.Offline.HighWaterUtc = BaseTime.AddDays(10).AddMinutes(3);
             return state;
         }
 

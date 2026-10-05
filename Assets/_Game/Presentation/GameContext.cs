@@ -24,7 +24,9 @@ namespace PocketWilds.Presentation
             AnimalVisualResolver visuals,
             AnimalVisualCatalog visualCatalog,
             IAudioService audio,
-            IHapticService haptics)
+            IHapticService haptics,
+            OfflineService offline = null,
+            ILocalization localization = null)
         {
             Clock = clock;
             Content = content;
@@ -38,6 +40,8 @@ namespace PocketWilds.Presentation
             VisualCatalog = visualCatalog;
             Audio = audio ?? NullAudioService.Instance;
             Haptics = haptics ?? NullHapticService.Instance;
+            Offline = offline;
+            Localization = localization;
         }
 
         public IGameClock Clock { get; }
@@ -57,6 +61,12 @@ namespace PocketWilds.Presentation
         /// <summary>Named audio events. No-op until the audio service and clips land.</summary>
         public IAudioService Audio { get; }
         public IHapticService Haptics { get; }
+
+        /// <summary>Away-time resolution. Null in headless tests that do not need it.</summary>
+        public OfflineService Offline { get; }
+
+        /// <summary>Player-facing text. Null in headless tests: screens fall back to the keys.</summary>
+        public ILocalization Localization { get; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

@@ -7,6 +7,7 @@ using PocketWilds.Core;
 using PocketWilds.Presentation;
 using PocketWilds.Services.Device;
 using PocketWilds.Services.Feedback;
+using PocketWilds.Services.Localization;
 using PocketWilds.Services.Save;
 using PocketWilds.Simulation;
 using UnityEngine;
@@ -44,6 +45,8 @@ namespace PocketWilds.Bootstrap
         private SaveLoadResult _loadResult;
         private EconomyService _economy;
         private HatchService _hatch;
+        private OfflineService _offline;
+        private LocalizationService _localization;
         private QualityService _quality;
         private FrameRateService _frameRate;
         private GameLoop _loop;
@@ -54,8 +57,8 @@ namespace PocketWilds.Bootstrap
         public GameContext Context { get; private set; }
         public SaveLoadResult LoadResult => _loadResult;
 
-        /// <summary>Wall time since the last save, measured at boot. Resolved by OfflineService (T18).</summary>
-        public TimeSpan OfflineDeltaAtBoot { get; private set; }
+        /// <summary>Away time paid at boot (OfflineService). Also handed to the scene through the context.</summary>
+        public OfflineReport OfflineAtBoot { get; private set; }
 
         public BootSequence Sequence { get; private set; }
 
@@ -113,10 +116,10 @@ namespace PocketWilds.Bootstrap
 
             sequence.AddBlocking("Save", async cancellationToken =>
             {
-                _clock = new RuntimeGameClock();
+                _clock = _options.ClockOverride ?? new RuntimeGameClock();
                 string directory = _options.SaveDirectory ?? Path.Combine(Application.persistentDataPath, "Saves");
                 var store = new SaveFileStore(directory);
-                var migrations = new SaveMigrationPipeline(SaveSchema.CurrentVersion, Array.Empty<ISaveMigration>());
+                var migrations = SaveMigrations.CreatePipeline();
                 var saveOptions = new SaveServiceOptions { AppVersion = Application.version };
                 _save = new SaveService(store, new BinarySaveSerializer(), migrations, _clock, saveOptions);
                 _loadResult = await _save.LoadOrCreateAsync(cancellationToken);
@@ -125,15 +128,26 @@ namespace PocketWilds.Bootstrap
                     throw new InvalidOperationException("Save was made by a newer version. Update the game.");
             });
 
-            sequence.AddBlocking("GameClock", () =>
+            sequence.AddBlocking("Localization", () =>
             {
-                OfflineDeltaAtBoot = _clock.GetOfflineDelta(_save.State.Meta.LastSaveUtc);
+                var tables = _options.LocalizationOverride
+                             ?? (_contentDatabase != null ? _contentDatabase.localization.ToArray() : null);
+                _localization = new LocalizationService(tables, _save.State.Settings.LanguageCode, Application.systemLanguage);
             });
 
             sequence.AddBlocking("Simulation", () =>
             {
                 _economy = new EconomyService(_save.State, _content, EconomyConfig.Default, _save);
                 _hatch = new HatchService(_save.State, _content, _economy, _clock, _save);
+                _offline = new OfflineService(_save.State, _economy, _clock);
+                _save.BeforeSerialize += _offline.CaptureSnapshot;
+            });
+
+            sequence.AddBlocking("Offline", () =>
+            {
+                OfflineAtBoot = _offline.ResolveReturn();
+                if (OfflineAtBoot.CreditedSeconds > 0.0)
+                    GameLog.Info(LogCategory.Save, $"Offline {OfflineAtBoot.CreditedSeconds:F0} s, +{BigValueFormatter.ToDebugString(OfflineAtBoot.Light)} Light");
             });
 
             sequence.AddBlocking("Presentation", async cancellationToken =>
@@ -142,7 +156,7 @@ namespace PocketWilds.Bootstrap
                 var visuals = new AnimalVisualResolver(_content, _palettes);
                 var catalog = _options.VisualCatalogOverride != null ? _options.VisualCatalogOverride : _visualCatalog;
                 Context = new GameContext(_clock, _content, _save, _economy, _hatch, _quality, _frameRate, _palettes, visuals, catalog,
-                    NullAudioService.Instance, NullHapticService.Instance);
+                    NullAudioService.Instance, NullHapticService.Instance, _offline, _localization);
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 if (_options.LoadTargetScene)
@@ -196,13 +210,22 @@ namespace PocketWilds.Bootstrap
                 return;
 
             if (paused)
+            {
+                _offline.MarkActive();
                 _save.FlushNow();
+            }
             else
+            {
+                // Away time is paid analytically; the frame loop never replays it.
+                _offline.ResolveReturn();
                 _loop.ResetAccumulators();
+            }
         }
 
         private void OnDestroy()
         {
+            if (_save != null && _offline != null)
+                _save.BeforeSerialize -= _offline.CaptureSnapshot;
             _palettes?.Dispose();
             _palettes = null;
         }

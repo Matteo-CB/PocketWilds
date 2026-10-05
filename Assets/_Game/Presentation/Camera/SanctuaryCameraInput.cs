@@ -31,13 +31,32 @@ namespace PocketWilds.Presentation
         private Vector2 _pressPosition;
         private Vector2 _lastPosition;
         private float _lastPinchDistance;
+        private bool _blocked;
 
         public void SetTapHandler(ISanctuaryTapHandler handler) => _tapHandler = handler;
+
+        /// <summary>A modal screen is open: no pan, zoom or world tap. An ongoing press is dropped.</summary>
+        public bool Blocked
+        {
+            get => _blocked;
+            set
+            {
+                _blocked = value;
+                if (value)
+                {
+                    _pressing = false;
+                    _dragging = false;
+                    _lastPinchDistance = 0f;
+                }
+            }
+        }
 
         private void Awake() => _rig = GetComponent<SanctuaryCameraRig>();
 
         private void Update()
         {
+            if (_blocked)
+                return;
             var touchscreen = Touchscreen.current;
             if (touchscreen != null && HandleTouches(touchscreen))
                 return;

@@ -28,10 +28,14 @@ namespace PocketWilds.Tests.EditMode
 
         private SaveService NewService(int schema = SaveSchema.CurrentVersion, params ISaveMigration[] migrations)
         {
+            // Default: the shipped migration chain, like the bootstrap.
+            var pipeline = migrations.Length == 0 && schema == SaveSchema.CurrentVersion
+                ? SaveMigrations.CreatePipeline()
+                : new SaveMigrationPipeline(schema, migrations);
             return new SaveService(
                 new SaveFileStore(_dir),
                 new BinarySaveSerializer(),
-                new SaveMigrationPipeline(schema, migrations),
+                pipeline,
                 _clock,
                 new SaveServiceOptions { AppVersion = "test" });
         }
@@ -251,10 +255,10 @@ namespace PocketWilds.Tests.EditMode
             service.LoadOrCreate();
             service.FlushNow();
 
-            // Pretend a future build (schema 2) wrote this file. Schema lives in the header at offset 8.
+            // Pretend a future build (next schema) wrote this file. Schema lives in the header at offset 8.
             var store = new SaveFileStore(_dir);
             var before = File.ReadAllBytes(store.CurrentPath);
-            before[8] = 2;
+            before[8] = (byte)(SaveSchema.CurrentVersion + 1);
             File.WriteAllBytes(store.CurrentPath, before);
 
             var today = NewService();
@@ -312,6 +316,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_New_v1")]
         [TestCase("GoldenSave_Day7_v1")]
         [TestCase("GoldenSave_PremiumEntitlements_v1")]
+        [TestCase("GoldenSave_Offline_v2")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -322,6 +327,12 @@ namespace PocketWilds.Tests.EditMode
             var result = service.LoadOrCreate();
             Assert.AreEqual(SaveLoadOutcome.Loaded, result.Outcome, string.Join("; ", result.Problems));
             var state = service.State;
+            if (name.EndsWith("_v1"))
+            {
+                Assert.AreEqual(1, result.FromSchemaVersion);
+                Assert.AreEqual(SaveSchema.CurrentVersion - 1, result.MigrationsApplied);
+                Assert.IsFalse(state.Offline.HasRate, "Schema 1 has no exit snapshot: the rate is rebuilt.");
+            }
 
             switch (name)
             {
@@ -349,6 +360,14 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(37, state.World.EggPurchasesInCycle[ContentId.FromSource("egg.grassland.basic")]);
                     Assert.AreEqual("fr", state.Settings.LanguageCode);
                     Assert.IsTrue(state.Settings.ReduceMotion);
+                    break;
+
+                case "GoldenSave_Offline_v2":
+                    Assert.AreEqual(77, state.Meta.Revision);
+                    Assert.IsTrue(state.Offline.HasRate);
+                    Assert.AreEqual(12.5, state.Offline.RateAtSave.ToDoubleClamped());
+                    Assert.AreEqual(new DateTimeOffset(2026, 10, 14, 0, 3, 0, TimeSpan.Zero), state.Offline.HighWaterUtc);
+                    Assert.AreEqual(1, state.Collection.Count);
                     break;
 
                 case "GoldenSave_PremiumEntitlements_v1":

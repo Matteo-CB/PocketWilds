@@ -86,11 +86,33 @@ namespace PocketWilds.Tests.EditMode
                 Assert.IsInstanceOf<SanctuaryHud>(so.FindProperty("_hud").objectReferenceValue);
                 Assert.IsNotNull(so.FindProperty("_hatchConfig").objectReferenceValue);
                 Assert.AreEqual("egg.grassland.basic", so.FindProperty("_eggId").stringValue);
+                Assert.IsInstanceOf<OfflineReturnScreen>(so.FindProperty("_offlineReturn").objectReferenceValue);
             }
             finally
             {
                 EditorSceneManager.CloseScene(scene, true);
             }
+        }
+
+        [Test]
+        public void OfflineReturnPrefab_IsAClosedModal_AboveTheHud()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(UiPipeline.OfflineReturnPrefabPath);
+            Assert.IsNotNull(prefab, "Run Pocket Wilds/UI/Build HUD and Screens.");
+            var canvas = prefab.GetComponent<Canvas>();
+            Assert.Greater(canvas.sortingOrder, LoadHud().GetComponent<Canvas>().sortingOrder);
+            Assert.IsFalse(canvas.enabled, "A closed screen draws nothing.");
+            Assert.IsNotNull(prefab.GetComponent<GraphicRaycaster>());
+            Assert.IsNotNull(prefab.GetComponent<OfflineReturnScreen>());
+            var content = prefab.transform.Find("Content");
+            Assert.IsFalse(content.gameObject.activeSelf);
+
+            var targets = prefab.GetComponentsInChildren<Graphic>(true).Where(g => g.raycastTarget).ToArray();
+            Assert.AreEqual(2, targets.Length, "Scrim (blocks the world and the HUD) and Collect.");
+            Assert.IsTrue(targets.Any(g => g.name == "Scrim"));
+            Assert.IsTrue(targets.Any(g => g.GetComponent<Button>() != null));
+            Assert.IsEmpty(prefab.GetComponentsInChildren<LayoutGroup>(true));
+            Assert.IsEmpty(prefab.GetComponentsInChildren<Animator>(true));
         }
 
         [Test]

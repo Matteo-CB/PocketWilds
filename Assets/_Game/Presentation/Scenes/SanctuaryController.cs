@@ -11,19 +11,23 @@ namespace PocketWilds.Presentation
     /// The playable sanctuary loop (T17): animals from the save live in the meadow, an egg waits on its
     /// spawn point, a touch (on the egg or the hatch button) buys and hatches it, the new animal joins the
     /// meadow and the next egg appears. Plain class ticked by VerticalSliceEntry: one Update for the scene,
-    /// pooled views, no per-animal logic, no allocation in steady state.
+    /// pooled views, no per-animal logic, no allocation in steady state. Away time comes back through the
+    /// offline return screen; its Light counts up into the HUD when collected (T18).
     /// </summary>
-    public sealed class SanctuaryController : ISanctuaryActions, IHatchListener, IDisposable
+    public sealed class SanctuaryController : ISanctuaryActions, IHatchListener, IOfflineReturnActions, IDisposable
     {
         private const float NextEggDelay = 0.45f;
         private const float RepeatWindowSeconds = 15f;
         private const float EggTapRadius = 0.32f;
         private const float AnimalTapRadius = 0.34f;
+        private const float CollectCountSeconds = 0.8f;
 
         private readonly GameContext _context;
         private readonly WorldChunk _chunk;
         private readonly SanctuaryCameraRig _rig;
         private readonly ISanctuaryHud _hud;
+        private readonly IOfflineReturnView _offlineView;
+        private readonly SanctuaryCameraInput _input;
         private readonly ContentId _eggId;
         private readonly EggDefinition _egg;
         private readonly uint _eggVisual;
@@ -48,14 +52,19 @@ namespace PocketWilds.Presentation
         private float _time;
         private float _lastHatchEnd = -100f;
         private BigValue _eggCost;
+        private BigValue _heldLight;
+        private BigValue _heldAtCollect;
+        private float _collectTime = -1f;
 
         public SanctuaryController(GameContext context, WorldChunk chunk, SanctuaryCameraRig rig, ISanctuaryHud hud,
-            HatchPresentationConfig hatchConfig, string eggSourceId, Transform root)
+            HatchPresentationConfig hatchConfig, string eggSourceId, Transform root, IOfflineReturnView offlineView = null)
         {
             _context = context;
             _chunk = chunk;
             _rig = rig;
             _hud = hud;
+            _offlineView = offlineView;
+            _input = rig != null ? rig.GetComponent<SanctuaryCameraInput>() : null;
             _root = root;
             _eggId = ContentId.FromSource(eggSourceId);
             _egg = context.Content.Eggs.Get(_eggId);
@@ -102,6 +111,23 @@ namespace PocketWilds.Presentation
         public EggView WaitingEgg => _waitingEgg;
         public BigValue EggCost => _eggCost;
 
+        /// <summary>Light the HUD shows: the wallet minus offline Light not counted in yet.</summary>
+        public BigValue DisplayedLight
+        {
+            get
+            {
+                var light = _context.Economy.Light;
+                if (_heldLight.IsZero)
+                    return light;
+                return BigValue.Max(BigValue.Zero, BigValue.Subtract(light, _heldLight));
+            }
+        }
+
+        public bool OfflineScreenOpen => _offlineView != null && _offlineView.IsOpen;
+
+        /// <summary>Collected offline Light is still counting into the HUD.</summary>
+        public bool OfflineCollecting => _collectTime >= 0f;
+
         public void Tick(float time, float deltaTime)
         {
             _time = time;
@@ -110,6 +136,8 @@ namespace PocketWilds.Presentation
                 _nextEggTime = -1f;
                 PresentEgg();
             }
+
+            UpdateOfflineReturn(deltaTime);
 
             if (_rig != null)
                 _scheduler.SetFocus(_rig.Focus);
@@ -120,7 +148,7 @@ namespace PocketWilds.Presentation
             if (_hud != null)
             {
                 var economy = _context.Economy;
-                _hud.SetLight(economy.Light, economy.GetLightPerSecond());
+                _hud.SetLight(DisplayedLight, economy.GetLightPerSecond());
                 bool free = _context.Hatch.IsNextHatchFree;
                 // Cached cost (refreshed after each hatch): no price curve evaluation per frame.
                 _hud.SetEgg(_eggCost, free, free || economy.CanSpend(CurrencyId.Light, _eggCost));
@@ -131,7 +159,7 @@ namespace PocketWilds.Presentation
         /// <summary>World tap from the camera input (already filtered from UI touches).</summary>
         public void OnTap(Vector2 screenPosition)
         {
-            if (_hud != null && _hud.IsOverUi(screenPosition))
+            if (OfflineScreenOpen || (_hud != null && _hud.IsOverUi(screenPosition)))
                 return;
             if (_hatch.IsPlaying)
             {
@@ -174,6 +202,8 @@ namespace PocketWilds.Presentation
 
         public void RequestHatch()
         {
+            if (OfflineScreenOpen)
+                return;
             if (_hatch.IsPlaying)
             {
                 _hatch.Skip();
@@ -218,6 +248,16 @@ namespace PocketWilds.Presentation
             }
         }
 
+        /// <summary>Collect button: the held Light counts up into the HUD counter.</summary>
+        public void CollectOffline()
+        {
+            if (_heldLight.IsZero || _collectTime >= 0f)
+                return;
+            _collectTime = 0f;
+            _context.Audio.Play(AudioEventId.CollectLight, Vector3.zero, default);
+            _context.Haptics.Play(HapticEventId.Confirm);
+        }
+
         void IHatchListener.OnHatchRevealed()
         {
         }
@@ -246,6 +286,44 @@ namespace PocketWilds.Presentation
             _vfx.Dispose();
             _animals.Dispose();
             _eggs.Clear();
+        }
+
+        private void UpdateOfflineReturn(float deltaTime)
+        {
+            if (_offlineView == null)
+                return;
+            if (!_offlineView.IsOpen && _collectTime < 0f && !_hatch.IsPlaying
+                && _context.Offline != null && _context.Offline.TryTakePending(out var report))
+            {
+                // Already in the wallet (saved at once); the HUD holds it back until Collect.
+                _heldLight = report.Light;
+                _offlineView.Show(report.Light, _context.Localization, this);
+                _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
+            }
+            _offlineView.Tick(deltaTime);
+
+            if (_collectTime >= 0f)
+            {
+                _collectTime += deltaTime;
+                float t = Mathf.Clamp01(_collectTime / CollectCountSeconds);
+                float eased = 1f - (1f - t) * (1f - t) * (1f - t);
+                if (t >= 1f)
+                {
+                    _heldLight = BigValue.Zero;
+                    _collectTime = -1f;
+                    _heldAtCollect = BigValue.Zero;
+                }
+                else
+                {
+                    if (_heldAtCollect.IsZero)
+                        _heldAtCollect = _heldLight;
+                    _heldLight = BigValue.Multiply(_heldAtCollect, 1.0 - eased);
+                }
+            }
+
+            bool modal = _offlineView.IsOpen;
+            if (_input != null && _input.Blocked != modal)
+                _input.Blocked = modal;
         }
 
         private void PresentEgg()

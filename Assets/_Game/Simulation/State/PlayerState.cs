@@ -15,6 +15,7 @@ namespace PocketWilds.Simulation
         public MasteryState Mastery { get; } = new MasteryState();
         public SettingsState Settings { get; } = new SettingsState();
         public EntitlementState Entitlements { get; } = new EntitlementState();
+        public OfflineState Offline { get; } = new OfflineState();
 
         public static PlayerState CreateNew(DateTimeOffset utcNow)
         {
@@ -22,8 +23,28 @@ namespace PocketWilds.Simulation
             state.Meta.ProfileId = Guid.NewGuid();
             state.Meta.CreatedUtc = utcNow;
             state.Meta.LastSaveUtc = utcNow;
+            state.Offline.HighWaterUtc = utcNow;
             return state;
         }
+    }
+
+    /// <summary>
+    /// Economic and time snapshot written with every save (doc 08 Offline). The offline gap starts at
+    /// Meta.LastSaveUtc, the moment the saved Light was true.
+    /// </summary>
+    public sealed class OfflineState
+    {
+        /// <summary>Light per second when the last save was written (doc 02 AggregateProductionAtExit).</summary>
+        public BigValue RateAtSave;
+
+        /// <summary>False for saves made before schema 2: the rate is then rebuilt from the collection.</summary>
+        public bool HasRate;
+
+        /// <summary>
+        /// Latest wall time this profile has seen. After a clock moved backwards, offline time only counts
+        /// again once real time passes this mark (tolerant, never punitive).
+        /// </summary>
+        public DateTimeOffset HighWaterUtc;
     }
 
     public sealed class SaveMeta

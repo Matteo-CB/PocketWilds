@@ -31,7 +31,8 @@ namespace PocketWilds.Services.Save
     public static class SaveSchema
     {
         /// <summary>Bump on any persisted data change, with a migration and updated golden saves.</summary>
-        public const int CurrentVersion = 1;
+        /// <summary>2: Offline section (rate at save, time high-water mark).</summary>
+        public const int CurrentVersion = 2;
     }
 
     /// <summary>
@@ -48,6 +49,7 @@ namespace PocketWilds.Services.Save
         private const ushort MasteryVersion = 1;
         private const ushort SettingsVersion = 1;
         private const ushort EntitlementsVersion = 1;
+        private const ushort OfflineVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -111,6 +113,12 @@ namespace PocketWilds.Services.Save
             output.WriteInt32(state.Entitlements.ProcessedTransactions.Count);
             foreach (var transaction in state.Entitlements.ProcessedTransactions)
                 output.WriteString(transaction);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Offline, OfflineVersion);
+            output.WriteBigValue(state.Offline.RateAtSave);
+            output.WriteBool(state.Offline.HasRate);
+            output.WriteInt64(state.Offline.HighWaterUtc.ToUnixTimeMilliseconds());
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -248,6 +256,8 @@ namespace PocketWilds.Services.Save
                     ReadSettings(settings, state.Settings);
                 if (document.TryGetSection(SaveSectionId.Entitlements, out var entitlements))
                     ReadEntitlements(entitlements, state.Entitlements);
+                if (document.TryGetSection(SaveSectionId.Offline, out var offline))
+                    ReadOffline(offline, state.Offline);
             }
             catch (BinaryFormatException ex)
             {
@@ -276,6 +286,15 @@ namespace PocketWilds.Services.Save
             meta.Revision = r.ReadInt64();
             meta.AppVersion = r.ReadString() ?? string.Empty;
             meta.TotalPlaySeconds = r.ReadDouble();
+        }
+
+        private static void ReadOffline(SaveSection section, OfflineState offline)
+        {
+            RequireVersion(section, OfflineVersion);
+            var r = section.CreateReader();
+            offline.RateAtSave = r.ReadBigValue();
+            offline.HasRate = r.ReadBool();
+            offline.HighWaterUtc = DateTimeOffset.FromUnixTimeMilliseconds(r.ReadInt64());
         }
 
         private static void ReadWallet(SaveSection section, WalletState wallet)

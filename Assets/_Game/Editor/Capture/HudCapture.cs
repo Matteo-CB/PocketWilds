@@ -3,6 +3,8 @@ using System.Reflection;
 using PocketWilds.Content;
 using PocketWilds.Core;
 using PocketWilds.Editor.Animals;
+using PocketWilds.Editor.UI;
+using PocketWilds.Services.Localization;
 using PocketWilds.Presentation;
 using PocketWilds.UI;
 using UnityEditor;
@@ -62,6 +64,35 @@ namespace PocketWilds.Editor.Capture
                     Frame(hud, camera, refresh, BigValue.Zero, BigValue.Zero, BigValue.Zero, true, true, $"{prefix}_hud_first", results);
                     Frame(hud, camera, refresh, BigValue.FromDouble(37), BigValue.FromDouble(1.2), BigValue.FromDouble(12), false, true, $"{prefix}_hud_affordable", results);
                     Frame(hud, camera, refresh, BigValue.FromDouble(4250), BigValue.FromDouble(86), BigValue.FromDouble(18400), false, false, $"{prefix}_hud_waiting", results);
+
+                    // Offline return screen over the HUD, in each shipped language.
+                    var offline = Object.FindAnyObjectByType<OfflineReturnScreen>();
+                    if (offline != null)
+                    {
+                        var offlineCanvas = offline.GetComponent<Canvas>();
+                        var offlineScaler = offline.GetComponent<CanvasScaler>();
+                        offlineCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+                        offlineCanvas.worldCamera = camera;
+                        offlineCanvas.planeDistance = camera.nearClipPlane + 0.05f;
+                        System.Action refreshBoth = () =>
+                        {
+                            handle?.Invoke(scaler, null);
+                            handle?.Invoke(offlineScaler, null);
+                            Canvas.ForceUpdateCanvases();
+                        };
+                        var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath);
+                        foreach (string language in UiPipeline.Languages)
+                        {
+                            var text = new LocalizationService(database.localization, language, SystemLanguage.English);
+                            hud.SetLight(BigValue.FromDouble(4250), BigValue.FromDouble(2.3));
+                            offline.Show(BigValue.FromDouble(24800), text, null);
+                            for (int i = 0; i < 20; i++)
+                                offline.Tick(0.05f);
+                            string path = $"{CaptureUtility.DefaultFolder}/{prefix}_offline_{language}.png";
+                            CaptureUtility.Render(camera, 1080, 2340, path, 4, refreshBoth);
+                            results.Add(CaptureUtility.Render(camera, 1080, 2340, path, 4, refreshBoth));
+                        }
+                    }
                 }
                 finally
                 {

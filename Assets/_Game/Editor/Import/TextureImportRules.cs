@@ -12,7 +12,7 @@ namespace PocketWilds.Editor.Import
     /// </summary>
     public sealed class TextureImportRules : AssetPostprocessor
     {
-        private const uint Version = 4;
+        private const uint Version = 5;
         public const string UiRoot = "Assets/_Game/Art/UI/";
         private const string ArtRoot = "Assets/_Game/Art/";
 
@@ -38,6 +38,8 @@ namespace PocketWilds.Editor.Import
             switch (name)
             {
                 case "UI_Pill_9Slice": return new Vector4(64f, 70f, 64f, 62f);
+                case "UI_Panel_Primary_9Slice": return new Vector4(64f, 74f, 64f, 62f);
+                case "UI_Button_Primary_9Slice": return new Vector4(72f, 98f, 72f, 70f);
                 default: return Vector4.zero;
             }
         }

@@ -76,6 +76,12 @@ namespace PocketWilds.Services.Save
     /// </summary>
     public sealed class SaveService : ISaveScheduler
     {
+        /// <summary>
+        /// Raised on the main thread right before each serialization, after Meta.LastSaveUtc is set.
+        /// Lets simulation write snapshots that must match the save time (offline rate, time mark).
+        /// </summary>
+        public event Action<PlayerState>? BeforeSerialize;
+
         private readonly SaveFileStore _store;
         private readonly ISaveSerializer _serializer;
         private readonly SaveMigrationPipeline _migrations;
@@ -315,6 +321,7 @@ namespace PocketWilds.Services.Save
             state.Meta.AppVersion = _options.AppVersion;
             state.Meta.TotalPlaySeconds += Math.Max(0.0, now - _lastAccountedSession);
             _lastAccountedSession = now;
+            BeforeSerialize?.Invoke(state);
 
             long start = Stopwatch.GetTimestamp();
             using (GameProfilerMarkers.SaveSerialize.Auto())

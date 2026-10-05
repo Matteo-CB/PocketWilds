@@ -75,5 +75,25 @@ namespace PocketWilds.Simulation
 
         /// <summary>Production is applied at this cadence, not every frame.</summary>
         public double AdvanceIntervalSeconds { get; set; } = 0.1;
+
+        // ---- Offline (doc 02: OfflineGain = ProductionAtExit x EffectiveSeconds x Efficiency) ----
+
+        /// <summary>Away time paid at full efficiency (baseline 24 h).</summary>
+        public double OfflineFullSeconds { get; set; } = 24.0 * 3600.0;
+
+        /// <summary>Beyond the full window, efficiency eases from 1 toward the floor with this time constant.</summary>
+        public double OfflineDecaySeconds { get; set; } = 24.0 * 3600.0;
+
+        /// <summary>Efficiency never drops below this: long breaks still pay, just less.</summary>
+        public double OfflineFloorEfficiency { get; set; } = 0.25;
+
+        /// <summary>Away time counted at most (bounds clock jumps).</summary>
+        public double OfflineMaxSeconds { get; set; } = 30.0 * 24.0 * 3600.0;
+
+        /// <summary>Shorter breaks are paid silently, without the return screen.</summary>
+        public double OfflineScreenMinSeconds { get; set; } = 120.0;
+
+        /// <summary>Small backwards corrections (network time sync) are not treated as a clock rollback.</summary>
+        public double ClockRollbackToleranceSeconds { get; set; } = 300.0;
     }
 }

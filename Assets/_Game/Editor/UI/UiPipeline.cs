@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using PocketWilds.Content;
 using PocketWilds.Editor.Import;
 using PocketWilds.Presentation;
 using PocketWilds.UI;
@@ -30,7 +31,13 @@ namespace PocketWilds.Editor.UI
         public const string CirclePath = KitFolder + "/UI_Button_IconCircle.png";
         public const string LightIconPath = IconFolder + "/ICO_Currency_Light.png";
         public const string EggIconPath = IconFolder + "/ICO_Hatch_Egg.png";
+        public const string PanelPath = KitFolder + "/UI_Panel_Primary_9Slice.png";
+        public const string ButtonPrimaryPath = KitFolder + "/UI_Button_Primary_9Slice.png";
+        public const string GlowPath = KitFolder + "/UI_Glow_Soft.png";
         public const string HudPrefabPath = "Assets/_Game/Prefabs/UI/Screens/PF_UI_HUD_Main.prefab";
+        public const string OfflineReturnPrefabPath = "Assets/_Game/Prefabs/UI/Screens/PF_UI_OfflineReturn.prefab";
+        public const string LocalizationFolder = "Assets/_Game/Content/Localization";
+        public const string ContentDatabasePath = "Assets/_Game/Content/DEF_ContentDatabase.asset";
         public const string HatchConfigPath = "Assets/_Game/Content/Visuals/DEF_HatchPresentation.asset";
         public const string ScenePath = "Assets/_Game/Scenes/SC_VerticalSlice_Grassland.unity";
         // TEMP font (LiberationSans, OFL, shipped with TMP Essentials) until the UI typeface is chosen.
@@ -38,21 +45,61 @@ namespace PocketWilds.Editor.UI
 
         public static readonly Vector2 ReferenceResolution = new Vector2(1080f, 2340f);
 
-        [MenuItem("Pocket Wilds/UI/Build HUD (T17)", priority = 200)]
+        /// <summary>
+        /// Shipped player-facing text (Writing Bible: short, no em dash). English first: it is the fallback.
+        /// Columns: key, en, fr.
+        /// </summary>
+        public static readonly string[,] Texts =
+        {
+            { UiTextKeys.OfflineWelcomeBack, "Welcome back", "Bon retour" },
+            { UiTextKeys.CollectButton, "Collect", "Récolter" },
+        };
+
+        public static readonly string[] Languages = { "en", "fr" };
+
+        [MenuItem("Pocket Wilds/UI/Build HUD and Screens", priority = 200)]
         public static void BuildAll()
         {
             ReimportSprites();
             var tokens = EnsureTokens();
             EnsureAtlas();
+            EnsureLocalization();
             BuildHudPrefab(tokens);
+            BuildOfflineReturnPrefab(tokens);
             AssetDatabase.SaveAssets();
             SetupScene();
-            Debug.Log("[UiPipeline] HUD built and wired.");
+            Debug.Log("[UiPipeline] HUD and screens built and wired.");
+        }
+
+        /// <summary>LOC_en / LOC_fr from <see cref="Texts"/>, registered in the content database.</summary>
+        public static void EnsureLocalization()
+        {
+            Directory.CreateDirectory(LocalizationFolder);
+            var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(ContentDatabasePath)
+                           ?? throw new InvalidOperationException("Missing " + ContentDatabasePath);
+            database.localization.RemoveAll(t => t == null);
+            for (int language = 0; language < Languages.Length; language++)
+            {
+                string path = $"{LocalizationFolder}/LOC_{Languages[language]}.asset";
+                var table = AssetDatabase.LoadAssetAtPath<LocalizationTableAsset>(path);
+                if (table == null)
+                {
+                    table = ScriptableObject.CreateInstance<LocalizationTableAsset>();
+                    AssetDatabase.CreateAsset(table, path);
+                }
+                table.languageCode = Languages[language];
+                for (int i = 0; i < Texts.GetLength(0); i++)
+                    table.Set(Texts[i, 0], Texts[i, language + 1]);
+                EditorUtility.SetDirty(table);
+                if (!database.localization.Contains(table))
+                    database.localization.Insert(Mathf.Min(language, database.localization.Count), table);
+            }
+            EditorUtility.SetDirty(database);
         }
 
         public static void ReimportSprites()
         {
-            foreach (var path in new[] { PillPath, CirclePath, LightIconPath, EggIconPath })
+            foreach (var path in new[] { PillPath, CirclePath, PanelPath, ButtonPrimaryPath, GlowPath, LightIconPath, EggIconPath })
             {
                 if (!File.Exists(path))
                     throw new FileNotFoundException("Run SourceArt/UI/Tools/pw_ui_sprites.py first.", path);
@@ -197,6 +244,107 @@ namespace PocketWilds.Editor.UI
             }
         }
 
+        /// <summary>
+        /// PF_UI_OfflineReturn: scrim, cream card, floating Light icon on a soft glow, title, amount, Collect.
+        /// Own overlay canvas above the HUD; content saved inactive so a closed screen costs nothing.
+        /// </summary>
+        public static OfflineReturnScreen BuildOfflineReturnPrefab(UiColorTokens tokens)
+        {
+            var panel = AssetDatabase.LoadAssetAtPath<Sprite>(PanelPath);
+            var button = AssetDatabase.LoadAssetAtPath<Sprite>(ButtonPrimaryPath);
+            var glow = AssetDatabase.LoadAssetAtPath<Sprite>(GlowPath);
+            var lightIcon = AssetDatabase.LoadAssetAtPath<Sprite>(LightIconPath);
+            var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
+            if (panel == null || button == null || glow == null || lightIcon == null || font == null)
+                throw new InvalidOperationException("Offline return sprites or font missing.");
+
+            var root = new GameObject("PF_UI_OfflineReturn", typeof(RectTransform));
+            try
+            {
+                var canvas = root.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 30;
+                AddScaler(root);
+                root.AddComponent<GraphicRaycaster>();
+                var screen = root.AddComponent<OfflineReturnScreen>();
+
+                var content = Rect("Content", root.transform);
+                Stretch(content);
+                var group = content.gameObject.AddComponent<CanvasGroup>();
+
+                var scrim = Rect("Scrim", content).gameObject.AddComponent<Image>();
+                Stretch(scrim.rectTransform);
+                scrim.color = tokens.darkOverlay;
+                scrim.raycastTarget = true; // the modal swallows touches meant for the HUD
+                scrim.maskable = false;
+
+                var card = Rect("Card", content);
+                Place(card, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -40f), new Vector2(760f, 560f));
+                var back = AddImage("Background", card, panel, tokens.backgroundLight, Image.Type.Sliced);
+                Stretch(back.rectTransform);
+
+                var halo = AddImage("Glow", card, glow, new Color(1f, 0.83f, 0.42f, 0.85f), Image.Type.Simple);
+                Place(halo.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, 24f), new Vector2(400f, 400f));
+                var icon = AddImage("Icon", card, lightIcon, Color.white, Image.Type.Simple);
+                Place(icon.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, 24f), new Vector2(200f, 200f));
+
+                var title = AddText("Title", card, font, 56f, FontStyles.Bold, tokens.textSecondary, "Welcome back");
+                title.alignment = TextAlignmentOptions.Center;
+                title.enableAutoSizing = true;
+                title.fontSizeMin = 40f;
+                title.fontSizeMax = 56f;
+                Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -168f), new Vector2(680f, 76f));
+
+                var amount = AddText("Amount", card, font, 124f, FontStyles.Bold, tokens.textPrimary, "+0");
+                amount.alignment = TextAlignmentOptions.Center;
+                Place(amount.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -272f), new Vector2(700f, 140f));
+
+                var collectImage = AddImage("Collect", card, button, tokens.accentPrimary, Image.Type.Sliced);
+                collectImage.raycastTarget = true;
+                Place(collectImage.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 52f), new Vector2(460f, 150f));
+                var collect = collectImage.gameObject.AddComponent<Button>();
+                collect.targetGraphic = collectImage;
+                collect.transition = Selectable.Transition.ColorTint;
+                var colors = ColorBlock.defaultColorBlock;
+                colors.normalColor = Color.white;
+                colors.highlightedColor = Color.white;
+                colors.selectedColor = Color.white;
+                colors.pressedColor = new Color(0.86f, 0.86f, 0.86f, 1f);
+                colors.fadeDuration = 0.08f;
+                collect.colors = colors;
+                var navigation = collect.navigation;
+                navigation.mode = Navigation.Mode.None;
+                collect.navigation = navigation;
+                var label = AddText("Label", collectImage.rectTransform, font, 58f, FontStyles.Bold, tokens.textPrimary, "Collect");
+                label.alignment = TextAlignmentOptions.Center;
+                label.enableAutoSizing = true;
+                label.fontSizeMin = 40f;
+                label.fontSizeMax = 58f;
+                Place(label.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 8f), new Vector2(400f, 100f));
+
+                screen.SetReferences(canvas, content.gameObject, group, card, icon.rectTransform, title, amount, collect, label);
+                content.gameObject.SetActive(false);
+                canvas.enabled = false;
+
+                Directory.CreateDirectory(Path.GetDirectoryName(OfflineReturnPrefabPath));
+                return PrefabUtility.SaveAsPrefabAsset(root, OfflineReturnPrefabPath).GetComponent<OfflineReturnScreen>();
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void AddScaler(GameObject root)
+        {
+            var scaler = root.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = ReferenceResolution;
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+            scaler.referencePixelsPerUnit = 100f;
+        }
+
         // ---------------- Scene ----------------
 
         public static void SetupScene()
@@ -208,11 +356,13 @@ namespace PocketWilds.Editor.UI
 
             VerticalSliceEntry entry = null;
             SanctuaryHud hud = null;
+            OfflineReturnScreen offline = null;
             EventSystem events = null;
             foreach (var root in scene.GetRootGameObjects())
             {
                 entry = entry ?? root.GetComponent<VerticalSliceEntry>();
                 hud = hud ?? root.GetComponent<SanctuaryHud>();
+                offline = offline ?? root.GetComponent<OfflineReturnScreen>();
                 events = events ?? root.GetComponent<EventSystem>();
             }
             if (entry == null)
@@ -223,6 +373,12 @@ namespace PocketWilds.Editor.UI
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(HudPrefabPath);
                 hud = ((GameObject)PrefabUtility.InstantiatePrefab(prefab, scene)).GetComponent<SanctuaryHud>();
                 hud.name = "HUD_Main";
+            }
+            if (offline == null)
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(OfflineReturnPrefabPath);
+                offline = ((GameObject)PrefabUtility.InstantiatePrefab(prefab, scene)).GetComponent<OfflineReturnScreen>();
+                offline.name = "Screen_OfflineReturn";
             }
             if (events == null)
             {
@@ -235,6 +391,7 @@ namespace PocketWilds.Editor.UI
 
             var so = new SerializedObject(entry);
             so.FindProperty("_hud").objectReferenceValue = hud;
+            so.FindProperty("_offlineReturn").objectReferenceValue = offline;
             so.FindProperty("_hatchConfig").objectReferenceValue = AssetDatabase.LoadAssetAtPath<HatchPresentationConfig>(HatchConfigPath);
             so.FindProperty("_eggId").stringValue = "egg.grassland.basic";
             so.ApplyModifiedPropertiesWithoutUndo();

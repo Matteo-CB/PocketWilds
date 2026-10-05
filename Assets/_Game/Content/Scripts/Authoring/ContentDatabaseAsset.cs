@@ -14,6 +14,9 @@ namespace PocketWilds.Content
         public List<EggDefinitionAsset> eggs = new List<EggDefinitionAsset>();
         public List<PaletteSetAsset> paletteSets = new List<PaletteSetAsset>();
 
+        [Tooltip("Player-facing text, one table per language (LOC_en first: it is the fallback).")]
+        public List<LocalizationTableAsset> localization = new List<LocalizationTableAsset>();
+
         [Tooltip("Retired source IDs. They can never be reused.")]
         public List<string> tombstones = new List<string>();
 

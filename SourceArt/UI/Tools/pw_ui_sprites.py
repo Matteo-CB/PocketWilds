@@ -217,6 +217,52 @@ def kit_icon_circle():
     return "UI_Button_IconCircle", c, RUNTIME_KIT
 
 
+def kit_panel_primary():
+    """UI_Panel_Primary_9Slice: 160x168, body 144x144 with 56 px corners, cheap baked shadow.
+    Borders (L, B, R, T) = (64, 74, 64, 62). Near-opaque cream once tinted (backgroundLight)."""
+    w, h = 160, 168
+    c = Canvas(w, h, cx=80.0, cy=78.0)
+    body = sd_round_rect(c, 72.0, 72.0, 56.0)
+    shadow = blur(shift(fill(body), 0, 8), 6.0)
+    c.over((34, 44, 38), shadow * 0.30)
+    t = np.clip((72.0 - c.y) / 144.0, 0, 1)
+    c.over(lerp((255, 255, 255), (243, 243, 243), t), fill(body))
+    bevel = soft(-body - 9.0, 9.0) * np.clip(-c.y / 72.0, 0, 1)
+    c.over((222, 222, 222), bevel * fill(body) * 0.7)
+    rim = soft(-body - 2.5, 2.0) * fill(body)
+    c.over((255, 255, 255), rim * np.clip(c.y / 72.0, 0, 1) * 0.9)
+    return "UI_Panel_Primary_9Slice", c, RUNTIME_KIT
+
+
+def kit_button_primary():
+    """UI_Button_Primary_9Slice: 168x176, body 152x136 with 64 px corners, deeper bevel than panels
+    so it reads pressable. Borders (L, B, R, T) = (72, 98, 72, 70)."""
+    w, h = 168, 176
+    c = Canvas(w, h, cx=84.0, cy=74.0)
+    body = sd_round_rect(c, 76.0, 68.0, 64.0)
+    shadow = blur(shift(fill(body), 0, 9), 6.0)
+    c.over((36, 46, 38), shadow * 0.32)
+    t = np.clip((68.0 - c.y) / 136.0, 0, 1)
+    c.over(lerp((255, 255, 255), (228, 228, 228), t), fill(body))
+    bevel = soft(-body - 13.0, 13.0) * np.clip(-c.y / 68.0, 0, 1) ** 1.1
+    c.over((196, 196, 196), bevel * fill(body) * 0.85)
+    ring = soft(-body - 3.0, 2.0) * fill(body)
+    c.over((214, 214, 214), ring * 0.55)
+    top = soft(-body - 3.5, 3.0) * fill(body) * np.clip(c.y / 68.0, 0, 1)
+    c.over((255, 255, 255), top * 0.9)
+    return "UI_Button_Primary_9Slice", c, RUNTIME_KIT
+
+
+def kit_glow():
+    """UI_Glow_Soft: 128x128 radial glow (white, tinted at runtime). Cheap halo behind rewards."""
+    size = 128
+    c = Canvas(size, size)
+    r = np.hypot(c.x, c.y) / 62.0
+    alpha = np.clip(1.0 - r, 0.0, 1.0) ** 1.4
+    c.over((255, 255, 255), alpha)
+    return "UI_Glow_Soft", c, RUNTIME_KIT
+
+
 # ---------------------------------------------------------------- icons (own colors)
 
 def icon_light():
@@ -278,7 +324,7 @@ def icon_egg():
     return "ICO_Hatch_Egg", c, RUNTIME_ICONS
 
 
-SPRITES = (kit_pill, kit_icon_circle, icon_light, icon_egg)
+SPRITES = (kit_pill, kit_icon_circle, kit_panel_primary, kit_button_primary, kit_glow, icon_light, icon_egg)
 
 
 def main():

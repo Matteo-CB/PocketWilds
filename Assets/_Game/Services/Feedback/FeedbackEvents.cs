@@ -21,6 +21,12 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>Species reaction ("RabbitHappy"): the species ID travels as context.</summary>
         AnimalHappy = 9,
+
+        /// <summary>Light collected (offline return, later rewards).</summary>
+        CollectLight = 10,
+
+        /// <summary>A UI panel opens (soft whoosh).</summary>
+        PanelOpen = 11,
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>
