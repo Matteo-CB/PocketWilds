@@ -9,12 +9,12 @@ namespace PocketWilds.Presentation
     /// <summary>
     /// Root of SC_VerticalSlice_Grassland. Receives the GameContext from the bootstrap, streams the grassland
     /// chunks (the pinned start chunk is ready before Enter), applies lighting and quality, frames the camera and
-    /// runs the playable sanctuary loop (SanctuaryController). The only Update of the scene.
+    /// runs the playable refuge loop (RefugeController). The only Update of the scene.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class VerticalSliceEntry : MonoBehaviour, ISceneEntry, ISceneEntryPreparation, ISanctuaryTapHandler
+    public sealed class VerticalSliceEntry : MonoBehaviour, ISceneEntry, ISceneEntryPreparation, IRefugeTapHandler
     {
-        [Tooltip("Chunks of the biome, streamed through Addressables. The pinned one hosts the sanctuary.")]
+        [Tooltip("Chunks of the biome, streamed through Addressables. The pinned one hosts the refuge.")]
         [SerializeField] private WorldChunkSet _chunkSet;
         [Tooltip("Ground footprint of the camera is clamped to this distance for rays above the horizon (m).")]
         [SerializeField] private float _footprintMaxDistance = 30f;
@@ -27,14 +27,14 @@ namespace PocketWilds.Presentation
         [Tooltip("Butterflies, bees and birds of the biome, spawned at the chunks' VFX anchors (T33). Optional.")]
         [SerializeField] private AmbientLifeKit _ambientLife;
         [SerializeField] private Light _sun;
-        [SerializeField] private SanctuaryCameraRig _cameraRig;
+        [SerializeField] private RefugeCameraRig _cameraRig;
         [Tooltip("Pan limits around the egg spawn (half size, m). Keeps the island edge from filling the screen.")]
         [SerializeField] private Vector2 _panHalfSize = new Vector2(3.5f, 4f);
 
-        [Header("Sanctuary loop")]
+        [Header("Refuge loop")]
         [SerializeField] private HatchPresentationConfig _hatchConfig;
         [SerializeField] private string _eggId = "egg.grassland.basic";
-        [Tooltip("HUD component implementing ISanctuaryHud (UI assembly).")]
+        [Tooltip("HUD component implementing IRefugeHud (UI assembly).")]
         [SerializeField] private MonoBehaviour _hud;
         [Tooltip("Offline return screen implementing IOfflineReturnView (UI assembly).")]
         [SerializeField] private MonoBehaviour _offlineReturn;
@@ -46,7 +46,7 @@ namespace PocketWilds.Presentation
         [SerializeField] private MonoBehaviour _offerModal;
 
         private GameContext _context;
-        private SanctuaryController _sanctuary;
+        private RefugeController _refuge;
         private WorldStreamer _streamer;
         private ScatterRenderer _scatter;
         private AmbientLife _life;
@@ -59,7 +59,7 @@ namespace PocketWilds.Presentation
         public WorldStreamer Streamer => _streamer;
         /// <summary>The pinned chunk instance once prepared (streamed, not part of the scene file).</summary>
         public WorldChunk StartChunk => _startChunk;
-        public SanctuaryCameraRig CameraRig => _cameraRig;
+        public RefugeCameraRig CameraRig => _cameraRig;
         public LightingProfile Lighting => _lighting;
         public ScatterRenderer Scatter => _scatter;
         public AmbientLife Life => _life;
@@ -67,7 +67,7 @@ namespace PocketWilds.Presentation
 
         private WorldQualityProfile.Tier WorldQuality(QualityTier tier) =>
             _worldQuality != null ? _worldQuality.Get(tier) : WorldQualityProfile.Default(tier);
-        public SanctuaryController Sanctuary => _sanctuary;
+        public RefugeController Refuge => _refuge;
 
         /// <summary>Loads the pinned start chunk (and starts the neighbours' preload) behind the loading screen.</summary>
         public async Task PrepareAsync(GameContext context, CancellationToken cancellationToken)
@@ -97,7 +97,7 @@ namespace PocketWilds.Presentation
                 }
             }
             if (_startChunk == null)
-                GameLog.Error(LogCategory.Presentation, "The start chunk did not load: the sanctuary cannot start.");
+                GameLog.Error(LogCategory.Presentation, "The start chunk did not load: the refuge cannot start.");
             for (int i = 0; i < _streamer.Count; i++)
             {
                 if (_streamer.GetState(i) == ChunkStreamState.Active)
@@ -134,9 +134,9 @@ namespace PocketWilds.Presentation
 
             if (_startChunk != null && _hatchConfig != null && context.VisualCatalog != null && context.Content.Eggs.TryGet(ContentId.FromSource(_eggId), out _))
             {
-                _sanctuary = new SanctuaryController(context, _startChunk, _cameraRig, _hud as ISanctuaryHud, _hatchConfig, _eggId, transform,
+                _refuge = new RefugeController(context, _startChunk, _cameraRig, _hud as IRefugeHud, _hatchConfig, _eggId, transform,
                     _offlineReturn as IOfflineReturnView, _codex as ICodexView, _shop as IShopView, _offerModal as IOfferModalView);
-                var input = _cameraRig != null ? _cameraRig.GetComponent<SanctuaryCameraInput>() : null;
+                var input = _cameraRig != null ? _cameraRig.GetComponent<RefugeCameraInput>() : null;
                 if (input != null)
                     input.SetTapHandler(this);
             }
@@ -145,8 +145,8 @@ namespace PocketWilds.Presentation
 
         public void Exit()
         {
-            _sanctuary?.Dispose();
-            _sanctuary = null;
+            _refuge?.Dispose();
+            _refuge = null;
             if (_streamer != null)
             {
                 if (_onChunkState != null)
@@ -165,7 +165,7 @@ namespace PocketWilds.Presentation
 
         public void OnTap(Vector2 screenPosition)
         {
-            _sanctuary?.OnTap(screenPosition);
+            _refuge?.OnTap(screenPosition);
             // Butterflies and birds near the tapped ground flee: the meadow reacts to the finger.
             var camera = _cameraRig != null ? _cameraRig.Camera : null;
             if (_life == null || camera == null || _startChunk == null || _startChunk.EggSpawn == null)
@@ -227,7 +227,7 @@ namespace PocketWilds.Presentation
             // PrepareAsync ticks the streamer itself until Enter.
             if (_context != null)
                 _streamer?.Tick(Footprint(), Time.unscaledTime);
-            _sanctuary?.Tick(Time.time, Time.deltaTime);
+            _refuge?.Tick(Time.time, Time.deltaTime);
             _atmosphere?.Tick(Time.unscaledTime);
             var camera = _cameraRig != null ? _cameraRig.Camera : null;
             _scatter?.Render(camera);

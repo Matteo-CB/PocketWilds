@@ -12,7 +12,7 @@ Player Windows de développement, 480x1040, éditeur au repos. Rapport brut : `B
 | S50, 50 lapins | 0,016 → 0,017 | 0,023 | 1,71 → 1,58 |
 | S50-Mix3, 50 animaux, 3 espèces | 0,017 → 0,018 | 0,024 | 1,65 → 1,63 |
 
-Budget simulation de la Performance Bible : 1,5 ms. Aucune allocation par frame (test
+Budget simulation de la Performance Guide : 1,5 ms. Aucune allocation par frame (test
 `Tick_WithGreetingsAndPoints_DoesNotAllocate`), aucun pic de décisions synchronisées (tests T12 inchangés).
 
 ## Comportement

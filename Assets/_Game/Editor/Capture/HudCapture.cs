@@ -42,7 +42,7 @@ namespace PocketWilds.Editor.Capture
                 {
                     var chunk = WorldCapture.SceneChunk();
                     var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
-                    var hud = Object.FindAnyObjectByType<SanctuaryHud>();
+                    var hud = Object.FindAnyObjectByType<RefugeHud>();
                     var camera = Camera.main;
                     chunk.Bind(palettes);
                     entry.Lighting.Apply(Object.FindAnyObjectByType<Light>(), camera, QualityTier.Medium);
@@ -171,7 +171,7 @@ namespace PocketWilds.Editor.Capture
             return string.Join(", ", results);
         }
 
-        private static void Frame(SanctuaryHud hud, Camera camera, System.Action refresh, BigValue light, BigValue rate, BigValue cost,
+        private static void Frame(RefugeHud hud, Camera camera, System.Action refresh, BigValue light, BigValue rate, BigValue cost,
             bool free, bool affordable, string name, List<string> results)
         {
             hud.SetLight(light, rate);

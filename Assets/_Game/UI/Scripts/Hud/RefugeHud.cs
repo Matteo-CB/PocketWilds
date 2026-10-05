@@ -13,7 +13,7 @@ namespace PocketWilds.UI
     /// States use color tokens and scale, not extra sprites. No Update: ticked by the scene controller.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class SanctuaryHud : MonoBehaviour, ISanctuaryHud
+    public sealed class RefugeHud : MonoBehaviour, IRefugeHud
     {
         private const float PulseSeconds = 0.4f;
 
@@ -54,7 +54,7 @@ namespace PocketWilds.UI
         [SerializeField] private RectTransform _gemsChip;
         [SerializeField] private TMP_Text _gemsLabel;
 
-        private ISanctuaryActions _actions;
+        private IRefugeActions _actions;
         private BigValueText _light;
         private BigValueText _rate;
         private BigValueText _cost;
@@ -90,7 +90,7 @@ namespace PocketWilds.UI
         public bool CostVisible => _costRow != null && _costRow.activeSelf;
         public int VisualState => _state;
 
-        public void Bind(ISanctuaryActions actions)
+        public void Bind(IRefugeActions actions)
         {
             _actions = actions;
             if (_bound)

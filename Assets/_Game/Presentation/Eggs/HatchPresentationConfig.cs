@@ -34,7 +34,7 @@ namespace PocketWilds.Presentation
         [Min(0.05f)] public float afterCrack2 = 0.45f;
         [Min(0.05f)] public float reveal = 0.45f;
         [Min(0f)] public float celebrate = 0.55f;
-        [Tooltip("Extra staging per rarity: Common, Uncommon, Rare, Epic, Legendary, Mythic.")]
+        [Tooltip("Extra staging per rarity: Common, Uncommon, Rare, Epic, Legendary, Fabulous.")]
         public float[] rarityExtraSeconds = { 0f, 0f, 0.25f, 0.4f, 0.6f, 0.8f };
         [Tooltip("Repeated hatches play faster (UX: the player can speed up repetitions).")]
         [Min(1f)] public float repeatSpeed = 1.6f;

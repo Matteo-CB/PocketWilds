@@ -104,18 +104,18 @@ namespace PocketWilds.Tests.PlayMode
             Assert.AreEqual(1, analytics.Session);
             StringAssert.StartsWith(Path.Combine(_saveDir, "Analytics"), bootstrap.AnalyticsOutbox.Directory, "Tests never write into the real app folder.");
 
-            var sanctuary = Object.FindAnyObjectByType<VerticalSliceEntry>().Sanctuary;
-            sanctuary.RequestHatch();
+            var refuge = Object.FindAnyObjectByType<VerticalSliceEntry>().Refuge;
+            refuge.RequestHatch();
             Assert.AreEqual(1, bootstrap.Context.State.Collection.Count);
             float until = Time.realtimeSinceStartup + 10f;
-            while (sanctuary.Hatch.IsPlaying || sanctuary.ModalOpen)
+            while (refuge.Hatch.IsPlaying || refuge.ModalOpen)
             {
                 Assert.Less(Time.realtimeSinceStartup, until, "Hatch sequence never ended.");
                 yield return null;
             }
-            sanctuary.OpenCodex();
+            refuge.OpenCodex();
             yield return null;
-            Assert.IsTrue(sanctuary.CodexOpen);
+            Assert.IsTrue(refuge.CodexOpen);
             Assert.AreEqual(0, transport.Sent.Length, "Nothing leaves during the first minute.");
 
             // The app goes to the background.

@@ -7,9 +7,9 @@ using UnityEngine.UI;
 namespace PocketWilds.UI
 {
     /// <summary>
-    /// PF_UI_OfflineReturn (UI doc SCREEN 004, Writing Bible "Offline return"): "Welcome back", the Light
+    /// PF_UI_OfflineReturn (UI doc SCREEN 004, Writing Guide "Offline return"): "Welcome back", the Light
     /// earned, one Collect button. No five-page summary. Hidden screens cost nothing: the content is
-    /// inactive and the canvas disabled. Animations are ticked by the sanctuary, no Update.
+    /// inactive and the canvas disabled. Animations are ticked by the refuge, no Update.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class OfflineReturnScreen : MonoBehaviour, IOfflineReturnView

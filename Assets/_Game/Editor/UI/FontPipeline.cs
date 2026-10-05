@@ -313,7 +313,7 @@ namespace PocketWilds.Editor.UI
 
         // ---------------- proof captures ----------------
 
-        /// <summary>Smallest target phone of the Performance Bible: 720 x 1520 at about 2 px per dp.</summary>
+        /// <summary>Smallest target phone of the Performance Guide: 720 x 1520 at about 2 px per dp.</summary>
         public const int ProofWidth = 720;
         public const int ProofHeight = 1520;
         public const float PixelsPerDp = 2f;

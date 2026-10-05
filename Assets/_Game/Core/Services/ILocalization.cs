@@ -1,7 +1,7 @@
 namespace PocketWilds.Core
 {
     /// <summary>
-    /// Player-facing text by key (Writing and Localization Bible: every visible string uses a key, never
+    /// Player-facing text by key (Writing and Localization Guide: every visible string uses a key, never
     /// the English sentence). Screens read their labels once when they open, never per frame.
     /// </summary>
     public interface ILocalization

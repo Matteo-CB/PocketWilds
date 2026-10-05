@@ -9,7 +9,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace PocketWilds.Tests.EditMode
 {
-    /// <summary>T16 gate: lighting reference data, quality tiers and camera rig follow doc 07 and the Performance Bible.</summary>
+    /// <summary>T16 gate: lighting reference data, quality tiers and camera rig follow doc 07 and the Performance Guide.</summary>
     public class LightingTests
     {
         private static UniversalRenderPipelineAsset Tier(string name) =>
@@ -55,9 +55,9 @@ namespace PocketWilds.Tests.EditMode
         [Test]
         public void CameraRig_IsPortraitDiorama_WithStableFov()
         {
-            var rig = AssetDatabase.LoadAssetAtPath<SanctuaryCameraRig>(LightingPipeline.CameraRigPath);
+            var rig = AssetDatabase.LoadAssetAtPath<RefugeCameraRig>(LightingPipeline.CameraRigPath);
             Assert.IsNotNull(rig);
-            Assert.IsNotNull(rig.GetComponent<SanctuaryCameraInput>());
+            Assert.IsNotNull(rig.GetComponent<RefugeCameraInput>());
             var camera = rig.GetComponentInChildren<Camera>(true);
             Assert.IsNotNull(camera);
             Assert.AreEqual("MainCamera", camera.tag);

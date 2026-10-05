@@ -64,27 +64,27 @@ namespace PocketWilds.Tests.PlayMode
             }
             yield return null;
             var context = bootstrap.Context;
-            var sanctuary = Object.FindAnyObjectByType<VerticalSliceEntry>().Sanctuary;
-            var hud = Object.FindAnyObjectByType<SanctuaryHud>();
+            var refuge = Object.FindAnyObjectByType<VerticalSliceEntry>().Refuge;
+            var hud = Object.FindAnyObjectByType<RefugeHud>();
 
             for (int hatch = 0; hatch < 3; hatch++)
             {
                 if (hatch > 0)
                     context.Economy.Grant(CurrencyId.Light, context.Hatch.GetCost(ContentId.FromSource("egg.grassland.basic")), EconomyReason.Reward);
                 var masteryBefore = new System.Collections.Generic.Dictionary<ContentId, SpeciesMastery>(context.State.Mastery.Species);
-                sanctuary.RequestHatch();
+                refuge.RequestHatch();
                 Assert.AreEqual(hatch + 1, context.State.Collection.Count);
                 // Grassland eggs give rabbits and squirrels (T23): follow the species that hatched.
                 var species = context.State.Collection[context.State.Collection.Count - 1].Species;
                 var before = masteryBefore.TryGetValue(species, out var m) ? m : default;
-                sanctuary.RequestHatch(); // skip the staging: the reveal shows the progress
+                refuge.RequestHatch(); // skip the staging: the reveal shows the progress
                 yield return null;
                 Assert.IsTrue(hud.MasteryVisible, "Hatch " + hatch + " shows species progress.");
                 var after = context.State.Mastery.Species[species];
                 Assert.IsTrue(after.Level > before.Level || after.Xp > before.Xp, "Progress on every hatch.");
 
                 float until = Time.realtimeSinceStartup + 4f;
-                while (hud.MasteryVisible || sanctuary.WaitingEgg == null || sanctuary.Hatch.IsPlaying)
+                while (hud.MasteryVisible || refuge.WaitingEgg == null || refuge.Hatch.IsPlaying)
                 {
                     Assert.Less(Time.realtimeSinceStartup, until, "Toast or next egg stuck.");
                     yield return null;
@@ -93,7 +93,7 @@ namespace PocketWilds.Tests.PlayMode
             }
 
             // The Codex sheet shows the same level.
-            sanctuary.OpenCodex();
+            refuge.OpenCodex();
             var screen = Object.FindAnyObjectByType<CodexScreen>();
             screen.OpenSheet(context.Codex.IndexOf(Rabbit));
             Assert.AreEqual(context.State.Mastery.GetLevel(Rabbit), screen.SheetMasteryLevel);

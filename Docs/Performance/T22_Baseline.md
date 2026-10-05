@@ -11,7 +11,7 @@ Aucun téléphone n'était branché : ces chiffres valent pour la régression re
 
 | Scénario | Tier | Visibles | CPU frame moy/p95/p99/max (ms) | Main moy/p95 | Render | GPU | Simulation | Animation | UI | GC o/frame (frames) | Pics >33 ms | Batches | SetPass | Triangles | Mémoire utilisée (Mo) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| P0 Empty sanctuary | Medium | 0 | 16.67 / 16.73 / 16.91 / 17.0 | 1.14 / 1.46 | 0.46 | 0.07 | 0.002 | 0.000 | 0.046 | 0 (1) | 0 | 40 | 15 | 20312 | 222 |
+| P0 Empty refuge | Medium | 0 | 16.67 / 16.73 / 16.91 / 17.0 | 1.14 / 1.46 | 0.46 | 0.07 | 0.002 | 0.000 | 0.046 | 0 (1) | 0 | 40 | 15 | 20312 | 222 |
 | P1 1 rabbit | Medium | 1 | 16.67 / 16.76 / 16.89 / 17.3 | 1.32 / 1.76 | 0.49 | 0.09 | 0.008 | 0.061 | 0.048 | 32 (2) | 0 | 43 | 18 | 24558 | 223 |
 | S10 10 rabbits | Medium | 10 | 16.67 / 16.71 / 16.79 / 17.1 | 1.32 / 1.69 | 0.47 | 0.14 | 0.010 | 0.153 | 0.046 | 32 (2) | 0 | 58 | 18 | 56222 | 224 |
 | P2 20 rabbits (vertical slice baseline) | Medium | 20 | 16.67 / 16.72 / 16.93 / 17.5 | 1.52 / 1.87 | 0.50 | 0.29 | 0.012 | 0.222 | 0.048 | 32 (2) | 0 | 78 | 18 | 98392 | 225 |
@@ -43,7 +43,7 @@ Budgets Target 60 FPS (Performance Test Matrix) sur le palier cible (Medium, 20 
 
 | Scénario | Tier | Visibles | CPU frame moy/p95/p99/max (ms) | Main moy/p95 | Render | GPU | Simulation | Animation | UI | GC o/frame (frames) | Pics >33 ms | Batches | SetPass | Triangles | Mémoire utilisée (Mo) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| P0 Empty sanctuary | Medium | 1 | 16.74 / 18.01 / 21.06 / 38.5 | 2.28 / 3.95 | 0.52 | 0.07 | 0.007 | 0.039 | 0.044 | 203 (13) | 3 | 70 | 17 | 14731 | 221 |
+| P0 Empty refuge | Medium | 1 | 16.74 / 18.01 / 21.06 / 38.5 | 2.28 / 3.95 | 0.52 | 0.07 | 0.007 | 0.039 | 0.044 | 203 (13) | 3 | 70 | 17 | 14731 | 221 |
 | P1 1 rabbit | Medium | 2 | 16.75 / 17.97 / 22.67 / 56.6 | 2.15 / 4.02 | 0.50 | 0.09 | 0.004 | 0.066 | 0.045 | 364 (12) | 1 | 69 | 18 | 17980 | 222 |
 | S10 10 rabbits | Medium | 10 | 16.67 / 16.83 / 17.07 / 21.0 | 1.64 / 2.25 | 0.55 | 0.20 | 0.011 | 0.163 | 0.051 | 456 (4) | 0 | 89 | 18 | 48391 | 223 |
 | P2 20 rabbits (vertical slice baseline) | Medium | 20 | 16.69 / 17.68 / 18.12 / 39.5 | 1.81 / 3.06 | 0.52 | 0.28 | 0.011 | 0.214 | 0.045 | 172 (3) | 1 | 102 | 18 | 87318 | 224 |
@@ -75,7 +75,7 @@ Budgets Target 60 FPS (Performance Test Matrix) sur le palier cible (Medium, 20 
 
 | Scénario | Tier | Visibles | CPU frame moy/p95/p99/max (ms) | Main moy/p95 | Render | GPU | Simulation | Animation | UI | GC o/frame (frames) | Pics >33 ms | Batches | SetPass | Triangles | Mémoire utilisée (Mo) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| P0 Empty sanctuary | Medium | 0 | 16.67 / 17.59 / 17.96 / 29.5 | 1.66 / 1.85 | 0.92 | 0.94 | 0.002 | 0.000 | 0.051 | 213172 (481) | 0 | 188 | 13 | 24318 | 1726 |
+| P0 Empty refuge | Medium | 0 | 16.67 / 17.59 / 17.96 / 29.5 | 1.66 / 1.85 | 0.92 | 0.94 | 0.002 | 0.000 | 0.051 | 213172 (481) | 0 | 188 | 13 | 24318 | 1726 |
 | P1 1 rabbit | Medium | 1 | 16.67 / 17.55 / 17.88 / 18.2 | 1.70 / 1.99 | 0.97 | 0.91 | 0.005 | 0.066 | 0.051 | 206838 (481) | 0 | 191 | 16 | 28564 | 1730 |
 | S10 10 rabbits | Medium | 10 | 16.69 / 17.53 / 17.83 / 37.5 | 1.94 / 2.27 | 0.94 | 0.93 | 0.010 | 0.190 | 0.052 | 211008 (480) | 1 | 209 | 16 | 66550 | 1726 |
 | P2 20 rabbits (vertical slice baseline) | Medium | 20 | 16.67 / 17.47 / 17.80 / 18.1 | 1.91 / 2.19 | 0.96 | 0.92 | 0.012 | 0.239 | 0.050 | 208491 (481) | 0 | 229 | 16 | 108750 | 1802 |
@@ -131,7 +131,7 @@ Budgets Target 60 FPS (Performance Test Matrix) sur le palier cible (Medium, 20 
 
 1. **Décor fusionné par chunk** : les touffes d'herbe et les fleurs (environ 190 renderers) sont fusionnées par palette et classe de densité (9 maillages). Le chunk passe de 218 à 43 renderers. Player : batches P0 70 → 40, P2 102 → 78, S50 144 → 124. Rendu identique (écart moyen 0,27/255 sur la capture de référence). La luminosité de chaque touffe reste dans uv.y (bit 14 de la Shader User Value).
 2. **GC en jeu stable : 0 octet par frame.** Les seules allocations restantes viennent des écritures de sauvegarde (thread d'écriture dédié, environ 15 Ko par sauvegarde déclenchée par un événement) et du chemin d'éclosion (9 frames sur 10 éclosions). Corrigé pendant T22 : `Task.Run` par sauvegarde remplacé par un thread réutilisé, tampon `FileStream` de 64 Ko et relecture `ReadAllBytes` remplacés par un tampon réutilisé (0 o managé par écriture mesuré).
-3. **Pool d'animaux préchauffé** : le sanctuaire remplit le reste du budget visible (2 vues par frame à l'entrée). Une éclosion n'instancie plus rien en jeu.
+3. **Pool d'animaux préchauffé** : le refuge remplit le reste du budget visible (2 vues par frame à l'entrée). Une éclosion n'instancie plus rien en jeu.
 4. **Pic unique à 54 ms (S50-High)** : première utilisation des variantes de shaders du palier High dans le processus. À faire : préchauffage des variantes au démarrage (ShaderVariantCollection, GraphicsStateCollection) avant le gate T30.
 5. **Mémoire** : 214 à 241 Mo utilisés sur le player PC (driver D3D12 inclus), sous la cible de 350 Mo. Ce n'est pas un chiffre mobile.
 6. **Éditeur** : environ 200 Ko de GC par frame viennent de l'éditeur lui-même (sonde `AllocationProbe` : 1 frame d'allocation du jeu sur 885 au repos). Les chiffres éditeur ne servent qu'à la comparaison relative.

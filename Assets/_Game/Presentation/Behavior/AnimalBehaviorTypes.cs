@@ -103,7 +103,7 @@ namespace PocketWilds.Presentation
         }
     }
 
-    /// <summary>Scheduler budgets per quality tier (Performance Bible: 20-30 A on Low, more above).</summary>
+    /// <summary>Scheduler budgets per quality tier (Performance Guide: 20-30 A on Low, more above).</summary>
     [Serializable]
     public struct SchedulerSettings
     {

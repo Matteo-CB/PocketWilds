@@ -11,8 +11,8 @@ namespace PocketWilds.UI
     /// <summary>
     /// PF_UI_Codex (UI doc SCREEN 007/008, T19): biome sections of species cards in a virtualized list,
     /// and a species sheet with its variants. Only the rows on screen exist as views: thousands of
-    /// entries never create thousands of cards. Full screen and opaque, so the sanctuary camera can stop
-    /// while it is open; closing is instant. Ticked by the sanctuary, no Update.
+    /// entries never create thousands of cards. Full screen and opaque, so the refuge camera can stop
+    /// while it is open; closing is instant. Ticked by the refuge, no Update.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CodexScreen : MonoBehaviour, ICodexView

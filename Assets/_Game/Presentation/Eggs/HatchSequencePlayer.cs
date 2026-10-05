@@ -337,7 +337,7 @@ namespace PocketWilds.Presentation
                 case RarityTier.Rare: return AudioEventId.RareReveal;
                 case RarityTier.Epic: return AudioEventId.EpicReveal;
                 case RarityTier.Legendary: return AudioEventId.LegendaryReveal;
-                case RarityTier.Mythic: return AudioEventId.MythicReveal;
+                case RarityTier.Fabulous: return AudioEventId.FabulousReveal;
                 default: return AudioEventId.None;
             }
         }
@@ -350,7 +350,7 @@ namespace PocketWilds.Presentation
                 case RarityTier.Epic:
                     return HapticEventId.Rare;
                 case RarityTier.Legendary: return HapticEventId.Legendary;
-                case RarityTier.Mythic: return HapticEventId.Mythic;
+                case RarityTier.Fabulous: return HapticEventId.Fabulous;
                 default: return HapticEventId.HatchCommon;
             }
         }

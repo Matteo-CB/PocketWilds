@@ -29,7 +29,7 @@ namespace PocketWilds.Services.Analytics
     /// <summary>Screens worth counting (stable values).</summary>
     public enum ScreenId : byte
     {
-        Sanctuary = 1,
+        Refuge = 1,
         Codex = 2,
         CodexSheet = 3,
         Shop = 4,

@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace PocketWilds.Tests.EditMode
 {
-    /// <summary>T18: shipped text follows the Writing Bible and resolves per language with an English fallback.</summary>
+    /// <summary>T18: shipped text follows the Writing Guide and resolves per language with an English fallback.</summary>
     public class LocalizationTests
     {
         private static LocalizationTableAsset[] ShippedTables()
@@ -35,7 +35,7 @@ namespace PocketWilds.Tests.EditMode
         }
 
         [Test]
-        public void ShippedText_FollowsTheWritingBible()
+        public void ShippedText_FollowsTheWritingGuide()
         {
             foreach (var table in ShippedTables())
             {

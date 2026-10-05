@@ -17,7 +17,7 @@ namespace PocketWilds.Services.Feedback
         RareReveal = 5,
         EpicReveal = 6,
         LegendaryReveal = 7,
-        MythicReveal = 8,
+        FabulousReveal = 8,
 
         /// <summary>Species reaction ("RabbitHappy"): the species ID travels as context.</summary>
         AnimalHappy = 9,
@@ -44,7 +44,7 @@ namespace PocketWilds.Services.Feedback
         HatchCommon = 3,
         Rare = 4,
         Legendary = 5,
-        Mythic = 6,
+        Fabulous = 6,
         ErrorSoft = 7,
         PurchaseSuccess = 8,
         AnimalTouch = 9,

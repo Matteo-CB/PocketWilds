@@ -72,7 +72,7 @@ Funnel (doc 09, une fois par profil, enregistré dans la sauvegarde) : 0 Tutoria
 12 SecondPurchase. BiomeUnlock, FirstUpgrade et FirstRewardedAd sont prêts mais n'ont pas encore de fonction de jeu
 qui les déclenche (pas de deuxième biome, d'amélioration ni de pub récompensée dans la tranche).
 
-Écrans : 1 Sanctuaire, 2 Codex, 3 Fiche Codex, 4 Boutique, 5 Offre, 6 Retour hors ligne.
+Écrans : 1 Refuge, 2 Codex, 3 Fiche Codex, 4 Boutique, 5 Offre, 6 Retour hors ligne.
 
 ## Sauvegarde
 

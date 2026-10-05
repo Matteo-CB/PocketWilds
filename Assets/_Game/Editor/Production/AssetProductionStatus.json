@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T22:36:46Z",
+  "updatedUtc": "2026-10-05T23:01:06Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -128,19 +128,19 @@
       "task": "T16",
       "title": "Lighting reference",
       "status": "DONE",
-      "notes": "Lighting reference: quality tiers (Low without shadow map + blob shadows, Medium 24 m, High 30 m), LP_Grassland_Day + sky gradient + linear fog in the 4 lit shaders, minimal grading volume (Medium/High), PF_CameraRig_Sanctuary with bounded pan/zoom/states and input; scene wired. Tree A reworked after owner feedback. Tests EditMode 153/153, PlayMode 24/24."
+      "notes": "Lighting reference: quality tiers (Low without shadow map + blob shadows, Medium 24 m, High 30 m), LP_Grassland_Day + sky gradient + linear fog in the 4 lit shaders, minimal grading volume (Medium/High), PF_CameraRig_Refuge with bounded pan/zoom/states and input; scene wired. Tree A reworked after owner feedback. Tests EditMode 153/153, PlayMode 24/24."
     },
     {
       "task": "T17",
       "title": "First playable loop",
       "status": "DONE",
-      "notes": "First playable loop: HatchService (doc 02 cost curve, free tutorial egg, pay only after a valid roll, PCG32 rolls seeded from profile + instance id, species pool + tier fallback, discoveries, save priority), SanctuaryController (saved animals back in the meadow, egg on its spawn, tap egg or button to hatch, repeat speed-up, pooled views/eggs/VFX, visible budget per tier), PF_UI_HUD_Main + EventSystem (Input System). Loop proven in PlayMode: free egg, rabbit produces Light, paid egg at 10, restart keeps 2 animals and price 12. Tests EditMode 163/163, PlayMode 25/25. Captures T17_hud_first/affordable/waiting."
+      "notes": "First playable loop: HatchService (doc 02 cost curve, free tutorial egg, pay only after a valid roll, PCG32 rolls seeded from profile + instance id, species pool + tier fallback, discoveries, save priority), RefugeController (saved animals back in the meadow, egg on its spawn, tap egg or button to hatch, repeat speed-up, pooled views/eggs/VFX, visible budget per tier), PF_UI_HUD_Main + EventSystem (Input System). Loop proven in PlayMode: free egg, rabbit produces Light, paid egg at 10, restart keeps 2 animals and price 12. Tests EditMode 163/163, PlayMode 25/25. Captures T17_hud_first/affordable/waiting."
     },
     {
       "task": "T18",
       "title": "Offline",
       "status": "DONE",
-      "notes": "Offline: OfflineService (doc 02 OfflineGain = RateAtSave x EffectiveSeconds; 100% for 24 h, then eases toward a 25% floor, 30-day cap; closed form, O(1)). Exit snapshot written with every save (SaveService.BeforeSerialize), save schema 2 (Offline section + Migration0001, golden save v2). Clock rollback guard via a time high-water mark (tolerance 5 min), no double pay on repeated resolves, pause marks the gap even if the save fails. Resolved at boot and on resume from background. Return screen PF_UI_OfflineReturn + first localization (LocalizationService, LOC_en/LOC_fr, keys per Writing Bible). Tests: durations 30 s to 29 days, 400 days capped, match with 100 ms tick replay over 2 h, 10 000 resolves of 400 days in 3.9 ms, 0 GC, rollback, snapshot rate vs new balance, schema 1 saves; PlayMode cold boot 3 h + background 1 h through the real scene. EditMode 187/187, PlayMode 26/26."
+      "notes": "Offline: OfflineService (doc 02 OfflineGain = RateAtSave x EffectiveSeconds; 100% for 24 h, then eases toward a 25% floor, 30-day cap; closed form, O(1)). Exit snapshot written with every save (SaveService.BeforeSerialize), save schema 2 (Offline section + Migration0001, golden save v2). Clock rollback guard via a time high-water mark (tolerance 5 min), no double pay on repeated resolves, pause marks the gap even if the save fails. Resolved at boot and on resume from background. Return screen PF_UI_OfflineReturn + first localization (LocalizationService, LOC_en/LOC_fr, keys per Writing Guide). Tests: durations 30 s to 29 days, 400 days capped, match with 100 ms tick replay over 2 h, 10 000 resolves of 400 days in 3.9 ms, 0 GC, rollback, snapshot rate vs new balance, schema 1 saves; PlayMode cold boot 3 h + background 1 h through the real scene. EditMode 187/187, PlayMode 26/26."
     },
     {
       "task": "T19",
@@ -164,13 +164,13 @@
       "task": "T22",
       "title": "Performance baseline",
       "status": "REVIEW",
-      "notes": "Performance baseline: PerformanceBaselineRunner (real boot, scene and save; P0, P1, 10, P2 20, 30, 50 Medium, 20 Low, 50 High, P5 hatch burst) with FrameTimingManager + ProfilerRecorder; JSON baselines in Docs/Performance/Baselines, report Docs/Performance/T22_Baseline.md (Tools/perf_report.py). Windows development player (RTX 5060 Ti, 480x1040): main thread 1.1 to 2.4 ms mean, simulation <= 0.02 ms, UI ~0.05 ms, GPU <= 0.6 ms, steady GC 0 B/frame. Fixes found by measuring: grass/flowers merged per palette (chunk 218 -> 43 renderers, batches P0 70 -> 40, P2 102 -> 78), save writer thread instead of Task.Run, no 64 KB stream buffer / read-back array, sanctuary animal pool warmed to the visible budget (no Instantiate on hatch), AllocationProbe editor tool. Open: shader variant prewarm (one 54 ms hitch on first High use), REVIEW until the same runner runs on a Target Android device (no device connected)."
+      "notes": "Performance baseline: PerformanceBaselineRunner (real boot, scene and save; P0, P1, 10, P2 20, 30, 50 Medium, 20 Low, 50 High, P5 hatch burst) with FrameTimingManager + ProfilerRecorder; JSON baselines in Docs/Performance/Baselines, report Docs/Performance/T22_Baseline.md (Tools/perf_report.py). Windows development player (RTX 5060 Ti, 480x1040): main thread 1.1 to 2.4 ms mean, simulation <= 0.02 ms, UI ~0.05 ms, GPU <= 0.6 ms, steady GC 0 B/frame. Fixes found by measuring: grass/flowers merged per palette (chunk 218 -> 43 renderers, batches P0 70 -> 40, P2 102 -> 78), save writer thread instead of Task.Run, no 64 KB stream buffer / read-back array, refuge animal pool warmed to the visible budget (no Instantiate on hatch), AllocationProbe editor tool. Open: shader variant prewarm (one 54 ms hitch on first High use), REVIEW until the same runner runs on a Target Android device (no device connected)."
     },
     {
       "task": "T23",
       "title": "Squirrel",
       "status": "DONE",
-      "notes": "Squirrel produced by reusing rig, clips, material and pipeline. New SourceArt/Blender/Tools/pw_species.py turns the Rabbit recipe into species steps; Blender species work about 20 min (spec to FBX) against about 50 min for the Rabbit model, skin, LODs and masks. One-time generalizations for every next species: multi-species sanctuary pools/profiles, egg starter species, idempotent family controller, mixed benchmark scenarios, species capture. EditMode 238/238, PlayMode 30/30 (+1 explicit)."
+      "notes": "Squirrel produced by reusing rig, clips, material and pipeline. New SourceArt/Blender/Tools/pw_species.py turns the Rabbit recipe into species steps; Blender species work about 20 min (spec to FBX) against about 50 min for the Rabbit model, skin, LODs and masks. One-time generalizations for every next species: multi-species refuge pools/profiles, egg starter species, idempotent family controller, mixed benchmark scenarios, species capture. EditMode 238/238, PlayMode 30/30 (+1 explicit)."
     },
     {
       "task": "T24",
@@ -239,6 +239,12 @@
       "notes": "Rest of the doc 04 D-BIO-001 kit: GL_Stream_A/B (SH_WaterLite) + GL_StreamStones, GL_Landmark_OldTree and GL_Landmark_Windmill, impostors (SH_Impostor), GL_Fence_B, GL_WellTiny, GL_Path_A/B, GL_Edge_A/B, GL_Ground_Core_C, chunks StreamBend, Orchard, Hill, WindmillRise, PondEdge, ForestEdge, weather (light rain, rainbow), night mood, sun rays on High, scatter LOD by distance. Criterion: BIOME DONE rules of doc 04 (phone measurement pending)."
     },
     {
+      "task": "T33V",
+      "title": "Règle de vocabulaire dans le jeu et le code",
+      "status": "DONE",
+      "notes": "Owner rule 2026-10-06: nothing religious, no divine vocabulary anywhere. Code: Sanctuary* -> Refuge* (RefugeController, RefugeCameraRig, RefugeCameraInput, IRefugeHud, RefugeHud, RefugeLoopTests, PF_CameraRig_Refuge, LS_Refuge_NoGI; files renamed with their GUIDs, scene object CameraRig_Refuge), ScreenId.Refuge keeps wire value 1, RarityTier/HapticEventId Mythic -> Fabulous, AudioEventId MythicReveal -> FabulousReveal (int values unchanged, saves and content unaffected), 'Bible' -> 'Guide' in comments. Repo docs, baselines labels, analytics id table and status ids renamed (Celestial -> Cloudlands, Astral -> Starlight, StarTotem -> StarCairn, MoonHalo -> MoonGlow, Rituel du jour -> Rendez-vous du jour). Glossary Docs/Design/Vocabulary_Rule.md, project CLAUDE.md, VocabularyRuleTests (5 tests: asset paths, localized text, content, prefabs, scenes, code, Blender tools, docs). Drive docs republished with the glossary, old versions archived."
+    },
+    {
       "task": "T34",
       "title": "Qualité adaptative et préparation des shaders",
       "status": "PLANNED",
@@ -276,7 +282,7 @@
     },
     {
       "task": "T36",
-      "title": "Rituel du jour",
+      "title": "Rendez-vous du jour",
       "status": "PLANNED",
       "notes": ""
     },
@@ -384,7 +390,7 @@
     },
     {
       "task": "T54",
-      "title": "Sanctuary Pass et Wild Club",
+      "title": "Refuge Pass et Wild Club",
       "status": "PLANNED",
       "notes": ""
     },
@@ -3086,7 +3092,7 @@
     },
     {
       "id": "C-EGG-015",
-      "name": "MythicPresentation",
+      "name": "FabulousPresentation",
       "family": "Egg",
       "releaseScope": "SoftLaunch",
       "dependencies": [
@@ -3109,7 +3115,7 @@
       "lastValidationVersion": null,
       "lastValidationUtc": null,
       "notes": "Same topology, palette/mask/module only.",
-      "prefab": "Assets/_Game/Prefabs/Eggs/PF_Egg_MythicPresentation.prefab"
+      "prefab": "Assets/_Game/Prefabs/Eggs/PF_Egg_FabulousPresentation.prefab"
     },
     {
       "id": "D-BIO-001",
@@ -3353,7 +3359,7 @@
     },
     {
       "id": "D-BIO-009",
-      "name": "Celestial",
+      "name": "Cloudlands",
       "family": "Biome",
       "releaseScope": "Future",
       "dependencies": [
@@ -3361,8 +3367,8 @@
         "G-SH-003"
       ],
       "status": "PLANNED",
-      "sourcePath": "SourceArt/Blender/Environment/Celestial/",
-      "runtimePath": "Assets/_Game/Art/Environment/Celestial/",
+      "sourcePath": "SourceArt/Blender/Environment/Cloudlands/",
+      "runtimePath": "Assets/_Game/Art/Environment/Cloudlands/",
       "validationGates": [
         "G01",
         "G02",
@@ -3378,8 +3384,8 @@
       "lastValidationVersion": null,
       "lastValidationUtc": null,
       "notes": "",
-      "definition": "Assets/_Game/Content/Biomes/DEF_Biome_Celestial.asset",
-      "contentId": "biome.celestial"
+      "definition": "Assets/_Game/Content/Biomes/DEF_Biome_Cloudlands.asset",
+      "contentId": "biome.cloudlands"
     },
     {
       "id": "D-BIO-010",
@@ -3413,7 +3419,7 @@
     },
     {
       "id": "D-BIO-011",
-      "name": "Astral",
+      "name": "Starlight",
       "family": "Biome",
       "releaseScope": "Future",
       "dependencies": [
@@ -3421,8 +3427,8 @@
         "G-SH-003"
       ],
       "status": "PLANNED",
-      "sourcePath": "SourceArt/Blender/Environment/Astral/",
-      "runtimePath": "Assets/_Game/Art/Environment/Astral/",
+      "sourcePath": "SourceArt/Blender/Environment/Starlight/",
+      "runtimePath": "Assets/_Game/Art/Environment/Starlight/",
       "validationGates": [
         "G01",
         "G02",
@@ -3438,8 +3444,8 @@
       "lastValidationVersion": null,
       "lastValidationUtc": null,
       "notes": "",
-      "definition": "Assets/_Game/Content/Biomes/DEF_Biome_Astral.asset",
-      "contentId": "biome.astral"
+      "definition": "Assets/_Game/Content/Biomes/DEF_Biome_Starlight.asset",
+      "contentId": "biome.starlight"
     },
     {
       "id": "D-BIO-001/GL_Ground_Core_A",
@@ -4693,7 +4699,7 @@
     },
     {
       "id": "E-DEC-026",
-      "name": "StarTotem",
+      "name": "StarCairn",
       "family": "Decoration",
       "releaseScope": "Future",
       "dependencies": [
@@ -4701,7 +4707,7 @@
         "L-SC-005"
       ],
       "status": "PLANNED",
-      "sourcePath": "SourceArt/Blender/Props/BL_Decor_StarTotem.blend",
+      "sourcePath": "SourceArt/Blender/Props/BL_Decor_StarCairn.blend",
       "runtimePath": "Assets/_Game/Art/Props/",
       "validationGates": [
         "G01",
@@ -4713,7 +4719,7 @@
       "lastValidationVersion": null,
       "lastValidationUtc": null,
       "notes": "",
-      "prefab": "Assets/_Game/Prefabs/Props/PF_Decor_StarTotem.prefab"
+      "prefab": "Assets/_Game/Prefabs/Props/PF_Decor_StarCairn.prefab"
     },
     {
       "id": "F-VEG-GrassTuft_S/M/L",
@@ -4936,8 +4942,8 @@
       "notes": ""
     },
     {
-      "id": "F-VEG-AstralCrystal_A/B",
-      "name": "AstralCrystal_A/B",
+      "id": "F-VEG-StarlightCrystal_A/B",
+      "name": "StarlightCrystal_A/B",
       "family": "Vegetation",
       "releaseScope": "Future",
       "dependencies": [
@@ -4977,7 +4983,7 @@
     },
     {
       "id": "F-ROCK-Variants",
-      "name": "IceRock/VolcanicRock/AstralRock",
+      "name": "IceRock/VolcanicRock/StarlightRock",
       "family": "Rock",
       "releaseScope": "V1",
       "dependencies": [
@@ -5132,13 +5138,13 @@
     },
     {
       "id": "G-SH-006",
-      "name": "SH_RareAura module",
+      "name": "SH_RareGlow module",
       "family": "Shader",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "PLANNED",
-      "sourcePath": "Assets/_Game/Art/Shaders/SH_RareAura.shader",
-      "runtimePath": "Assets/_Game/Art/Shaders/SH_RareAura.shader",
+      "sourcePath": "Assets/_Game/Art/Shaders/SH_RareGlow.shader",
+      "runtimePath": "Assets/_Game/Art/Shaders/SH_RareGlow.shader",
       "validationGates": [
         "G06",
         "G07",
@@ -5432,8 +5438,8 @@
       "notes": ""
     },
     {
-      "id": "G-MAT-GROUND-Celestial",
-      "name": "MAT_Ground_Celestial",
+      "id": "G-MAT-GROUND-Cloudlands",
+      "name": "MAT_Ground_Cloudlands",
       "family": "Material",
       "releaseScope": "Future",
       "dependencies": [
@@ -5441,7 +5447,7 @@
       ],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/Materials/MAT_Ground_Celestial.mat",
+      "runtimePath": "Assets/_Game/Art/Materials/MAT_Ground_Cloudlands.mat",
       "validationGates": [
         "G06"
       ],
@@ -5468,8 +5474,8 @@
       "notes": ""
     },
     {
-      "id": "G-MAT-GROUND-Astral",
-      "name": "MAT_Ground_Astral",
+      "id": "G-MAT-GROUND-Starlight",
+      "name": "MAT_Ground_Starlight",
       "family": "Material",
       "releaseScope": "Future",
       "dependencies": [
@@ -5477,7 +5483,7 @@
       ],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/Materials/MAT_Ground_Astral.mat",
+      "runtimePath": "Assets/_Game/Art/Materials/MAT_Ground_Starlight.mat",
       "validationGates": [
         "G06"
       ],
@@ -5706,7 +5712,7 @@
     },
     {
       "id": "H-VFX-007",
-      "name": "VFX_HatchMythic",
+      "name": "VFX_HatchFabulous",
       "family": "VFX",
       "releaseScope": "VerticalSlice",
       "dependencies": [
@@ -5714,7 +5720,7 @@
       ],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/VFX/VFX_HatchMythic.prefab",
+      "runtimePath": "Assets/_Game/Art/VFX/VFX_HatchFabulous.prefab",
       "validationGates": [
         "G10",
         "G19"
@@ -6010,7 +6016,7 @@
     },
     {
       "id": "H-VFX-023",
-      "name": "VFX_CelestialCloud",
+      "name": "VFX_CloudlandsCloud",
       "family": "VFX",
       "releaseScope": "Future",
       "dependencies": [
@@ -6018,7 +6024,7 @@
       ],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/VFX/VFX_CelestialCloud.prefab",
+      "runtimePath": "Assets/_Game/Art/VFX/VFX_CloudlandsCloud.prefab",
       "validationGates": [
         "G10",
         "G19"
@@ -6048,7 +6054,7 @@
     },
     {
       "id": "H-VFX-025",
-      "name": "VFX_AstralSparkle",
+      "name": "VFX_StarlightSparkle",
       "family": "VFX",
       "releaseScope": "Future",
       "dependencies": [
@@ -6056,7 +6062,7 @@
       ],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/VFX/VFX_AstralSparkle.prefab",
+      "runtimePath": "Assets/_Game/Art/VFX/VFX_StarlightSparkle.prefab",
       "validationGates": [
         "G10",
         "G19"
@@ -6707,7 +6713,7 @@
     },
     {
       "id": "I-SCR-016",
-      "name": "Sanctuary Pass",
+      "name": "Refuge Pass",
       "family": "UIScreen",
       "releaseScope": "SoftLaunch",
       "dependencies": [
@@ -6966,7 +6972,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-002",
@@ -6982,7 +6988,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-003",
@@ -6998,7 +7004,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-004",
@@ -7014,7 +7020,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-005",
@@ -7030,7 +7036,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-006",
@@ -7046,11 +7052,11 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-EGG-007",
-      "name": "Mythic reveal",
+      "name": "Fabulous reveal",
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
@@ -7062,7 +7068,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/MythicReveal), verified by HatchSequenceTests. Clip still to produce."
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
     },
     {
       "id": "J-SFX-CURRENCY-001",
@@ -7962,7 +7968,7 @@
     },
     {
       "id": "J-AMB-009",
-      "name": "Ambience Celestial",
+      "name": "Ambience Cloudlands",
       "family": "Audio",
       "releaseScope": "Future",
       "dependencies": [],
@@ -7994,7 +8000,7 @@
     },
     {
       "id": "J-AMB-011",
-      "name": "Ambience Astral",
+      "name": "Ambience Starlight",
       "family": "Audio",
       "releaseScope": "Future",
       "dependencies": [],
@@ -8090,7 +8096,7 @@
     },
     {
       "id": "J-MUS-001",
-      "name": "SanctuaryTheme",
+      "name": "RefugeTheme",
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
@@ -8170,7 +8176,7 @@
     },
     {
       "id": "J-MUS-006",
-      "name": "AstralVariation",
+      "name": "StarlightVariation",
       "family": "Audio",
       "releaseScope": "Future",
       "dependencies": [],
@@ -8281,8 +8287,8 @@
       "notes": ""
     },
     {
-      "id": "J-HAPTIC-Mythic",
-      "name": "Haptic_Mythic",
+      "id": "J-HAPTIC-Fabulous",
+      "name": "Haptic_Fabulous",
       "family": "Haptic",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
@@ -8593,19 +8599,19 @@
     },
     {
       "id": "K-PF-CAMERA",
-      "name": "PF_CameraRig_Sanctuary",
+      "name": "PF_CameraRig_Refuge",
       "family": "Prefab",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Prefabs/World/PF_CameraRig_Sanctuary.prefab",
+      "runtimePath": "Assets/_Game/Prefabs/World/PF_CameraRig_Refuge.prefab",
       "validationGates": [
         "G11"
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T23:40:50Z",
-      "notes": "T16: PF_CameraRig_Sanctuary: fixed pitch 40, FOV 30, distance 9.5-17 (default 13.8), pan clamped around the egg spawn, states DefaultWorld/FocusAnimal/HatchReveal with 0.35 s smoothed transitions, SanctuaryCameraInput (touch drag/pinch, mouse drag/wheel, tap detection) with no allocation. | T16: PF_CameraRig_Sanctuary: fixed pitch 40, FOV 30, distance 9.5-17 (default 13.8), pan clamped around the egg spawn, states DefaultWorld/FocusAnimal/HatchReveal with 0.35 s smoothed transitions, SanctuaryCameraInput (touch drag/pinch, mouse drag/wheel, tap detection) with no allocation. | T16: PF_CameraRig_Sanctuary: fixed pitch 40, FOV 30, distance 9.5-17 (default 13.8), pan clamped around the egg spawn, states DefaultWorld/FocusAnimal/HatchReveal with 0.35 s smoothed transitions, SanctuaryCameraInput (touch drag/pinch, mouse drag/wheel, tap detection) with no allocation.",
+      "notes": "T16: PF_CameraRig_Refuge: fixed pitch 40, FOV 30, distance 9.5-17 (default 13.8), pan clamped around the egg spawn, states DefaultWorld/FocusAnimal/HatchReveal with 0.35 s smoothed transitions, RefugeCameraInput (touch drag/pinch, mouse drag/wheel, tap detection) with no allocation. | T16: PF_CameraRig_Refuge: fixed pitch 40, FOV 30, distance 9.5-17 (default 13.8), pan clamped around the egg spawn, states DefaultWorld/FocusAnimal/HatchReveal with 0.35 s smoothed transitions, RefugeCameraInput (touch drag/pinch, mouse drag/wheel, tap detection) with no allocation. | T16: PF_CameraRig_Refuge: fixed pitch 40, FOV 30, distance 9.5-17 (default 13.8), pan clamped around the egg spawn, states DefaultWorld/FocusAnimal/HatchReveal with 0.35 s smoothed transitions, RefugeCameraInput (touch drag/pinch, mouse drag/wheel, tap detection) with no allocation.",
       "passedGates": [
         "G11"
       ]
@@ -8696,13 +8702,13 @@
     },
     {
       "id": "L-SC-003",
-      "name": "SC_MainSanctuary",
+      "name": "SC_MainRefuge",
       "family": "Scene",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Scenes/SC_MainSanctuary.unity",
+      "runtimePath": "Assets/_Game/Scenes/SC_MainRefuge.unity",
       "validationGates": [
         "G19"
       ],
@@ -9441,7 +9447,7 @@
     },
     {
       "id": "O-COS-010",
-      "name": "MoonHalo",
+      "name": "MoonGlow",
       "family": "Cosmetic",
       "releaseScope": "SoftLaunch",
       "dependencies": [
@@ -9449,7 +9455,7 @@
         "L-SC-004"
       ],
       "status": "PLANNED",
-      "sourcePath": "SourceArt/Blender/Cosmetics/BL_Cos_MoonHalo.blend",
+      "sourcePath": "SourceArt/Blender/Cosmetics/BL_Cos_MoonGlow.blend",
       "runtimePath": "Assets/_Game/Art/Props/Cosmetics/",
       "validationGates": [
         "G01",
@@ -9759,14 +9765,14 @@
     },
     {
       "id": "O-THEME-004",
-      "name": "Habitat theme Celestial",
+      "name": "Habitat theme Cloudlands",
       "family": "ThemePack",
       "releaseScope": "SoftLaunch",
       "dependencies": [
         "G-SH-002"
       ],
       "status": "PLANNED",
-      "sourcePath": "SourceArt/Blender/Themes/Celestial/",
+      "sourcePath": "SourceArt/Blender/Themes/Cloudlands/",
       "runtimePath": "Assets/_Game/Art/Props/Themes/",
       "validationGates": [
         "G23"
@@ -10046,8 +10052,8 @@
       "notes": ""
     },
     {
-      "id": "O-PALETTE-Celestial",
-      "name": "Premium palette Celestial",
+      "id": "O-PALETTE-Cloudlands",
+      "name": "Premium palette Cloudlands",
       "family": "PaletteData",
       "releaseScope": "SoftLaunch",
       "dependencies": [
@@ -12299,7 +12305,7 @@
     },
     {
       "id": "O-OUT-108-05",
-      "name": "Halo de lune doré",
+      "name": "Lueur de lune dorée",
       "family": "Outfit",
       "releaseScope": "LiveOps",
       "dependencies": [
@@ -13499,7 +13505,7 @@
     },
     {
       "id": "O-PASS-02",
-      "name": "Pass season Jardin céleste",
+      "name": "Pass season Jardin des nuages",
       "family": "PassSeason",
       "releaseScope": "LiveOps",
       "dependencies": [
@@ -14179,7 +14185,7 @@
     },
     {
       "id": "U-RET-007",
-      "name": "Sanctuary journal",
+      "name": "Refuge journal",
       "family": "RetentionSystem",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
@@ -14796,7 +14802,7 @@
     },
     {
       "id": "I-SCR-031",
-      "name": "Today (daily ritual)",
+      "name": "Today (daily visit)",
       "family": "UIScreen",
       "releaseScope": "SoftLaunch",
       "dependencies": [
@@ -14910,7 +14916,7 @@
     },
     {
       "id": "I-SCR-037",
-      "name": "Sanctuary journal",
+      "name": "Refuge journal",
       "family": "UIScreen",
       "releaseScope": "SoftLaunch",
       "dependencies": [

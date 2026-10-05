@@ -44,7 +44,7 @@ Aucun téléphone branché : ces chiffres servent à la comparaison relative, pa
 
 ## Pools
 
-Le sanctuaire enregistre un pool et un profil de comportement par espèce ayant un visuel, et préchauffe
+Le refuge enregistre un pool et un profil de comportement par espèce ayant un visuel, et préchauffe
 le reste du budget visible pour chaque espèce que l'œuf peut donner (en parallèle, environ deux par frame
 au total). Un hatch d'écureuil ne crée aucune instance (test `SquirrelPlayTests`). Au-delà de trois ou quatre
 espèces par œuf, passer à une réserve fixe par espèce plus réapprovisionnement en frames calmes.

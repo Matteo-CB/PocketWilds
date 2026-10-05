@@ -50,7 +50,7 @@ namespace PocketWilds.Simulation
         public ShopContent Catalog => _content.Shop;
         public GrantService Grants => _grants;
 
-        /// <summary>The shop opens after onboarding (doc 06 UI): enough animals in the sanctuary.</summary>
+        /// <summary>The shop opens after onboarding (doc 06 UI): enough animals in the refuge.</summary>
         public bool ShopUnlocked => _content.Shop.Offers.Count > 0 && _state.Collection.Count >= _content.Shop.UnlockMinAnimals;
 
         public long Gems => _state.Wallet.Gems;

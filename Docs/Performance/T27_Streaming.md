@@ -1,6 +1,6 @@
 # T27 Streaming des chunks
 
-Deux chunks prairie et leur transition : `PF_Chunk_Grassland_Start` (épinglé, il porte le sanctuaire) et
+Deux chunks prairie et leur transition : `PF_Chunk_Grassland_Start` (épinglé, il porte le refuge) et
 `PF_Chunk_Grassland_Meadow`, la prairie fleurie, 14 m à l'est. Ils sont chargés par Addressables et gérés par
 `WorldStreamer`. Mesures : player Windows de développement, 480x1040, éditeur au repos. Rapport brut :
 `Baselines/T27_player_windows_streaming.json`. Ce sont des chiffres desktop, pas des budgets mobiles.

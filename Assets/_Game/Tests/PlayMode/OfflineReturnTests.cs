@@ -75,7 +75,7 @@ namespace PocketWilds.Tests.PlayMode
             onReady(bootstrap);
         }
 
-        private static IEnumerator Collect(OfflineReturnScreen screen, SanctuaryController sanctuary, GameContext context)
+        private static IEnumerator Collect(OfflineReturnScreen screen, RefugeController refuge, GameContext context)
         {
             // Wait for the opening animation, then press Collect like a player.
             float timeout = Time.realtimeSinceStartup + 3f;
@@ -88,7 +88,7 @@ namespace PocketWilds.Tests.PlayMode
             yield return new WaitForSecondsRealtime(0.35f);
             screen.GetComponentInChildren<Button>(true).onClick.Invoke();
             timeout = Time.realtimeSinceStartup + 3f;
-            while (screen.IsOpen || sanctuary.OfflineCollecting)
+            while (screen.IsOpen || refuge.OfflineCollecting)
             {
                 if (Time.realtimeSinceStartup > timeout)
                     Assert.Fail("Collect did not finish.");
@@ -122,13 +122,13 @@ namespace PocketWilds.Tests.PlayMode
             Assert.IsTrue(BigValue.ApproximatelyEqual(BigValue.Multiply(rate, report.EffectiveSeconds), report.Light, 1e-9));
             Assert.Greater(context.Economy.Light.ToDoubleClamped(), lightAtExit.ToDoubleClamped() + report.Light.ToDoubleClamped() * 0.999);
 
-            var sanctuary = Object.FindAnyObjectByType<VerticalSliceEntry>().Sanctuary;
+            var refuge = Object.FindAnyObjectByType<VerticalSliceEntry>().Refuge;
             var screen = Object.FindAnyObjectByType<OfflineReturnScreen>();
             Assert.IsNotNull(screen);
             yield return null;
             Assert.IsTrue(screen.IsOpen, "Welcome back after three hours.");
-            Assert.IsTrue(sanctuary.OfflineScreenOpen);
-            Assert.Less(sanctuary.DisplayedLight.ToDoubleClamped(), context.Economy.Light.ToDoubleClamped(),
+            Assert.IsTrue(refuge.OfflineScreenOpen);
+            Assert.Less(refuge.DisplayedLight.ToDoubleClamped(), context.Economy.Light.ToDoubleClamped(),
                 "The HUD holds the offline Light back until Collect.");
             string expectedTitle = context.Localization.Get(UiTextKeys.OfflineWelcomeBack);
             Assert.AreEqual(expectedTitle, screen.transform.Find("Content/Card/Title").GetComponent<TMPro.TMP_Text>().text);
@@ -136,12 +136,12 @@ namespace PocketWilds.Tests.PlayMode
 
             // While open, the world and the HUD ignore touches.
             int animals = context.State.Collection.Count;
-            sanctuary.RequestHatch();
+            refuge.RequestHatch();
             Assert.AreEqual(animals, context.State.Collection.Count);
 
-            yield return Collect(screen, sanctuary, context);
-            Assert.IsFalse(sanctuary.OfflineScreenOpen);
-            Assert.AreEqual(context.Economy.Light, sanctuary.DisplayedLight, "Everything counted in.");
+            yield return Collect(screen, refuge, context);
+            Assert.IsFalse(refuge.OfflineScreenOpen);
+            Assert.AreEqual(context.Economy.Light, refuge.DisplayedLight, "Everything counted in.");
 
             // One hour in the background, same process.
             second.SendMessage("OnApplicationPause", true);
@@ -152,8 +152,8 @@ namespace PocketWilds.Tests.PlayMode
             Assert.AreEqual(rate.ToDoubleClamped() * 3600.0, gained, rate.ToDoubleClamped() * 2.0);
             yield return null;
             Assert.IsTrue(screen.IsOpen, "Welcome back after the background hour.");
-            Assert.Less(sanctuary.DisplayedLight.ToDoubleClamped(), context.Economy.Light.ToDoubleClamped());
-            yield return Collect(screen, sanctuary, context);
+            Assert.Less(refuge.DisplayedLight.ToDoubleClamped(), context.Economy.Light.ToDoubleClamped());
+            yield return Collect(screen, refuge, context);
 
             // Resuming again right away pays nothing and opens nothing.
             var settled = context.Economy.Light;

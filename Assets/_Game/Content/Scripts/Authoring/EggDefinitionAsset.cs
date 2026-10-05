@@ -43,7 +43,7 @@ namespace PocketWilds.Content
         [Header("Economy (doc 02): Cost(n) = round(baseCost x costGrowth^n)")]
         [Min(1f)] public double baseCost = 10.0;
         [Min(1f)] public double costGrowth = 1.18;
-        [Tooltip("Relative weights: Common, Uncommon, Rare, Epic, Legendary, Mythic.")]
+        [Tooltip("Relative weights: Common, Uncommon, Rare, Epic, Legendary, Fabulous.")]
         public double[] rarityWeights = { 72.0, 20.0, 6.0, 1.6, 0.36, 0.04 };
         public List<PoolEntry> pool = new List<PoolEntry>();
 

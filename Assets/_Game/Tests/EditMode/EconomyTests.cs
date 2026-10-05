@@ -109,7 +109,7 @@ namespace PocketWilds.Tests.EditMode
         {
             BigValue RunDay(int stepSeconds)
             {
-                var (state, economy) = Create(Animal(Rabbit), Animal(Squirrel, RarityTier.Epic, 300), Animal(Hedgehog, RarityTier.Mythic));
+                var (state, economy) = Create(Animal(Rabbit), Animal(Squirrel, RarityTier.Epic, 300), Animal(Hedgehog, RarityTier.Fabulous));
                 state.Mastery.Species[Squirrel] = new SpeciesMastery { Level = 7 };
                 economy.MarkProductionDirty();
                 for (int t = 0; t < 86400; t += stepSeconds)
@@ -123,7 +123,7 @@ namespace PocketWilds.Tests.EditMode
 
             var oneStep = BigValue.Zero;
             {
-                var (state, economy) = Create(Animal(Rabbit), Animal(Squirrel, RarityTier.Epic, 300), Animal(Hedgehog, RarityTier.Mythic));
+                var (state, economy) = Create(Animal(Rabbit), Animal(Squirrel, RarityTier.Epic, 300), Animal(Hedgehog, RarityTier.Fabulous));
                 state.Mastery.Species[Squirrel] = new SpeciesMastery { Level = 7 };
                 economy.MarkProductionDirty();
                 economy.Advance(TimeSpan.FromDays(1));

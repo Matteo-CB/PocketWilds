@@ -5,25 +5,25 @@ using UnityEngine.InputSystem.Controls;
 namespace PocketWilds.Presentation
 {
     /// <summary>Receives taps (touch released quickly without dragging). Implemented by the scene controller.</summary>
-    public interface ISanctuaryTapHandler
+    public interface IRefugeTapHandler
     {
         void OnTap(Vector2 screenPosition);
     }
 
     /// <summary>
-    /// Touch and mouse input for the sanctuary camera: one-finger drag pans, pinch or wheel zooms, a short
+    /// Touch and mouse input for the refuge camera: one-finger drag pans, pinch or wheel zooms, a short
     /// touch without movement is a tap (egg, animal). Polls devices directly: no callbacks, no allocation.
     /// </summary>
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(SanctuaryCameraRig))]
-    public sealed class SanctuaryCameraInput : MonoBehaviour
+    [RequireComponent(typeof(RefugeCameraRig))]
+    public sealed class RefugeCameraInput : MonoBehaviour
     {
         [SerializeField, Min(1f)] private float _tapMaxPixels = 14f;
         [SerializeField, Min(0.05f)] private float _tapMaxSeconds = 0.3f;
         [SerializeField, Min(0.0001f)] private float _wheelZoomPerUnit = 0.0012f;
 
-        private SanctuaryCameraRig _rig;
-        private ISanctuaryTapHandler _tapHandler;
+        private RefugeCameraRig _rig;
+        private IRefugeTapHandler _tapHandler;
         private bool _pressing;
         private bool _pressFromTouch;
         private bool _dragging;
@@ -33,7 +33,7 @@ namespace PocketWilds.Presentation
         private float _lastPinchDistance;
         private bool _blocked;
 
-        public void SetTapHandler(ISanctuaryTapHandler handler) => _tapHandler = handler;
+        public void SetTapHandler(IRefugeTapHandler handler) => _tapHandler = handler;
 
         /// <summary>A modal screen is open: no pan, zoom or world tap. An ongoing press is dropped.</summary>
         public bool Blocked
@@ -51,7 +51,7 @@ namespace PocketWilds.Presentation
             }
         }
 
-        private void Awake() => _rig = GetComponent<SanctuaryCameraRig>();
+        private void Awake() => _rig = GetComponent<RefugeCameraRig>();
 
         private void Update()
         {

@@ -6,7 +6,7 @@ using UnityEngine;
 namespace PocketWilds.Editor.Import
 {
     /// <summary>
-    /// Import presets as code, chosen by folder (Asset Production Bible: Animal_Rigged, Animation_Library,
+    /// Import presets as code, chosen by folder (Asset Production Guide: Animal_Rigged, Animation_Library,
     /// Environment_Static, Prop_Static). Nothing depends on a hand-ticked importer checkbox.
     /// Bump <see cref="Version"/> when a rule changes so Unity reimports affected assets.
     /// </summary>

@@ -5,7 +5,7 @@ using TMPro;
 namespace PocketWilds.UI
 {
     /// <summary>
-    /// Shop wording helpers: message keys, the "{0}" placeholder (Writing Bible: placeholders, no sentence built
+    /// Shop wording helpers: message keys, the "{0}" placeholder (Writing Guide: placeholders, no sentence built
     /// from fragments) and amounts grouped by locale ("13,000" / "13 000"). Runs on shop events, not per frame.
     /// </summary>
     public static class ShopText
@@ -52,7 +52,7 @@ namespace PocketWilds.UI
 
         public static string Get(ILocalization text, string key) => text != null ? text.Get(key) : key;
 
-        /// <summary>"500 Gems + Flower Crown": what the player gets, in order (Writing Bible shop example).</summary>
+        /// <summary>"500 Gems + Flower Crown": what the player gets, in order (Writing Guide shop example).</summary>
         public static string Contents(ILocalization text, in ShopCardModel card)
         {
             string gems = card.Gems > 0 ? Format(text, UiTextKeys.ShopContentsGems, card.Gems) : string.Empty;

@@ -6,7 +6,7 @@ using UnityEngine;
 namespace PocketWilds.Editor.Import
 {
     /// <summary>
-    /// Texture import presets (Asset Production Bible). Mask textures are data, not color:
+    /// Texture import presets (Asset Production Guide). Mask textures are data, not color:
     /// linear, alpha kept as a channel, ASTC 4x4 on mobile so thin crack lines survive compression.
     /// UI sprites (UI_*, ICO_* under Art/UI): Sprite, no mipmaps, clamp, borders for 9-slices.
     /// </summary>

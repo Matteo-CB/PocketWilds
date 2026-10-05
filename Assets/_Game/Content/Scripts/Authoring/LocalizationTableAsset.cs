@@ -5,7 +5,7 @@ using UnityEngine;
 namespace PocketWilds.Content
 {
     /// <summary>
-    /// One language of player-facing text (LOC_en, LOC_fr). Keys follow the Writing Bible
+    /// One language of player-facing text (LOC_en, LOC_fr). Keys follow the Writing Guide
     /// ("offline.welcome_back", "ui.collect.button"). Values are short, with no em dash.
     /// </summary>
     [CreateAssetMenu(menuName = "Pocket Wilds/Localization Table", fileName = "LOC_en")]

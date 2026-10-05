@@ -95,7 +95,7 @@ namespace PocketWilds.Presentation
         void Tick(float unscaledDeltaTime);
     }
 
-    /// <summary>PF_UI_OfferModal (UI assembly): one offer over the sanctuary (Starter Pack after a happy hatch).</summary>
+    /// <summary>PF_UI_OfferModal (UI assembly): one offer over the refuge (Starter Pack after a happy hatch).</summary>
     public interface IOfferModalView
     {
         bool IsOpen { get; }

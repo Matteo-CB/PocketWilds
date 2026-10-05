@@ -9,7 +9,7 @@ namespace PocketWilds.Core
 {
     /// <summary>
     /// Explicit, ordered boot steps. Blocking steps run one after another and gate entry into
-    /// the sanctuary. Background steps (cloud, remote config, analytics) start afterwards and
+    /// the refuge. Background steps (cloud, remote config, analytics) start afterwards and
     /// can never block or fail the boot.
     /// </summary>
     public sealed class BootSequence
@@ -106,7 +106,7 @@ namespace PocketWilds.Core
             }
             catch (Exception ex)
             {
-                // Background services are optional. The sanctuary keeps running without them.
+                // Background services are optional. The refuge keeps running without them.
                 AddReport(new BootStepReport(step.Name, BootStepOutcome.Failed, watch.Elapsed.TotalMilliseconds, ex));
                 GameLog.Warning(LogCategory.Boot, $"Background step '{step.Name}' failed: {ex.Message}");
             }

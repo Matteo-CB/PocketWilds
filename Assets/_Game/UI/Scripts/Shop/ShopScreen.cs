@@ -9,9 +9,9 @@ namespace PocketWilds.UI
 {
     /// <summary>
     /// PF_UI_Shop (UI doc SCREEN 013, T28 sandbox scope): Featured and Gems sections of reusable product cards, the
-    /// Gems balance, Restore purchases and a short feedback line. Opaque: the sanctuary camera stops behind it.
+    /// Gems balance, Restore purchases and a short feedback line. Opaque: the refuge camera stops behind it.
     /// Talks only to <see cref="IShopModel"/> and <see cref="IShopActions"/>; never to a store. No Update: ticked
-    /// by the sanctuary while open; content saved inactive so a closed shop costs nothing.
+    /// by the refuge while open; content saved inactive so a closed shop costs nothing.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class ShopScreen : MonoBehaviour, IShopView

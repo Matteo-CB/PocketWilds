@@ -42,7 +42,7 @@ namespace PocketWilds.Tests.PlayMode
         }
 
         /// <summary>Moves the camera focus in small steps, like a finger drag (about 6 m/s).</summary>
-        private static IEnumerator Travel(SanctuaryCameraRig rig, float toX)
+        private static IEnumerator Travel(RefugeCameraRig rig, float toX)
         {
             var focus = rig.Focus;
             while (Mathf.Abs(focus.x - toX) > 0.01f)
@@ -93,7 +93,7 @@ namespace PocketWilds.Tests.PlayMode
             int meadow = streamer.IndexOf("chunk.grassland.meadow");
             Assert.AreEqual(ChunkStreamState.Active, streamer.GetState(start), "The start chunk is ready before Enter.");
             Assert.AreSame(streamer.GetChunk(start), entry.StartChunk);
-            Assert.IsNotNull(entry.Sanctuary, "The sanctuary starts on the streamed chunk.");
+            Assert.IsNotNull(entry.Refuge, "The refuge starts on the streamed chunk.");
             Assert.AreEqual(1, CountChunks("PF_Chunk_Grassland_Start"), "The chunk is not in the scene file any more.");
 
             var rig = entry.CameraRig;

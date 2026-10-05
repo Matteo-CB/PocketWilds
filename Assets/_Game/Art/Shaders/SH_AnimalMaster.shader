@@ -4,7 +4,7 @@
 //   bits 0-9   palette row
 //   bits 10-12 pattern mask (0 none, 1 A = uv0.x, 2 B = uv0.y, 3 C = uv1.x, 4 D = uv1.y)
 //   bits 13-16 pattern strength (0-15)
-//   bits 17-20 rare effect intensity (0-15), reserved for the RareAura module
+//   bits 17-20 rare effect intensity (0-15), reserved for the RareGlow module
 // Regions come from vertex colors: R secondary, G belly, B detail (nose, paws), A eyes.
 // Albedo is resolved per vertex: cheap and soft, which suits the plush style.
 Shader "PocketWilds/AnimalMaster"

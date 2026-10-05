@@ -74,7 +74,7 @@ namespace PocketWilds.Simulation
     }
 
     /// <summary>
-    /// Codex view model (doc 03 Codex, Writing Bible Codex order): species grouped by biome, variants by
+    /// Codex view model (doc 03 Codex, Writing Guide Codex order): species grouped by biome, variants by
     /// rarity, discovery and "New" state, owned counts. Layout tables are built once from content; owned
     /// counts are rebuilt in one pass over the collection only when it changed. Reads never allocate,
     /// so a list of thousands of entries can bind rows on demand.

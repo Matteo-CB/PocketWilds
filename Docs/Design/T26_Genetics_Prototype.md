@@ -36,6 +36,6 @@ Une palette sans motif montre un motif porté ton sur ton (couleur de motif dér
 
 `AnimalVisualResolver` applique la taille et le motif porté sans allocation. Albino, Melanistic, Golden et
 Shiny sont hérités en données ; leur rendu (palettes dédiées, reflet) viendra avec la fonction de reproduction
-dans le sanctuaire.
+dans le refuge.
 
 Capture : `TestResults/Captures/T26_genetics_families.png`.

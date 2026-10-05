@@ -11,7 +11,7 @@ Aucun téléphone n'était branché : ces chiffres valent pour la régression re
 
 | Scénario | Tier | Visibles | CPU frame moy/p95/p99/max (ms) | Main moy/p95 | Render | GPU | Simulation | Animation | UI | GC o/frame (frames) | Pics >33 ms | Batches | SetPass | Triangles | Mémoire utilisée (Mo) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| P0 Empty sanctuary | Medium | 0 | 16.67 / 16.73 / 16.91 / 17.0 | 1.14 / 1.46 | 0.46 | 0.07 | 0.002 | 0.000 | 0.046 | 0 (1) | 0 | 40 | 15 | 20312 | 222 |
+| P0 Empty refuge | Medium | 0 | 16.67 / 16.73 / 16.91 / 17.0 | 1.14 / 1.46 | 0.46 | 0.07 | 0.002 | 0.000 | 0.046 | 0 (1) | 0 | 40 | 15 | 20312 | 222 |
 | P1 1 rabbit | Medium | 1 | 16.67 / 16.76 / 16.89 / 17.3 | 1.32 / 1.76 | 0.49 | 0.09 | 0.008 | 0.061 | 0.048 | 32 (2) | 0 | 43 | 18 | 24558 | 223 |
 | S10 10 rabbits | Medium | 10 | 16.67 / 16.71 / 16.79 / 17.1 | 1.32 / 1.69 | 0.47 | 0.14 | 0.010 | 0.153 | 0.046 | 32 (2) | 0 | 58 | 18 | 56222 | 224 |
 | P2 20 rabbits (vertical slice baseline) | Medium | 20 | 16.67 / 16.72 / 16.93 / 17.5 | 1.52 / 1.87 | 0.50 | 0.29 | 0.012 | 0.222 | 0.048 | 32 (2) | 0 | 78 | 18 | 98392 | 225 |
@@ -43,7 +43,7 @@ Budgets Target 60 FPS (Performance Test Matrix) sur le palier cible (Medium, 20 
 
 | Scénario | Tier | Visibles | CPU frame moy/p95/p99/max (ms) | Main moy/p95 | Render | GPU | Simulation | Animation | UI | GC o/frame (frames) | Pics >33 ms | Batches | SetPass | Triangles | Mémoire utilisée (Mo) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| P0 Empty sanctuary | Medium | 0 | 16.67 / 16.70 / 16.82 / 17.1 | 1.14 / 1.43 | 0.47 | 0.07 | 0.002 | 0.000 | 0.045 | 0 (1) | 0 | 40 | 15 | 20309 | 225 |
+| P0 Empty refuge | Medium | 0 | 16.67 / 16.70 / 16.82 / 17.1 | 1.14 / 1.43 | 0.47 | 0.07 | 0.002 | 0.000 | 0.045 | 0 (1) | 0 | 40 | 15 | 20309 | 225 |
 | P2 20 rabbits (vertical slice baseline) | Medium | 20 | 16.67 / 16.78 / 17.56 / 18.8 | 1.59 / 2.21 | 0.49 | 0.29 | 0.018 | 0.229 | 0.049 | 32 (2) | 0 | 78 | 18 | 98388 | 226 |
 | S50 50 rabbits (30 A + 20 B) | Medium | 50 | 16.67 / 16.70 / 16.81 / 17.0 | 1.64 / 2.01 | 0.47 | 0.55 | 0.017 | 0.314 | 0.046 | 32 (2) | 0 | 124 | 18 | 195410 | 226 |
 | P5 Hatch burst: 10 hatches in a row, 20 rabbits | Medium | 30 | 16.67 / 16.70 / 16.79 / 17.0 | 1.55 / 1.86 | 0.49 | 0.34 | 0.014 | 0.240 | 0.060 | 116 (20) | 0 | 90 | 20 | 126254 | 227 |

@@ -31,7 +31,7 @@ namespace PocketWilds.Editor.Setup
         public const string VerticalSliceScenePath = ScenesFolder + "/SC_VerticalSlice_Grassland.unity";
         public const string BenchmarkAnimalsScenePath = BenchmarkScenesFolder + "/SC_Benchmark_Animals.unity";
         public const string BenchmarkUIScenePath = BenchmarkScenesFolder + "/SC_Benchmark_UI.unity";
-        public const string LightingSettingsPath = LightingFolder + "/LS_Sanctuary_NoGI.lighting";
+        public const string LightingSettingsPath = LightingFolder + "/LS_Refuge_NoGI.lighting";
 
         public const string CompanyName = "PocketWilds";
         public const string ProductName = "Pocket Wilds";
@@ -55,7 +55,7 @@ namespace PocketWilds.Editor.Setup
         private static readonly TierSpec[] Tiers =
         {
             // T16: the gameplay camera sits 13.8 m from its focus, so realtime shadows must reach ~24 m to cover the play
-            // area. Low drops the shadow map entirely and grounds animals and eggs with blob shadows (Performance Bible).
+            // area. Low drops the shadow map entirely and grounds animals and eggs with blob shadows (Performance Guide).
             new TierSpec { Name = "Low", RenderScale = 0.85f, Msaa = 1, ShadowResolution = 512, MainLightShadows = false, ShadowDistance = 0f, Cascades = 1, SoftShadows = false, FastSrgb = true, LodBias = 0.7f, SkinWeights = 2 },
             new TierSpec { Name = "Medium", RenderScale = 1.0f, Msaa = 2, ShadowResolution = 1024, MainLightShadows = true, ShadowDistance = 24f, Cascades = 1, SoftShadows = true, FastSrgb = false, LodBias = 1.0f, SkinWeights = 4 },
             new TierSpec { Name = "High", RenderScale = 1.0f, Msaa = 4, ShadowResolution = 2048, MainLightShadows = true, ShadowDistance = 30f, Cascades = 2, SoftShadows = true, FastSrgb = false, LodBias = 1.3f, SkinWeights = 4 },
@@ -358,7 +358,7 @@ namespace PocketWilds.Editor.Setup
             var settings = AssetDatabase.LoadAssetAtPath<LightingSettings>(LightingSettingsPath);
             if (settings == null)
             {
-                settings = new LightingSettings { name = "LS_Sanctuary_NoGI" };
+                settings = new LightingSettings { name = "LS_Refuge_NoGI" };
                 AssetDatabase.CreateAsset(settings, LightingSettingsPath);
                 log.AppendLine("Created " + LightingSettingsPath);
             }
@@ -380,7 +380,7 @@ namespace PocketWilds.Editor.Setup
 
             EnsureScene(VerticalSliceScenePath, lighting, log, scene =>
             {
-                ConfigureSanctuaryRenderSettings();
+                ConfigureRefugeRenderSettings();
                 CreateCamera("Main Camera", new Color(0.75f, 0.89f, 0.95f), renderWorld: true);
                 CreateSun();
                 new GameObject("World");
@@ -389,7 +389,7 @@ namespace PocketWilds.Editor.Setup
 
             EnsureScene(BenchmarkAnimalsScenePath, lighting, log, scene =>
             {
-                ConfigureSanctuaryRenderSettings();
+                ConfigureRefugeRenderSettings();
                 CreateCamera("Main Camera", new Color(0.75f, 0.89f, 0.95f), renderWorld: true);
                 CreateSun();
                 new GameObject("BenchmarkEntry").AddComponent<BenchmarkAnimalsEntry>();
@@ -423,7 +423,7 @@ namespace PocketWilds.Editor.Setup
             log.AppendLine("Created scene " + path);
         }
 
-        private static void ConfigureSanctuaryRenderSettings()
+        private static void ConfigureRefugeRenderSettings()
         {
             RenderSettings.skybox = null;
             RenderSettings.ambientMode = AmbientMode.Trilight;

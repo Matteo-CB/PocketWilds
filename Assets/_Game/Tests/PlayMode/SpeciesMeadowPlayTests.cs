@@ -110,17 +110,17 @@ namespace PocketWilds.Tests.PlayMode
             Assert.AreEqual(BootState.Ready, bootstrap.State);
             yield return null;
             var context = bootstrap.Context;
-            var sanctuary = Object.FindAnyObjectByType<VerticalSliceEntry>().Sanctuary;
-            Assert.AreEqual(6, sanctuary.VisibleAnimals);
+            var refuge = Object.FindAnyObjectByType<VerticalSliceEntry>().Refuge;
+            Assert.AreEqual(6, refuge.VisibleAnimals);
             Assert.AreEqual(2, CountVisible(Rabbit));
             Assert.AreEqual(2, CountVisible(Squirrel), "Saved squirrels come back with their own prefab.");
             Assert.AreEqual(2, CountVisible(Hedgehog), "Saved hedgehogs come back with their own prefab.");
 
             // Every species of the egg is warmed side by side: budget 50 + 1 minus 6 visible each.
-            for (int i = 0; i < 120 && sanctuary.PooledSpares < 45; i++)
+            for (int i = 0; i < 120 && refuge.PooledSpares < 45; i++)
                 yield return null;
             foreach (var species in new[] { Rabbit, Squirrel, Hedgehog })
-                Assert.GreaterOrEqual(sanctuary.PooledSparesOf(species), 45, species.ToString());
+                Assert.GreaterOrEqual(refuge.PooledSparesOf(species), 45, species.ToString());
             // The warmup tasks make their last check on the next frame: let them end first.
             yield return null;
             yield return null;
@@ -131,13 +131,13 @@ namespace PocketWilds.Tests.PlayMode
             for (int hatch = 0; hatch < 30 && !(squirrel && hedgehog); hatch++)
             {
                 context.Economy.Grant(CurrencyId.Light, context.Hatch.GetCost(Basic), EconomyReason.Reward);
-                sanctuary.RequestHatch();
-                sanctuary.RequestHatch(); // skip the staging
+                refuge.RequestHatch();
+                refuge.RequestHatch(); // skip the staging
                 var hatched = context.State.Collection[context.State.Collection.Count - 1].Species;
                 squirrel |= hatched == Squirrel;
                 hedgehog |= hatched == Hedgehog;
                 float until = Time.realtimeSinceStartup + 6f;
-                while (sanctuary.Hatch.IsPlaying || sanctuary.WaitingEgg == null)
+                while (refuge.Hatch.IsPlaying || refuge.WaitingEgg == null)
                 {
                     Assert.Less(Time.realtimeSinceStartup, until, "Hatch or next egg stuck.");
                     yield return null;
@@ -146,7 +146,7 @@ namespace PocketWilds.Tests.PlayMode
             Assert.IsTrue(squirrel && hedgehog, "Both new species hatch from the grassland egg.");
             int viewsAfter = Object.FindObjectsByType<AnimalView>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
             Assert.AreEqual(viewsBefore, viewsAfter, "Hatching reused pooled views: no Instantiate.");
-            Assert.AreEqual(context.State.Collection.Count, sanctuary.VisibleAnimals);
+            Assert.AreEqual(context.State.Collection.Count, refuge.VisibleAnimals);
 #else
             Assert.Ignore("Editor only.");
             yield break;

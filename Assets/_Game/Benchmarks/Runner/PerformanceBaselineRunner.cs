@@ -55,7 +55,7 @@ namespace PocketWilds.Benchmarks
 
         public static PerformanceScenario[] DefaultScenarios() => new[]
         {
-            new PerformanceScenario("P0", "Empty sanctuary", 0, QualityTier.Medium),
+            new PerformanceScenario("P0", "Empty refuge", 0, QualityTier.Medium),
             new PerformanceScenario("P1", "1 rabbit", 1, QualityTier.Medium),
             new PerformanceScenario("S10", "10 rabbits", 10, QualityTier.Medium),
             new PerformanceScenario("P2", "20 rabbits (vertical slice baseline)", 20, QualityTier.Medium),
@@ -164,14 +164,14 @@ namespace PocketWilds.Benchmarks
                 yield return Boot(saveDir, scenario.tier);
                 var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                 var bootstrap = Object.FindAnyObjectByType<GameBootstrap>();
-                if (entry == null || entry.Sanctuary == null || bootstrap == null)
+                if (entry == null || entry.Refuge == null || bootstrap == null)
                 {
-                    Debug.LogError("[Benchmark] " + scenario.id + ": the sanctuary did not start.");
+                    Debug.LogError("[Benchmark] " + scenario.id + ": the refuge did not start.");
                     continue;
                 }
 
                 // No stray click may hatch an egg during a measure: player input is off, the game code is not.
-                var input = entry.CameraRig != null ? entry.CameraRig.GetComponent<SanctuaryCameraInput>() : null;
+                var input = entry.CameraRig != null ? entry.CameraRig.GetComponent<RefugeCameraInput>() : null;
                 if (input != null)
                     input.enabled = false;
                 var events = UnityEngine.EventSystems.EventSystem.current;
@@ -181,8 +181,8 @@ namespace PocketWilds.Benchmarks
                 // Everything the measure needs is created before the warmup: its allocations never land in a sample.
                 var sampler = new FrameSampler(Mathf.CeilToInt(scenario.measureSeconds * 240f) + 64);
                 var probe = scenario.streaming && entry.Streamer != null ? new StreamingProbe(entry) : null;
-                var shopProbe = scenario.shop && entry.Sanctuary.Shop != null ? new ShopProbe(entry.Sanctuary, bootstrap.Context) : null;
-                IEnumerator burst = scenario.hatchBurst ? HatchBurst(entry.Sanctuary, bootstrap.Context) : probe != null ? probe.Travel() : shopProbe?.Run();
+                var shopProbe = scenario.shop && entry.Refuge.Shop != null ? new ShopProbe(entry.Refuge, bootstrap.Context) : null;
+                IEnumerator burst = scenario.hatchBurst ? HatchBurst(entry.Refuge, bootstrap.Context) : probe != null ? probe.Travel() : shopProbe?.Run();
                 // Garbage left by earlier scenarios (one process, many boots) is collected now, not in a sample.
                 GC.Collect();
                 float until = Time.realtimeSinceStartup + scenario.warmupSeconds;
@@ -199,7 +199,7 @@ namespace PocketWilds.Benchmarks
                     if (burst != null && !burst.MoveNext())
                         burst = null;
                 }
-                var result = sampler.Finish(scenario, entry.Sanctuary.VisibleAnimals, Time.realtimeSinceStartup - start);
+                var result = sampler.Finish(scenario, entry.Refuge.VisibleAnimals, Time.realtimeSinceStartup - start);
                 sampler.Dispose();
                 if (shopProbe != null)
                 {
@@ -290,7 +290,7 @@ namespace PocketWilds.Benchmarks
             {
                 var bootstrap = Object.FindAnyObjectByType<GameBootstrap>();
                 var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
-                if (bootstrap != null && bootstrap.State == BootState.Ready && entry != null && entry.Sanctuary != null)
+                if (bootstrap != null && bootstrap.State == BootState.Ready && entry != null && entry.Refuge != null)
                     yield break;
                 if (bootstrap != null && bootstrap.State == BootState.Failed)
                     yield break;
@@ -299,17 +299,17 @@ namespace PocketWilds.Benchmarks
         }
 
         /// <summary>P5: ten hatches as fast as a player can tap (hatch, tap to speed up, next egg).</summary>
-        private static IEnumerator HatchBurst(SanctuaryController sanctuary, GameContext context)
+        private static IEnumerator HatchBurst(RefugeController refuge, GameContext context)
         {
             for (int i = 0; i < 10; i++)
             {
-                while (sanctuary.WaitingEgg == null || sanctuary.Hatch.IsPlaying)
+                while (refuge.WaitingEgg == null || refuge.Hatch.IsPlaying)
                     yield return null;
-                sanctuary.RequestHatch();
+                refuge.RequestHatch();
                 float tap = Time.realtimeSinceStartup + 0.35f;
                 while (Time.realtimeSinceStartup < tap)
                     yield return null;
-                sanctuary.RequestHatch(); // speed up the reveal
+                refuge.RequestHatch(); // speed up the reveal
                 yield return null;
             }
         }
@@ -325,7 +325,7 @@ namespace PocketWilds.Benchmarks
             private const float West = -3.5f;
             private const float MeadowCentre = 14f;
             private readonly WorldStreamer _streamer;
-            private readonly SanctuaryCameraRig _rig;
+            private readonly RefugeCameraRig _rig;
             private readonly int _meadow;
             private readonly Action<int, ChunkStreamState> _onState;
             private readonly WorldStreamerStats _before;
@@ -469,19 +469,19 @@ namespace PocketWilds.Benchmarks
         }
 
         /// <summary>
-        /// U1: the shop as a player uses it, through the sanctuary and the sandbox store. Each action's cost lands in
+        /// U1: the shop as a player uses it, through the refuge and the sandbox store. Each action's cost lands in
         /// the next sampled frame, which is recorded.
         /// </summary>
         private sealed class ShopProbe
         {
-            private readonly SanctuaryController _sanctuary;
+            private readonly RefugeController _refuge;
             private readonly GameContext _context;
             private ShopResult _result;
             private int _pending = -1;
 
-            public ShopProbe(SanctuaryController sanctuary, GameContext context)
+            public ShopProbe(RefugeController refuge, GameContext context)
             {
-                _sanctuary = sanctuary;
+                _refuge = refuge;
                 _context = context;
                 _result.valid = true;
             }
@@ -491,11 +491,11 @@ namespace PocketWilds.Benchmarks
                 float t = 0f;
                 while ((t += Time.unscaledDeltaTime) < 1.5f)
                     yield return null;
-                _sanctuary.OpenShop();
+                _refuge.OpenShop();
                 _pending = 0;
                 for (t = 0f; (t += Time.unscaledDeltaTime) < 2f;)
                     yield return null;
-                _sanctuary.Shop.Buy(PocketWilds.Core.ContentId.FromSource("offer.gems.tier01"));
+                _refuge.Shop.Buy(PocketWilds.Core.ContentId.FromSource("offer.gems.tier01"));
                 // The sandbox store answers after its simulated latency: the grant frame is the one to measure.
                 long gems = _context.State.Wallet.Gems;
                 while (_context.State.Wallet.Gems == gems && (t += Time.unscaledDeltaTime) < 6f)
@@ -503,15 +503,15 @@ namespace PocketWilds.Benchmarks
                 _pending = 1;
                 for (t = 0f; (t += Time.unscaledDeltaTime) < 1.5f;)
                     yield return null;
-                _sanctuary.Shop.CloseShop();
+                _refuge.Shop.CloseShop();
                 _pending = 2;
                 for (t = 0f; (t += Time.unscaledDeltaTime) < 1f;)
                     yield return null;
-                _sanctuary.OpenShop();
+                _refuge.OpenShop();
                 _pending = 3;
                 for (t = 0f; (t += Time.unscaledDeltaTime) < 1f;)
                     yield return null;
-                _sanctuary.Shop.CloseShop();
+                _refuge.Shop.CloseShop();
             }
 
             private int _window;

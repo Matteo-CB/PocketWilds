@@ -2,10 +2,10 @@ using PocketWilds.Core;
 
 namespace PocketWilds.Presentation
 {
-    /// <summary>What the sanctuary HUD (UI assembly) shows. Presentation never references UI types.</summary>
-    public interface ISanctuaryHud
+    /// <summary>What the refuge HUD (UI assembly) shows. Presentation never references UI types.</summary>
+    public interface IRefugeHud
     {
-        void Bind(ISanctuaryActions actions);
+        void Bind(IRefugeActions actions);
 
         /// <summary>Called every frame; implementations only touch labels when the formatted value changes.</summary>
         void SetLight(BigValue light, BigValue perSecond);
@@ -34,7 +34,7 @@ namespace PocketWilds.Presentation
     }
 
     /// <summary>Player intents raised by the HUD.</summary>
-    public interface ISanctuaryActions
+    public interface IRefugeActions
     {
         void RequestHatch();
 

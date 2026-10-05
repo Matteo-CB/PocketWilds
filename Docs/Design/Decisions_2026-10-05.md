@@ -7,7 +7,7 @@ Source de vérité : Drive, « 00 — Décisions du propriétaire — 5 octobre 
    tenues exclusives, gagnables en jouant (doc 09 « Événements originaux »).
 2. Un pack par biome avec un compagnon exclusif ; le Starter Pack de T28 devient le Pack de la Prairie (doc 09 « Packs de
    biome & compagnons exclusifs »).
-3. 18 mini-jeux et activités, rituel du jour, expéditions, jardin, albums (doc 01 « Mini-jeux & activités »).
+3. 18 mini-jeux et activités, rendez-vous du jour, expéditions, jardin, albums (doc 01 « Mini-jeux & activités »).
 4. Leviers de psychologie efficaces et durables, sans manipulation interdite (doc 01 « Rétention, motivation &
    psychologie du joueur »).
 5. Gemmes équilibrées, jeu pas trop facile, simulateur d'économie (doc 02 « Économie des Gemmes »).

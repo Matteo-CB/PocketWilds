@@ -33,7 +33,7 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual(UiPipeline.ReferenceResolution, scaler.referenceResolution);
             Assert.IsNull(prefab.GetComponent<GraphicRaycaster>(), "The root canvas holds no interactive element.");
 
-            var hud = prefab.GetComponent<SanctuaryHud>();
+            var hud = prefab.GetComponent<RefugeHud>();
             Assert.IsNotNull(hud);
             var chip = prefab.transform.Find("SafeArea/LightChip");
             var action = prefab.transform.Find("SafeArea/HatchAction");
@@ -87,7 +87,7 @@ namespace PocketWilds.Tests.EditMode
                 Assert.IsNotNull(events.GetComponent<InputSystemUIInputModule>(), "Input System only.");
                 var entry = roots.Select(r => r.GetComponent<VerticalSliceEntry>()).First(e => e != null);
                 var so = new SerializedObject(entry);
-                Assert.IsInstanceOf<SanctuaryHud>(so.FindProperty("_hud").objectReferenceValue);
+                Assert.IsInstanceOf<RefugeHud>(so.FindProperty("_hud").objectReferenceValue);
                 Assert.IsNotNull(so.FindProperty("_hatchConfig").objectReferenceValue);
                 Assert.AreEqual("egg.grassland.basic", so.FindProperty("_eggId").stringValue);
                 Assert.IsInstanceOf<OfflineReturnScreen>(so.FindProperty("_offlineReturn").objectReferenceValue);

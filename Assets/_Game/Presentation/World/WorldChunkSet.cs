@@ -19,7 +19,7 @@ namespace PocketWilds.Presentation
             public AssetReferenceGameObject prefab;
             [Tooltip("World position of the chunk root.")]
             public Vector3 origin;
-            [Tooltip("Always loaded and active: the sanctuary lives there.")]
+            [Tooltip("Always loaded and active: the refuge lives there.")]
             public bool pinned;
         }
 

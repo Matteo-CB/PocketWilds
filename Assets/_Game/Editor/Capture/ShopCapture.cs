@@ -21,7 +21,7 @@ namespace PocketWilds.Editor.Capture
 {
     /// <summary>
     /// T28 review frames, through the real presenter, offer engine and sandbox store (no fake UI data): HUD with
-    /// the shop shortcut, shop top and bottom, a purchase thank-you, the Starter Pack modal over the sanctuary,
+    /// the shop shortcut, shop top and bottom, a purchase thank-you, the Starter Pack modal over the refuge,
     /// in each shipped language. The scene is reopened from disk afterwards, nothing is saved.
     /// </summary>
     public static class ShopCapture
@@ -46,7 +46,7 @@ namespace PocketWilds.Editor.Capture
                 {
                     var chunk = WorldCapture.SceneChunk();
                     var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
-                    var hud = Object.FindAnyObjectByType<SanctuaryHud>();
+                    var hud = Object.FindAnyObjectByType<RefugeHud>();
                     var shop = Object.FindAnyObjectByType<ShopScreen>();
                     var modal = Object.FindAnyObjectByType<OfferModalView>();
                     var camera = Camera.main;
@@ -80,7 +80,7 @@ namespace PocketWilds.Editor.Capture
                     foreach (string language in UiPipeline.Languages)
                     {
                         var text = new LocalizationService(database.localization, language, SystemLanguage.English);
-                        var state = Sanctuary(registry);
+                        var state = Refuge(registry);
                         var grants = new GrantService(registry, state, null);
                         var offers = new OfferService(registry, state, grants, null);
                         var store = new StoreService(registry, offers, new SandboxStoreProvider(language, 0), new RuntimeGameClock(), new NoSaves());
@@ -144,7 +144,7 @@ namespace PocketWilds.Editor.Capture
         }
 
         /// <summary>A player past onboarding: 6 animals of 2 species, no purchase yet (Starter Pack eligible).</summary>
-        private static PlayerState Sanctuary(ContentRegistry registry)
+        private static PlayerState Refuge(ContentRegistry registry)
         {
             var state = PlayerState.CreateNew(System.DateTimeOffset.UtcNow);
             string[] animals = { "rabbit.brown", "rabbit.white", "squirrel.red", "rabbit.spotted", "squirrel.autumn", "rabbit.grey" };

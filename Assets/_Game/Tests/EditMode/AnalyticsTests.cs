@@ -165,7 +165,7 @@ namespace PocketWilds.Tests.EditMode
                 (typeof(FunnelMilestone), "FirstShopExposure", 8), (typeof(FunnelMilestone), "FirstRewardedAd", 9),
                 (typeof(FunnelMilestone), "FirstOfferImpression", 10), (typeof(FunnelMilestone), "FirstPurchase", 11),
                 (typeof(FunnelMilestone), "SecondPurchase", 12),
-                (typeof(ScreenId), "Sanctuary", 1), (typeof(ScreenId), "Codex", 2), (typeof(ScreenId), "CodexSheet", 3),
+                (typeof(ScreenId), "Refuge", 1), (typeof(ScreenId), "Codex", 2), (typeof(ScreenId), "CodexSheet", 3),
                 (typeof(ScreenId), "Shop", 4), (typeof(ScreenId), "OfferModal", 5), (typeof(ScreenId), "OfflineReturn", 6),
                 (typeof(CurrencyId), "Light", 1), (typeof(CurrencyId), "Essence", 2), (typeof(CurrencyId), "Gems", 3),
                 (typeof(EconomyReason), "EggPurchase", 3), (typeof(EconomyReason), "Purchase", 7), (typeof(EconomyReason), "Debug", 11),

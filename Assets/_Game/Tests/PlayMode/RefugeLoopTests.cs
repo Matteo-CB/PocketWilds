@@ -19,7 +19,7 @@ namespace PocketWilds.Tests.PlayMode
     /// T17 first playable loop through the real bootstrap, scene and HUD: free tutorial egg, the rabbit
     /// produces Light, paid egg at the doc price, the save keeps both animals and the next price.
     /// </summary>
-    public class SanctuaryLoopTests
+    public class RefugeLoopTests
     {
         private static readonly ContentId Basic = ContentId.FromSource("egg.grassland.basic");
         private string _saveDir;
@@ -70,10 +70,10 @@ namespace PocketWilds.Tests.PlayMode
             onReady(bootstrap);
         }
 
-        private static IEnumerator WaitHatchDone(SanctuaryController sanctuary)
+        private static IEnumerator WaitHatchDone(RefugeController refuge)
         {
             float timeout = Time.realtimeSinceStartup + 8f;
-            while (sanctuary.Hatch.IsPlaying || sanctuary.WaitingEgg == null)
+            while (refuge.Hatch.IsPlaying || refuge.WaitingEgg == null)
             {
                 if (Time.realtimeSinceStartup > timeout)
                     Assert.Fail("Hatch did not finish or the next egg did not appear.");
@@ -90,17 +90,17 @@ namespace PocketWilds.Tests.PlayMode
             yield return Boot(b => first = b);
             var context = first.Context;
             var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
-            var sanctuary = entry.Sanctuary;
-            Assert.IsNotNull(sanctuary, "The vertical slice must start the sanctuary loop.");
-            var hud = Object.FindAnyObjectByType<SanctuaryHud>();
+            var refuge = entry.Refuge;
+            Assert.IsNotNull(refuge, "The vertical slice must start the refuge loop.");
+            var hud = Object.FindAnyObjectByType<RefugeHud>();
             Assert.IsNotNull(hud);
             Assert.IsTrue(hud.IsBound);
-            Assert.AreEqual(0, sanctuary.VisibleAnimals);
-            Assert.IsNotNull(sanctuary.WaitingEgg, "The tutorial egg waits from the first frame.");
+            Assert.AreEqual(0, refuge.VisibleAnimals);
+            Assert.IsNotNull(refuge.WaitingEgg, "The tutorial egg waits from the first frame.");
             // T22: the rest of the visible budget is pooled within a few frames: hatching never instantiates.
-            for (int i = 0; i < 60 && sanctuary.PooledSpares < 30; i++)
+            for (int i = 0; i < 60 && refuge.PooledSpares < 30; i++)
                 yield return null;
-            Assert.GreaterOrEqual(sanctuary.PooledSpares, 30, "Medium budget (50) minus nothing visible, warmed two per frame.");
+            Assert.GreaterOrEqual(refuge.PooledSpares, 30, "Medium budget (50) minus nothing visible, warmed two per frame.");
             yield return null;
             Assert.IsFalse(hud.CostVisible, "The free egg shows no price.");
             Assert.AreEqual(1, hud.VisualState, "The free egg is ready to touch.");
@@ -109,21 +109,21 @@ namespace PocketWilds.Tests.PlayMode
             var button = hud.GetComponentInChildren<Button>();
             button.onClick.Invoke();
             Assert.AreEqual(1, context.State.Collection.Count);
-            Assert.IsTrue(sanctuary.Hatch.IsPlaying);
-            yield return WaitHatchDone(sanctuary);
-            Assert.AreEqual(1, sanctuary.VisibleAnimals);
+            Assert.IsTrue(refuge.Hatch.IsPlaying);
+            yield return WaitHatchDone(refuge);
+            Assert.AreEqual(1, refuge.VisibleAnimals);
             Assert.Greater(context.Economy.GetLightPerSecond().ToDoubleClamped(), 0.0);
 
             // Not enough Light yet: nothing is bought.
             yield return null;
             Assert.IsTrue(hud.CostVisible);
-            Assert.AreEqual(10.0, sanctuary.EggCost.ToDoubleClamped());
+            Assert.AreEqual(10.0, refuge.EggCost.ToDoubleClamped());
             if (!context.Hatch.CanHatch(Basic))
             {
                 Assert.AreEqual(0, hud.VisualState);
                 button.onClick.Invoke();
                 Assert.AreEqual(1, context.State.Collection.Count);
-                Assert.IsFalse(sanctuary.Hatch.IsPlaying);
+                Assert.IsFalse(refuge.Hatch.IsPlaying);
             }
 
             // The first rabbit produces the Light (production path, no grant), then the second egg is
@@ -140,9 +140,9 @@ namespace PocketWilds.Tests.PlayMode
             Assert.AreEqual(before - 10.0, context.Economy.Light.ToDoubleClamped(), 1e-6);
             Assert.AreEqual(12.0, context.Hatch.GetCost(Basic).ToDoubleClamped());
             button.onClick.Invoke(); // a second touch speeds the reveal up
-            yield return WaitHatchDone(sanctuary);
-            Assert.AreEqual(2, sanctuary.VisibleAnimals);
-            Assert.AreEqual(12.0, sanctuary.EggCost.ToDoubleClamped());
+            yield return WaitHatchDone(refuge);
+            Assert.AreEqual(2, refuge.VisibleAnimals);
+            Assert.AreEqual(12.0, refuge.EggCost.ToDoubleClamped());
 
             Assert.IsTrue(context.Save.FlushNow());
             Object.Destroy(first.gameObject);
@@ -150,7 +150,7 @@ namespace PocketWilds.Tests.PlayMode
 
             GameBootstrap second = null;
             yield return Boot(b => second = b);
-            var reloaded = Object.FindAnyObjectByType<VerticalSliceEntry>().Sanctuary;
+            var reloaded = Object.FindAnyObjectByType<VerticalSliceEntry>().Refuge;
             Assert.AreEqual(2, second.Context.State.Collection.Count);
             Assert.AreEqual(2, reloaded.VisibleAnimals, "Saved animals are back in the meadow.");
             Assert.AreEqual(12.0, reloaded.EggCost.ToDoubleClamped(), "The price curve survives a restart.");

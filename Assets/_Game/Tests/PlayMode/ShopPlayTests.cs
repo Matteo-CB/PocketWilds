@@ -106,13 +106,13 @@ namespace PocketWilds.Tests.PlayMode
             GameBootstrap bootstrap = null;
             yield return Boot(b => bootstrap = b);
             var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
-            var sanctuary = entry.Sanctuary;
-            var hud = Object.FindAnyObjectByType<SanctuaryHud>();
-            Assert.IsNotNull(sanctuary.Shop, "The scene has a shop.");
+            var refuge = entry.Refuge;
+            var hud = Object.FindAnyObjectByType<RefugeHud>();
+            Assert.IsNotNull(refuge.Shop, "The scene has a shop.");
             Assert.IsTrue(bootstrap.Context.Store.IsReady, "Sandbox prices loaded in the background.");
             Assert.IsTrue(hud.ShopVisible, "Shop shortcut after onboarding.");
 
-            sanctuary.OpenShop();
+            refuge.OpenShop();
             yield return null;
             var screen = Object.FindAnyObjectByType<ShopScreen>();
             Assert.IsTrue(screen.IsOpen);
@@ -164,26 +164,26 @@ namespace PocketWilds.Tests.PlayMode
             PrepareSave();
             GameBootstrap bootstrap = null;
             yield return Boot(b => bootstrap = b);
-            var sanctuary = Object.FindAnyObjectByType<VerticalSliceEntry>().Sanctuary;
+            var refuge = Object.FindAnyObjectByType<VerticalSliceEntry>().Refuge;
             var modal = Object.FindAnyObjectByType<OfferModalView>();
             Assert.IsFalse(modal.IsOpen, "Never at start: only after a happy moment.");
 
             float until = Time.realtimeSinceStartup + 5f;
-            while (sanctuary.WaitingEgg == null)
+            while (refuge.WaitingEgg == null)
             {
                 Assert.Less(Time.realtimeSinceStartup, until, "No egg to hatch.");
                 yield return null;
             }
-            sanctuary.RequestHatch();
+            refuge.RequestHatch();
             until = Time.realtimeSinceStartup + 15f;
             while (!modal.IsOpen)
             {
                 Assert.Less(Time.realtimeSinceStartup, until, "The Starter Pack was not offered after the hatch.");
-                if (sanctuary.Hatch.IsPlaying)
-                    sanctuary.RequestHatch(); // speed up the reveal
+                if (refuge.Hatch.IsPlaying)
+                    refuge.RequestHatch(); // speed up the reveal
                 yield return null;
             }
-            Assert.IsFalse(sanctuary.Hatch.IsPlaying, "Shown once the reveal is over.");
+            Assert.IsFalse(refuge.Hatch.IsPlaying, "Shown once the reveal is over.");
             Assert.AreEqual(ContentId.FromSource("offer.starter.moment"), modal.Card.Offer);
             Assert.AreEqual("€1.99", modal.Card.PriceText);
 

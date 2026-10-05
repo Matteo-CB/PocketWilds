@@ -28,7 +28,7 @@ Chaque ligne est vérifiée sur le disque ; le fichier de statut n'est jamais cr
 | J-AN-RabbitSleep | RabbitSleep x2 | Audio | PLANNED | à produire |
 | J-AN-SmallQuadruped_CuteChirp | SmallQuadruped_CuteChirp x4 | Audio | PLANNED | à produire |
 | J-AN-SmallQuadruped_Sleep | SmallQuadruped_Sleep x2 | Audio | PLANNED | à produire |
-| J-MUS-001 | SanctuaryTheme | Audio | PLANNED | à produire |
+| J-MUS-001 | RefugeTheme | Audio | PLANNED | à produire |
 | J-SFX-CURRENCY-001 | CollectLight x3 | Audio | PLANNED | à produire |
 | J-SFX-EGG-001 | EggTap x2 | Audio | PLANNED | à produire |
 | J-SFX-EGG-002 | Crack x3 | Audio | PLANNED | à produire |
@@ -59,7 +59,7 @@ Chaque ligne est vérifiée sur le disque ; le fichier de statut n'est jamais cr
 | J-HAPTIC-ErrorSoft | Haptic_ErrorSoft | Haptic | PLANNED | à produire |
 | J-HAPTIC-HatchCommon | Haptic_HatchCommon | Haptic | PLANNED | à produire |
 | J-HAPTIC-Legendary | Haptic_Legendary | Haptic | PLANNED | à produire |
-| J-HAPTIC-Mythic | Haptic_Mythic | Haptic | PLANNED | à produire |
+| J-HAPTIC-Fabulous | Haptic_Fabulous | Haptic | PLANNED | à produire |
 | J-HAPTIC-None | Haptic_None | Haptic | PLANNED | à produire |
 | J-HAPTIC-PurchaseSuccess | Haptic_PurchaseSuccess | Haptic | PLANNED | à produire |
 | J-HAPTIC-Rare | Haptic_Rare | Haptic | PLANNED | à produire |
@@ -70,7 +70,7 @@ Chaque ligne est vérifiée sur le disque ; le fichier de statut n'est jamais cr
 | L-SC-005 | SC_ArtCapture_Props | Scene | PLANNED | à produire |
 | L-SC-008 | SC_Benchmark_VFX | Scene | PLANNED | à produire |
 | L-SC-009 | SC_Sandbox_Art | Scene | PLANNED | à produire |
-| G-SH-006 | SH_RareAura module | Shader | PLANNED | à produire |
+| G-SH-006 | SH_RareGlow module | Shader | PLANNED | à produire |
 | I-CODEX | Codex silhouettes/badges/trait badges | UIIcon | BLOCKOUT | en cours (revue) |
 | I-HUD-010 | Favorite heart icon | UIIcon | PLANNED | à produire |
 | I-RARITY | Rarity frames + badges (Common..Secret) | UIIcon | BLOCKOUT | en cours (revue) |
@@ -90,7 +90,7 @@ Chaque ligne est vérifiée sur le disque ; le fichier de statut n'est jamais cr
 | H-VFX-001 | VFX_EggTap | VFX | PLANNED | à produire |
 | H-VFX-005 | VFX_HatchEpic | VFX | PLANNED | à produire |
 | H-VFX-006 | VFX_HatchLegendary | VFX | PLANNED | à produire |
-| H-VFX-007 | VFX_HatchMythic | VFX | PLANNED | à produire |
+| H-VFX-007 | VFX_HatchFabulous | VFX | PLANNED | à produire |
 | H-VFX-008 | VFX_CollectLight | VFX | PLANNED | à produire |
 | H-VFX-009 | VFX_MasteryLevelUp | VFX | BLOCKOUT | en cours, runtime absent |
 | H-VFX-010 | VFX_NewSpecies | VFX | PLANNED | à produire |
@@ -148,8 +148,8 @@ Textures de plus de 1024 px hors atlas : aucune.
 
 26 prefabs dans Assets/_Game/Prefabs. Interdits cherchés : MeshCollider, Rigidbody, NavMeshAgent, AudioSource, CharacterController, Update/LateUpdate/FixedUpdate dans les prefabs du monde, matériaux instanciés, scripts manquants.
 
-- Assets/_Game/Prefabs/World/PF_CameraRig_Sanctuary.prefab : SanctuaryCameraRig a un Update/LateUpdate/FixedUpdate
-- Assets/_Game/Prefabs/World/PF_CameraRig_Sanctuary.prefab : SanctuaryCameraInput a un Update/LateUpdate/FixedUpdate
+- Assets/_Game/Prefabs/World/PF_CameraRig_Refuge.prefab : RefugeCameraRig a un Update/LateUpdate/FixedUpdate
+- Assets/_Game/Prefabs/World/PF_CameraRig_Refuge.prefab : RefugeCameraInput a un Update/LateUpdate/FixedUpdate
 
 ## Gate 16 — données de contenu
 

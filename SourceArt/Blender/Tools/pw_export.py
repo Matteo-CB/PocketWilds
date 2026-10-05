@@ -1,4 +1,4 @@
-"""Project FBX export preset. One preset for every agent and human (Asset Production Bible).
+"""Project FBX export preset. One preset for every agent and human (Asset Production Guide).
 
 Usage inside Blender:
     exec(open(r"<project>/SourceArt/Blender/Tools/pw_export.py").read())

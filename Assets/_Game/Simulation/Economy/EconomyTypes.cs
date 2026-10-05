@@ -52,7 +52,7 @@ namespace PocketWilds.Simulation
     {
         public static EconomyConfig Default { get; } = new EconomyConfig();
 
-        /// <summary>Indexed by RarityTier: Common, Uncommon, Rare, Epic, Legendary, Mythic.</summary>
+        /// <summary>Indexed by RarityTier: Common, Uncommon, Rare, Epic, Legendary, Fabulous.</summary>
         public double[] RarityMultipliers { get; set; } = { 1.00, 1.18, 1.50, 2.10, 3.00, 4.50 };
 
         /// <summary>MasteryMultiplier = 1 + MasteryPerLevel x Level.</summary>

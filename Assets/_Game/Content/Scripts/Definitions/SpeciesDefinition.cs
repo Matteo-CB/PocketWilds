@@ -11,7 +11,7 @@ namespace PocketWilds.Content
         Rare = 2,
         Epic = 3,
         Legendary = 4,
-        Mythic = 5,
+        Fabulous = 5,
     }
 
     /// <summary>Shared skeleton families. Stable byte values.</summary>

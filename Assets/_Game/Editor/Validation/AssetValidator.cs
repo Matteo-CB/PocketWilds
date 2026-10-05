@@ -172,7 +172,7 @@ namespace PocketWilds.Editor.Validation
             if (view == null)
                 Error("AnimalView", "Root must carry AnimalView.");
 
-            // Forbidden runtime components (Performance Bible).
+            // Forbidden runtime components (Performance Guide).
             foreach (var c in prefab.GetComponentsInChildren<Component>(true))
             {
                 if (c == null)

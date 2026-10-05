@@ -21,7 +21,7 @@ namespace PocketWilds.Core
     }
 
     /// <summary>
-    /// Allocation-free player-facing formatting, following the Writing Bible:
+    /// Allocation-free player-facing formatting, following the Writing Guide:
     /// "0", "4.5", "999", "1,250", "9,999", "12.4K", "124K", "2.1M", "3.75B", "1T", "1aa"... "9.99zz", then "1.23e2048".
     /// Values are floored at the shown precision so the counter never shows more than the player owns.
     /// </summary>

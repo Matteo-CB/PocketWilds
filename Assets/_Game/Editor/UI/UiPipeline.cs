@@ -53,7 +53,7 @@ namespace PocketWilds.Editor.UI
         public static readonly Vector2 ReferenceResolution = new Vector2(1080f, 2340f);
 
         /// <summary>
-        /// Shipped player-facing text (Writing Bible: short, no em dash). English first: it is the fallback.
+        /// Shipped player-facing text (Writing Guide: short, no em dash). English first: it is the fallback.
         /// Columns: key, en, fr.
         /// </summary>
         public static readonly string[,] Texts =
@@ -64,7 +64,7 @@ namespace PocketWilds.Editor.UI
             { UiTextKeys.CodexVariants, "Variants", "Variantes" },
             { UiTextKeys.CodexNew, "New", "Nouveau" },
             { UiTextKeys.CodexUnknown, "???", "???" },
-            // Shop (T28). Writing Bible: what you get, the price, one-time or not; no pressure words.
+            // Shop (T28). Writing Guide: what you get, the price, one-time or not; no pressure words.
             { UiTextKeys.ShopTitle, "Shop", "Boutique" },
             { UiTextKeys.ShopFeatured, "Featured", "À la une" },
             { UiTextKeys.ShopGems, "Gems", "Gemmes" },
@@ -209,7 +209,7 @@ namespace PocketWilds.Editor.UI
 
         // ---------------- Prefab ----------------
 
-        public static SanctuaryHud BuildHudPrefab(UiColorTokens tokens)
+        public static RefugeHud BuildHudPrefab(UiColorTokens tokens)
         {
             var pill = AssetDatabase.LoadAssetAtPath<Sprite>(PillPath);
             var circle = AssetDatabase.LoadAssetAtPath<Sprite>(CirclePath);
@@ -232,7 +232,7 @@ namespace PocketWilds.Editor.UI
                 scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
                 scaler.matchWidthOrHeight = 0.5f;
                 scaler.referencePixelsPerUnit = 100f;
-                var hud = root.AddComponent<SanctuaryHud>();
+                var hud = root.AddComponent<RefugeHud>();
 
                 var safe = Rect("SafeArea", root.transform);
                 Stretch(safe);
@@ -362,7 +362,7 @@ namespace PocketWilds.Editor.UI
                     toastBar.rectTransform, toastFill.rectTransform, glowGroup);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(HudPrefabPath));
-                return PrefabUtility.SaveAsPrefabAsset(root, HudPrefabPath).GetComponent<SanctuaryHud>();
+                return PrefabUtility.SaveAsPrefabAsset(root, HudPrefabPath).GetComponent<RefugeHud>();
             }
             finally
             {
@@ -408,8 +408,8 @@ namespace PocketWilds.Editor.UI
                 var back = AddImage("Background", card, panel, tokens.backgroundLight, Image.Type.Sliced);
                 Stretch(back.rectTransform);
 
-                var halo = AddImage("Glow", card, glow, new Color(1f, 0.83f, 0.42f, 0.85f), Image.Type.Simple);
-                Place(halo.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, 24f), new Vector2(400f, 400f));
+                var glowImage = AddImage("Glow", card, glow, new Color(1f, 0.83f, 0.42f, 0.85f), Image.Type.Simple);
+                Place(glowImage.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, 24f), new Vector2(400f, 400f));
                 var icon = AddImage("Icon", card, lightIcon, Color.white, Image.Type.Simple);
                 Place(icon.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, 24f), new Vector2(200f, 200f));
 
@@ -774,14 +774,14 @@ namespace PocketWilds.Editor.UI
             var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
 
             VerticalSliceEntry entry = null;
-            SanctuaryHud hud = null;
+            RefugeHud hud = null;
             OfflineReturnScreen offline = null;
             CodexScreen codex = null;
             EventSystem events = null;
             foreach (var root in scene.GetRootGameObjects())
             {
                 entry = entry ?? root.GetComponent<VerticalSliceEntry>();
-                hud = hud ?? root.GetComponent<SanctuaryHud>();
+                hud = hud ?? root.GetComponent<RefugeHud>();
                 offline = offline ?? root.GetComponent<OfflineReturnScreen>();
                 codex = codex ?? root.GetComponent<CodexScreen>();
                 events = events ?? root.GetComponent<EventSystem>();
@@ -792,7 +792,7 @@ namespace PocketWilds.Editor.UI
             if (hud == null)
             {
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(HudPrefabPath);
-                hud = ((GameObject)PrefabUtility.InstantiatePrefab(prefab, scene)).GetComponent<SanctuaryHud>();
+                hud = ((GameObject)PrefabUtility.InstantiatePrefab(prefab, scene)).GetComponent<RefugeHud>();
                 hud.name = "HUD_Main";
             }
             if (codex == null)

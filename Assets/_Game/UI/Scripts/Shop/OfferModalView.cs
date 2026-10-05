@@ -8,9 +8,9 @@ using UnityEngine.UI;
 namespace PocketWilds.UI
 {
     /// <summary>
-    /// PF_UI_OfferModal (UI doc SCREEN 014): one offer over the sanctuary, the hero art, what you get, the price,
+    /// PF_UI_OfferModal (UI doc SCREEN 014): one offer over the refuge, the hero art, what you get, the price,
     /// close and buy. No timer unless the offer really ends (the sandbox Starter Pack does not). Feedback line under
-    /// the card. Content saved inactive; ticked by the sanctuary while open.
+    /// the card. Content saved inactive; ticked by the refuge while open.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class OfferModalView : MonoBehaviour, IOfferModalView

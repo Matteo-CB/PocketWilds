@@ -11,13 +11,13 @@ using UnityEngine;
 namespace PocketWilds.Presentation
 {
     /// <summary>
-    /// The playable sanctuary loop (T17): animals from the save live in the meadow, an egg waits on its
+    /// The playable refuge loop (T17): animals from the save live in the meadow, an egg waits on its
     /// spawn point, a touch (on the egg or the hatch button) buys and hatches it, the new animal joins the
     /// meadow and the next egg appears. Plain class ticked by VerticalSliceEntry: one Update for the scene,
     /// pooled views, no per-animal logic, no allocation in steady state. Away time comes back through the
     /// offline return screen; its Light counts up into the HUD when collected (T18).
     /// </summary>
-    public sealed class SanctuaryController : ISanctuaryActions, IHatchListener, IOfflineReturnActions, ICodexActions, IDisposable
+    public sealed class RefugeController : IRefugeActions, IHatchListener, IOfflineReturnActions, ICodexActions, IDisposable
     {
         private const float NextEggDelay = 0.45f;
         private const float RepeatWindowSeconds = 15f;
@@ -30,11 +30,11 @@ namespace PocketWilds.Presentation
 
         private readonly GameContext _context;
         private readonly WorldChunk _chunk;
-        private readonly SanctuaryCameraRig _rig;
-        private readonly ISanctuaryHud _hud;
+        private readonly RefugeCameraRig _rig;
+        private readonly IRefugeHud _hud;
         private readonly IOfflineReturnView _offlineView;
         private readonly ICodexView _codexView;
-        private readonly SanctuaryCameraInput _input;
+        private readonly RefugeCameraInput _input;
         private readonly ContentId _eggId;
         private readonly EggDefinition _egg;
         private readonly uint _eggVisual;
@@ -71,7 +71,7 @@ namespace PocketWilds.Presentation
         private readonly ShopPresenter _shop;
         private float _momentOfferTime = -1f;
 
-        public SanctuaryController(GameContext context, WorldChunk chunk, SanctuaryCameraRig rig, ISanctuaryHud hud,
+        public RefugeController(GameContext context, WorldChunk chunk, RefugeCameraRig rig, IRefugeHud hud,
             HatchPresentationConfig hatchConfig, string eggSourceId, Transform root, IOfflineReturnView offlineView = null,
             ICodexView codexView = null, IShopView shopView = null, IOfferModalView offerView = null)
         {
@@ -81,7 +81,7 @@ namespace PocketWilds.Presentation
             _hud = hud;
             _offlineView = offlineView;
             _codexView = codexView;
-            _input = rig != null ? rig.GetComponent<SanctuaryCameraInput>() : null;
+            _input = rig != null ? rig.GetComponent<RefugeCameraInput>() : null;
             _root = root;
             _eggId = ContentId.FromSource(eggSourceId);
             _egg = context.Content.Eggs.Get(_eggId);
@@ -172,7 +172,7 @@ namespace PocketWilds.Presentation
         public bool ShopOpen => _shop != null && (_shop.ShopOpen || _shop.OfferOpen);
         public ShopPresenter Shop => _shop;
 
-        /// <summary>A screen covers the sanctuary: world touches and hatching wait.</summary>
+        /// <summary>A screen covers the refuge: world touches and hatching wait.</summary>
         public bool ModalOpen => OfflineScreenOpen || CodexOpen || ShopOpen;
 
         /// <summary>Collected offline Light is still counting into the HUD.</summary>
@@ -310,7 +310,7 @@ namespace PocketWilds.Presentation
             bool repeat = _time - _lastHatchEnd < RepeatWindowSeconds;
             if (_hatchingAnimal != null && _hatch.Hatch(_hatchingAnimal, result.Animal.Species, result.Animal.Rarity, repeat, this))
             {
-                _rig?.FocusOn(_waitingEgg.VfxPoint.position, SanctuaryCameraState.HatchReveal);
+                _rig?.FocusOn(_waitingEgg.VfxPoint.position, RefugeCameraState.HatchReveal);
                 _hud?.SetHatching(true);
             }
             else
@@ -405,7 +405,7 @@ namespace PocketWilds.Presentation
         /// <summary>
         /// Fills the rest of the visible budget with pooled views for every species the egg can give, about
         /// two per frame in total right after entering: later hatches never instantiate during gameplay
-        /// (Performance Bible: pooling, no runtime Instantiate). Species are warmed side by side.
+        /// (Performance Guide: pooling, no runtime Instantiate). Species are warmed side by side.
         /// </summary>
         private void WarmupSpares()
         {

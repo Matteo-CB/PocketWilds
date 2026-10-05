@@ -15,7 +15,7 @@ namespace PocketWilds.Editor.Lighting
 {
     /// <summary>
     /// T16 lighting reference: quality tiers (via ProjectSetup), LP_Grassland_Day + MAT_Sky_Grassland,
-    /// MAT_BlobShadow, a minimal color-grading volume (Medium/High only), PF_CameraRig_Sanctuary, and the
+    /// MAT_BlobShadow, a minimal color-grading volume (Medium/High only), PF_CameraRig_Refuge, and the
     /// vertical slice scene wired to them. Idempotent.
     /// </summary>
     public static partial class LightingPipeline
@@ -25,7 +25,7 @@ namespace PocketWilds.Editor.Lighting
         public const string SkyMaterialPath = LightingFolder + "/MAT_Sky_Grassland.mat";
         public const string VolumeProfilePath = LightingFolder + "/VP_Grassland_Day.asset";
         public const string BlobMaterialPath = "Assets/_Game/Art/Materials/MAT_BlobShadow.mat";
-        public const string CameraRigPath = "Assets/_Game/Prefabs/World/PF_CameraRig_Sanctuary.prefab";
+        public const string CameraRigPath = "Assets/_Game/Prefabs/World/PF_CameraRig_Refuge.prefab";
         public const string ScenePath = "Assets/_Game/Scenes/SC_VerticalSlice_Grassland.unity";
 
         [MenuItem("Pocket Wilds/Lighting/Build Lighting Reference (T16)", priority = 180)]
@@ -171,13 +171,13 @@ namespace PocketWilds.Editor.Lighting
 
         // ---------------- Camera rig ----------------
 
-        public static SanctuaryCameraRig EnsureCameraRig()
+        public static RefugeCameraRig EnsureCameraRig()
         {
-            var root = new GameObject("PF_CameraRig_Sanctuary");
+            var root = new GameObject("PF_CameraRig_Refuge");
             try
             {
-                var rig = root.AddComponent<SanctuaryCameraRig>();
-                root.AddComponent<SanctuaryCameraInput>();
+                var rig = root.AddComponent<RefugeCameraRig>();
+                root.AddComponent<RefugeCameraInput>();
                 var cameraGo = new GameObject("Main Camera") { tag = "MainCamera" };
                 cameraGo.transform.SetParent(root.transform, false);
                 var camera = cameraGo.AddComponent<Camera>();
@@ -196,7 +196,7 @@ namespace PocketWilds.Editor.Lighting
                 cameraGo.AddComponent<AudioListener>();
                 rig.SetCamera(camera);
                 Directory.CreateDirectory(Path.GetDirectoryName(CameraRigPath));
-                return PrefabUtility.SaveAsPrefabAsset(root, CameraRigPath).GetComponent<SanctuaryCameraRig>();
+                return PrefabUtility.SaveAsPrefabAsset(root, CameraRigPath).GetComponent<RefugeCameraRig>();
             }
             finally
             {
@@ -206,7 +206,7 @@ namespace PocketWilds.Editor.Lighting
 
         // ---------------- Scene ----------------
 
-        private static void SetupScene(LightingProfile profile, VolumeProfile volumeProfile, SanctuaryCameraRig rigPrefab)
+        private static void SetupScene(LightingProfile profile, VolumeProfile volumeProfile, RefugeCameraRig rigPrefab)
         {
             var active = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             if (active.path != ScenePath && !string.IsNullOrEmpty(active.path) && active.isDirty)
@@ -218,26 +218,26 @@ namespace PocketWilds.Editor.Lighting
 
             Light sun = null;
             VerticalSliceEntry entry = null;
-            SanctuaryCameraRig rig = null;
+            RefugeCameraRig rig = null;
             Volume volume = null;
             foreach (var root in scene.GetRootGameObjects())
             {
-                if (root.name == "Main Camera" && root.GetComponent<SanctuaryCameraRig>() == null)
+                if (root.name == "Main Camera" && root.GetComponent<RefugeCameraRig>() == null)
                 {
                     Object.DestroyImmediate(root); // replaced by the rig (prefab owns the camera now)
                     continue;
                 }
                 sun = sun ?? root.GetComponent<Light>();
                 entry = entry ?? root.GetComponent<VerticalSliceEntry>();
-                rig = rig ?? root.GetComponent<SanctuaryCameraRig>();
+                rig = rig ?? root.GetComponent<RefugeCameraRig>();
                 volume = volume ?? root.GetComponent<Volume>();
             }
             if (rig == null)
             {
                 // Reload by path: saving assets may have reimported the prefab behind the reference we got.
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CameraRigPath);
-                rig = ((GameObject)PrefabUtility.InstantiatePrefab(prefab, scene)).GetComponent<SanctuaryCameraRig>();
-                rig.name = "CameraRig_Sanctuary";
+                rig = ((GameObject)PrefabUtility.InstantiatePrefab(prefab, scene)).GetComponent<RefugeCameraRig>();
+                rig.name = "CameraRig_Refuge";
             }
             if (volume == null)
             {

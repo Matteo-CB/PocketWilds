@@ -12,7 +12,7 @@ namespace PocketWilds.Content
         Focus = 1,
         Discovery = 2,
         Event = 3,
-        Mythic = 4,
+        Fabulous = 4,
     }
 
     /// <summary>One species an egg can hatch, with its relative weight in the pool.</summary>
@@ -87,7 +87,7 @@ namespace PocketWilds.Content
         /// <summary>Cost multiplier per egg already bought in the cycle (1.18 for Grassland Basic).</summary>
         public double CostGrowth { get; }
 
-        /// <summary>Relative weights indexed by RarityTier (Common..Mythic), exactly <see cref="RarityTierCount"/>.</summary>
+        /// <summary>Relative weights indexed by RarityTier (Common..Fabulous), exactly <see cref="RarityTierCount"/>.</summary>
         public double[] RarityWeights { get; }
 
         public EggDropEntry[] Pool { get; }

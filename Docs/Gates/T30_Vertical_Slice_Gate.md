@@ -18,7 +18,7 @@ en revue, la tranche n'est pas finale. Les manques sont planifiés (section « S
 | Scène : démarre en portrait, chunk Prairie, caméra, lumière, UI, données locales | OK | SC_VerticalSlice_Grassland, PlayMode 35/35 |
 | Aucun asset TEMP visible | **Non** | Police LiberationSans TEMP visible (T31, T32) |
 | Assets : lapin complet, écureuil, hérisson, œuf, kit prairie, matériaux, VFX hatch, hooks audio | OK partiel | 3 espèces validées (AssetValidator : aucun avertissement), hooks audio présents mais aucun son produit |
-| Gameplay : lancer → éclore → Lumière → œuf → variante → Codex/maîtrise → fermer → revenir → hors ligne | OK | Tests PlayMode SanctuaryLoop, Offline, Codex, Mastery |
+| Gameplay : lancer → éclore → Lumière → œuf → variante → Codex/maîtrise → fermer → revenir → hors ligne | OK | Tests PlayMode RefugeLoop, Offline, Codex, Mastery |
 | Sauvegarde versionnée, atomique, recovery, pas de doublon d'éclosion | OK | SaveTests (golden saves v1 à v6), schéma 6 |
 | Performance : 60 FPS, 20 animaux, 0 B/frame, pas de gros pic | OK sur PC, **non mesuré sur téléphone** | Benchmark Windows ci-dessous ; tests 0 allocation |
 | Rendu : pas de clone de matériau, LOD, Low beau, pas d'overdraw herbe | OK | Gate 06 : 7 matériaux, 0 doublon ; Gate 29 : Low garde l'identité |
@@ -88,8 +88,8 @@ fleurs, pas de chemin, pas d'eau, pas de vie ambiante, ciel uni, une seule ambia
 | T31, T32 | Polices maison, styles TMP | Aucun TEMP visible |
 | T33 | Prairie Magnifique (dispersion, vie ambiante, ciel, ambiances, kit complet) | Beauté, D-BIO-001, F-* Prairie |
 | T34 | Qualité adaptative, préparation des shaders | Pics de premier affichage |
-| T34A | Feedback et écrans de la tranche : VFX EggTap, CollectLight, NewSpecies, NewVariant, FavoriteHeart, MasteryLevelUp, HatchEpic/Legendary/Mythic, SH_RareAura ; fiche animal ; annonce de découverte ; splash ; toasts ; modales ; geste de tutoriel ; cadres de rareté ; badges de traits ; icône favori | Gates 10, 12 ; UI et Feedback du DoD |
-| T34B | Audio et haptique de base : SFX créés pour le projet (synthèse maison, sans dépendance tierce), ambiance Prairie, thème du sanctuaire, profils haptiques et implémentation Android | Gates 14, 15 ; famille J |
+| T34A | Feedback et écrans de la tranche : VFX EggTap, CollectLight, NewSpecies, NewVariant, FavoriteHeart, MasteryLevelUp, HatchEpic/Legendary/Fabulous, SH_RareGlow ; fiche animal ; annonce de découverte ; splash ; toasts ; modales ; geste de tutoriel ; cadres de rareté ; badges de traits ; icône favori | Gates 10, 12 ; UI et Feedback du DoD |
+| T34B | Audio et haptique de base : SFX créés pour le projet (synthèse maison, sans dépendance tierce), ambiance Prairie, thème du refuge, profils haptiques et implémentation Android | Gates 14, 15 ; famille J |
 | T34C | Outils et contrôle : BuildValidator (exclut TEMP et bac à sable), matériaux de debug LOD et overdraw, marqueurs de spawn, captures de référence (golden visual), scènes de capture et benchmark VFX, scénario Codex 5 000, groupes Addressables Bootstrap, CommonAnimals et UI_Common | Gates 17, 19, 33 ; famille R et ED-010 |
 | T34D | Nouveau passage du gate de la tranche verticale | Verdict final, hors mesure téléphone |
 

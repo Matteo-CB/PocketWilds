@@ -53,7 +53,7 @@ Schéma 5 : section Shop (achats et affichages par offre, dernière apparition, 
 
 `PF_UI_Shop`, `PF_UI_OfferModal`, `PF_UI_ProductCard`, `PF_UI_ProductCard_Wide`, raccourci boutique et puce Gemmes
 du HUD. Atlas séparé `Atlas_Shop`. Icônes générées (`pw_ui_sprites.py`) : gemme, sac, piles de gemmes par palier,
-couronne de fleurs, croix. Textes en anglais et en français, selon la Writing Bible : ce que l'on obtient, le prix,
+couronne de fleurs, croix. Textes en anglais et en français, selon la Writing Guide : ce que l'on obtient, le prix,
 « Offre unique », aucun mot de pression. Captures : `TestResults/Captures/T28_*.png`.
 
 ## Mesures (player Windows de développement, 480x1040, PC et non téléphone)

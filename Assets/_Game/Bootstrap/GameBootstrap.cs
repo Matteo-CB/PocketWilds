@@ -31,7 +31,7 @@ namespace PocketWilds.Bootstrap
     /// <summary>
     /// Composition root, lives in SC_Bootstrap. Builds every service in an explicit order:
     /// platform -> device settings -> content -> save -> clock -> simulation -> presentation -> background services.
-    /// The player enters the sanctuary without waiting for cloud, analytics or remote config.
+    /// The player enters the refuge without waiting for cloud, analytics or remote config.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class GameBootstrap : MonoBehaviour
@@ -191,7 +191,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
             });
 
-            // Prices and pending purchases load in the background: the sanctuary never waits for the store.
+            // Prices and pending purchases load in the background: the refuge never waits for the store.
             sequence.AddBackground("Store", cancellationToken => _store.InitializeAsync(cancellationToken));
 
             sequence.AddBlocking("Offline", () =>

@@ -255,7 +255,7 @@ def kit_button_primary():
 
 
 def kit_glow():
-    """UI_Glow_Soft: 128x128 radial glow (white, tinted at runtime). Cheap halo behind rewards."""
+    """UI_Glow_Soft: 128x128 radial glow (white, tinted at runtime). Cheap glow behind rewards."""
     size = 128
     c = Canvas(size, size)
     r = np.hypot(c.x, c.y) / 62.0

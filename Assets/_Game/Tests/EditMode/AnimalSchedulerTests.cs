@@ -72,7 +72,7 @@ namespace PocketWilds.Tests.EditMode
                 histogram[scheduler.StateChangesLastTick]++;
             });
 
-            Assert.Greater(scheduler.TotalStateChanges, 30 * 120 / 8, "The sanctuary must feel alive.");
+            Assert.Greater(scheduler.TotalStateChanges, 30 * 120 / 8, "The refuge must feel alive.");
             // 30 agents x 5 Hz / 60 fps = 2.5 evaluations per frame, never a burst.
             Assert.LessOrEqual(maxTicked, 3);
             Assert.LessOrEqual(maxChanges, 3, "Synchronized decision spike.");

@@ -106,8 +106,8 @@ namespace PocketWilds.Tests.PlayMode
             yield return null;
             yield return null;
             var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
-            var sanctuary = entry.Sanctuary;
-            var scheduler = sanctuary.Scheduler;
+            var refuge = entry.Refuge;
+            var scheduler = refuge.Scheduler;
             Assert.AreEqual(entry.StartChunk.InterestCount, scheduler.InterestCount, "The chunk's points of interest reach the scheduler.");
             Assert.Greater(scheduler.InterestCount, 0);
 
@@ -117,7 +117,7 @@ namespace PocketWilds.Tests.PlayMode
             while (a < 0)
             {
                 for (int h = 0; h < scheduler.Capacity && a < 0; h++)
-                    if (scheduler.IsValid(h) && scheduler.GetPartner(h) < 0 && scheduler.TryStartSocial(h, sanctuary.SimulationTime))
+                    if (scheduler.IsValid(h) && scheduler.GetPartner(h) < 0 && scheduler.TryStartSocial(h, refuge.SimulationTime))
                         a = h;
                 if (a >= 0)
                     break;

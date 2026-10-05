@@ -30,7 +30,7 @@ namespace PocketWilds.Simulation
         public double TraitOne = 0.25;
         public double[] TraitNew = { 0.010, 0.010, 0.005, 0.002, 0.003, 0.003 };
 
-        /// <summary>Doc 03: an egg after a light delay. Used when breeding reaches the sanctuary.</summary>
+        /// <summary>Doc 03: an egg after a light delay. Used when breeding reaches the refuge.</summary>
         public double BreedingSeconds = 300.0;
 
         public static GeneticsConfig Default => new GeneticsConfig();

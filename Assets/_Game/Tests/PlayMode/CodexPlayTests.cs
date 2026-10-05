@@ -79,8 +79,8 @@ namespace PocketWilds.Tests.PlayMode
             yield return null;
             var context = bootstrap.Context;
             var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
-            var sanctuary = entry.Sanctuary;
-            var hud = Object.FindAnyObjectByType<SanctuaryHud>();
+            var refuge = entry.Refuge;
+            var hud = Object.FindAnyObjectByType<RefugeHud>();
             var screen = Object.FindAnyObjectByType<CodexScreen>();
             Assert.IsNotNull(screen);
             Assert.IsFalse(hud.CodexBadgeVisible, "Nothing found yet.");
@@ -94,7 +94,7 @@ namespace PocketWilds.Tests.PlayMode
             var codexButton = hud.transform.Find("SafeArea/Shortcuts/Codex/Button").GetComponent<Button>();
             codexButton.onClick.Invoke();
             Assert.IsTrue(screen.IsOpen);
-            Assert.IsTrue(sanctuary.CodexOpen);
+            Assert.IsTrue(refuge.CodexOpen);
             Assert.IsFalse(entry.CameraRig.Camera.enabled, "The opaque Codex hides the world: no world rendering.");
             yield return null;
 
@@ -102,7 +102,7 @@ namespace PocketWilds.Tests.PlayMode
             Assert.IsTrue(screen.TryGetVisibleCard(rabbit, out var card));
             Assert.IsTrue(card.Discovered);
             Assert.IsTrue(card.ShowsNew);
-            sanctuary.RequestHatch();
+            refuge.RequestHatch();
             Assert.AreEqual(1, context.State.Collection.Count, "No hatching behind the Codex.");
 
             card.GetComponentInChildren<Button>().onClick.Invoke();
@@ -122,7 +122,7 @@ namespace PocketWilds.Tests.PlayMode
                 Assert.Less(Time.realtimeSinceStartup, closeBy, "The Codex did not close.");
                 yield return null;
             }
-            Assert.IsTrue(entry.CameraRig.Camera.enabled, "Back to the sanctuary at once.");
+            Assert.IsTrue(entry.CameraRig.Camera.enabled, "Back to the refuge at once.");
             yield return null;
             Assert.IsFalse(hud.CodexBadgeVisible);
 #else

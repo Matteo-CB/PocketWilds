@@ -8,7 +8,7 @@ namespace PocketWilds.Editor.Shop
 {
     /// <summary>
     /// ED-005 Offer editor, sandbox scope (T28): writes DEF_ShopCatalog with the doc 09 baseline: six Gem packs
-    /// (0,99 to 99,99 euros) and the Starter Pack ("500 Gems + Flower Crown", Writing Bible example), plus the
+    /// (0,99 to 99,99 euros) and the Starter Pack ("500 Gems + Flower Crown", Writing Guide example), plus the
     /// Starter Pack as a moment offer. Gem amounts and the Starter price are starting values to balance and
     /// approve: commercial values live here, as data, never in code. Idempotent.
     /// </summary>

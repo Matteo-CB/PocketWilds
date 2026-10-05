@@ -24,10 +24,10 @@ namespace PocketWilds.Tests.PlayMode
             if (_rabbit != null) Object.Destroy(_rabbit.gameObject);
         }
 
-        private SanctuaryCameraRig SpawnRig()
+        private RefugeCameraRig SpawnRig()
         {
 #if UNITY_EDITOR
-            var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<SanctuaryCameraRig>("Assets/_Game/Prefabs/World/PF_CameraRig_Sanctuary.prefab");
+            var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<RefugeCameraRig>("Assets/_Game/Prefabs/World/PF_CameraRig_Refuge.prefab");
             var rig = Object.Instantiate(prefab);
             _rigObject = rig.gameObject;
             rig.SetBounds(new Vector3(0f, 0f, 0.65f), new Vector2(3.5f, 4f));
@@ -40,7 +40,7 @@ namespace PocketWilds.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Pan_StaysInsideTheSanctuary_AndZoomRespectsLimits()
+        public IEnumerator Pan_StaysInsideTheRefuge_AndZoomRespectsLimits()
         {
             var rig = SpawnRig();
             for (int i = 0; i < 200; i++)
@@ -72,15 +72,15 @@ namespace PocketWilds.Tests.PlayMode
             var worldFocus = rig.Focus;
             float worldDistance = rig.Distance;
 
-            rig.FocusOn(new Vector3(1.2f, 0f, 1.5f), SanctuaryCameraState.FocusAnimal);
+            rig.FocusOn(new Vector3(1.2f, 0f, 1.5f), RefugeCameraState.FocusAnimal);
             rig.PanPixels(new Vector2(500f, 0f)); // ignored while focused
             for (int i = 0; i < 60; i++) yield return null;
-            Assert.AreEqual(SanctuaryCameraState.FocusAnimal, rig.State);
+            Assert.AreEqual(RefugeCameraState.FocusAnimal, rig.State);
             Assert.Less(Vector3.Distance(rig.Focus, new Vector3(1.2f, 0f, 1.5f)), 0.05f);
 
             rig.ReturnToWorld();
             for (int i = 0; i < 60; i++) yield return null;
-            Assert.AreEqual(SanctuaryCameraState.DefaultWorld, rig.State);
+            Assert.AreEqual(RefugeCameraState.DefaultWorld, rig.State);
             Assert.Less(Vector3.Distance(rig.Focus, worldFocus), 0.05f);
             Assert.AreEqual(worldDistance, rig.Distance, 0.05f);
         }

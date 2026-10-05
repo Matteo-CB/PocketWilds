@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace PocketWilds.Presentation
 {
-    public enum SanctuaryCameraState : byte
+    public enum RefugeCameraState : byte
     {
         DefaultWorld = 0,
         FocusAnimal = 1,
@@ -10,12 +10,12 @@ namespace PocketWilds.Presentation
     }
 
     /// <summary>
-    /// PF_CameraRig_Sanctuary. Portrait diorama view: fixed pitch, yaw and FOV (no dynamic FOV, no rotation),
-    /// pan clamped to the sanctuary bounds, pinch zoom between strict limits, short smoothed transitions
+    /// PF_CameraRig_Refuge. Portrait diorama view: fixed pitch, yaw and FOV (no dynamic FOV, no rotation),
+    /// pan clamped to the refuge bounds, pinch zoom between strict limits, short smoothed transitions
     /// between states. One LateUpdate for the whole camera; no per-frame allocation.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class SanctuaryCameraRig : MonoBehaviour
+    public sealed class RefugeCameraRig : MonoBehaviour
     {
         [SerializeField] private Camera _camera;
 
@@ -51,7 +51,7 @@ namespace PocketWilds.Presentation
         private bool _initialized;
 
         public Camera Camera => _camera;
-        public SanctuaryCameraState State { get; private set; }
+        public RefugeCameraState State { get; private set; }
         public Vector3 Focus => _focus;
         public float Distance => _distance;
         public float MinDistance => _minDistance;
@@ -71,7 +71,7 @@ namespace PocketWilds.Presentation
         public void SnapTo(Vector3 focus, float distance = -1f)
         {
             Initialize();
-            State = SanctuaryCameraState.DefaultWorld;
+            State = RefugeCameraState.DefaultWorld;
             _focus = _targetFocus = Clamp(focus);
             _distance = _targetDistance = Mathf.Clamp(distance > 0f ? distance : _defaultDistance, _minDistance, _maxDistance);
             _focusVelocity = Vector3.zero;
@@ -82,7 +82,7 @@ namespace PocketWilds.Presentation
         /// <summary>Drag in pixels: the ground follows the finger.</summary>
         public void PanPixels(Vector2 pixelDelta)
         {
-            if (State != SanctuaryCameraState.DefaultWorld || _camera == null)
+            if (State != RefugeCameraState.DefaultWorld || _camera == null)
                 return;
             float worldPerPixel = 2f * _distance * Mathf.Tan(_fieldOfView * 0.5f * Mathf.Deg2Rad) / Mathf.Max(1, _camera.pixelHeight);
             var right = Quaternion.Euler(0f, _yaw, 0f) * Vector3.right;
@@ -96,31 +96,31 @@ namespace PocketWilds.Presentation
         /// <summary>factor &lt; 1 zooms in, &gt; 1 zooms out (pinch ratio or scroll).</summary>
         public void Zoom(float factor)
         {
-            if (State != SanctuaryCameraState.DefaultWorld || factor <= 0f)
+            if (State != RefugeCameraState.DefaultWorld || factor <= 0f)
                 return;
             _targetDistance = Mathf.Clamp(_targetDistance * factor, _minDistance, _maxDistance);
             _currentSmooth = _smoothTime;
         }
 
         /// <summary>Short framing on an animal or the hatching egg. ReturnToWorld restores the previous view.</summary>
-        public void FocusOn(Vector3 point, SanctuaryCameraState state)
+        public void FocusOn(Vector3 point, RefugeCameraState state)
         {
-            if (State == SanctuaryCameraState.DefaultWorld)
+            if (State == RefugeCameraState.DefaultWorld)
             {
                 _worldFocus = _targetFocus;
                 _worldDistance = _targetDistance;
             }
             State = state;
             _targetFocus = point;
-            _targetDistance = state == SanctuaryCameraState.HatchReveal ? _hatchDistance : _focusAnimalDistance;
+            _targetDistance = state == RefugeCameraState.HatchReveal ? _hatchDistance : _focusAnimalDistance;
             _currentSmooth = _transitionTime * 0.4f;
         }
 
         public void ReturnToWorld()
         {
-            if (State == SanctuaryCameraState.DefaultWorld)
+            if (State == RefugeCameraState.DefaultWorld)
                 return;
-            State = SanctuaryCameraState.DefaultWorld;
+            State = RefugeCameraState.DefaultWorld;
             _targetFocus = Clamp(_worldFocus);
             _targetDistance = _worldDistance;
             _currentSmooth = _transitionTime * 0.4f;
