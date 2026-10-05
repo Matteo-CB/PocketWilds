@@ -1,7 +1,8 @@
-"""Builds the Pocket Wilds font candidates (T31): TTF files with spacing and automatic kerning.
+"""Builds the Pocket Wilds fonts: TTF files with spacing and automatic kerning.
 
-    python pw_font_build.py            # every candidate
-    python pw_font_build.py Claire     # one family
+    python pw_font_build.py                  # the shipped families (Pocket Round, Pocket Plush)
+    python pw_font_build.py PocketRound      # one family
+    python pw_font_build.py --candidates     # the T31 review candidates (Douce, Claire, Caline, Bulle, Guimauve)
 
 Output: SourceArt/Fonts/Build/<File>.ttf
 """
@@ -19,7 +20,7 @@ from fontTools.ttLib.tables._k_e_r_n import KernTable_format_0
 from PIL import Image, ImageDraw
 
 import pw_font_engine as E
-from pw_font_glyphs import ACCENTS, CHARS, SPACES, Glyphs, Style
+from pw_font_glyphs import SPACES, Glyphs, Style, charset, decompose
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "Build"))
@@ -52,6 +53,21 @@ CANDIDATES = {
     ],
 }
 
+# Owner's choice, 5 October 2026: Caline for the interface (Pocket Round), Guimauve for titles (Pocket Plush).
+FAMILIES = {
+    "PocketRound": [
+        Style("PocketRound", "Pocket Round", "Regular", w=92, xh=530, n=2.2, wf=1.06, a_story=1, aperture=38, swell=0.10),
+        Style("PocketRound", "Pocket Round", "SemiBold", w=116, xh=530, n=2.2, wf=1.06, a_story=1, aperture=38, swell=0.10),
+        Style("PocketRound", "Pocket Round", "Bold", w=144, xh=530, n=2.2, wf=1.08, a_story=1, aperture=38, swell=0.10),
+    ],
+    "PocketPlush": [
+        Style("PocketPlush", "Pocket Plush", "Black", w=142, xh=590, n=2.1, wf=1.04, a_story=1, aperture=46, inflate=0.28,
+              swell=0.08, tracking=-8, l_tail=False, grow=1.9, bar=0.78),
+    ],
+}
+VERSION = "1.000"
+COPYRIGHT = "Copyright 2026 Pocket Wilds. Rights holder to be confirmed by the project owner."
+
 SB = {"S": 66.0, "R": 42.0, "D": 14.0, "O": 26.0, "P": 46.0}
 
 
@@ -69,43 +85,24 @@ def side_bearing(style, cls, upper):
     return v
 
 
-def make_glyph(g: Glyphs, style: Style, ch):
-    if ch in ACCENTS:
-        base, kind = ACCENTS[ch]
-        shapes, lc, rc = getattr(g, CHARS[base])()
-        bx0, _, bx1, _ = E.bounds(E.glyph_contours(shapes))
-        upper = base.isupper()
-        cx = (bx0 + bx1) / 2
-        if base == "ı":
-            cx = g.h
-        base_y = style.cap if upper else style.xh
-        shapes = shapes + g.accent(kind, cx, base_y, upper)
-        return shapes, lc, rc, upper
-    shapes, lc, rc = getattr(g, CHARS[ch])()
-    upper = ch.isupper() or ch in "ÆŒØ"
-    return shapes, lc, rc, upper
-
-
 def build_style(style: Style):
     g = Glyphs(style)
     order = [".notdef", "space"]
     cmap = {}
     glyph_data = {}
-    rng = np.random.default_rng(7)
-    chars = list(CHARS.keys()) + list(ACCENTS.keys())
-    for i, ch in enumerate(chars):
-        shapes, lc, rc, upper = make_glyph(g, style, ch)
+    for ch in charset():
+        shapes, lc, rc, upper, (x0, x1) = g.make(ch)
         contours = E.glyph_contours(shapes)
         if style.bounce or style.tilt:
-            x0, y0, x1, y1 = E.bounds(contours)
+            bx0, by0, bx1, by1 = E.bounds(contours)
             seed = sum(ord(c) for c in ch) * 7919 % 1000 / 1000.0
             dy = (seed - 0.5) * 2 * style.bounce
             ang = ((seed * 3.7) % 1.0 - 0.5) * 2 * style.tilt
             if not ch.isalpha():
                 dy, ang = dy * 0.3, 0.0
-            contours = E.transform(contours, 0, dy, ang, (x0 + x1) / 2, (y0 + y1) / 2)
-        x0, y0, x1, y1 = E.bounds(contours)
-        figure = ch.isdigit() and style.tabular
+            contours = E.transform(contours, 0, dy, ang, (bx0 + bx1) / 2, (by0 + by1) / 2)
+        # Spacing follows the letter; accents wider than a narrow letter (î, ĩ) may overhang a little.
+        figure = ch.isdigit() and ch.isascii() and style.tabular
         if figure:
             adv = g.dw + 2 * 58 * (1 + (style.w - 88) * 0.0018) + style.tracking * 2
             lsb = (adv - (x1 - x0)) / 2
@@ -127,6 +124,7 @@ def build_style(style: Style):
         width = em * UPM * (1.0 + (style.w - 88) * 0.001) + style.tracking
         glyph_data[name] = ([], int(round(width)), ch)
         cmap[ord(ch)] = name
+    cmap[0x00AD] = cmap[ord("-")]  # soft hyphen shows as a hyphen when a line breaks on it
     # .notdef: a soft rounded box
     nd = [E.simplify(c) for c in E.glyph_contours([g.bowl(0, 420, 0, style.cap, 3.0)])]
     nd = E.transform(nd, 60, 0)
@@ -166,14 +164,32 @@ KERN_LEFT = "AFKLPRTVWXYkrvwxyfDOQ0.,’'\"”"
 KERN_RIGHT = "AJTVWYXacdegoqsuvwxyzOQCG.,’'\"“"
 
 
+def _accented_variants(bases):
+    """Accented letters grouped by base letter: {'e': ['è', 'é', 'ê', 'ë', 'ē', 'ĕ', 'ė', 'ę', 'ě'], ...}."""
+    out = {}
+    for ch in charset():
+        if ch in bases:
+            continue
+        try:
+            base, _ = decompose(ch)
+        except KeyError:
+            continue
+        base = {"ı": "i", "ȷ": "j"}.get(base, base)
+        if base in bases:
+            out.setdefault(base, []).append(ch)
+    return out
+
+
 def kerning(order, cmap, data, style):
+    """Pairs of the base alphabet from ink profiles, then the same pairs with an accented right letter (Té, Vö, Yę).
+    Every pair is measured on its own glyphs, so an accent never ends up touching the letter before it."""
+    variants = _accented_variants(KERN_RIGHT)
     prof = {}
-    for ch in set(KERN_LEFT + KERN_RIGHT + "H"):
+    for ch in set(KERN_LEFT + KERN_RIGHT + "H" + "".join(c for v in variants.values() for c in v)):
         name = cmap.get(ord(ch))
         if name:
             contours, adv, _ = data[name]
             prof[ch] = (profiles(contours, adv), adv)
-    href, hadv = prof["H"]
 
     def avg_gap(a, b):
         pa, adv_a = prof[a]
@@ -187,20 +203,29 @@ def kerning(order, cmap, data, style):
         return sum(gaps) / len(gaps), min(gaps)
 
     ref, _ = avg_gap("H", "H")
+
+    def value(a, b):
+        if a not in prof or b not in prof:
+            return None
+        avg, mn = avg_gap(a, b)
+        if avg is None:
+            return None
+        k = 0.55 * (ref - avg)
+        limit = -(mn - 0.30 * ref)
+        k = min(max(k, limit), 0.0)
+        return int(round(k / 2) * 2) if k <= -14 else None
+
     pairs = {}
     for a in KERN_LEFT:
         for b in KERN_RIGHT:
-            if a not in prof or b not in prof:
+            k = value(a, b)
+            if k is None:
                 continue
-            avg, mn = avg_gap(a, b)
-            if avg is None:
-                continue
-            k = 0.55 * (ref - avg)
-            limit = -(mn - 0.30 * ref)
-            k = max(k, limit)
-            k = min(k, 0.0)
-            if k <= -14:
-                pairs[(cmap[ord(a)], cmap[ord(b)])] = int(round(k / 2) * 2)
+            pairs[(cmap[ord(a)], cmap[ord(b)])] = k
+            for v in variants.get(b, []):
+                kv = value(a, v)
+                if kv is not None:
+                    pairs[(cmap[ord(a)], cmap[ord(v)])] = kv
     return pairs
 
 
@@ -232,11 +257,11 @@ def write_font(style: Style, order, cmap, data, pairs, path):
     fb.setupNameTable({
         "familyName": family if sub in ("Regular", "Bold") else family + " " + sub,
         "styleName": sub if sub in ("Regular", "Bold") else "Regular",
-        "uniqueFontIdentifier": f"{family}-{sub}-0.1",
+        "uniqueFontIdentifier": f"{family}-{sub}-{VERSION}",
         "fullName": f"{family} {sub}",
         "psName": (family + "-" + sub).replace(" ", ""),
-        "version": "Version 0.100",
-        "copyright": "Copyright 2026, Pocket Wilds project owner. Candidate, not final.",
+        "version": f"Version {VERSION}",
+        "copyright": COPYRIGHT,
         "typographicFamily": family,
         "typographicSubfamily": sub,
     })
@@ -245,9 +270,9 @@ def write_font(style: Style, order, cmap, data, pairs, path):
                 sxHeight=int(style.xh), sCapHeight=int(style.cap), usWeightClass=weight_class,
                 fsType=0, achVendID="PWLD")
     fb.setupPost()
-    fb.setupHead(unitsPerEm=UPM)
+    fb.setupHead(unitsPerEm=UPM, fontRevision=float(VERSION))
     font = fb.font
-    if pairs:
+    if pairs and len(pairs) <= 10000:  # the legacy kern subtable is limited to 64 KB; GPOS always has every pair
         kern = newTable("kern")
         kern.version = 0
         st = KernTable_format_0()
@@ -258,6 +283,7 @@ def write_font(style: Style, order, cmap, data, pairs, path):
         st.apple = False
         kern.kernTables = [st]
         font["kern"] = kern
+    if pairs:
         fea = "languagesystem DFLT dflt;\nlanguagesystem latn dflt;\nfeature kern {\n"
         fea += "".join(f"  pos {a} {b} {v};\n" for (a, b), v in sorted(pairs.items()))
         fea += "} kern;\n"
@@ -265,17 +291,25 @@ def write_font(style: Style, order, cmap, data, pairs, path):
     font.save(path)
 
 
+def write_kerning(data, pairs, path):
+    """Pairs as characters for Unity (FontPipeline reads them; TextCore's own import caches stale font tables)."""
+    lines = ["# left\tright\tvalue (font units, 1000 per em)"]
+    for (a, b), v in sorted(pairs.items()):
+        lines.append(f"{ord(data[a][2]):04X}\t{ord(data[b][2]):04X}\t{v}")
+    with open(path[:-4] + ".kern.tsv", "w", encoding="ascii", newline="\n") as f:
+        f.write("\n".join(lines) + "\n")
+
+
 def file_name(style):
     return (style.family + "-" + style.weight_name).replace(" ", "")
 
 
-def build(names=None):
+def build(names=None, families=None):
     os.makedirs(OUT, exist_ok=True)
-    charset = "".join(list(CHARS.keys()) + list(ACCENTS.keys()) + list(SPACES.keys()))
     with open(os.path.join(OUT, "charset.txt"), "w", encoding="utf-8") as f:
-        f.write(charset)
+        f.write("".join(charset() + list(SPACES.keys())))
     built = []
-    for key, styles in CANDIDATES.items():
+    for key, styles in (families or FAMILIES).items():
         if names and key not in names:
             continue
         for style in styles:
@@ -283,10 +317,16 @@ def build(names=None):
             pairs = kerning(order, cmap, data, style)
             path = os.path.join(OUT, file_name(style) + ".ttf")
             write_font(style, order, cmap, data, pairs, path)
+            write_kerning(data, pairs, path)
             built.append((path, len(order), len(pairs)))
             print(f"{path}: {len(order)} glyphs, {len(pairs)} kerning pairs")
     return built
 
 
 if __name__ == "__main__":
-    build(sys.argv[1:] or None)
+    args = sys.argv[1:]
+    if "--candidates" in args:
+        args.remove("--candidates")
+        build(args or None, CANDIDATES)
+    else:
+        build(args or None)

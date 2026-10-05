@@ -5,9 +5,10 @@ baseline y=0. Proportions follow the Style, so one skeleton set gives every cand
 Spacing classes: 'S' straight, 'R' round, 'D' diagonal, 'O' open, 'P' punctuation.
 """
 import math
+import unicodedata
 from dataclasses import dataclass
 
-from pw_font_engine import Dot, Path, Stroke
+from pw_font_engine import Dot, Path, Poly, Stroke, bounds, glyph_contours
 
 
 @dataclass
@@ -87,20 +88,20 @@ class Glyphs:
         """Vertical stroke whose round caps reach y0 and y1 exactly."""
         return self.line(x, y0 + self.h, x, y1 - self.h)
 
-    def bowl(self, x0, x1, y0, y1, n=None):
+    def bowl(self, x0, x1, y0, y1, n=None, mult=1.0):
         """Closed bowl whose outer edge fits the box."""
-        h = self.h
+        h = self.h * mult
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
         rx, ry = (x1 - x0) / 2 - h, (y1 - y0) / 2 - h
         p = Path(*_se(cx, cy, rx, ry, 0, n or self.s.n)).arc(cx, cy, rx, ry, 0, 360, n or self.s.n).close()
-        return self.st(p)
+        return self.st(p, mult)
 
-    def open_arc(self, x0, x1, y0, y1, a0, a1, n=None):
-        h = self.h
+    def open_arc(self, x0, x1, y0, y1, a0, a1, n=None, mult=1.0):
+        h = self.h * mult
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
         rx, ry = (x1 - x0) / 2 - h, (y1 - y0) / 2 - h
         nn = n or self.s.n
-        return self.st(Path(*_se(cx, cy, rx, ry, a0, nn)).arc(cx, cy, rx, ry, a0, a1, nn))
+        return self.st(Path(*_se(cx, cy, rx, ry, a0, nn)).arc(cx, cy, rx, ry, a0, a1, nn), mult)
 
     def spline(self, knots, tension=0.39):
         x, y, _ = knots[0]
@@ -108,6 +109,21 @@ class Glyphs:
 
     def dot(self, x, y, scale=1.0):
         return Dot(x, y, self.dr * scale)
+
+    def fill(self, pts, r):
+        """Filled polygon whose outline grows by r with round corners (polygon + a capsule on every edge)."""
+        shapes = [Poly(pts)]
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:] + pts[:1]):
+            shapes.append(Stroke(Path(x0, y0).line(x1, y1), 2 * r))
+        return shapes
+
+    def small(self, shapes, sc, dx=0.0, dy=0.0, wm=0.78):
+        """Shapes scaled by sc (superscripts, fractions, ordinals) with strokes at wm of the full weight."""
+        return [_map_points(sh, lambda x, y: (x * sc + dx, y * sc + dy), wm) for sh in shapes]
+
+    @staticmethod
+    def box(shapes):
+        return bounds(glyph_contours(shapes))
 
     # ---------------- lowercase ----------------
 
@@ -117,7 +133,7 @@ class Glyphs:
 
     def g_c(self):
         s = self.s
-        a = s.aperture
+        a = s.aperture + max(0.0, s.w - 88) * 0.2  # heavier strokes would close the opening
         return [self.open_arc(0, self.ow * 0.92, -s.ov, s.xh + s.ov, a, 360 - a)], "R", "O"
 
     def g_e(self):
@@ -126,7 +142,7 @@ class Glyphs:
         cx, cy = ew / 2, s.xh / 2
         rx = ew / 2 - h
         bar = self.line(h, cy, ew - h, cy, s.bar)
-        arc = self.open_arc(0, ew, -s.ov, s.xh + s.ov, 0, 360 - (s.aperture - 6))
+        arc = self.open_arc(0, ew, -s.ov, s.xh + s.ov, 0, 360 - (s.aperture - 6 + max(0.0, s.w - 88) * 0.35))
         return [bar, arc], "R", "O"
 
     def g_a(self):
@@ -757,12 +773,21 @@ class Glyphs:
         return [self.line(h + 30, C * 0.66, w - h, C * 0.66), self.line(h, C * 0.32, w - h - 30, C * 0.32),
                 self.line(w * 0.40, C - h, w * 0.28, h), self.line(w * 0.74, C - h, w * 0.62, h)], "D", "D"
 
+    def _percent_parts(self):
+        """Ring size follows the stroke, so the rings stay open in Bold and Black."""
+        s, h = self.s, self.h
+        m = 0.85
+        size = 2 * s.w * m + 140
+        tall = size * 1.08
+        w = max(self.dw * 1.25, 2 * size + 40)
+        return m, size, tall, w
+
     def g_percent(self):
         s, h = self.s, self.h
         C = s.cap
-        w = self.dw * 1.25
-        r = w * 0.36
-        return [self.bowl(0, r, C * 0.56, C + s.ov), self.bowl(w - r, w, -s.ov, C * 0.44), self.line(w * 0.80, C - h, w * 0.20, h)], "R", "R"
+        m, size, tall, w = self._percent_parts()
+        return [self.bowl(0, size, C + s.ov - tall, C + s.ov, mult=m), self.bowl(w - size, w, -s.ov, tall - s.ov, mult=m),
+                self.line(w * 0.80, C - h, w * 0.20, h)], "R", "R"
 
     def _math_y(self):
         return self.s.xh * 0.50 + 10
@@ -847,8 +872,8 @@ class Glyphs:
 
     def g_degree(self):
         s = self.s
-        r = 170
-        return [self.bowl(0, r, s.cap - r, s.cap + s.ov, 2.0)], "P", "P"
+        d = 190 + s.w * 0.9  # the ring stays open at every weight
+        return [self.bowl(0, d, s.cap - d, s.cap + s.ov, 2.0, mult=0.82)], "P", "P"
 
     def g_Euro(self):
         s, h = self.s, self.h
@@ -919,6 +944,556 @@ class Glyphs:
         k = [(x, C - h, 270), (x, h + 40, 270), (w * 0.62, h, 0), (w - h, C * 0.42, 90)]
         return [self.spline(k), self.line(h, C * 0.56, w * 0.74, C * 0.70, 0.8), self.line(h, C * 0.38, w * 0.74, C * 0.52, 0.8)], "O", "R"
 
+    # ---------------- ASCII completion ----------------
+
+    def g_at(self):
+        s, h = self.s, self.h
+        C = s.cap
+        w = self.Ow * 1.10
+        cx, cy = w / 2, C * 0.40
+        rx, ry = w / 2 - h, C * 0.56 - h
+        xs = cx + rx * 0.30
+        ytop, ylow = cy + ry * 0.40, cy - ry * 0.42
+        inner = self.bowl(cx - rx * 0.50, xs + h, ylow - h, ytop + h)
+        k = [(xs, ytop, 270), (xs + rx * 0.22, ylow, 0), (cx + rx, cy + ry * 0.05, 90), (cx, cy + ry, 180),
+             (cx - rx, cy, 270), (cx, cy - ry, 0), (cx + rx * 0.72, cy - ry * 0.78, 38)]
+        return [inner, self.spline(k)], "R", "R"
+
+    def g_asciicircum(self):
+        s, h = self.s, self.h
+        w = self.dw * 0.86
+        return [self.line(h, s.cap * 0.42, w / 2, s.cap - h), self.line(w / 2, s.cap - h, w - h, s.cap * 0.42)], "P", "P"
+
+    def g_grave(self):
+        return self.accent("grave", 0, self.s.xh, False), "P", "P"
+
+    def g_asciitilde(self):
+        h = self.h
+        y = self._math_y()
+        w = self.dw * 0.86
+        k = [(h, y - 18, 64), (w * 0.31, y + 42, 0), (w * 0.69, y - 42, 0), (w - h, y + 18, 64)]
+        return [self.spline(k, 0.42)], "P", "P"
+
+    def _brace_w(self):
+        return 230 + (self.s.w - 88) * 0.5
+
+    def g_braceleft(self):
+        s, h = self.s, self.h
+        C = s.cap
+        bw = self._brace_w()
+        xm = bw * 0.48
+        up = [(bw - h, C + 80, 180), (xm, C - 10, 270), (xm, C * 0.46, 270), (h, C * 0.32, 220)]
+        lo = [(h, C * 0.32, 320), (xm, C * 0.18, 270), (xm, -80, 270), (bw - h, -150, 0)]
+        return [self.spline(up), self.spline(lo)], "O", "P"
+
+    def g_braceright(self):
+        shapes, a, b = self.g_braceleft()
+        return [_mirror(sh, self._brace_w() / 2) for sh in shapes], b, a
+
+    def g_bar(self):
+        s, h = self.s, self.h
+        return [self.stem(h, -150 - h, s.cap + 80 + h)], "S", "S"
+
+    # ---------------- Latin-1 symbols ----------------
+
+    def g_currency(self):
+        h = self.h
+        y = self._math_y()
+        R = self.dw * 0.30
+        cx = R + 70
+        shapes = [self.bowl(cx - R, cx + R, y - R, y + R, 2.0)]
+        for a in (45, 135, 225, 315):
+            t = math.radians(a)
+            c, sn = math.cos(t), math.sin(t)
+            shapes.append(self.line(cx + c * (R - h), y + sn * (R - h), cx + c * (R + 64), y + sn * (R + 64), 0.85))
+        return shapes, "P", "P"
+
+    def g_brokenbar(self):
+        s, h = self.s, self.h
+        return [self.stem(h, -150 - h, s.cap * 0.30), self.stem(h, s.cap * 0.50, s.cap + 80 + h)], "S", "S"
+
+    def _s_curve(self, sw, y0, H, m):
+        h = self.h * m
+        k = [(sw - h - 4, y0 + H * 0.80, 112), (sw * 0.50, y0 + H - h, 180), (h + 2, y0 + H * 0.71, 270),
+             (sw * 0.50, y0 + H * 0.49, 334), (sw - h - 1, y0 + H * 0.24, 270), (sw * 0.48, y0 + h, 180),
+             (h + 2, y0 + H * 0.19, 118)]
+        return self.st(Path(k[0][0], k[0][1]).spline(k), m)
+
+    def g_section(self):
+        s = self.s
+        C = s.cap
+        m = 0.80
+        sw = self.ow * 0.80 + s.w * 0.4
+        H = C * 0.60 + s.w * 0.3
+        return [self._s_curve(sw, C + s.ov - H, H, m), self._s_curve(sw, -s.ov - C * 0.14, H, m)], "R", "R"
+
+    def g_dieresis(self):
+        return self.accent("dieresis", 0, self.s.xh, False), "P", "P"
+
+    def g_acute(self):
+        return self.accent("acute", 0, self.s.xh, False), "P", "P"
+
+    def g_macron(self):
+        return self.accent("macron", 0, self.s.xh, False), "P", "P"
+
+    def g_cedilla(self):
+        return self.accent("cedilla", 0, 0, False), "P", "P"
+
+    def _circled(self, inner_fn):
+        s = self.s
+        C = s.cap
+        D = C + 2 * s.ov + 20
+        cy = C / 2
+        ring = self.bowl(0, D, cy - D / 2, cy + D / 2, 2.0, mult=0.78)
+        return [ring] + _center(inner_fn(D), D / 2, cy)
+
+    def g_copyright(self):
+        return self._circled(lambda D: [self.open_arc(0, D * 0.46, 0, D * 0.50, 48, 312, 2.0, mult=0.78)]), "R", "R"
+
+    def g_registered(self):
+        return self._circled(lambda D: self.small(self.g_R()[0], 0.44, wm=0.78)), "R", "R"
+
+    def _ordinal(self, method):
+        s = self.s
+        sc = 0.62
+        shapes = self.small(getattr(self, method)()[0], sc, 0, s.cap - s.xh * sc, 0.80)
+        x0, y0, x1, _ = self.box(shapes)
+        y = y0 - 70
+        return shapes + [self.line(x0 + self.h * 0.6, y, x1 - self.h * 0.6, y, 0.78)], "P", "P"
+
+    def g_ordfeminine(self):
+        return self._ordinal("g_a")
+
+    def g_ordmasculine(self):
+        return self._ordinal("g_o")
+
+    def g_logicalnot(self):
+        h = self.h
+        y = self._math_y() + 50
+        w = self.dw * 0.86
+        return [self.line(h, y, w - h, y), self.line(w - h, y, w - h, y - 150)], "P", "P"
+
+    def g_plusminus(self):
+        h = self.h
+        w = self.dw * 0.86
+        a = w / 2 - h - 20
+        y = self._math_y() + 80
+        return [self.line(h, y, w - h, y), self.line(w / 2, y - a, w / 2, y + a), self.line(h, y - a - 80, w - h, y - a - 80)], "P", "P"
+
+    def _sup(self, method, sc=0.56):
+        s = self.s
+        return self.small(getattr(self, method)()[0], sc, 0, s.cap * (1 - sc) + 10, 0.80), "P", "P"
+
+    def g_onesuperior(self):
+        return self._sup("g_one")
+
+    def g_twosuperior(self):
+        return self._sup("g_two")
+
+    def g_threesuperior(self):
+        return self._sup("g_three")
+
+    def g_mu(self):
+        s, h = self.s, self.h
+        shapes, _, _ = self.g_u()
+        return shapes + [self.stem(h, s.desc, s.xh * 0.6)], "S", "S"
+
+    def g_paragraph(self):
+        s, h = self.s, self.h
+        C = s.cap
+        w = self.Hw * 0.80
+        x1, x2 = w * 0.55, w - h
+        cy = C * 0.70
+        pts = [_se(x1, cy, x1 - h, C - cy - h, a, 2.0) for a in range(90, 271, 10)]
+        return self.fill(pts, h) + [self.stem(x1, -150, C), self.stem(x2, -150, C), self.line(x1, C - h, x2, C - h)], "R", "S"
+
+    def _fraction(self, num, den):
+        s, h = self.s, self.h
+        sc = 0.50
+        n = self.small(getattr(self, num)()[0], sc, 0, s.cap * (1 - sc), 0.80)
+        d = self.small(getattr(self, den)()[0], sc, 0, 0, 0.80)
+        nx0, _, nx1, _ = self.box(n)
+        n = [_shift(sh, -nx0) for sh in n]
+        wn = nx1 - nx0
+        xs = wn * 0.62
+        slash = self.line(xs, h, xs + 250, s.cap - h, 0.8)
+        dx0 = self.box(d)[0]
+        d = [_shift(sh, xs + 180 - dx0) for sh in d]
+        return n + [slash] + d, "P", "P"
+
+    def g_onequarter(self):
+        return self._fraction("g_one", "g_four")
+
+    def g_onehalf(self):
+        return self._fraction("g_one", "g_two")
+
+    def g_threequarters(self):
+        return self._fraction("g_three", "g_four")
+
+    def g_divide(self):
+        shapes, a, b = self.g_minus()
+        y = self._math_y()
+        w = self.dw * 0.86
+        g = 150 + (self.s.w - 88) * 0.5
+        return shapes + [self.dot(w / 2, y + g), self.dot(w / 2, y - g)], a, b
+
+    # ---------------- letters with strokes, ligatures, Icelandic ----------------
+
+    def g_Dcroat(self):
+        shapes, a, b = self.g_D()
+        s, h = self.s, self.h
+        return shapes + [self.line(h - 70, s.cap * 0.5, h + 170, s.cap * 0.5, s.bar)], "O", b
+
+    def g_dcroat(self):
+        shapes, a, b = self.g_d()
+        s, h = self.s, self.h
+        x = self.ow * 0.99 - h
+        y = s.asc - 120
+        return shapes + [self.line(x - 160, y, x + 80, y, 0.9)], a, "O"
+
+    def g_Hbar(self):
+        shapes, a, b = self.g_H()
+        s, h = self.s, self.h
+        y = s.cap * 0.77
+        return shapes + [self.line(h - 60, y, self.Hw - h + 60, y, 0.9)], "O", "O"
+
+    def g_hbar(self):
+        shapes, a, b = self.g_h()
+        s, h = self.s, self.h
+        y = s.asc - 125
+        return shapes + [self.line(h - 60, y, h + 160, y, 0.9)], "O", b
+
+    def g_Lslash(self):
+        shapes, a, b = self.g_L()
+        s, h = self.s, self.h
+        return shapes + [self.line(h - 80, s.cap * 0.30, h + 130, s.cap * 0.56, 0.9)], "O", b
+
+    def g_lslash(self):
+        shapes, a, b = self.g_l()
+        s, h = self.s, self.h
+        return shapes + [self.line(h - 80, s.asc * 0.40, h + 120, s.asc * 0.64, 0.9)], "O", "O"
+
+    def g_Tbar(self):
+        shapes, a, b = self.g_T()
+        s = self.s
+        tw = self.Hw * 0.90
+        return shapes + [self.line(tw * 0.24, s.cap * 0.46, tw * 0.76, s.cap * 0.46, 0.9)], a, b
+
+    def g_tbar(self):
+        shapes, a, b = self.g_t()
+        s, h = self.s, self.h
+        x = h + 64
+        y = s.xh * 0.40
+        return shapes + [self.line(x - 60, y, x + 70, y, 0.9)], a, b
+
+    def g_Ldot(self):
+        shapes, a, b = self.g_L()
+        s, h = self.s, self.h
+        return shapes + [self.dot(h + 160, s.cap * 0.46)], a, b
+
+    def g_ldot(self):
+        shapes, a, b = self.g_l()
+        s, h = self.s, self.h
+        return shapes + [self.dot(h + 160, s.xh * 0.55)], a, "P"
+
+    def g_IJ(self):
+        I, J = self.g_I()[0], self.g_J()[0]
+        dx = self.box(I)[2] + 80 - self.box(J)[0]
+        return I + [_shift(sh, dx) for sh in J], "S", "S"
+
+    def g_ij(self):
+        i, j = self.g_i()[0], self.g_j()[0]
+        dx = self.box(i)[2] + 60 - self.box(j)[0]
+        return i + [_shift(sh, dx) for sh in j], "S", "S"
+
+    def g_kgreenlandic(self):
+        s, h = self.s, self.h
+        kw = self.nw * 0.92
+        top = (kw - h - 10, s.xh - h)
+        end = (h + 6, s.xh * 0.40)
+        t = 0.50
+        j = (top[0] * (1 - t) + end[0] * t, top[1] * (1 - t) + end[1] * t)
+        return [self.stem(h, 0, s.xh), self.line(*top, *end), self.line(*j, kw - h, h)], "S", "D"
+
+    def _eng(self, height, width, join, hook_cy, hook_bottom):
+        s, h = self.s, self.h
+        x1 = width - h
+        cx, rx = (h + x1) / 2, (x1 - h) / 2
+        top = height + s.ov - h
+        rr = min(95.0, rx * 0.8)
+        p = Path(*_se(cx, join, rx, top - join, 180, s.n)).arc(cx, join, rx, top - join, 180, 0, s.n).line(x1, hook_cy)
+        p.arc(x1 - rr, hook_cy, rr, hook_cy - hook_bottom, 0, -150, 2.0)
+        return [self.stem(h, 0, height), self.st(p)]
+
+    def g_Eng(self):
+        s, h = self.s, self.h
+        return self._eng(s.cap, self.Hw, s.cap * 0.52, s.desc * 0.05, s.desc * 0.80 + h), "S", "S"
+
+    def g_eng(self):
+        s, h = self.s, self.h
+        return self._eng(s.xh, self.nw, s.xh * 0.46, s.desc * 0.25, s.desc - s.ov + h), "S", "S"
+
+    def g_longs(self):
+        return [self.g_f()[0][0]], "S", "O"
+
+    def g_dotlessj(self):
+        shapes, a, b = self.g_j()
+        return [shapes[0]], a, b
+
+    def g_napostrophe(self):
+        q = self._raised_comma(self.dr + 20)
+        n, _, rc = self.g_n()
+        dx = self.box(q)[2] + 40
+        return q + [_shift(sh, dx) for sh in n], "P", rc
+
+    def g_Thorn(self):
+        s, h = self.s, self.h
+        pw = self.Hw * 0.88
+        y0, y1 = s.cap * 0.17, s.cap * 0.80
+        r = (y1 - y0) / 2 - h
+        x1 = pw - h - r
+        p = Path(h, y1 - h).line(x1, y1 - h).arc(x1, (y0 + y1) / 2, r, r, 90, -90, s.n).line(h, y0 + h)
+        return [self.stem(h, 0, s.cap), self.st(p)], "S", "R"
+
+    def g_thorn(self):
+        s, h = self.s, self.h
+        return [self.stem(h, s.desc, s.asc), self.bowl(0, self.ow * 0.99, -s.ov, s.xh + s.ov)], "S", "R"
+
+    def g_eth(self):
+        s, h = self.s, self.h
+        bw = self.ow * 0.98
+        top = s.xh * 0.94 + s.ov
+        k = [(bw - h, top * 0.48, 90), (bw * 0.66, s.asc * 0.86, 122), (bw * 0.30, s.asc - h, 160)]
+        cross = self.line(bw * 0.34, s.asc * 0.80, bw * 0.86, s.asc * 0.97, 0.8)
+        return [self.bowl(0, bw, -s.ov, top), self.spline(k), cross], "R", "R"
+
+    # ---------------- more punctuation ----------------
+
+    def g_quotedblbase(self):
+        c, _, _ = self.g_comma()
+        g = self.dr * 2 + 40
+        return c + [_shift(sh, g) for sh in c], "P", "P"
+
+    def g_perthousand(self):
+        shapes, _, _ = self.g_percent()
+        s = self.s
+        m, size, tall, w = self._percent_parts()
+        return shapes + [self.bowl(w + 40, w + 40 + size, -s.ov, tall - s.ov, mult=m)], "R", "R"
+
+    def g_trademark(self):
+        s = self.s
+        sc = 0.44
+        T = self.small(self.g_T()[0], sc, wm=0.74)
+        M = self.small(self.g_M()[0], sc, wm=0.74)
+        M = [_shift(sh, self.box(T)[2] + 30 - self.box(M)[0]) for sh in M]
+        return [_shift(sh, 0, s.cap * (1 - sc)) for sh in T + M], "P", "P"
+
+    # ---------------- currencies ----------------
+
+    def g_dong(self):
+        d = self.small(self.g_dcroat()[0], 0.80, 0, 130, 0.92)
+        x0, _, x1, _ = self.box(d)
+        hh = self.h * 0.85
+        return d + [self.line(x0 + hh, hh, x1 - hh, hh, 0.85)], "O", "O"
+
+    def g_peso(self):
+        shapes, a, b = self.g_P()
+        s, h = self.s, self.h
+        C = s.cap
+        pw = self.Hw * 0.90
+        return shapes + [self.line(h - 70, C * 0.80, pw + 20, C * 0.80, 0.8), self.line(h - 70, C * 0.62, pw + 20, C * 0.62, 0.8)], "O", b
+
+    def g_sheqel(self):
+        s, h = self.s, self.h
+        H = s.cap * 0.78
+        W = self.dw * 1.30
+        xa = W * 0.64
+        cxa, rxa, ya = (h + xa) / 2, (xa - h) / 2, H * 0.52
+        A = Path(h, h).line(h, ya).arc(cxa, ya, rxa, H - h - ya, 180, 0, s.n).line(xa, H * 0.36)
+        xb = W * 0.36
+        cxb, rxb, yb = (xb + W - h) / 2, (W - h - xb) / 2, H * 0.48
+        B = Path(W - h, H - h).line(W - h, yb).arc(cxb, yb, rxb, yb - h, 0, -180, s.n).line(xb, H * 0.64)
+        return [self.st(A), self.st(B)], "S", "S"
+
+    def g_baht(self):
+        shapes, a, b = self.g_B()
+        x = self.Hw * 0.92 * 0.42
+        return shapes + [self.line(x, -90, x, self.s.cap + 90, 0.85)], a, b
+
+    def g_naira(self):
+        shapes, a, b = self.g_N()
+        s, h = self.s, self.h
+        nw = self.Hw * 1.02
+        return shapes + [self.line(h - 50, s.cap * y, nw - h + 50, s.cap * y, 0.8) for y in (0.60, 0.40)], "O", "O"
+
+    def g_hryvnia(self):
+        s, h = self.s, self.h
+        C = s.cap
+        w = self.dw
+        k = [(h + 6, C * 0.76, 74), (w * 0.50, C + s.ov - h, 0), (w - h, C * 0.72, 270), (w * 0.62, C * 0.48, 222),
+             (h + 4, C * 0.22, 270), (w * 0.50, h - s.ov, 0), (w - h - 4, C * 0.22, 74)]
+        bars = [self.line(h - 20, C * y, w - h + 20, C * y, 0.72) for y in (0.60, 0.38)]
+        return [self.spline(k)] + bars, "O", "O"
+
+    def g_tenge(self):
+        s, h = self.s, self.h
+        C = s.cap
+        tw = self.Hw * 0.86
+        y2 = C * 0.70
+        return [self.line(h, C - h, tw - h, C - h), self.line(h, y2, tw - h, y2), self.stem(tw / 2, 0, y2 + h)], "O", "O"
+
+    def g_colonsign(self):
+        shapes, a, b = self.g_C()
+        w = self.Ow * 0.92
+        C = self.s.cap
+        return shapes + [self.line(w * x, -80, w * x + w * 0.16, C + 80, 0.75) for x in (0.34, 0.52)], a, b
+
+    def g_guarani(self):
+        shapes, a, b = self.g_G()
+        x = self.Ow * 0.96 / 2
+        return shapes + [self.line(x, -90, x, self.s.cap + 90, 0.85)], a, b
+
+    def g_cedi(self):
+        shapes, a, b = self.g_C()
+        x = self.Ow * 0.92 * 0.52
+        return shapes + [self.line(x, -90, x, self.s.cap + 90, 0.85)], a, b
+
+    # ---------------- arrows and symbols ----------------
+
+    def _arrow(self):
+        h = self.h
+        y = self._math_y()
+        L = self.dw * 1.25
+        a = 150 + (self.s.w - 88) * 0.4
+        x1 = L - h
+        return [self.line(h, y, x1, y), self.line(x1, y, x1 - a, y + a), self.line(x1, y, x1 - a, y - a)], L, y
+
+    def g_arrowright(self):
+        shapes, _, _ = self._arrow()
+        return shapes, "P", "P"
+
+    def g_arrowleft(self):
+        shapes, L, _ = self._arrow()
+        return [_mirror(sh, L / 2) for sh in shapes], "P", "P"
+
+    def g_arrowup(self):
+        shapes, L, y = self._arrow()
+        return [_shift(_rotate(sh, 90, L / 2, y), 0, self.s.cap / 2 - y) for sh in shapes], "P", "P"
+
+    def g_arrowdown(self):
+        shapes, L, y = self._arrow()
+        return [_shift(_rotate(sh, -90, L / 2, y), 0, self.s.cap / 2 - y) for sh in shapes], "P", "P"
+
+    def _star_points(self, R, ri, cx, cy):
+        pts = []
+        for i in range(10):
+            a = math.radians(90 + 36 * i)
+            r = R if i % 2 == 0 else ri
+            pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+        return pts
+
+    def g_blackstar(self):
+        C = self.s.cap
+        r = self.h * 0.8
+        R = C * 0.55 - r
+        return self.fill(self._star_points(R, R * 0.47, R + r, C * 0.42), r), "R", "R"
+
+    def g_whitestar(self):
+        C = self.s.cap
+        m = 0.85
+        hh = self.h * m
+        R = C * 0.55 - hh
+        pts = self._star_points(R, R * 0.47, R + hh, C * 0.42)
+        return [self.line(*pts[i], *pts[(i + 1) % 10], m) for i in range(10)], "R", "R"
+
+    def g_heart(self):
+        C = self.s.cap
+        r = self.h * 0.6
+        raw = []
+        for i in range(96):
+            t = 2 * math.pi * i / 96
+            raw.append((16 * math.sin(t) ** 3, 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)))
+        x0 = min(p[0] for p in raw)
+        y0 = min(p[1] for p in raw)
+        y1 = max(p[1] for p in raw)
+        k = (C * 0.88 - 2 * r) / (y1 - y0)
+        pts = [((x - x0) * k + r, (y - y0) * k + r - 20) for x, y in raw]
+        return self.fill(pts, r), "R", "R"
+
+    def g_check(self):
+        C = self.s.cap
+        m = 1.15
+        hh = self.h * m
+        w = self.dw * 1.1
+        p0, p1, p2 = (hh, C * 0.42), (w * 0.38, hh), (w - hh, C * 0.86)
+        return [self.line(*p0, *p1, m), self.line(*p1, *p2, m)], "P", "P"
+
+    def g_crossmark(self):
+        y = self._math_y()
+        a = self.dw * 0.36
+        hh = self.h * 1.1
+        c = a + hh
+        return [self.line(c - a, y - a, c + a, y + a, 1.1), self.line(c - a, y + a, c + a, y - a, 1.1)], "P", "P"
+
+    # ---------------- composition ----------------
+
+    def make(self, ch):
+        """Shapes, spacing classes, uppercase flag and the x range used for spacing (accents may overhang)."""
+        if ch in CHARS:
+            shapes, lc, rc = getattr(self, CHARS[ch])()
+            x0, _, x1, _ = self.box(shapes)
+            if ch in "jȷ":
+                x0, lc = self._j_left(), "S"
+            return shapes, lc, rc, ch.isupper(), (x0, x1)
+        base, marks = decompose(ch)
+        shapes, lc, rc = getattr(self, CHARS[base])()
+        s, h = self.s, self.h
+        bx0, _, bx1, _ = self.box(shapes)
+        if base in "jȷ":
+            bx0, lc = self._j_left(), "S"
+        upper = base.isupper()
+        cx = (bx0 + bx1) / 2
+        stems = {"ı": h, "l": h, "h": h, "k": h, "b": h, "ȷ": h + 70, "J": self.Hw * 0.72 - h, "t": h + 64}
+        x0, x1 = bx0, bx1
+        for m in marks:
+            if m == "caronvertical":
+                stem = self.ow * 0.99 - h if base == "d" else stems.get(base, h)
+                top = s.asc if base in "dl" else s.cap if base == "L" else s.xh * 1.24 + 80
+                mark = self.accent(m, stem + h + 26, top, True)
+                x1 = max(x1, self.box(mark)[2])
+            else:
+                if m == "ogonek":
+                    ax = self._ogonek_x(base, bx0, bx1)
+                elif m in ("cedilla", "commaaccent"):
+                    ax = stems["t"] if base == "t" else h if base == "l" else cx
+                else:
+                    ax = stems[base] if base in "ılhkbȷJ" else cx
+                if upper:
+                    by, up = s.cap, True
+                elif base in "bdhklſ" and m not in ("cedilla", "commaaccent", "ogonek"):
+                    by, up = s.asc, True
+                else:
+                    by, up = s.xh, False
+                mark = self.accent(m, ax, by, up)
+                mx0, _, mx1, _ = self.box(mark)
+                x0, x1 = min(x0, mx0 + 25), max(x1, mx1 - 25)
+            shapes = shapes + mark
+        return shapes, lc, rc, upper, (x0, x1)
+
+    def _j_left(self):
+        """Spacing edge of j: its stem, so the descender hook tucks under the letter before (as in 'mjuka', 'Pijama')."""
+        return 70.0
+
+    def _ogonek_x(self, base, bx0, bx1):
+        h = self.h
+        if base in "Aau":
+            return bx1 - h * 1.1
+        if base == "E":
+            return bx1 - h * 1.6
+        if base in "eU":
+            return (bx0 + bx1) / 2 + (bx1 - bx0) * 0.14
+        return (bx0 + bx1) / 2 + h * 0.3
+
     # ---------------- accents ----------------
 
     def accent(self, kind, cx, base_y, upper):
@@ -949,6 +1524,32 @@ class Glyphs:
             return [self.st(Path(cx + 6, 6).spline(k, 0.5), aw)]
         if kind == "macron":
             return [self.line(cx - 90, y + 50, cx + 90, y + 50, aw)]
+        if kind == "breve":
+            rx, ry = L * 0.60, L * 0.46
+            cy = y + h * aw + ry
+            return [self.st(Path(*_se(cx, cy, rx, ry, 180, 2.0)).arc(cx, cy, rx, ry, 180, 360, 2.0), aw)]
+        if kind == "dotaccent":
+            r = self.dr
+            return [self.dot(cx, base_y + (44 if upper else self.dot_gap) + r)]
+        if kind == "hungarumlaut":
+            d = L * 0.30
+            return [self.line(c - L * 0.20, y + h, c + L * 0.34, y + L * 0.92 + h * 0.4, aw) for c in (cx - d, cx + d)]
+        if kind == "ogonek":
+            k = [(cx, 24, 236), (cx - 42, -124, 296), (cx + 38, -184, 8)]
+            return [self.st(Path(cx, 24).spline(k, 0.5), aw)]
+        if kind == "commaaccent":
+            r = self.dr * 0.85
+            yd = -54 - r
+            return [self.dot(cx, yd, 0.85), self.line(cx + 4, yd - 4, cx - 24, yd - 104, 0.78)]
+        if kind == "commaturned":
+            r = self.dr * 0.85
+            yd = y + r
+            return [self.dot(cx, yd, 0.85), self.line(cx - 4, yd + 4, cx + 24, yd + 104, 0.78)]
+        if kind == "caronvertical":
+            # Slovak/Czech ď ľ ť Ľ: an apostrophe right of the stem; cx is its left edge, base_y its top.
+            r = self.dr * 0.85
+            yd = base_y - r
+            return [self.dot(cx + r, yd, 0.85), self.line(cx + r + 4, yd - 4, cx + r - 20, yd - 104, 0.78)]
         raise KeyError(kind)
 
 
@@ -959,14 +1560,16 @@ def _se(cx, cy, rx, ry, a, n):
     return (cx + rx * math.copysign(abs(c) ** e, c), cy + ry * math.copysign(abs(s) ** e, s))
 
 
-def _map_points(shape, fn):
+def _map_points(shape, fn, wm=1.0):
     if isinstance(shape, Dot):
         x, y = fn(shape.x, shape.y)
-        return Dot(x, y, shape.r)
+        return Dot(x, y, shape.r * wm)
+    if isinstance(shape, Poly):
+        return Poly([fn(x, y) for x, y in shape.points])
     p = Path(0, 0)
     p.points = [fn(x, y) for x, y in shape.path.points]
     p.closed = shape.path.closed
-    return Stroke(p, shape.width, shape.width_fn)
+    return Stroke(p, shape.width * wm, shape.width_fn)
 
 
 def _shift(shape, dx, dy=0.0):
@@ -983,6 +1586,17 @@ def _rotate180(shape, cx, cy):
 
 def _scale_x(shape, sx):
     return _map_points(shape, lambda x, y: (x * sx, y))
+
+
+def _center(shapes, cx, cy):
+    x0, y0, x1, y1 = bounds(glyph_contours(shapes))
+    return [_shift(sh, cx - (x0 + x1) / 2, cy - (y0 + y1) / 2) for sh in shapes]
+
+
+def _rotate(shape, angle_deg, cx, cy):
+    a = math.radians(angle_deg)
+    ca, sa = math.cos(a), math.sin(a)
+    return _map_points(shape, lambda x, y: (cx + (x - cx) * ca - (y - cy) * sa, cy + (x - cx) * sa + (y - cy) * ca))
 
 
 # Character -> method name.
@@ -1005,5 +1619,65 @@ CHARS.update({
     "£": "g_sterling", "¥": "g_yen", "₩": "g_won", "₽": "g_ruble", "₹": "g_rupee", "₺": "g_lira", "ß": "g_germandbls",
     "ı": "g_dotless_i", "Æ": "g_AE", "æ": "g_ae", "Œ": "g_OE", "œ": "g_oe", "Ø": "g_Oslash", "ø": "g_oslash",
 })
+
+CHARS.update({
+    "@": "g_at", "^": "g_asciicircum", "`": "g_grave", "~": "g_asciitilde", "{": "g_braceleft", "}": "g_braceright",
+    "|": "g_bar", "¤": "g_currency", "¦": "g_brokenbar", "§": "g_section", "¨": "g_dieresis", "©": "g_copyright",
+    "ª": "g_ordfeminine", "¬": "g_logicalnot", "®": "g_registered", "¯": "g_macron", "±": "g_plusminus",
+    "²": "g_twosuperior", "³": "g_threesuperior", "´": "g_acute", "µ": "g_mu", "¶": "g_paragraph", "¸": "g_cedilla",
+    "¹": "g_onesuperior", "º": "g_ordmasculine", "¼": "g_onequarter", "½": "g_onehalf", "¾": "g_threequarters",
+    "Ð": "g_Dcroat", "÷": "g_divide", "Þ": "g_Thorn", "ð": "g_eth", "þ": "g_thorn",
+    "Đ": "g_Dcroat", "đ": "g_dcroat", "Ħ": "g_Hbar", "ħ": "g_hbar", "Ĳ": "g_IJ", "ĳ": "g_ij", "ĸ": "g_kgreenlandic",
+    "Ŀ": "g_Ldot", "ŀ": "g_ldot", "Ł": "g_Lslash", "ł": "g_lslash", "ŉ": "g_napostrophe", "Ŋ": "g_Eng", "ŋ": "g_eng",
+    "Ŧ": "g_Tbar", "ŧ": "g_tbar", "ſ": "g_longs", "ȷ": "g_dotlessj",
+    "„": "g_quotedblbase", "‰": "g_perthousand", "™": "g_trademark",
+    "₫": "g_dong", "₱": "g_peso", "₪": "g_sheqel", "฿": "g_baht", "₦": "g_naira", "₴": "g_hryvnia", "₸": "g_tenge",
+    "₡": "g_colonsign", "₲": "g_guarani", "₵": "g_cedi",
+    "←": "g_arrowleft", "↑": "g_arrowup", "→": "g_arrowright", "↓": "g_arrowdown",
+    "★": "g_blackstar", "☆": "g_whitestar", "♥": "g_heart", "✓": "g_check", "✕": "g_crossmark",
+})
+
+# Combining marks (NFD) -> accent drawn by Glyphs.accent.
+MARKS = {
+    "̀": "grave", "́": "acute", "̂": "circumflex", "̃": "tilde", "̄": "macron",
+    "̆": "breve", "̇": "dotaccent", "̈": "dieresis", "̊": "ring", "̋": "hungarumlaut",
+    "̌": "caron", "̦": "commaaccent", "̧": "cedilla", "̨": "ogonek",
+}
+ABOVE = {"grave", "acute", "circumflex", "tilde", "macron", "breve", "dotaccent", "dieresis", "ring", "hungarumlaut",
+         "caron", "commaturned"}
+COMMA_BELOW = set("ĢĶĻŅŖķļņŗ")   # Latvian: the decomposition says cedilla, the letter shows a comma
+VERTICAL_CARON = set("ďľťĽ")      # Czech and Slovak: the caron becomes an apostrophe
+
+
+def decompose(ch):
+    """Base letter and marks of an accented letter; i and j lose their dot under a mark above."""
+    d = unicodedata.normalize("NFD", ch)
+    if len(d) < 2 or d[0] not in CHARS or any(m not in MARKS for m in d[1:]):
+        raise KeyError(f"no glyph for {ch!r} (U+{ord(ch):04X})")
+    base = d[0]
+    marks = [MARKS[m] for m in d[1:]]
+    if ch in COMMA_BELOW:
+        marks = ["commaaccent" if m == "cedilla" else m for m in marks]
+    if ch == "ģ":
+        marks = ["commaturned"]
+    if ch in VERTICAL_CARON:
+        marks = ["caronvertical"]
+    if any(m in ABOVE for m in marks):
+        base = {"i": "ı", "j": "ȷ"}.get(base, base)
+    return base, marks
+
+
+def charset():
+    """Doc 05 character set: Basic Latin, Latin-1, Latin Extended-A, Romanian comma letters, typography,
+    every store currency, arrows and the few symbols the UI uses. Spaces are in SPACES."""
+    chars = [chr(c) for c in range(0x21, 0x7F)] + [chr(c) for c in range(0xA1, 0x100) if c != 0xAD]
+    chars += [chr(c) for c in range(0x100, 0x180)] + list("ȘșȚțȷ")
+    chars += list("–—‘’‚“”„•…‹›‰−€₫₱₪฿₦₴₸₡₲₵₩₽₹₺←↑→↓★☆♥✓✕™")
+    out = []
+    for c in chars:
+        if c not in out:
+            out.append(c)
+    return out
+
 
 SPACES = {" ": 0.26, " ": 0.26, " ": 0.13, " ": 0.15}

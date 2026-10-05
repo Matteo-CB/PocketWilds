@@ -11,7 +11,8 @@ Source de vérité : Drive, « 00 — Décisions du propriétaire — 5 octobre 
 4. Leviers de psychologie efficaces et durables, sans manipulation interdite (doc 01 « Rétention, motivation &
    psychologie du joueur »).
 5. Gemmes équilibrées, jeu pas trop facile, simulateur d'économie (doc 02 « Économie des Gemmes »).
-6. Polices créées pour le projet : Pocket Round et Pocket Plush (doc 05 « Typographie maison »).
+6. Polices créées pour le projet : Pocket Round et Pocket Plush (doc 05 « Typographie maison »). Après la revue T31,
+   le propriétaire a choisi la candidate Câline pour l'interface (Pocket Round) et Guimauve pour les titres (Pocket Plush).
 7. Beaucoup plus de contenu partout.
 8. Biomes magnifiques et très détaillés, adaptés par palier, sans lag (doc 07 « Beauté maximale sans lag »).
 

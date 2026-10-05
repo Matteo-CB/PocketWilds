@@ -95,6 +95,13 @@ class Dot:
         self.x, self.y, self.r = x, y, r
 
 
+class Poly:
+    """Filled polygon. Glyphs.fill adds a stroke along every edge to round its corners."""
+
+    def __init__(self, points):
+        self.points = [(float(x), float(y)) for x, y in points]
+
+
 def _tangents(p, closed):
     if closed:
         d = np.roll(p, -1, axis=0) - np.roll(p, 1, axis=0)
@@ -202,11 +209,20 @@ def simplify(contour, eps=0.45):
     return np.array(out, dtype=int)
 
 
+def poly_contour(poly):
+    c = np.array(poly.points, dtype=float)
+    if signed_area(c) > 0:
+        c = c[::-1]
+    return c  # clockwise, like every outer contour
+
+
 def glyph_contours(shapes):
     contours = []
     for shape in shapes:
         if isinstance(shape, Dot):
             contours.append(dot_contour(shape))
+        elif isinstance(shape, Poly):
+            contours.append(poly_contour(shape))
         else:
             contours.extend(stroke_contours(shape))
     return contours
