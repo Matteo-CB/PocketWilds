@@ -19,6 +19,13 @@ namespace PocketWilds.Presentation
         [Tooltip("Ground footprint of the camera is clamped to this distance for rays above the horizon (m).")]
         [SerializeField] private float _footprintMaxDistance = 30f;
         [SerializeField] private LightingProfile _lighting;
+        [Tooltip("Morning and evening moods blended with the day profile over the local time (T33). Optional.")]
+        [SerializeField] private LightingProfile _morning;
+        [SerializeField] private LightingProfile _evening;
+        [Tooltip("World densities per quality tier (scatter, ambient life, clouds, height fog).")]
+        [SerializeField] private WorldQualityProfile _worldQuality;
+        [Tooltip("Butterflies, bees and birds of the biome, spawned at the chunks' VFX anchors (T33). Optional.")]
+        [SerializeField] private AmbientLifeKit _ambientLife;
         [SerializeField] private Light _sun;
         [SerializeField] private SanctuaryCameraRig _cameraRig;
         [Tooltip("Pan limits around the egg spawn (half size, m). Keeps the island edge from filling the screen.")]
@@ -41,6 +48,9 @@ namespace PocketWilds.Presentation
         private GameContext _context;
         private SanctuaryController _sanctuary;
         private WorldStreamer _streamer;
+        private ScatterRenderer _scatter;
+        private AmbientLife _life;
+        private WorldAtmosphere _atmosphere;
         private WorldChunk _startChunk;
         private Action<int, ChunkStreamState> _onChunkState;
 
@@ -51,6 +61,12 @@ namespace PocketWilds.Presentation
         public WorldChunk StartChunk => _startChunk;
         public SanctuaryCameraRig CameraRig => _cameraRig;
         public LightingProfile Lighting => _lighting;
+        public ScatterRenderer Scatter => _scatter;
+        public AmbientLife Life => _life;
+        public WorldAtmosphere Atmosphere => _atmosphere;
+
+        private WorldQualityProfile.Tier WorldQuality(QualityTier tier) =>
+            _worldQuality != null ? _worldQuality.Get(tier) : WorldQualityProfile.Default(tier);
         public SanctuaryController Sanctuary => _sanctuary;
 
         /// <summary>Loads the pinned start chunk (and starts the neighbours' preload) behind the loading screen.</summary>
@@ -63,6 +79,9 @@ namespace PocketWilds.Presentation
             }
             _streamer?.Dispose();
             _streamer = new WorldStreamer(_chunkSet, new AddressablesChunkSource(), context.Palettes, context.Quality.CurrentTier);
+            var worldQuality = WorldQuality(context.Quality.CurrentTier);
+            _scatter = new ScatterRenderer(context.Palettes, worldQuality.scatterDensity);
+            _life = _ambientLife != null ? new AmbientLife(_ambientLife, context.Palettes, worldQuality.ambientLifeDensity) : null;
             while (!_streamer.PinnedSettled)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -79,6 +98,14 @@ namespace PocketWilds.Presentation
             }
             if (_startChunk == null)
                 GameLog.Error(LogCategory.Presentation, "The start chunk did not load: the sanctuary cannot start.");
+            for (int i = 0; i < _streamer.Count; i++)
+            {
+                if (_streamer.GetState(i) == ChunkStreamState.Active)
+                {
+                    _scatter.Add(_streamer.GetChunk(i));
+                    _life?.Add(_streamer.GetChunk(i));
+                }
+            }
             _onChunkState = OnChunkState;
             _streamer.StateChanged += _onChunkState;
         }
@@ -87,8 +114,13 @@ namespace PocketWilds.Presentation
         {
             _context = context;
             var tier = context.Quality.CurrentTier;
+            var camera = _cameraRig != null ? _cameraRig.Camera : Camera.main;
             if (_lighting != null)
-                _lighting.Apply(_sun, _cameraRig != null ? _cameraRig.Camera : Camera.main, tier);
+            {
+                _lighting.Apply(_sun, camera, tier);
+                _atmosphere = new WorldAtmosphere(_morning, _lighting, _evening, _sun, camera, WorldQuality(tier));
+                _atmosphere.Tick(Time.unscaledTime);
+            }
             else
                 PresentationQuality.Apply(tier);
             if (_streamer == null)
@@ -122,11 +154,27 @@ namespace PocketWilds.Presentation
                 _streamer.Dispose();
                 _streamer = null;
             }
+            _scatter?.Clear();
+            _scatter = null;
+            _life?.Clear();
+            _life = null;
+            _atmosphere = null;
             _startChunk = null;
             _context = null;
         }
 
-        public void OnTap(Vector2 screenPosition) => _sanctuary?.OnTap(screenPosition);
+        public void OnTap(Vector2 screenPosition)
+        {
+            _sanctuary?.OnTap(screenPosition);
+            // Butterflies and birds near the tapped ground flee: the meadow reacts to the finger.
+            var camera = _cameraRig != null ? _cameraRig.Camera : null;
+            if (_life == null || camera == null || _startChunk == null || _startChunk.EggSpawn == null)
+                return;
+            var ray = camera.ScreenPointToRay(screenPosition);
+            var ground = new Plane(Vector3.up, _startChunk.EggSpawn.position);
+            if (ground.Raycast(ray, out float distance))
+                _life.Startle(ray.GetPoint(distance), 1.8f);
+        }
 
         /// <summary>
         /// Pan limits: around the egg as before, widened to every chunk the world can show (the start chunk's
@@ -151,6 +199,19 @@ namespace PocketWilds.Presentation
         {
             if (state == ChunkStreamState.Failed)
                 UpdateCameraBounds();
+            if (_scatter == null)
+                return;
+            var chunk = _streamer.GetChunk(index);
+            if (state == ChunkStreamState.Active)
+            {
+                _scatter.Add(chunk);
+                _life?.Add(chunk);
+            }
+            else if (chunk != null)
+            {
+                _scatter.Remove(chunk);
+                _life?.Remove(chunk);
+            }
         }
 
         private Rect Footprint()
@@ -167,6 +228,14 @@ namespace PocketWilds.Presentation
             if (_context != null)
                 _streamer?.Tick(Footprint(), Time.unscaledTime);
             _sanctuary?.Tick(Time.time, Time.deltaTime);
+            _atmosphere?.Tick(Time.unscaledTime);
+            var camera = _cameraRig != null ? _cameraRig.Camera : null;
+            _scatter?.Render(camera);
+            if (_life != null)
+            {
+                _life.Tick(Time.deltaTime, Time.time);
+                _life.Render(camera, Time.time);
+            }
         }
 
         private void OnDestroy() => Exit();

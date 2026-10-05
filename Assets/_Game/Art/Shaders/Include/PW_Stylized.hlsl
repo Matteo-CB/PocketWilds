@@ -5,6 +5,7 @@
 #define PW_STYLIZED_INCLUDED
 
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+#include "PW_World.hlsl"
 
 // Global palette table (PaletteTable.cs): 8 colors per row, row from the Shader User Value.
 TEXTURE2D(_PW_Palettes);

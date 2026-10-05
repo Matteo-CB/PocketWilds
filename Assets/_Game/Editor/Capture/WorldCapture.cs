@@ -18,7 +18,7 @@ namespace PocketWilds.Editor.Capture
     /// with the egg and a few rabbits, per quality level, plus a closer three-quarter view. Temporary objects
     /// are never saved: the scene is reopened from disk afterwards.
     /// </summary>
-    public static class WorldCapture
+    public static partial class WorldCapture
     {
         public const string ScenePath = "Assets/_Game/Scenes/SC_VerticalSlice_Grassland.unity";
 

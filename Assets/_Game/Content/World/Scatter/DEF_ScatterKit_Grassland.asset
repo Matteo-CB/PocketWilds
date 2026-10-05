@@ -1,0 +1,126 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d4b180101ffb7f4fa8312920b0b9fbe, type: 3}
+  m_Name: DEF_ScatterKit_Grassland
+  m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.ScatterKit
+  material: {fileID: 2100000, guid: 4d269dbcd9d3bb248b40df1f4512b796, type: 2}
+  kinds:
+  - id: grass.tuft_s
+    mesh: {fileID: 4300000, guid: 76b8fddd17eeda64596d21d3a4caeafa, type: 2}
+    paletteId: 2586096231
+    windScale: 1
+    minDensity: 0
+  - id: grass.tuft_m
+    mesh: {fileID: 4300000, guid: 3239a2868b7f85045a2de1167cc1ee94, type: 2}
+    paletteId: 2586096231
+    windScale: 1
+    minDensity: 0
+  - id: grass.tuft_l
+    mesh: {fileID: 4300000, guid: d4b7e73025f034a4b96c7d1e9987e9f7, type: 2}
+    paletteId: 2586096231
+    windScale: 1
+    minDensity: 0
+  - id: grass.wisp_s
+    mesh: {fileID: 4300000, guid: 381726c904855ba4281abb96d20c3d16, type: 2}
+    paletteId: 2586096231
+    windScale: 1.2
+    minDensity: 0
+  - id: grass.wisp_m
+    mesh: {fileID: 4300000, guid: af4d8cbdc0673df44ba9e4c326459893, type: 2}
+    paletteId: 2586096231
+    windScale: 1.2
+    minDensity: 0
+  - id: grass.wisp_l
+    mesh: {fileID: 4300000, guid: d6f6914a85c16ed4e83cbe602a4af889, type: 2}
+    paletteId: 2586096231
+    windScale: 1.25
+    minDensity: 0
+  - id: flower.daisy_white
+    mesh: {fileID: 4300000, guid: 6832f93379026a842a50d9fcd1f92bdb, type: 2}
+    paletteId: 1034890894
+    windScale: 0.7
+    minDensity: 0.55
+  - id: flower.daisy_yellow
+    mesh: {fileID: 4300000, guid: 6832f93379026a842a50d9fcd1f92bdb, type: 2}
+    paletteId: 2647159389
+    windScale: 0.7
+    minDensity: 0.55
+  - id: flower.bell_blue
+    mesh: {fileID: 4300000, guid: 1fa94c707769a434d915358c9a543ec4, type: 2}
+    paletteId: 633984671
+    windScale: 0.7
+    minDensity: 0.55
+  - id: flower.bell_lilac
+    mesh: {fileID: 4300000, guid: 1fa94c707769a434d915358c9a543ec4, type: 2}
+    paletteId: 2249779778
+    windScale: 0.7
+    minDensity: 0.55
+  - id: flower.clover_pink
+    mesh: {fileID: 4300000, guid: 28891631807564e408ba0c106497e68f, type: 2}
+    paletteId: 1117919749
+    windScale: 0.6
+    minDensity: 0.55
+  - id: flower.poppy
+    mesh: {fileID: 4300000, guid: 01ffd34b0112e254d94e419bfe157a23, type: 2}
+    paletteId: 1142295986
+    windScale: 0.8
+    minDensity: 0.55
+  - id: flower.lavender
+    mesh: {fileID: 4300000, guid: d0d8774dba92b0447a78de320b57c205, type: 2}
+    paletteId: 2654292250
+    windScale: 0.8
+    minDensity: 0.55
+  - id: flower.buttercup
+    mesh: {fileID: 4300000, guid: 9b67027ed903bd7489a89954787a108c, type: 2}
+    paletteId: 2647159389
+    windScale: 0.6
+    minDensity: 0.55
+  - id: detail.pebble_a
+    mesh: {fileID: 4300000, guid: 8e9aef4a376f2c644970c0e9c8f6e9af, type: 2}
+    paletteId: 3500884287
+    windScale: 0
+    minDensity: 0.3
+  - id: detail.pebble_b
+    mesh: {fileID: 4300000, guid: d5b95a47d8ba75c488b0a0ea7b097b09, type: 2}
+    paletteId: 3500884287
+    windScale: 0
+    minDensity: 0.3
+  - id: detail.pebble_c
+    mesh: {fileID: 4300000, guid: 9414876f755c4284fab1252d282001ac, type: 2}
+    paletteId: 3500884287
+    windScale: 0
+    minDensity: 0.3
+  - id: detail.leaf
+    mesh: {fileID: 4300000, guid: 40607fb3a48a69c42875740a68b56394, type: 2}
+    paletteId: 1457546085
+    windScale: 0.12
+    minDensity: 0
+  - id: detail.petals_pink
+    mesh: {fileID: 4300000, guid: 30ddd3c74ca53684580bcd6ea26bca32, type: 2}
+    paletteId: 1117919749
+    windScale: 0
+    minDensity: 0
+  - id: detail.petals_white
+    mesh: {fileID: 4300000, guid: 30ddd3c74ca53684580bcd6ea26bca32, type: 2}
+    paletteId: 1034890894
+    windScale: 0
+    minDensity: 0
+  - id: detail.clover
+    mesh: {fileID: 4300000, guid: 706f1acc169a5284ba99d793d48248f6, type: 2}
+    paletteId: 1397804098
+    windScale: 0.3
+    minDensity: 0
+  - id: detail.mushroom
+    mesh: {fileID: 4300000, guid: 44f6d8fe55579d845aedd08466dfc33f, type: 2}
+    paletteId: 3326941495
+    windScale: 0
+    minDensity: 0.5

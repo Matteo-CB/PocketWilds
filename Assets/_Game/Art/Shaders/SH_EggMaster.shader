@@ -84,7 +84,7 @@ Shader "PocketWilds/EggMaster"
                 Varyings output;
                 VertexPositionInputs position = GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = position.positionCS;
-                output.fogFactor = ComputeFogFactor(position.positionCS.z);
+                output.fogFactor = PW_FogFactor(position.positionCS.z, position.positionWS);
                 output.positionWS = position.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.uv = input.uv;

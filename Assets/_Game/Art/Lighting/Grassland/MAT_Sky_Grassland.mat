@@ -25,13 +25,18 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _CloudCoverage: 0.4
+    - _CloudScale: 1.2
+    - _CloudSpeed: 0.012
     - _HorizonSharpness: 0.6
     - _SunGlow: 0.3
     m_Colors:
+    - _CloudLight: {r: 1, g: 0.9882353, b: 0.9607843, a: 1}
+    - _CloudShade: {r: 0.78039217, g: 0.81960785, b: 0.92156863, a: 1}
     - _SkyBottom: {r: 0.78431374, g: 0.8627451, b: 0.8745098, a: 1}
     - _SkyHorizon: {r: 0.8392157, g: 0.92156863, b: 0.9607843, a: 1}
     - _SkyTop: {r: 0.42745098, g: 0.65882355, b: 0.9019608, a: 1}
     - _SunDirection: {r: 0.34062552, g: 0.76604444, b: -0.5451148, a: 0}
-    - _SunTint: {r: 1, g: 0.94509804, b: 0.8627451, a: 1}
+    - _SunTint: {r: 1, g: 0.92156863, b: 0.78039217, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

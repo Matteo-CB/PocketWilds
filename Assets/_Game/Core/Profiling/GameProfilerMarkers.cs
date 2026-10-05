@@ -26,5 +26,10 @@ namespace PocketWilds.Core
         public static readonly ProfilerMarker PoolAcquire = new ProfilerMarker(ProfilerCategory.Scripts, "Pool.Acquire");
         public static readonly ProfilerMarker PoolRelease = new ProfilerMarker(ProfilerCategory.Scripts, "Pool.Release");
         public static readonly ProfilerMarker GameLoopTick = new ProfilerMarker(ProfilerCategory.Scripts, "GameLoop.Tick");
+        public static readonly ProfilerMarker ScatterBuild = new ProfilerMarker(ProfilerCategory.Render, "Scatter.Build");
+        public static readonly ProfilerMarker ScatterRender = new ProfilerMarker(ProfilerCategory.Render, "Scatter.Render");
+        public static readonly ProfilerMarker AmbientLifeTick = new ProfilerMarker(ProfilerCategory.Scripts, "AmbientLife.Tick");
+        public static readonly ProfilerMarker AmbientLifeRender = new ProfilerMarker(ProfilerCategory.Render, "AmbientLife.Render");
+        public static readonly ProfilerMarker AtmosphereApply = new ProfilerMarker(ProfilerCategory.Scripts, "Atmosphere.Apply");
     }
 }

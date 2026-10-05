@@ -18,7 +18,7 @@ namespace PocketWilds.Editor.Lighting
     /// MAT_BlobShadow, a minimal color-grading volume (Medium/High only), PF_CameraRig_Sanctuary, and the
     /// vertical slice scene wired to them. Idempotent.
     /// </summary>
-    public static class LightingPipeline
+    public static partial class LightingPipeline
     {
         public const string LightingFolder = "Assets/_Game/Art/Lighting/Grassland";
         public const string ProfilePath = LightingFolder + "/LP_Grassland_Day.asset";
@@ -75,6 +75,7 @@ namespace PocketWilds.Editor.Lighting
             profile.fogStart = 20f;
             profile.fogEnd = 48f;
             profile.sky = sky;
+            ApplyDayAtmosphere(profile);
             EditorUtility.SetDirty(profile);
             WriteSky(profile);
             return profile;
@@ -91,6 +92,11 @@ namespace PocketWilds.Editor.Lighting
             sky.SetColor("_SunTint", profile.sunColor);
             var toSun = Quaternion.Euler(profile.sunAngles.x, profile.sunAngles.y, 0f) * Vector3.back;
             sky.SetVector("_SunDirection", new Vector4(toSun.x, toSun.y, toSun.z, 0f));
+            sky.SetColor("_SunTint", profile.sunGlowTint);
+            sky.SetFloat("_SunGlow", profile.sunGlow);
+            sky.SetColor("_CloudLight", profile.cloudLight);
+            sky.SetColor("_CloudShade", profile.cloudShade);
+            sky.SetFloat("_CloudCoverage", profile.cloudCoverage);
             EditorUtility.SetDirty(sky);
         }
 
@@ -248,6 +254,7 @@ namespace PocketWilds.Editor.Lighting
             so.FindProperty("_lighting").objectReferenceValue = profile;
             so.FindProperty("_sun").objectReferenceValue = sun;
             so.FindProperty("_cameraRig").objectReferenceValue = rig;
+            WireMoods(so);
             so.ApplyModifiedPropertiesWithoutUndo();
 
             // Bake the Medium reference into the saved scene so the editor view matches the game.

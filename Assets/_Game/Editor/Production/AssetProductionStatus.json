@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T20:30:00Z",
+  "updatedUtc": "2026-10-05T22:36:46Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -229,8 +229,14 @@
     {
       "task": "T33",
       "title": "Prairie Magnifique",
+      "status": "REVIEW",
+      "notes": "Part 1 done (systems + vegetation/props kit), part 2 queued as T33B. ScatterRenderer (RenderMeshInstanced, one batch per kind and chunk, chunk culling, stable-rank tier prefix 30/65/100 %, min share for flowers 55 %, pebbles 30 %, mushrooms 50 %), SH_FoliageWind (global wind with gusts and flutter, per-instance tint and brightness), AmbientLife (butterflies yellow/cream, blue/lilac, rare golden on 35 % of anchors; bees; robins that hop, peck and fly off when a tap lands near them; wings hinged in SH_AmbientLife; 25/60/100 %), SH_SkyGradient clouds and mood globals (linear colours), height fog folded into linear fog, WorldAtmosphere morning/day/evening from the local hour (softened, no black night, re-applied when the clock moves a minute), DEF_WorldQuality (doc 07 table). Kit: 6 grass, 8 flower kinds on 6 meshes, 7 detail kinds, trees A-D, bushes A-C, rocks S/M/L + hero A/B, log, stump, fence A, hay bale, bird bath; both chunks recomposed (46 and 38 renderers, 2 847 and 2 941 scatter instances). Beauty review: Medium keeps about 90 % of High (SSIM 0.86, dE 2.2, detail energy 74 %), Low keeps the identity. Windows player (T33_player_windows_prairie.json): 16 scenarios at vsync, 0 frame over 33 ms, world CPU 0.08 ms mean (0.54 max), Medium P2 109 batches / 181 k tris / 238 MB, High S50 161 batches / 334 k tris, Low 83 batches / 68 k tris; GC pattern unchanged vs T30/T32. EditMode 337/337 (WorldBeautyTests 11, reworked EnvironmentAssetTests), PlayMode 35 + 1 explicit skip. No phone measurement (no device). Report: Docs/Performance/T33_Prairie_Magnifique.md."
+    },
+    {
+      "task": "T33B",
+      "title": "Prairie Magnifique, partie 2 : eau, monuments, chunks, météo",
       "status": "PLANNED",
-      "notes": ""
+      "notes": "Rest of the doc 04 D-BIO-001 kit: GL_Stream_A/B (SH_WaterLite) + GL_StreamStones, GL_Landmark_OldTree and GL_Landmark_Windmill, impostors (SH_Impostor), GL_Fence_B, GL_WellTiny, GL_Path_A/B, GL_Edge_A/B, GL_Ground_Core_C, chunks StreamBend, Orchard, Hill, WindmillRise, PondEdge, ForestEdge, weather (light rain, rainbow), night mood, sun rays on High, scatter LOD by distance. Criterion: BIOME DONE rules of doc 04 (phone measurement pending)."
     },
     {
       "task": "T34",
@@ -3114,7 +3120,7 @@
         "G-SH-002",
         "G-SH-003"
       ],
-      "status": "BLOCKOUT",
+      "status": "ART_REVIEW",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3131,7 +3137,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T15: core kit (ground, 3 grass, 3 flowers, tree A, 3 rocks), DEF_Palettes_Grassland (9 palettes), PF_Chunk_Grassland_Start in SC_VerticalSlice_Grassland. Pending: Ground_B, Edge A/B, Tree_B, Log, Stump, landmarks, other chunks, lighting profile (T16), streaming (T27). Perf note: ~160 renderers in view at Medium (SRP Batcher); measure on device at T22, combine grass/flowers per chunk if render thread exceeds budget.",
+      "notes": "T15: core kit (ground, 3 grass, 3 flowers, tree A, 3 rocks), DEF_Palettes_Grassland (9 palettes), PF_Chunk_Grassland_Start in SC_VerticalSlice_Grassland. Pending: Ground_B, Edge A/B, Tree_B, Log, Stump, landmarks, other chunks, lighting profile (T16), streaming (T27). Perf note: ~160 renderers in view at Medium (SRP Batcher); measure on device at T22, combine grass/flowers per chunk if render thread exceeds budget. | T33 part 1: Magnifique kit (see T33 notes and Docs/Performance/T33_Prairie_Magnifique.md), scatter, ambient life, sky, moods, tiers. Part 2 (water, landmarks, paths, edges, ground C, 6 chunks, weather, night) in T33B.",
       "definition": "Assets/_Game/Content/Biomes/DEF_Biome_Grassland.asset",
       "contentId": "biome.grassland"
     },
@@ -3505,7 +3511,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Only if camera can see the edge."
+      "notes": "Only if camera can see the edge. | Scheduled in T33B."
     },
     {
       "id": "D-BIO-001/GL_Edge_B",
@@ -3527,7 +3533,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "Scheduled in T33B."
     },
     {
       "id": "D-BIO-001/GL_GrassTuft_S",
@@ -3734,8 +3740,8 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
         "G01",
@@ -3745,8 +3751,13 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: built in BL_Biome_Grassland_Magnifique.blend (pw_grassland_t33.py), AssetValidator budgets pass, prefab PF_GL_Tree_B.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
     },
     {
       "id": "D-BIO-001/GL_Rock_S",
@@ -3840,8 +3851,8 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
         "G01",
@@ -3851,8 +3862,13 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: built in BL_Biome_Grassland_Magnifique.blend (pw_grassland_t33.py), AssetValidator budgets pass, prefab PF_GL_Log.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
     },
     {
       "id": "D-BIO-001/GL_Stump",
@@ -3862,8 +3878,8 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
         "G01",
@@ -3873,8 +3889,13 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: built in BL_Biome_Grassland_Magnifique.blend (pw_grassland_t33.py), AssetValidator budgets pass, prefab PF_GL_Stump.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
     },
     {
       "id": "D-BIO-001/GL_BirdBath",
@@ -3884,8 +3905,8 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
         "G01",
@@ -3895,8 +3916,13 @@
         "G08"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: built in BL_Biome_Grassland_Magnifique.blend (pw_grassland_t33.py), AssetValidator budgets pass, prefab PF_GL_BirdBath.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
     },
     {
       "id": "D-BIO-001/GL_WindmillToy",
@@ -3940,7 +3966,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "1.2-1.8k max"
+      "notes": "1.2-1.8k max | Scheduled in T33B."
     },
     {
       "id": "D-BIO-001/GL_PathPebble",
@@ -3982,7 +4008,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props."
+      "notes": "T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T33: recomposed by GrasslandPipeline.BuildMagnifique: 46 renderers, 2 847 scatter instances, 2 materials, VFX anchors for butterflies, bees and birds on the ground surface; merged grass meshes removed."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_Meadow",
@@ -4002,7 +4028,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T27: GrasslandPipeline.BuildMeadowChunk on GL_Ground_Core_B at +14 m east of the start chunk. Trees framing north/south, tree and big rock on the seam ends, tufts straddling the seam, 44 flower patches (denser than Start), 341 placements, 38 renderers (merged grass/flowers per palette). Wander area, 3 spawns, interest points, links W/E. Addressable chunk.grassland.meadow (385 KB bundle on Windows). Captures TestResults/Captures/T27_seam_*.png, T27_meadow_gameplay.png."
+      "notes": "T27: GrasslandPipeline.BuildMeadowChunk on GL_Ground_Core_B at +14 m east of the start chunk. Trees framing north/south, tree and big rock on the seam ends, tufts straddling the seam, 44 flower patches (denser than Start), 341 placements, 38 renderers (merged grass/flowers per palette). Wander area, 3 spawns, interest points, links W/E. Addressable chunk.grassland.meadow (385 KB bundle on Windows). Captures TestResults/Captures/T27_seam_*.png, T27_meadow_gameplay.png. | T33: recomposed by GrasslandPipeline.BuildMagnifique: 38 renderers, 2 941 scatter instances, 2 materials, VFX anchors for butterflies, bees and birds on the ground surface; merged grass meshes removed."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_PondEdge",
@@ -4022,7 +4048,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "Scheduled in T33B."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_Hill",
@@ -4042,7 +4068,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "Scheduled in T33B."
     },
     {
       "id": "D-BIO-001/LP_Grassland_Day",
@@ -4059,7 +4085,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-04T23:40:49Z",
-      "notes": "T16: LP_Grassland_Day (warm neutral sun 1.0 at 50/-32 deg, shadow strength 0.7, trilight ambient, linear fog 20-48 m toward the horizon color, MAT_Sky_Grassland). Applied by VerticalSliceEntry per quality tier. Captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T16_world_*. | T16: LP_Grassland_Day (warm neutral sun 1.0 at 50/-32 deg, shadow strength 0.7, trilight ambient, linear fog 20-48 m toward the horizon color, MAT_Sky_Grassland). Applied by VerticalSliceEntry per quality tier. Captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T16_world_*. | T16: LP_Grassland_Day (warm neutral sun 1.0 at 50/-32 deg, shadow strength 0.7, trilight ambient, linear fog 20-48 m toward the horizon color, MAT_Sky_Grassland). Applied by VerticalSliceEntry per quality tier. Captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T16_world_*.",
+      "notes": "T16: LP_Grassland_Day (warm neutral sun 1.0 at 50/-32 deg, shadow strength 0.7, trilight ambient, linear fog 20-48 m toward the horizon color, MAT_Sky_Grassland). Applied by VerticalSliceEntry per quality tier. Captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T16_world_*. | T16: LP_Grassland_Day (warm neutral sun 1.0 at 50/-32 deg, shadow strength 0.7, trilight ambient, linear fog 20-48 m toward the horizon color, MAT_Sky_Grassland). Applied by VerticalSliceEntry per quality tier. Captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T16_world_*. | T16: LP_Grassland_Day (warm neutral sun 1.0 at 50/-32 deg, shadow strength 0.7, trilight ambient, linear fog 20-48 m toward the horizon color, MAT_Sky_Grassland). Applied by VerticalSliceEntry per quality tier. Captures SourceArt/Blender/Environment/Grassland/Captures/Unity/T16_world_*. | T33: + sky glow, clouds, height fog and wind fields; morning and evening siblings.",
       "passedGates": [
         "G11",
         "G29"
@@ -5004,7 +5030,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-05T18:04:15Z",
-      "notes": "T30 audit: Grassland sky gradient profile exists (SH_SkyGradient + MAT_Sky_Grassland written from LP_Grassland_Day, T16)."
+      "notes": "T30 audit: Grassland sky gradient profile exists (SH_SkyGradient + MAT_Sky_Grassland written from LP_Grassland_Day, T16). | T33: clouds and morning/day/evening skies (captures T33_sky_clouds, T33_moods_sheet)."
     },
     {
       "id": "G-SH-001",
@@ -5140,7 +5166,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T30 audit: path corrected, the hand-written HLSL .shader is its own source (no Shader Graph)."
+      "notes": "T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T16: SH_SkyGradient (top/horizon/below + sun glow, colors written from the profile at edit time; runtime only assigns the material). | T30 audit: path corrected, the hand-written HLSL .shader is its own source (no Shader Graph). | T33: painted procedural clouds (integer hash, rims bright, cores and the side away from the sun shaded), mood globals (_PW_SkyBlend, colours sent in linear space), clouds off on Low."
     },
     {
       "id": "G-SH-008",
@@ -8939,16 +8965,19 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "BLOCKOUT",
+      "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": null,
+      "runtimePath": "Assets/_Game/Content/Quality/DEF_WorldQuality.asset",
       "validationGates": [
         "G16",
         "G18"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "URP_Low/Medium/High + Unity quality levels exist (T00). QualityProfile data asset (Battery, density) pending. | T16: tiers from ProjectSetup.TierSpec: Low no shadow map (blob shadows), render scale 0.85, no post; Medium 24 m 1 cascade 1024 soft, MSAA 2, minimal grading; High 30 m 2 cascades 2048, MSAA 4."
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "URP_Low/Medium/High + Unity quality levels exist (T00). QualityProfile data asset (Battery, density) pending. | T16: tiers from ProjectSetup.TierSpec: Low no shadow map (blob shadows), render scale 0.85, no post; Medium 24 m 1 cascade 1024 soft, MSAA 2, minimal grading; High 30 m 2 cascades 2048, MSAA 4. | T33: DEF_WorldQuality (WorldQualityProfile): scatter 30/65/100 %, ambient life 25/60/100 %, clouds and height fog from Medium, weather 40/70/100 % (doc 07 table). Battery mode stays in QualityService.",
+      "passedGates": [
+        "G16"
+      ]
     },
     {
       "id": "M-DEF-HAPTIC",
@@ -9016,7 +9045,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-05T18:03:08Z",
-      "notes": "T16: LightingProfile ScriptableObject (sun, trilight ambient, sky colors + material, linear fog); Grassland profile generated by LightingPipeline. Other biomes later. | T30 audit: Grassland day profile + volume profile + sky material (T16). Morning/evening/night moods are new targets (doc 07, T33)."
+      "notes": "T16: LightingProfile ScriptableObject (sun, trilight ambient, sky colors + material, linear fog); Grassland profile generated by LightingPipeline. Other biomes later. | T30 audit: Grassland day profile + volume profile + sky material (T16). Morning/evening/night moods are new targets (doc 07, T33). | T33: LP_Grassland_Morning and LP_Grassland_Evening (LightingPipeline.BuildMoods), T33 fields on the day profile (glow, clouds, height fog, wind); WorldAtmosphere blends the three from the local hour."
     },
     {
       "id": "N-GRP-Bootstrap",
@@ -14257,17 +14286,20 @@
       "family": "Shader",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/Shaders/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Art/Shaders/SH_FoliageWind.shader",
+      "runtimePath": "Assets/_Game/Art/Materials/MAT_Foliage_Grassland.mat",
       "validationGates": [
         "G06",
         "G07",
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026')."
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). | T33: PocketWilds/FoliageWind (wind from PW_World.hlsl weighted by the painted height, per-instance tint and brightness from a position hash, palette row per draw, instancing). MAT_Foliage_Grassland.",
+      "passedGates": [
+        "G06"
+      ]
     },
     {
       "id": "G-SH-010",
@@ -14292,16 +14324,19 @@
       "family": "Shader",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/Shaders/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Art/Shaders/SH_AmbientLife.shader",
+      "runtimePath": "Assets/_Game/Art/Materials/MAT_AmbientLife_Grassland.mat",
       "validationGates": [
         "G06",
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026')."
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). | T33: PocketWilds/AmbientLife (wing hinge from uv.y weight, flap speed/amplitude/rest per draw, every other instance wears palette column 6). MAT_AmbientLife_Grassland.",
+      "passedGates": [
+        "G06"
+      ]
     },
     {
       "id": "G-SH-012",
@@ -14327,16 +14362,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/VFX/VFX_Butterflies.prefab",
+      "runtimePath": "Assets/_Game/Content/World/DEF_AmbientLife_Grassland.asset",
       "validationGates": [
         "G10",
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026')."
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). | T33: butterflies (yellow/cream, blue/lilac, rare golden) implemented as AmbientLife species (doc 07: instanced, no prefab, no script per creature); anchors VFX_Butterfly/Bees/Birds in the chunks.",
+      "passedGates": [
+        "G19"
+      ]
     },
     {
       "id": "H-VFX-027",
@@ -14346,16 +14384,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/VFX/VFX_Bees.prefab",
+      "runtimePath": "Assets/_Game/Content/World/DEF_AmbientLife_Grassland.asset",
       "validationGates": [
         "G10",
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026')."
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). | T33: bees implemented as AmbientLife species (doc 07: instanced, no prefab, no script per creature); anchors VFX_Butterfly/Bees/Birds in the chunks.",
+      "passedGates": [
+        "G19"
+      ]
     },
     {
       "id": "H-VFX-028",
@@ -14365,16 +14406,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/VFX/VFX_SmallBirds.prefab",
+      "runtimePath": "Assets/_Game/Content/World/DEF_AmbientLife_Grassland.asset",
       "validationGates": [
         "G10",
         "G19"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026')."
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). | T33: robins implemented as AmbientLife species (doc 07: instanced, no prefab, no script per creature); anchors VFX_Butterfly/Bees/Birds in the chunks.",
+      "passedGates": [
+        "G19"
+      ]
     },
     {
       "id": "H-VFX-029",
@@ -14666,16 +14710,19 @@
       "dependencies": [
         "G-SH-009"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Environment/GrasslandPipeline.T33.cs",
+      "runtimePath": "Assets/_Game/Presentation/World/ScatterRenderer.cs",
       "validationGates": [
         "G19",
         "G33"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026')."
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). | T33: GrasslandPipeline.GenerateScatter (rules: jittered grass grid with density patches, lawn, worn mask, props hugging, single-species flower patches framing the lawn, details where they belong) -> ScatterData (SCT_Chunk_*); ScatterRenderer at runtime (0 GC, 0.08 ms with life and atmosphere).",
+      "passedGates": [
+        "G19"
+      ]
     },
     {
       "id": "R-TOOL-FONTBUILD",
@@ -14914,6 +14961,975 @@
       "lastValidationVersion": null,
       "lastValidationUtc": null,
       "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026')."
+    },
+    {
+      "id": "D-BIO-001/GL_Tree_C",
+      "name": "GL_Tree_C",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: slim birch, LOD0 690 tris + LOD1/LOD2.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Tree_D",
+      "name": "GL_Tree_D",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: fruit tree with tiny apples (palette accent), LOD0 884 tris + LOD1/LOD2.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Bush_A",
+      "name": "GL_Bush_A",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: rounded bush, about 300 tris.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Bush_B",
+      "name": "GL_Bush_B",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: rounded bush, about 300 tris (blossom palette).",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Bush_C",
+      "name": "GL_Bush_C",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: rounded bush, about 300 tris.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_RockHero_A",
+      "name": "GL_RockHero_A",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: hero rock, 320 tris, moss on top.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_RockHero_B",
+      "name": "GL_RockHero_B",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: hero rock, 320 tris, moss on top.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Fence_A",
+      "name": "GL_Fence_A",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: wooden fence section, 48 tris.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_HayBale",
+      "name": "GL_HayBale",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: hay bale, secondary decor (hidden on Low).",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_GrassWisp_S",
+      "name": "GL_GrassWisp_S",
+      "family": "Vegetation",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: second grass shape (wispy blades), scatter only.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_GrassWisp_M",
+      "name": "GL_GrassWisp_M",
+      "family": "Vegetation",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: second grass shape (wispy blades, one soft seed plume), scatter only.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_GrassWisp_L",
+      "name": "GL_GrassWisp_L",
+      "family": "Vegetation",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: second grass shape (wispy blades, one soft seed plume), scatter only.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Flower_D",
+      "name": "GL_Flower_D",
+      "family": "Vegetation",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: poppy, scatter only.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Flower_E",
+      "name": "GL_Flower_E",
+      "family": "Vegetation",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: lavender spike, scatter only.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Flower_F",
+      "name": "GL_Flower_F",
+      "family": "Vegetation",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: buttercup, scatter only.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Pebble_A",
+      "name": "GL_Pebble_A",
+      "family": "ScatterDetail",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: pebble at rock feet and path edges.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Pebble_B",
+      "name": "GL_Pebble_B",
+      "family": "ScatterDetail",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: pebble at rock feet and path edges.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Pebble_C",
+      "name": "GL_Pebble_C",
+      "family": "ScatterDetail",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: pebble at rock feet and path edges.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Leaf_A",
+      "name": "GL_Leaf_A",
+      "family": "ScatterDetail",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: fallen leaf under trees.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Petal_A",
+      "name": "GL_Petal_A",
+      "family": "ScatterDetail",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: fallen petals at white and pink flower patches (GL_Petals_A).",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Clover_A",
+      "name": "GL_Clover_A",
+      "family": "ScatterDetail",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: clover patch in the open meadow.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Mushroom_Tiny",
+      "name": "GL_Mushroom_Tiny",
+      "family": "ScatterDetail",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: tiny mushrooms at stumps, logs and under trees.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Life_Butterfly",
+      "name": "GL_Life_Butterfly",
+      "family": "AmbientLife",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: butterfly 36 tris (GL_Life.fbx), drawn by AmbientLife.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Life_Bee",
+      "name": "GL_Life_Bee",
+      "family": "AmbientLife",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: bee 28 tris (GL_Life.fbx), drawn by AmbientLife.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Life_Bird",
+      "name": "GL_Life_Bird",
+      "family": "AmbientLife",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: robin 120 tris with hinged wings (GL_Life.fbx), drawn by AmbientLife.",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06"
+      ]
+    },
+    {
+      "id": "D-BIO-001/LP_Grassland_Morning",
+      "name": "Grassland morning mood",
+      "family": "Lighting",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": null,
+      "runtimePath": "Assets/_Game/Art/Lighting/Grassland/",
+      "validationGates": [
+        "G11"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: low golden sun, peach horizon, soft mist (doc 04 GL_Morning).",
+      "passedGates": [
+        "G11"
+      ]
+    },
+    {
+      "id": "D-BIO-001/LP_Grassland_Evening",
+      "name": "Grassland evening mood",
+      "family": "Lighting",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": null,
+      "runtimePath": "Assets/_Game/Art/Lighting/Grassland/",
+      "validationGates": [
+        "G11"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: warm raking gold, apricot horizon, pink-lit clouds (doc 04 GL_Evening).",
+      "passedGates": [
+        "G11"
+      ]
+    },
+    {
+      "id": "D-BIO-001/DEF_ScatterKit_Grassland",
+      "name": "Grassland scatter kit",
+      "family": "ContentData",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-009"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": null,
+      "runtimePath": "Assets/_Game/Content/World/Scatter/DEF_ScatterKit_Grassland.asset",
+      "validationGates": [
+        "G16"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: 22 scatter kinds on MAT_Foliage_Grassland.",
+      "passedGates": [
+        "G16"
+      ]
+    },
+    {
+      "id": "D-BIO-001/DEF_AmbientLife_Grassland",
+      "name": "Grassland ambient life kit",
+      "family": "ContentData",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-011"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": null,
+      "runtimePath": "Assets/_Game/Content/World/DEF_AmbientLife_Grassland.asset",
+      "validationGates": [
+        "G16"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": "2026-10-05T22:36:46Z",
+      "notes": "T33: 5 species entries (3 kinds) on MAT_AmbientLife_Grassland.",
+      "passedGates": [
+        "G16"
+      ]
+    },
+    {
+      "id": "D-BIO-001/GL_Fence_B",
+      "name": "GL_Fence_B",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04 D-BIO-001, T33B."
+    },
+    {
+      "id": "D-BIO-001/GL_WellTiny",
+      "name": "GL_WellTiny",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04 D-BIO-001, T33B."
+    },
+    {
+      "id": "D-BIO-001/GL_Stream_A",
+      "name": "GL_Stream_A",
+      "family": "Water",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04: WaterLite strip, T33B."
+    },
+    {
+      "id": "D-BIO-001/GL_Stream_B",
+      "name": "GL_Stream_B",
+      "family": "Water",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04: WaterLite strip, T33B."
+    },
+    {
+      "id": "D-BIO-001/GL_StreamStones",
+      "name": "GL_StreamStones",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04, T33B."
+    },
+    {
+      "id": "D-BIO-001/GL_Path_A",
+      "name": "GL_Path_A",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04: dirt path strip, T33B."
+    },
+    {
+      "id": "D-BIO-001/GL_Path_B",
+      "name": "GL_Path_B",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04: dirt path strip, T33B."
+    },
+    {
+      "id": "D-BIO-001/GL_Ground_Core_C",
+      "name": "GL_Ground_Core_C",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04: third seamless ground, T33B."
+    },
+    {
+      "id": "D-BIO-001/GL_Landmark_Windmill",
+      "name": "GL_Landmark_Windmill",
+      "family": "EnvironmentProp",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04: landmark up to 2.5k tris, T33B."
+    },
+    {
+      "id": "D-BIO-001/PF_Chunk_Grassland_StreamBend",
+      "name": "PF_Chunk_Grassland_StreamBend",
+      "family": "Chunk",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04 chunk list, T33B."
+    },
+    {
+      "id": "D-BIO-001/PF_Chunk_Grassland_Orchard",
+      "name": "PF_Chunk_Grassland_Orchard",
+      "family": "Chunk",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04 chunk list, T33B."
+    },
+    {
+      "id": "D-BIO-001/PF_Chunk_Grassland_WindmillRise",
+      "name": "PF_Chunk_Grassland_WindmillRise",
+      "family": "Chunk",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04 chunk list, T33B."
+    },
+    {
+      "id": "D-BIO-001/PF_Chunk_Grassland_ForestEdge",
+      "name": "PF_Chunk_Grassland_ForestEdge",
+      "family": "Chunk",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "G-SH-002"
+      ],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 04 chunk list, T33B."
     }
   ]
 }

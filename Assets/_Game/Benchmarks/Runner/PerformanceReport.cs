@@ -64,6 +64,11 @@ namespace PocketWilds.Benchmarks
         public SampleStats simulationMs;
         public SampleStats animationMs;
         public SampleStats uiMs;
+        /// <summary>T33: scatter render, ambient life tick and render, atmosphere apply (CPU, ms).</summary>
+        public SampleStats worldMs;
+        /// <summary>T33: ground detail and ambient life instances drawn per frame (average).</summary>
+        public float scatterInstances;
+        public float lifeInstances;
 
         /// <summary>Managed allocation per frame (bytes).</summary>
         public SampleStats gcBytes;

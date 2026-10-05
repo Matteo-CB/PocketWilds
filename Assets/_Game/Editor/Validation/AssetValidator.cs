@@ -85,11 +85,28 @@ namespace PocketWilds.Editor.Validation
         public static readonly (string Prefix, int Min, int Max)[] EnvironmentBudgets =
         {
             ("GL_GrassTuft_", 20, 60),
+            ("GL_GrassWisp_", 20, 60),
             ("GL_Flower_", 20, 150),
             ("GL_Rock_", 60, 250),
             ("GL_Tree_A_LOD0", 600, 1000),
             ("GL_Ground_Core_", 200, 2500),
+            // T33 (doc 04 shared prop construction): hero trees 0.6-1.8k, hero rocks under 600, small props stay light.
+            ("GL_Tree_B_LOD0", 600, 1800),
+            ("GL_Tree_C_LOD0", 600, 1800),
+            ("GL_Tree_D_LOD0", 600, 1800),
+            ("GL_RockHero_", 60, 600),
+            ("GL_Bush_", 150, 450),
+            ("GL_Log", 24, 400),
+            ("GL_Stump", 24, 400),
+            ("GL_Fence_", 24, 400),
+            ("GL_HayBale", 24, 400),
+            ("GL_BirdBath", 24, 400),
         };
+
+        /// <summary>Doc 04: plants and scatter details 20-150 tris (tiny pebbles may go lower), life under 150.</summary>
+        public const int ScatterMaxTriangles = 150;
+        /// <summary>Doc 07: up to about 4,000 ground detail instances visible on Magnifique (one chunk fills most of the frame).</summary>
+        public const int ScatterMaxInstancesPerChunk = 4000;
 
         /// <summary>MVP Asset Pack A03: under 500 triangles for everything visible at once.</summary>
         public const int EggVisibleMaxTriangles = 500;
@@ -429,7 +446,49 @@ namespace PocketWilds.Editor.Validation
             ValidateChunk(GrasslandChunkPath, allowed, issues, needsEgg: true);
             ValidateChunk(GrasslandMeadowChunkPath, allowed, issues, needsEgg: false);
             ValidateChunkSet(issues);
+            ValidateLife(issues);
             return issues;
+        }
+
+        /// <summary>T33: the biome's ambient life uses its instanced material and light meshes.</summary>
+        private static void ValidateLife(List<ValidationIssue> issues)
+        {
+            const string path = PocketWilds.Editor.Environment.GrasslandPipeline.LifeKitPath;
+            var kit = AssetDatabase.LoadAssetAtPath<AmbientLifeKit>(path);
+            if (kit == null)
+            {
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Load", "Ambient life kit missing (Build Grassland Magnifique)."));
+                return;
+            }
+            if (kit.material == null || !kit.material.enableInstancing || kit.material.shader.name != "PocketWilds/AmbientLife")
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Material", "Life uses MAT_AmbientLife (PocketWilds/AmbientLife) with instancing."));
+            foreach (var species in kit.species)
+            {
+                int tris = species.mesh != null ? Triangles(species.mesh) : 0;
+                var severity = tris == 0 || tris > ScatterMaxTriangles ? IssueSeverity.Error : IssueSeverity.Info;
+                issues.Add(new ValidationIssue(severity, path, "Budget", $"{species.id}: {tris} tris (max {ScatterMaxTriangles})."));
+            }
+        }
+
+        /// <summary>T33: ground details are scatter data drawn by the ScatterRenderer, within the doc 04/07 budgets.</summary>
+        private static void ValidateScatter(WorldChunk world, string path, List<ValidationIssue> issues)
+        {
+            var data = world.Scatter;
+            if (data == null || data.kit == null)
+            {
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Scatter", "Chunk needs scatter data with a kit (doc 04 chunk requirements)."));
+                return;
+            }
+            if (data.kit.material == null || !data.kit.material.enableInstancing)
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Scatter", "Scatter kit material must enable GPU instancing."));
+            if (data.Count > ScatterMaxInstancesPerChunk)
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Scatter", $"{data.Count} scatter instances (max {ScatterMaxInstancesPerChunk})."));
+            foreach (var kind in data.kit.kinds)
+            {
+                int tris = kind.mesh != null ? Triangles(kind.mesh) : 0;
+                if (tris == 0 || tris > ScatterMaxTriangles)
+                    issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Budget", $"Scatter {kind.id}: {tris} tris (max {ScatterMaxTriangles})."));
+            }
         }
 
         private static void ValidateChunk(string path, HashSet<Material> allowed, List<ValidationIssue> issues, bool needsEgg)
@@ -453,6 +512,7 @@ namespace PocketWilds.Editor.Validation
             foreach (var renderer in chunk.GetComponentsInChildren<Renderer>(true))
                 if (!bound.Contains(renderer))
                     issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Palette", renderer.name + " has no palette binding."));
+            ValidateScatter(world, path, issues);
             if ((needsEgg && world.EggSpawn == null) || world.AnimalSpawns.Length < 3)
                 issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Points", needsEgg
                     ? "Start chunk needs an egg spawn and 3 animal spawns." : "Chunk needs 3 animal spawns."));

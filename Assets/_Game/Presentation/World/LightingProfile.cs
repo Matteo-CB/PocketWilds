@@ -36,6 +36,30 @@ namespace PocketWilds.Presentation
         [Min(0f)] public float fogStart = 20f;
         [Min(0f)] public float fogEnd = 48f;
 
+        [Header("Sky glow and clouds (T33)")]
+        public Color sunGlowTint = new Color(1f, 0.93f, 0.78f);
+        [Range(0f, 1f)] public float sunGlow = 0.3f;
+        public Color cloudLight = new Color(1f, 0.99f, 0.96f);
+        public Color cloudShade = new Color(0.78f, 0.82f, 0.92f);
+        [Range(0f, 1f)] public float cloudCoverage = 0.45f;
+
+        [Header("Height fog (T33): pools in the low distance")]
+        [Range(0f, 1f)] public float heightFogStrength = 0.35f;
+        public float heightFogBase = 0f;
+        [Min(0f)] public float heightFogFalloff = 0.45f;
+        [Min(0f)] public float heightFogStart = 14f;
+        [Min(1f)] public float heightFogRange = 24f;
+
+        [Header("Wind (T33): vegetation sway, global")]
+        [Range(0f, 1f)] public float windStrength = 0.35f;
+        [Tooltip("Direction the wind blows toward, degrees around world Y (0 = +Z).")]
+        public float windYaw = 35f;
+        [Min(0f)] public float windSpeed = 1.6f;
+        [Min(0f)] public float windWaveFrequency = 0.35f;
+        [Range(0f, 1f)] public float gustStrength = 0.5f;
+        [Min(0f)] public float gustFrequency = 0.6f;
+        [Range(0f, 0.2f)] public float flutter = 0.035f;
+
         /// <summary>Applies the profile to the scene, the sun and the camera for a quality tier. Called on scene entry.</summary>
         public void Apply(Light sun, Camera camera, QualityTier tier)
         {
@@ -78,6 +102,9 @@ namespace PocketWilds.Presentation
             }
 
             PresentationQuality.Apply(tier);
+            // Sky colors, clouds, height fog and wind globals for this single profile (no mood blending).
+            var state = AtmosphereState.From(this);
+            state.ApplyShaderGlobals(WorldQualityProfile.Default(tier));
         }
     }
 

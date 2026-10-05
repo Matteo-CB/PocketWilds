@@ -63,6 +63,7 @@ namespace PocketWilds.Benchmarks
             new PerformanceScenario("S50", "50 rabbits (30 A + 20 B)", 50, QualityTier.Medium),
             new PerformanceScenario("P2-Low", "20 rabbits, Low tier", 20, QualityTier.Low),
             new PerformanceScenario("S50-High", "50 rabbits, High tier", 50, QualityTier.High),
+            new PerformanceScenario("P2-High", "20 animals, rabbits, squirrels and hedgehogs, High tier (Prairie Magnifique)", 20, QualityTier.High) { species = 3 },
             new PerformanceScenario("P5", "Hatch burst: 10 hatches in a row, 20 rabbits", 20, QualityTier.Medium, hatchBurst: true)
             {
                 measureSeconds = 14f,
@@ -192,6 +193,7 @@ namespace PocketWilds.Benchmarks
                 {
                     yield return null;
                     sampler.Sample();
+                    sampler.SampleWorld(entry.Scatter != null ? entry.Scatter.LastInstances : 0, entry.Life != null ? entry.Life.LastInstances : 0);
                     probe?.AfterSample(sampler.LastCpuMs);
                     shopProbe?.AfterSample(sampler.LastCpuMs);
                     if (burst != null && !burst.MoveNext())
@@ -222,7 +224,9 @@ namespace PocketWilds.Benchmarks
                 Debug.Log($"[Benchmark] {scenario.id} {scenario.label} ({scenario.tier}): visible {result.visibleAnimals}, " +
                           $"CPU {result.cpuFrameMs.mean:F2} ms (p95 {result.cpuFrameMs.p95:F2}), main {result.mainThreadMs.mean:F2}, " +
                           $"GPU {(result.gpuMs.valid ? result.gpuMs.mean.ToString("F2") : "n/a")}, sim {result.simulationMs.mean:F3}, " +
-                          $"GC {result.gcBytes.mean:F0} B/frame ({result.framesWithGc} frames), batches {result.batches:F0}");
+                          $"GC {result.gcBytes.mean:F0} B/frame ({result.framesWithGc} frames), batches {result.batches:F0}, " +
+                          $"world {result.worldMs.mean:F3} ms (max {result.worldMs.max:F3}), scatter {result.scatterInstances:F0}, life {result.lifeInstances:F0}, " +
+                          $"triangles {result.triangles:F0}");
             }
 
             foreach (var leftover in Object.FindObjectsByType<GameBootstrap>(FindObjectsSortMode.None))
@@ -544,11 +548,13 @@ namespace PocketWilds.Benchmarks
         /// <summary>Per-frame sampling into preallocated arrays: nothing allocates while measuring.</summary>
         private sealed class FrameSampler : IDisposable
         {
-            private readonly float[] _cpu, _main, _render, _gpu, _sim, _anim, _ui, _gc;
+            private readonly float[] _cpu, _main, _render, _gpu, _sim, _anim, _ui, _gc, _world;
             private readonly FrameTiming[] _timing = new FrameTiming[1];
             private readonly List<ProfilerRecorder> _simRecorders = new List<ProfilerRecorder>();
             private readonly List<ProfilerRecorder> _animRecorders = new List<ProfilerRecorder>();
             private readonly List<ProfilerRecorder> _uiRecorders = new List<ProfilerRecorder>();
+            private readonly List<ProfilerRecorder> _worldRecorders = new List<ProfilerRecorder>();
+            private double _scatterSum, _lifeSum;
             private ProfilerRecorder _mainThread, _gcAlloc, _batches, _setPass, _drawCalls, _triangles;
             private ProfilerRecorder _usedMemory, _reservedMemory, _gcMemory, _textureMemory, _meshMemory;
             private double _batchSum, _setPassSum, _drawSum, _triSum;
@@ -567,6 +573,7 @@ namespace PocketWilds.Benchmarks
                 _anim = new float[capacity];
                 _ui = new float[capacity];
                 _gc = new float[capacity];
+                _world = new float[capacity];
 
                 var available = new List<ProfilerRecorderHandle>();
                 ProfilerRecorderHandle.GetAvailable(available);
@@ -593,6 +600,10 @@ namespace PocketWilds.Benchmarks
                 AddMarker(byName, _animRecorders, "PreLateUpdate.DirectorUpdateAnimationBegin");
                 AddMarker(byName, _animRecorders, "PreLateUpdate.DirectorUpdateAnimationEnd");
                 AddMarker(byName, _uiRecorders, "PostLateUpdate.PlayerUpdateCanvases");
+                AddMarker(byName, _worldRecorders, "Scatter.Render");
+                AddMarker(byName, _worldRecorders, "AmbientLife.Tick");
+                AddMarker(byName, _worldRecorders, "AmbientLife.Render");
+                AddMarker(byName, _worldRecorders, "Atmosphere.Apply");
             }
 
             private static ProfilerRecorder Start(Dictionary<string, ProfilerRecorderHandle> byName, string name)
@@ -632,6 +643,7 @@ namespace PocketWilds.Benchmarks
                 _sim[i] = SumMs(_simRecorders);
                 _anim[i] = SumMs(_animRecorders);
                 _ui[i] = SumMs(_uiRecorders);
+                _world[i] = SumMs(_worldRecorders);
                 float gc = _gcAlloc.Valid ? _gcAlloc.LastValue : 0f;
                 _gc[i] = gc;
                 if (gc > 0f)
@@ -645,6 +657,13 @@ namespace PocketWilds.Benchmarks
             }
 
             public float LastCpuMs => _count > 0 ? _cpu[_count - 1] : 0f;
+
+            /// <summary>Instances the scene entry's ScatterRenderer and AmbientLife drew this frame.</summary>
+            public void SampleWorld(int scatter, int life)
+            {
+                _scatterSum += scatter;
+                _lifeSum += life;
+            }
 
             private static float Ms(ProfilerRecorder recorder) => recorder.Valid ? recorder.LastValue * 1e-6f : 0f;
 
@@ -677,6 +696,9 @@ namespace PocketWilds.Benchmarks
                     simulationMs = _simRecorders.Count > 0 ? Stats(_sim) : default,
                     animationMs = _animRecorders.Count > 0 ? Stats(_anim) : default,
                     uiMs = _uiRecorders.Count > 0 ? Stats(_ui) : default,
+                    worldMs = _worldRecorders.Count > 0 ? Stats(_world) : default,
+                    scatterInstances = (float)(_scatterSum / n),
+                    lifeInstances = (float)(_lifeSum / n),
                     gcBytes = _gcAlloc.Valid ? Stats(_gc) : default,
                     framesWithGc = _gcFrames,
                     spikesOver33Ms = _spikes,
@@ -733,6 +755,7 @@ namespace PocketWilds.Benchmarks
                 foreach (var r in _simRecorders) r.Dispose();
                 foreach (var r in _animRecorders) r.Dispose();
                 foreach (var r in _uiRecorders) r.Dispose();
+                foreach (var r in _worldRecorders) r.Dispose();
             }
         }
     }

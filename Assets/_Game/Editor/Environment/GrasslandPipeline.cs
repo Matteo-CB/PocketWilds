@@ -19,7 +19,7 @@ namespace PocketWilds.Editor.Environment
     /// one prefab per kit mesh (plain renderers, no scripts) and PF_Chunk_Grassland_Start composed with a
     /// deterministic layout. Idempotent: run again after re-exporting BL_Biome_Grassland_Core.blend.
     /// </summary>
-    public static class GrasslandPipeline
+    public static partial class GrasslandPipeline
     {
         public const string EnvironmentShader = "PocketWilds/EnvironmentOpaque";
         public const string GroundShader = "PocketWilds/GroundMaster";
@@ -59,9 +59,9 @@ namespace PocketWilds.Editor.Environment
             var groundMaterial = EnsureMaterial(GroundMaterialPath, GroundShader, "MAT_Ground_Grassland");
             EnsurePalettes();
             var prefabs = BuildPropPrefabs(envMaterial, groundMaterial);
-            BuildStartChunk(prefabs);
             AssetDatabase.SaveAssets();
-            Debug.Log("[GrasslandPipeline] Materials, palettes, " + prefabs.Count + " prop prefabs and PF_Chunk_Grassland_Start up to date.");
+            // Chunks are composed by the T33 pipeline (scatter data, no merged grass): the T15/T27 builders are legacy.
+            Debug.Log("[GrasslandPipeline] Materials, palettes, " + prefabs.Count + " prop prefabs; " + BuildMagnifique());
         }
 
         // ---------------- Materials and palettes ----------------
@@ -93,15 +93,17 @@ namespace PocketWilds.Editor.Environment
             }
             set.palettes.Clear();
             // base, R, G, B, A, occlusion, accent (Grassland identity: fresh soft green, cream stone, pastel flowers).
+            // Accent (column 6) is the per-instance variation tint of SH_FoliageWind: no two tufts or flowers alike.
             Add(set, PaletteGround, "78A862", "8FB878", "5F9152", "B8C98E", "8F6A50", "4A6542", "9CBC74");
-            Add(set, PaletteGrass, "66A253", "9FCE78", "9FCE78", "66A253", "66A253", "476F3E", "9FCE78");
-            Add(set, PaletteRock, "E8DCC4", "E8DCC4", "9CC77A", "E8DCC4", "E8DCC4", "A39478", "FFFFFF");
+            Add(set, PaletteGrass, "66A253", "9FCE78", "D0CB9A", "66A253", "66A253", "476F3E", "B9D56C");
+            Add(set, PaletteRock, "DED3BD", "DED3BD", "9CC77A", "DED3BD", "DED3BD", "9C8E73", "FFFFFF");
             Add(set, PaletteTree, "93694F", "7DB960", "A9D57C", "578F4B", "6E4C3A", "3B6338", "FFFFFF");
-            Add(set, FlowerPalettes[0], "6FAF55", "F8F4EA", "F2C94C", "6FAF55", "6FAF55", "4A7340", "FFFFFF");
-            Add(set, FlowerPalettes[1], "6FAF55", "F7DF7A", "F29C4C", "6FAF55", "6FAF55", "4A7340", "FFFFFF");
-            Add(set, FlowerPalettes[2], "6FAF55", "F3C4D6", "F2C94C", "6FAF55", "6FAF55", "4A7340", "FFFFFF");
-            Add(set, FlowerPalettes[3], "6FAF55", "A9C8F2", "F2C94C", "6FAF55", "6FAF55", "4A7340", "FFFFFF");
-            Add(set, FlowerPalettes[4], "6FAF55", "C9B4EE", "F2C94C", "6FAF55", "6FAF55", "4A7340", "FFFFFF");
+            Add(set, FlowerPalettes[0], "6FAF55", "F8F4EA", "F2C94C", "6FAF55", "6FAF55", "4A7340", "FBE9F0");
+            Add(set, FlowerPalettes[1], "6FAF55", "F7DF7A", "F29C4C", "6FAF55", "6FAF55", "4A7340", "F9EFAE");
+            Add(set, FlowerPalettes[2], "6FAF55", "F3C4D6", "F2C94C", "6FAF55", "6FAF55", "4A7340", "EFA7C3");
+            Add(set, FlowerPalettes[3], "6FAF55", "A9C8F2", "F2C94C", "6FAF55", "6FAF55", "4A7340", "C3D9F7");
+            Add(set, FlowerPalettes[4], "6FAF55", "C9B4EE", "F2C94C", "6FAF55", "6FAF55", "4A7340", "DCCBF5");
+            AddMagnifiquePalettes(set);
             EditorUtility.SetDirty(set);
 
             var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath);
@@ -224,7 +226,11 @@ namespace PocketWilds.Editor.Environment
             EditorUtility.CopySerialized(source, copy);
             copy.name = source.name;
             MakeRuntimeOnly(copy);
-            return copy;
+            // CopySerialized does not refresh the GPU buffers of a mesh already loaded: a changed vertex count keeps
+            // drawing the old vertices (new triangles vanish). Save, unload and reload it from disk.
+            AssetDatabase.SaveAssetIfDirty(copy);
+            Resources.UnloadAsset(copy);
+            return AssetDatabase.LoadAssetAtPath<Mesh>(path);
         }
 
         /// <summary>Read/Write off (asset validator baseline): the player keeps no CPU copy of the vertices.</summary>
@@ -571,7 +577,7 @@ namespace PocketWilds.Editor.Environment
         /// PF_Chunk_Grassland_Meadow (Biomes doc: denser flowers, tree side framing) on GL_Ground_Core_B, east of the
         /// start chunk. Builds only this chunk: the start chunk and the kit prefabs are left untouched.
         /// </summary>
-        [MenuItem("Pocket Wilds/Environment/Build Meadow Chunk (T27)", priority = 173)]
+        // Legacy (T27 merged grass): superseded by BuildMagnifique, kept out of the menus so it cannot overwrite the T33 chunk.
         public static void BuildMeadowChunk()
         {
             var prefabs = new Dictionary<string, GameObject>();
@@ -841,7 +847,7 @@ namespace PocketWilds.Editor.Environment
         }
 
         /// <summary>Rewrites only the start chunk's points of interest (no prop or mesh rebuild).</summary>
-        [MenuItem("Pocket Wilds/Environment/Update Chunk Points of Interest", priority = 172)]
+        // Legacy (T25 layout): the T33 chunks get their interests from BuildMagnifique. Not in the menus.
         public static void UpdateChunkInterests()
         {
             var root = PrefabUtility.LoadPrefabContents(ChunkPath);

@@ -34,6 +34,8 @@ namespace PocketWilds.Presentation
         [SerializeField] private InterestPoint[] _interests = Array.Empty<InterestPoint>();
         [SerializeField] private Transform[] _vfxAnchors = Array.Empty<Transform>();
         [SerializeField] private Transform[] _links = Array.Empty<Transform>();
+        [Tooltip("Ground details drawn by the ScatterRenderer (T33): data only, no GameObject per plant.")]
+        [SerializeField] private ScatterData _scatter;
 
         public int BindingCount => _bindings.Length;
         public Transform EggSpawn => _eggSpawn;
@@ -42,6 +44,7 @@ namespace PocketWilds.Presentation
         public InterestPoint GetInterest(int index) => _interests[index];
         public Transform[] VfxAnchors => _vfxAnchors;
         public Transform[] Links => _links;
+        public ScatterData Scatter => _scatter;
 
         /// <summary>Walkable disk in world space (simple region data, no NavMesh).</summary>
         public WanderArea WanderArea => new WanderArea(transform.TransformPoint(_wanderArea.Center), _wanderArea.Radius);
@@ -65,6 +68,9 @@ namespace PocketWilds.Presentation
         public void SetInterests(InterestPoint[] interests) => _interests = interests ?? Array.Empty<InterestPoint>();
 
         public PaletteBinding GetBinding(int index) => _bindings[index];
+
+        /// <summary>Editor/composer hook: the chunk's scatter placements.</summary>
+        public void SetScatter(ScatterData scatter) => _scatter = scatter;
 
         /// <summary>Editor/composer hook. Runtime code never rewires a chunk.</summary>
         public void SetAuthoring(PaletteBinding[] bindings, WanderArea area, Transform eggSpawn, Transform[] animalSpawns,
