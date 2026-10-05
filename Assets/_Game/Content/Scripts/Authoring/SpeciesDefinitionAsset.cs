@@ -26,6 +26,8 @@ namespace PocketWilds.Content
             public Color pattern = new Color(0.55f, 0.42f, 0.34f);
             public PatternChannel patternChannel = PatternChannel.None;
             [Range(0, 15)] public int patternStrength = 0;
+            [Tooltip("Secret variant: cosmetic, never given by the variant pity.")]
+            public bool secret;
         }
 
         [Tooltip("Stable source ID, e.g. species.rabbit. Never change it once shipped.")]
@@ -37,12 +39,14 @@ namespace PocketWilds.Content
         public double baseProduction = 1.0;
         [Tooltip("Key of the view prefab in the animal visual catalog.")]
         public string visualKey = "PF_Animal_New";
+        [Tooltip("Secret species: hidden until found, never given by the discovery pity.")]
+        public bool secret;
         public List<VariantEntry> variants = new List<VariantEntry>();
 
         public SpeciesDefinition ToRuntime()
         {
             return new SpeciesDefinition(ContentId.FromSource(sourceId), displayKey, rigFamily,
-                ContentId.FromSource(biomeId), baseProduction, visualKey);
+                ContentId.FromSource(biomeId), baseProduction, visualKey, secret);
         }
 
         public VariantDefinition ToRuntime(VariantEntry entry)
@@ -57,7 +61,7 @@ namespace PocketWilds.Content
             palette[6] = entry.primary;
             palette[7] = entry.primary;
             return new VariantDefinition(ContentId.FromSource(entry.sourceId), ContentId.FromSource(sourceId), entry.displayKey,
-                entry.rarity, palette, entry.patternChannel, (byte)Mathf.Clamp(entry.patternStrength, 0, 15));
+                entry.rarity, palette, entry.patternChannel, (byte)Mathf.Clamp(entry.patternStrength, 0, 15), entry.secret);
         }
     }
 }

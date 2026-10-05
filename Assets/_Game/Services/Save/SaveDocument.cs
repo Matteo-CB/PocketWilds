@@ -17,6 +17,7 @@ namespace PocketWilds.Services.Save
         AnimalNames = 8,
         Offline = 9,
         Codex = 10,
+        Pity = 11,
     }
 
     public sealed class SaveSection

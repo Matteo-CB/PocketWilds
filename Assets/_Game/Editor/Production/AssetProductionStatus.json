@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T01:28:37Z",
+  "updatedUtc": "2026-10-05T01:52:54Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -157,8 +157,8 @@
     {
       "task": "T21",
       "title": "Pity",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Pity (doc 02): new species bonus min(35%, 3% x misses) per egg while normal species are missing, guaranteed at the egg's hard limit (20, data), secrets never targeted; new variant bonus +1.5 points per miss per species, capped 30%, +10% per mastery milestone, applied inside the rolled rarity tier so the rarity odds never change. Counters saved (schema 4, Migration0003, golden save v4). HatchResult.Pity for analytics. SpeciesDefinition/VariantDefinition IsSecret, EggDefinition.PityHardLimit. Statistical tests: new species rate per miss count (0 to 19), guarantee, 400 simulated players (worst streak 20, average 17.1 eggs to find 3 species), variant rate per miss count, milestone boost, rarity odds unchanged over 20000 hatches, determinism after save. EditMode 224/224, PlayMode 29/29. Secret species hiding in the Codex comes with the first secret content."
     },
     {
       "task": "T22",

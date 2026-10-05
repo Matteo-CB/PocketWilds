@@ -47,6 +47,9 @@ namespace PocketWilds.Content
         public double[] rarityWeights = { 72.0, 20.0, 6.0, 1.6, 0.36, 0.04 };
         public List<PoolEntry> pool = new List<PoolEntry>();
 
+        [Tooltip("Doc 02: eggs in a row without a new species before one is guaranteed.")]
+        [Min(1)] public int pityHardLimit = EggDefinition.DefaultPityHardLimit;
+
         public EggDefinition ToRuntime()
         {
             var palette = new Color32[EggDefinition.PaletteSize];
@@ -60,7 +63,7 @@ namespace PocketWilds.Content
             palette[7] = shell;
             return new EggDefinition(ContentId.FromSource(sourceId), displayKey, ContentId.FromSource(biomeId), tier, palette,
                 (byte)Mathf.Clamp(spotsStrength, 0, 15), (byte)Mathf.Clamp(bandStrength, 0, 15), (byte)Mathf.Clamp(flowersStrength, 0, 15),
-                visualKey, baseCost, costGrowth, (double[])rarityWeights.Clone(), BuildPool());
+                visualKey, baseCost, costGrowth, (double[])rarityWeights.Clone(), BuildPool(), pityHardLimit);
         }
 
         private EggDropEntry[] BuildPool()

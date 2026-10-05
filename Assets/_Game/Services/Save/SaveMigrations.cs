@@ -9,6 +9,7 @@ namespace PocketWilds.Services.Save
         {
             new Migration0001AddOffline(),
             new Migration0002AddCodex(),
+            new Migration0003AddPity(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -36,6 +37,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 2;
         public int ToVersion => 3;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 3 to 4: adds the Pity section. A file without it starts every counter at zero: older
+    /// profiles simply begin building their protection from now on.
+    /// </summary>
+    public sealed class Migration0003AddPity : ISaveMigration
+    {
+        public int FromVersion => 3;
+        public int ToVersion => 4;
 
         public void Apply(SaveDocument document)
         {

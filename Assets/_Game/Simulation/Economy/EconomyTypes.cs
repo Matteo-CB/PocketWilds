@@ -80,6 +80,19 @@ namespace PocketWilds.Simulation
         /// <summary>Significant milestones every N levels; small economic steps in between.</summary>
         public int MasteryMilestoneEvery { get; set; } = 5;
 
+        // ---- Pity (doc 02) ----
+
+        /// <summary>New species bonus = min(cap, perMiss x misses) while the pool has species to find.</summary>
+        public double PitySpeciesPerMiss { get; set; } = 0.03;
+        public double PitySpeciesCap { get; set; } = 0.35;
+
+        /// <summary>New variant bonus = min(cap, perMiss x (1 + boost x milestones) x misses).</summary>
+        public double PityVariantPerMiss { get; set; } = 0.015;
+        public double PityVariantCap { get; set; } = 0.30;
+
+        /// <summary>Each mastery milestone (every 5 levels) strengthens the variant pity by this fraction.</summary>
+        public double PityVariantMilestoneBoost { get; set; } = 0.10;
+
         public double RenewalExponent { get; set; } = 0.42;
 
         /// <summary>Production is applied at this cadence, not every frame.</summary>

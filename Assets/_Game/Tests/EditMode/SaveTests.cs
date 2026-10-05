@@ -318,6 +318,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_PremiumEntitlements_v1")]
         [TestCase("GoldenSave_Offline_v2")]
         [TestCase("GoldenSave_Codex_v3")]
+        [TestCase("GoldenSave_Pity_v4")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -334,7 +335,9 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(SaveSchema.CurrentVersion - 1, result.MigrationsApplied);
                 Assert.IsFalse(state.Offline.HasRate, "Schema 1 has no exit snapshot: the rate is rebuilt.");
             }
-            if (!name.EndsWith("_v3"))
+            if (!name.EndsWith("_v4"))
+                Assert.AreEqual(0, state.Pity.NewSpeciesMisses.Count + state.Pity.VariantMisses.Count, "Older saves start without pity.");
+            if (!name.EndsWith("_v3") && !name.EndsWith("_v4"))
             {
                 Assert.IsTrue(state.Codex.SeenSpecies.SetEquals(state.Collection.DiscoveredSpecies), "Older saves: everything found counts as seen.");
                 Assert.IsTrue(state.Codex.SeenVariants.SetEquals(state.Collection.DiscoveredVariants));
@@ -382,6 +385,13 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(1, state.Codex.SeenSpecies.Count);
                     Assert.AreEqual(1, state.Codex.SeenVariants.Count);
                     Assert.AreEqual(2, state.Collection.DiscoveredVariants.Count, "White rabbit found, not seen yet.");
+                    break;
+
+                case "GoldenSave_Pity_v4":
+                    Assert.AreEqual(120, state.Meta.Revision);
+                    Assert.AreEqual(13, state.Pity.NewSpeciesMisses[ContentId.FromSource("egg.grassland.basic")]);
+                    Assert.AreEqual(7, state.Pity.VariantMisses[ContentId.FromSource("species.rabbit")]);
+                    Assert.AreEqual(1, state.Codex.SeenSpecies.Count);
                     break;
 
                 case "GoldenSave_PremiumEntitlements_v1":

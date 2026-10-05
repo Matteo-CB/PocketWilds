@@ -39,8 +39,10 @@ namespace PocketWilds.Content
             RigFamily rigFamily,
             ContentId biome,
             double baseProduction,
-            string visualKey)
+            string visualKey,
+            bool isSecret = false)
         {
+            IsSecret = isSecret;
             Id = id;
             DisplayKey = displayKey;
             RigFamily = rigFamily;
@@ -50,6 +52,9 @@ namespace PocketWilds.Content
         }
 
         public ContentId Id { get; }
+
+        /// <summary>Secret species: hidden in the Codex until found, never targeted by the discovery pity.</summary>
+        public bool IsSecret { get; }
 
         /// <summary>Localization key, e.g. "species.rabbit.name". Never the English text.</summary>
         public string DisplayKey { get; }

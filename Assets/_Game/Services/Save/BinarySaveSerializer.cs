@@ -31,8 +31,8 @@ namespace PocketWilds.Services.Save
     public static class SaveSchema
     {
         /// <summary>Bump on any persisted data change, with a migration and updated golden saves.</summary>
-        /// <summary>2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids).</summary>
-        public const int CurrentVersion = 3;
+        /// <summary>2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids). 4: Pity counters.</summary>
+        public const int CurrentVersion = 4;
     }
 
     /// <summary>
@@ -51,6 +51,7 @@ namespace PocketWilds.Services.Save
         private const ushort EntitlementsVersion = 1;
         private const ushort OfflineVersion = 1;
         private const ushort CodexVersion = 1;
+        private const ushort PityVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -129,6 +130,11 @@ namespace PocketWilds.Services.Save
             output.WriteInt32(state.Codex.SeenVariants.Count);
             foreach (var id in state.Codex.SeenVariants)
                 output.WriteContentId(id);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Pity, PityVersion);
+            WriteCounters(output, state.Pity.NewSpeciesMisses);
+            WriteCounters(output, state.Pity.VariantMisses);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -268,6 +274,8 @@ namespace PocketWilds.Services.Save
                     ReadEntitlements(entitlements, state.Entitlements);
                 if (document.TryGetSection(SaveSectionId.Offline, out var offline))
                     ReadOffline(offline, state.Offline);
+                if (document.TryGetSection(SaveSectionId.Pity, out var pity))
+                    ReadPity(pity, state.Pity);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -304,6 +312,34 @@ namespace PocketWilds.Services.Save
             meta.Revision = r.ReadInt64();
             meta.AppVersion = r.ReadString() ?? string.Empty;
             meta.TotalPlaySeconds = r.ReadDouble();
+        }
+
+        private static void WriteCounters(ByteBufferWriter output, System.Collections.Generic.Dictionary<ContentId, int> counters)
+        {
+            output.WriteInt32(counters.Count);
+            foreach (var pair in counters)
+            {
+                output.WriteContentId(pair.Key);
+                output.WriteInt32(pair.Value);
+            }
+        }
+
+        private static void ReadPity(SaveSection section, PityState pity)
+        {
+            RequireVersion(section, PityVersion);
+            var r = section.CreateReader();
+            int eggs = ReadCount(ref r);
+            for (int i = 0; i < eggs; i++)
+            {
+                var egg = r.ReadContentId();
+                pity.NewSpeciesMisses[egg] = r.ReadInt32();
+            }
+            int species = ReadCount(ref r);
+            for (int i = 0; i < species; i++)
+            {
+                var id = r.ReadContentId();
+                pity.VariantMisses[id] = r.ReadInt32();
+            }
         }
 
         private static void ReadCodex(SaveSection section, CodexState codex)

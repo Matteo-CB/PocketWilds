@@ -26,8 +26,9 @@ namespace PocketWilds.Content
         public const int PaletteSize = 8;
 
         public VariantDefinition(ContentId id, ContentId species, string displayKey, RarityTier rarity,
-            Color32[] palette, PatternChannel patternChannel, byte patternStrength)
+            Color32[] palette, PatternChannel patternChannel, byte patternStrength, bool isSecret = false)
         {
+            IsSecret = isSecret;
             Id = id;
             Species = species;
             DisplayKey = displayKey;
@@ -41,6 +42,9 @@ namespace PocketWilds.Content
         public ContentId Species { get; }
         public string DisplayKey { get; }
         public RarityTier Rarity { get; }
+
+        /// <summary>Secret variant (Moon Rabbit...): purely cosmetic, never targeted by the variant pity.</summary>
+        public bool IsSecret { get; }
 
         /// <summary>Exactly <see cref="PaletteSize"/> colors.</summary>
         public Color32[] Palette { get; }

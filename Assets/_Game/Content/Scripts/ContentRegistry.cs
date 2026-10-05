@@ -210,6 +210,11 @@ namespace PocketWilds.Content
                 _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Egg pool is empty."));
                 return;
             }
+            if (definition.PityHardLimit < 1)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Egg pity hard limit must be at least 1."));
+                return;
+            }
             if (TryClaim(definition.Id, sourceId))
                 _eggs.Add(definition);
         }

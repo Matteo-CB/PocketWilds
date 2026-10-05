@@ -17,6 +17,7 @@ namespace PocketWilds.Simulation
         public EntitlementState Entitlements { get; } = new EntitlementState();
         public OfflineState Offline { get; } = new OfflineState();
         public CodexState Codex { get; } = new CodexState();
+        public PityState Pity { get; } = new PityState();
 
         public static PlayerState CreateNew(DateTimeOffset utcNow)
         {
@@ -27,6 +28,16 @@ namespace PocketWilds.Simulation
             state.Offline.HighWaterUtc = utcNow;
             return state;
         }
+    }
+
+    /// <summary>
+    /// Bad-luck protection counters (doc 02 Pity). Per egg: eggs in a row without a new species.
+    /// Per species: known variants in a row while that species still hides some.
+    /// </summary>
+    public sealed class PityState
+    {
+        public Dictionary<ContentId, int> NewSpeciesMisses { get; } = new Dictionary<ContentId, int>();
+        public Dictionary<ContentId, int> VariantMisses { get; } = new Dictionary<ContentId, int>();
     }
 
     /// <summary>

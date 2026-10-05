@@ -29,6 +29,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_PremiumEntitlements_v1", BuildPremium());
             created += WriteIfMissing("GoldenSave_Offline_v2", BuildOffline());
             created += WriteIfMissing("GoldenSave_Codex_v3", BuildCodex());
+            created += WriteIfMissing("GoldenSave_Pity_v4", BuildPity());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -71,6 +72,17 @@ namespace PocketWilds.Editor.Saves
             state.Meta.LastKnownSessionId = new Guid("5e55e55e-0000-4000-8000-000000000001");
             state.Meta.Revision = 1;
             state.Meta.AppVersion = "0.1.0";
+            return state;
+        }
+
+        /// <summary>Schema 4: pity counters for an egg and a species.</summary>
+        private static PlayerState BuildPity()
+        {
+            var state = BuildCodex();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-000000000021");
+            state.Meta.Revision = 120;
+            state.Pity.NewSpeciesMisses[ContentId.FromSource("egg.grassland.basic")] = 13;
+            state.Pity.VariantMisses[ContentId.FromSource("species.rabbit")] = 7;
             return state;
         }
 

@@ -40,10 +40,14 @@ namespace PocketWilds.Content
         public const int PaletteSize = 8;
         public const int RarityTierCount = 6;
 
+        /// <summary>Doc 02: after this many eggs without a new species, the next one gives one.</summary>
+        public const int DefaultPityHardLimit = 20;
+
         public EggDefinition(ContentId id, string displayKey, ContentId biome, EggTier tier, Color32[] palette,
             byte maskStrengthR, byte maskStrengthG, byte maskStrengthB, string visualKey,
-            double baseCost, double costGrowth, double[] rarityWeights, EggDropEntry[] pool)
+            double baseCost, double costGrowth, double[] rarityWeights, EggDropEntry[] pool, int pityHardLimit = DefaultPityHardLimit)
         {
+            PityHardLimit = pityHardLimit;
             Id = id;
             DisplayKey = displayKey;
             Biome = biome;
@@ -85,5 +89,8 @@ namespace PocketWilds.Content
         public double[] RarityWeights { get; }
 
         public EggDropEntry[] Pool { get; }
+
+        /// <summary>Eggs in a row without a new species before one is guaranteed (while any is missing).</summary>
+        public int PityHardLimit { get; }
     }
 }
