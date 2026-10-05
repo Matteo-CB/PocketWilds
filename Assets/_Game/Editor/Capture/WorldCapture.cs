@@ -190,6 +190,79 @@ namespace PocketWilds.Editor.Capture
             return string.Join(", ", results);
         }
 
+        [MenuItem("Pocket Wilds/Capture/Genetics Families", priority = 524)]
+        public static void CaptureFamiliesMenu() => Debug.Log("[WorldCapture] " + CaptureFamilies("T26"));
+
+        /// <summary>
+        /// T26 reference: two families on the meadow, parents behind and six children in front, bred by the real
+        /// GeneticsService (palette, carried pattern, size, traits). Children are the first distinct results.
+        /// </summary>
+        public static string CaptureFamilies(string prefix)
+        {
+            var active = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (active.path != ScenePath && !string.IsNullOrEmpty(active.path) && active.isDirty)
+                return "refused: save or discard changes in " + active.path;
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var registry = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath).CreateBuilder().Build();
+            var genetics = new GeneticsService(registry);
+            var temp = new List<GameObject>();
+            var results = new List<string>();
+            var log = new System.Text.StringBuilder();
+            using (var palettes = new PaletteTable(registry))
+            {
+                try
+                {
+                    var chunk = Object.FindAnyObjectByType<WorldChunk>();
+                    var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
+                    var camera = Camera.main;
+                    chunk.Bind(palettes);
+                    entry.Lighting.Apply(Object.FindAnyObjectByType<Light>(), camera, QualityTier.Medium);
+                    chunk.ApplyQuality(QualityTier.Medium);
+                    var resolver = new AnimalVisualResolver(registry, palettes);
+                    var egg = chunk.EggSpawn.position;
+
+                    void Family(string species, string variantA, string variantB, Vector3 origin, uint salt)
+                    {
+                        var a = new AnimalInstance { InstanceId = 1, Species = ContentId.FromSource("species." + species), Variant = ContentId.FromSource($"variant.{species}.{variantA}"), Seed = 0xA000u + salt };
+                        var b = new AnimalInstance { InstanceId = 2, Species = a.Species, Variant = ContentId.FromSource($"variant.{species}.{variantB}"), Seed = 0xB000u + salt };
+                        temp.Add(Spawn(registry, resolver, $"{species}.{variantA}", 1, a.Seed, origin + new Vector3(-0.35f, 0f, 0.75f), 190f, 0.5f).gameObject);
+                        temp.Add(Spawn(registry, resolver, $"{species}.{variantB}", 2, b.Seed, origin + new Vector3(0.35f, 0f, 0.75f), 170f, 1.1f).gameObject);
+                        var seen = new HashSet<(uint, uint)>();
+                        int placed = 0;
+                        for (uint context = 0; context < 400 && placed < 6; context++)
+                        {
+                            genetics.TryBreed(a, b, context + salt * 1000u, out var child);
+                            if (!seen.Add((child.Variant.Value, child.TraitBits)))
+                                continue;
+                            var spot = origin + new Vector3((placed % 3 - 1) * 0.42f, 0f, -(placed / 3) * 0.45f);
+                            string name = $"{species}.{child.Variant.ToString().Substring(("variant." + species + ".").Length)}";
+                            temp.Add(Spawn(registry, resolver, name, 10u + (uint)placed, child.Seed, spot, 180f + (placed - 2.5f) * 9f, 0.3f * placed, child.TraitBits).gameObject);
+                            log.Append($"{name} size {AnimalGenome.Size(child.TraitBits)} pattern {AnimalGenome.CarriedPattern(child.TraitBits)} traits {AnimalGenome.Traits(child.TraitBits)}; ");
+                            placed++;
+                        }
+                    }
+                    Family("rabbit", "spotted", "brown", egg + new Vector3(-0.85f, 0f, 1.1f), 1);
+                    Family("squirrel", "autumn", "grey", egg + new Vector3(0.95f, 0f, 1.1f), 2);
+
+                    var position = camera.transform.position;
+                    var rotation = camera.transform.rotation;
+                    camera.transform.position = egg + new Vector3(0f, 1.7f, -2.4f);
+                    camera.transform.LookAt(egg + new Vector3(0f, 0.15f, 1.2f));
+                    string path = $"{CaptureUtility.DefaultFolder}/{prefix}_genetics_families.png";
+                    CaptureUtility.Render(camera, 1200, 760, path);
+                    results.Add(CaptureUtility.Render(camera, 1200, 760, path));
+                    camera.transform.SetPositionAndRotation(position, rotation);
+                }
+                finally
+                {
+                    foreach (var go in temp)
+                        Object.DestroyImmediate(go);
+                    EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+                }
+            }
+            return string.Join(", ", results) + " | " + log;
+        }
+
         [MenuItem("Pocket Wilds/Capture/Social and Points of Interest", priority = 523)]
         public static void CaptureSocialMenu() => Debug.Log("[WorldCapture] " + CaptureSocial("T25"));
 
@@ -284,7 +357,7 @@ namespace PocketWilds.Editor.Capture
         }
 
         private static AnimalView Spawn(ContentRegistry registry, AnimalVisualResolver resolver, string speciesAndVariant, uint instanceId,
-            uint seed, Vector3 position, float yaw, float animationTime)
+            uint seed, Vector3 position, float yaw, float animationTime, uint traitBits = 0u)
         {
             string speciesName = speciesAndVariant.Substring(0, speciesAndVariant.IndexOf('.'));
             var speciesId = ContentId.FromSource("species." + speciesName);
@@ -293,7 +366,7 @@ namespace PocketWilds.Editor.Capture
             var animal = new AnimalInstance
             {
                 InstanceId = instanceId, Seed = seed, Species = speciesId,
-                Variant = ContentId.FromSource("variant." + speciesAndVariant),
+                Variant = ContentId.FromSource("variant." + speciesAndVariant), TraitBits = traitBits,
             };
             resolver.TryResolve(animal, position, yaw, out var snapshot);
             var view = Object.Instantiate(visual.prefab);

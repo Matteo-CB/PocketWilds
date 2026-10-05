@@ -427,10 +427,22 @@ namespace PocketWilds.Editor.Animals
                 belly = belly,
                 detail = detail,
                 eye = eye,
-                pattern = pattern ?? primary,
+                // A plain palette still has a pattern color: a carried pattern (genetics, T26) shows tone on tone.
+                pattern = pattern ?? CarriedPatternTint(primary),
                 patternChannel = channel,
                 patternStrength = strength,
             };
+        }
+
+        private static Color CarriedPatternTint(Color primary) => Color.Lerp(primary, new Color(0.24f, 0.15f, 0.11f), 0.3f);
+
+        /// <summary>Rewrites the species definitions only (palettes, variants), without rebuilding prefabs.</summary>
+        [MenuItem("Pocket Wilds/Animals/Update Species Definitions", priority = 160)]
+        public static void UpdateSpeciesDefinitions()
+        {
+            foreach (var ensure in new Func<SpeciesDefinitionAsset>[] { EnsureRabbitDefinition, EnsureSquirrelDefinition, EnsureHedgehogDefinition })
+                EnsureContentDatabase(ensure());
+            AssetDatabase.SaveAssets();
         }
 
         private static Color Hex(string hex)

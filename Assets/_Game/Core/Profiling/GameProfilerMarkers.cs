@@ -11,6 +11,7 @@ namespace PocketWilds.Core
     {
         public static readonly ProfilerMarker EconomyAdvance = new ProfilerMarker(ProfilerCategory.Scripts, "Economy.Advance");
         public static readonly ProfilerMarker HatchResolve = new ProfilerMarker(ProfilerCategory.Scripts, "Hatch.Resolve");
+        public static readonly ProfilerMarker GeneticsBreed = new ProfilerMarker(ProfilerCategory.Scripts, "Genetics.Breed");
         public static readonly ProfilerMarker OfflineResolve = new ProfilerMarker(ProfilerCategory.Scripts, "Offline.Resolve");
         public static readonly ProfilerMarker SchedulerTickA = new ProfilerMarker(ProfilerCategory.Scripts, "Scheduler.TickA");
         public static readonly ProfilerMarker SchedulerTickB = new ProfilerMarker(ProfilerCategory.Scripts, "Scheduler.TickB");

@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T04:35:10Z",
+  "updatedUtc": "2026-10-05T04:54:09Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -187,8 +187,8 @@
     {
       "task": "T26",
       "title": "Genetics prototype",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "GeneticsService (Game.Simulation): two compatible parents + context seed -> child genome (palette by weighted inheritance or rarity-neighbour mutation, never a secret; carried pattern among the species' own patterns; six traits with Tiny/Giant and Albino/Melanistic exclusive; size gene). Pure, deterministic, symmetric, 0 GC per breed. Genome packed in the already saved TraitBits (0 = plain animal, no save change). Preview gives exact odds, matched by 200 000 breeds. Resolver shows size and carried patterns (tone on tone on plain palettes). Docs/Design/T26_Genetics_Prototype.md, capture TestResults/Captures/T26_genetics_families.png. EditMode 267/267."
     },
     {
       "task": "T27",

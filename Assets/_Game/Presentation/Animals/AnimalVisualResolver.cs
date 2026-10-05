@@ -47,13 +47,18 @@ namespace PocketWilds.Presentation
         public bool TryResolve(in AnimalInstance animal, Vector3 position, float yaw, out AnimalVisualSnapshot snapshot)
         {
             bool known = TryGetVisualData(animal.Species, animal.Variant, out uint visualData);
+            // T26 genome: a carried pattern shows tone on tone on a palette without its own pattern.
+            var carried = AnimalGenome.CarriedPattern(animal.TraitBits);
+            if (carried != PatternChannel.None && AnimalVisualPacking.Pattern(visualData) == PatternChannel.None)
+                visualData = AnimalVisualPacking.Pack(AnimalVisualPacking.PaletteRow(visualData), carried,
+                    AnimalGenome.CarriedStrength(animal.TraitBits), AnimalVisualPacking.RareIntensity(visualData));
             snapshot = new AnimalVisualSnapshot
             {
                 InstanceId = animal.InstanceId,
                 Species = animal.Species,
                 Position = position,
                 Yaw = yaw,
-                Scale = 1f,
+                Scale = AnimalGenome.Scale(animal.TraitBits),
                 VisualData = visualData,
                 IdlePhase = IdlePhase(animal.Seed),
             };
