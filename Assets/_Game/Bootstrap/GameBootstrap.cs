@@ -43,6 +43,7 @@ namespace PocketWilds.Bootstrap
         private SaveService _save;
         private SaveLoadResult _loadResult;
         private EconomyService _economy;
+        private HatchService _hatch;
         private QualityService _quality;
         private FrameRateService _frameRate;
         private GameLoop _loop;
@@ -132,13 +133,15 @@ namespace PocketWilds.Bootstrap
             sequence.AddBlocking("Simulation", () =>
             {
                 _economy = new EconomyService(_save.State, _content, EconomyConfig.Default, _save);
+                _hatch = new HatchService(_save.State, _content, _economy, _clock, _save);
             });
 
             sequence.AddBlocking("Presentation", async cancellationToken =>
             {
                 _palettes = new PaletteTable(_content);
                 var visuals = new AnimalVisualResolver(_content, _palettes);
-                Context = new GameContext(_clock, _content, _save, _economy, _quality, _frameRate, _palettes, visuals, _visualCatalog,
+                var catalog = _options.VisualCatalogOverride != null ? _options.VisualCatalogOverride : _visualCatalog;
+                Context = new GameContext(_clock, _content, _save, _economy, _hatch, _quality, _frameRate, _palettes, visuals, catalog,
                     NullAudioService.Instance, NullHapticService.Instance);
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);

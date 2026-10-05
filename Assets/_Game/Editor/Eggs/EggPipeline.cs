@@ -441,6 +441,14 @@ namespace PocketWilds.Editor.Eggs
             EditorUtility.SetDirty(config);
         }
 
+        /// <summary>Egg content only (economy, odds, pool): no prefab or VFX rebuild.</summary>
+        [MenuItem("Pocket Wilds/Eggs/Update Egg Definitions", priority = 161)]
+        public static void UpdateEggDefinitions()
+        {
+            EnsureEggDefinitions();
+            AssetDatabase.SaveAssets();
+        }
+
         private static void EnsureEggDefinitions()
         {
             var basic = EnsureEgg("DEF_Egg_Grassland_Basic", "egg.grassland.basic", EggTier.Basic, egg =>
@@ -455,6 +463,10 @@ namespace PocketWilds.Editor.Eggs
                 egg.spotsStrength = 15;
                 egg.bandStrength = 0;
                 egg.flowersStrength = 15;
+                // Doc 02: first egg 10 Light, Cost(n) = round(10 x 1.18^n), early Basic rarity baseline.
+                egg.baseCost = 10.0;
+                egg.costGrowth = 1.18;
+                egg.rarityWeights = new[] { 72.0, 20.0, 6.0, 1.6, 0.36, 0.04 };
             });
             var focus = EnsureEgg("DEF_Egg_Grassland_Focus", "egg.grassland.focus", EggTier.Focus, egg =>
             {
@@ -468,6 +480,10 @@ namespace PocketWilds.Editor.Eggs
                 egg.spotsStrength = 8;
                 egg.bandStrength = 15;
                 egg.flowersStrength = 0;
+                // Doc 02: Focus costs 3 to 5x a Basic for a smaller pool. Same tier odds until a rule says otherwise.
+                egg.baseCost = 40.0;
+                egg.costGrowth = 1.18;
+                egg.rarityWeights = new[] { 72.0, 20.0, 6.0, 1.6, 0.36, 0.04 };
             });
 
             var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath)
@@ -493,6 +509,11 @@ namespace PocketWilds.Editor.Eggs
             asset.biomeId = "biome.grassland";
             asset.tier = tier;
             asset.visualKey = "PF_Egg_Base";
+            // Grassland pool: species of the biome. Squirrel and Hedgehog join when integrated (T23, T24).
+            asset.pool = new System.Collections.Generic.List<EggDefinitionAsset.PoolEntry>
+            {
+                new EggDefinitionAsset.PoolEntry { speciesId = "species.rabbit", weight = 1f },
+            };
             fill(asset);
             EditorUtility.SetDirty(asset);
             return asset;

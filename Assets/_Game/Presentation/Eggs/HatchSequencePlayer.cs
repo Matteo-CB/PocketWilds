@@ -55,6 +55,7 @@ namespace PocketWilds.Presentation
         private float _tCrack1, _tCrack2, _tBurst, _tRevealEnd, _tEnd;
         private float _lastCrackTime = -10f;
         private int _glow = -1;
+        private float _nudge = -1f;
         private bool _crack1Done, _crack2Done, _burstDone, _happyDone;
 
         /// <param name="rareVfx">-1 when no rare treatment is registered.</param>
@@ -89,7 +90,15 @@ namespace PocketWilds.Presentation
             _animal = null;
             _listener = null;
             _waiting = 0f;
+            _nudge = -1f;
             Phase = HatchPhase.Waiting;
+        }
+
+        /// <summary>Waiting egg only: a short sideways shake that says "not yet" without any text.</summary>
+        public void Nudge()
+        {
+            if (Phase == HatchPhase.Waiting)
+                _nudge = 0f;
         }
 
         /// <summary>Starts the staging for an already resolved hatch. The animal view must be configured.</summary>
@@ -155,7 +164,16 @@ namespace PocketWilds.Presentation
             {
                 _waiting += deltaTime;
                 float pulse = 1f + _config.idlePulseScale * (0.5f - 0.5f * Mathf.Cos(_waiting * _config.idlePulseHz * Mathf.PI * 2f));
-                _egg.SetShellPose(Vector3.zero, Quaternion.identity, new Vector3(pulse, pulse, pulse));
+                var rotation = Quaternion.identity;
+                if (_nudge >= 0f)
+                {
+                    _nudge += deltaTime;
+                    float decay = Mathf.Clamp01(1f - _nudge / 0.45f);
+                    rotation = Quaternion.Euler(0f, 0f, 9f * decay * Mathf.Sin(_nudge * 38f));
+                    if (decay <= 0f)
+                        _nudge = -1f;
+                }
+                _egg.SetShellPose(Vector3.zero, rotation, new Vector3(pulse, pulse, pulse));
                 return;
             }
             if (!IsPlaying)

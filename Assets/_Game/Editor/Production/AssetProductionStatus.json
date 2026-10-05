@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-04T23:40:50Z",
+  "updatedUtc": "2026-10-05T00:20:26Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -133,8 +133,8 @@
     {
       "task": "T17",
       "title": "First playable loop",
-      "status": "IN_PROGRESS",
-      "notes": ""
+      "status": "DONE",
+      "notes": "First playable loop: HatchService (doc 02 cost curve, free tutorial egg, pay only after a valid roll, PCG32 rolls seeded from profile + instance id, species pool + tier fallback, discoveries, save priority), SanctuaryController (saved animals back in the meadow, egg on its spawn, tap egg or button to hatch, repeat speed-up, pooled views/eggs/VFX, visible budget per tier), PF_UI_HUD_Main + EventSystem (Input System). Loop proven in PlayMode: free egg, rabbit produces Light, paid egg at 10, restart keeps 2 animals and price 12. Tests EditMode 163/163, PlayMode 25/25. Captures T17_hud_first/affordable/waiting."
     },
     {
       "task": "T18",
@@ -5767,7 +5767,7 @@
       "family": "UIIcon",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/UI/Icons/",
       "runtimePath": "Assets/_Game/Art/UI/Icons/",
       "validationGates": [
@@ -5775,7 +5775,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340."
     },
     {
       "id": "I-HUD-002",
@@ -5815,7 +5815,7 @@
       "family": "UIIcon",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/UI/Icons/",
       "runtimePath": "Assets/_Game/Art/UI/Icons/",
       "validationGates": [
@@ -5823,7 +5823,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T17: ICO_Hatch_Egg (Grassland basic egg, zigzag band, hairline crack) from pw_ui_sprites.py, 160 px, Atlas_CommonHUD; hatch button icon. Reviewed in Unity captures. | T17: ICO_Hatch_Egg (Grassland basic egg, zigzag band, hairline crack) from pw_ui_sprites.py, 160 px, Atlas_CommonHUD; hatch button icon. Reviewed in Unity captures. | T17: ICO_Hatch_Egg (Grassland basic egg, zigzag band, hairline crack) from pw_ui_sprites.py, 160 px, Atlas_CommonHUD; hatch button icon. Reviewed in Unity captures."
     },
     {
       "id": "I-HUD-005",
@@ -5927,7 +5927,7 @@
       "family": "UIKit",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "BLOCKOUT",
       "sourcePath": "SourceArt/UI/",
       "runtimePath": "Assets/_Game/Art/UI/",
       "validationGates": [
@@ -5936,7 +5936,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": ""
+      "notes": "T17: 2 of 11 kit sprites: UI_Pill_9Slice (borders 64/70/64/62) and UI_Button_IconCircle, white for token tinting, cheap baked shadow; DEF_UiColorTokens (doc 06 token list); Atlas_CommonHUD (rect packing, ASTC 4x4 mobile). Panels, cards, progress, tooltip, divider still to do."
     },
     {
       "id": "I-RARITY",
@@ -6109,7 +6109,7 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
+      "status": "ART_REVIEW",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
@@ -6118,7 +6118,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 002."
+      "notes": "Local ID for doc 06 SCREEN 002. | T17: PF_UI_HUD_Main (Prefabs/UI/Screens): Light chip (value + rate) on its own canvas, hatch button with cost pill on its own canvas + raycaster, safe area, states via color tokens and scale, Reduce Motion flag, no layout groups, 0 GC formatting. Font TEMP: LiberationSans SDF (OFL, TMP Essentials) until the UI typeface is chosen. Codex/World/Settings shortcuts come with their tasks. | T17: PF_UI_HUD_Main (Prefabs/UI/Screens): Light chip (value + rate) on its own canvas, hatch button with cost pill on its own canvas + raycaster, safe area, states via color tokens and scale, Reduce Motion flag, no layout groups, 0 GC formatting. Font TEMP: LiberationSans SDF (OFL, TMP Essentials) until the UI typeface is chosen. Codex/World/Settings shortcuts come with their tasks."
     },
     {
       "id": "I-SCR-003",
@@ -8525,7 +8525,7 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "BLOCKOUT",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Content/",
       "validationGates": [
@@ -8534,7 +8534,7 @@
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": null,
-      "notes": "T14: EggDefinition (tier, biome, palette, mask strengths, visual key) + EggDefinitionAsset + ContentDatabase eggs list; Grassland Basic and Focus. Drop tables arrive with HatchService (T17)."
+      "notes": "T14: EggDefinition (tier, biome, palette, mask strengths, visual key) + EggDefinitionAsset + ContentDatabase eggs list; Grassland Basic and Focus. Drop tables arrive with HatchService (T17). | T17: EggDefinition carries economy (baseCost 10, costGrowth 1.18 for Basic, 40 for Focus), rarity weights and species pool; validated by ContentRegistry; consumed by HatchService. | T17: EggDefinition carries economy (baseCost 10, costGrowth 1.18 for Basic, 40 for Focus), rarity weights and species pool; validated by ContentRegistry; consumed by HatchService."
     },
     {
       "id": "M-DEF-DECOR",

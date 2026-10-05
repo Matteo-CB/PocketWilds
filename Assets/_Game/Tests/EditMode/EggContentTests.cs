@@ -13,7 +13,8 @@ namespace PocketWilds.Tests.EditMode
     {
         private static EggDefinition Egg(string id, int paletteSize = EggDefinition.PaletteSize, byte strength = 15) =>
             new EggDefinition(ContentId.FromSource(id), id + ".name", ContentId.FromSource("biome.grassland"), EggTier.Basic,
-                new Color32[paletteSize], strength, 0, strength, "PF_Egg_Base");
+                new Color32[paletteSize], strength, 0, strength, "PF_Egg_Base", 10.0, 1.18,
+                new[] { 72.0, 20.0, 6.0, 1.6, 0.36, 0.04 }, new[] { new EggDropEntry(ContentId.FromSource("species.rabbit"), 1.0) });
 
         [Test]
         public void ShippedContent_HasGrasslandBasicAndFocusEggs()
@@ -53,6 +54,11 @@ namespace PocketWilds.Tests.EditMode
             var builder = new ContentRegistryBuilder();
             builder.AddEgg(Egg("egg.grassland.bad", paletteSize: 3), "egg.grassland.bad");
             Assert.IsTrue(builder.HasErrors);
+
+            builder = new ContentRegistryBuilder();
+            builder.AddEgg(new EggDefinition(ContentId.FromSource("egg.grassland.nopool"), "x", ContentId.FromSource("biome.grassland"), EggTier.Basic,
+                new Color32[EggDefinition.PaletteSize], 1, 1, 1, "PF_Egg_Base", 10.0, 1.18, new[] { 1.0, 0, 0, 0, 0, 0 }, new EggDropEntry[0]), "egg.grassland.nopool");
+            Assert.IsTrue(builder.HasErrors, "An egg without a pool cannot ship.");
 
             builder = new ContentRegistryBuilder();
             builder.AddEgg(Egg("egg.grassland.loud", strength: 16), "egg.grassland.loud");

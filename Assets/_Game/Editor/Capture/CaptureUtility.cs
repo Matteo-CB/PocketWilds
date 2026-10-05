@@ -11,7 +11,7 @@ namespace PocketWilds.Editor.Capture
     {
         public const string DefaultFolder = "TestResults/Captures";
 
-        public static string Render(Camera camera, int width, int height, string path, int msaa = 4)
+        public static string Render(Camera camera, int width, int height, string path, int msaa = 4, System.Action beforeRender = null)
         {
             var rt = RenderTexture.GetTemporary(width, height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB, msaa);
             var previousTarget = camera.targetTexture;
@@ -20,6 +20,7 @@ namespace PocketWilds.Editor.Capture
             try
             {
                 camera.targetTexture = rt;
+                beforeRender?.Invoke();
                 camera.Render();
                 RenderTexture.active = rt;
                 texture.ReadPixels(new Rect(0, 0, width, height), 0, 0);

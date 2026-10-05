@@ -17,6 +17,7 @@ namespace PocketWilds.Presentation
             ContentRegistry content,
             SaveService save,
             EconomyService economy,
+            HatchService hatch,
             QualityService quality,
             FrameRateService frameRate,
             PaletteTable palettes,
@@ -29,6 +30,7 @@ namespace PocketWilds.Presentation
             Content = content;
             Save = save;
             Economy = economy;
+            Hatch = hatch;
             Quality = quality;
             FrameRate = frameRate;
             Palettes = palettes;
@@ -43,6 +45,7 @@ namespace PocketWilds.Presentation
         public SaveService Save { get; }
         public PlayerState State => Save.State;
         public EconomyService Economy { get; }
+        public HatchService Hatch { get; }
         public QualityService Quality { get; }
         public FrameRateService FrameRate { get; }
         public PaletteTable Palettes { get; }

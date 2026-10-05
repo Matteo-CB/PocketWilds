@@ -117,7 +117,7 @@ namespace PocketWilds.Editor.Capture
             return result;
         }
 
-        private static void Populate(ContentRegistry registry, PaletteTable palettes, WorldChunk chunk, int rabbits, List<GameObject> temp)
+        internal static void Populate(ContentRegistry registry, PaletteTable palettes, WorldChunk chunk, int rabbits, List<GameObject> temp)
         {
             var config = AssetDatabase.LoadAssetAtPath<HatchPresentationConfig>(EggPipeline.HatchConfigPath);
             var egg = Object.Instantiate(config.eggPrefab);

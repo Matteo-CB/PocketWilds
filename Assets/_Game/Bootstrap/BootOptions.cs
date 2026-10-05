@@ -1,4 +1,5 @@
 using PocketWilds.Content;
+using PocketWilds.Presentation;
 
 namespace PocketWilds.Bootstrap
 {
@@ -15,6 +16,9 @@ namespace PocketWilds.Bootstrap
 
         /// <summary>Content used instead of the shipped registry (tests only).</summary>
         public ContentRegistry ContentOverride;
+
+        /// <summary>Visual catalog used when the bootstrap has none assigned (tests creating it from code).</summary>
+        public AnimalVisualCatalog VisualCatalogOverride;
 
         /// <summary>When false, stays in the bootstrap scene after boot (tests).</summary>
         public bool LoadTargetScene = true;

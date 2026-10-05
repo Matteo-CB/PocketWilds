@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using PocketWilds.Core;
 using UnityEngine;
 
@@ -10,6 +12,13 @@ namespace PocketWilds.Content
     [CreateAssetMenu(menuName = "Pocket Wilds/Egg Definition", fileName = "DEF_Egg_New")]
     public sealed class EggDefinitionAsset : ScriptableObject
     {
+        [Serializable]
+        public sealed class PoolEntry
+        {
+            public string speciesId = "species.rabbit";
+            [Min(0f)] public float weight = 1f;
+        }
+
         [Tooltip("Stable source ID, e.g. egg.grassland.basic. Never change it once shipped.")]
         public string sourceId = "egg.biome.basic";
         public string displayKey = "egg.biome.basic.name";
@@ -31,6 +40,13 @@ namespace PocketWilds.Content
         [Range(0, 15)] public int bandStrength;
         [Range(0, 15)] public int flowersStrength = 15;
 
+        [Header("Economy (doc 02): Cost(n) = round(baseCost x costGrowth^n)")]
+        [Min(1f)] public double baseCost = 10.0;
+        [Min(1f)] public double costGrowth = 1.18;
+        [Tooltip("Relative weights: Common, Uncommon, Rare, Epic, Legendary, Mythic.")]
+        public double[] rarityWeights = { 72.0, 20.0, 6.0, 1.6, 0.36, 0.04 };
+        public List<PoolEntry> pool = new List<PoolEntry>();
+
         public EggDefinition ToRuntime()
         {
             var palette = new Color32[EggDefinition.PaletteSize];
@@ -44,7 +60,15 @@ namespace PocketWilds.Content
             palette[7] = shell;
             return new EggDefinition(ContentId.FromSource(sourceId), displayKey, ContentId.FromSource(biomeId), tier, palette,
                 (byte)Mathf.Clamp(spotsStrength, 0, 15), (byte)Mathf.Clamp(bandStrength, 0, 15), (byte)Mathf.Clamp(flowersStrength, 0, 15),
-                visualKey);
+                visualKey, baseCost, costGrowth, (double[])rarityWeights.Clone(), BuildPool());
+        }
+
+        private EggDropEntry[] BuildPool()
+        {
+            var entries = new EggDropEntry[pool.Count];
+            for (int i = 0; i < pool.Count; i++)
+                entries[i] = new EggDropEntry(ContentId.FromSource(pool[i].speciesId), pool[i].weight);
+            return entries;
         }
     }
 }

@@ -184,6 +184,21 @@ namespace PocketWilds.Content
                 _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Egg needs a visual key."));
                 return;
             }
+            if (!(definition.BaseCost > 0.0) || !(definition.CostGrowth >= 1.0))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Egg cost needs BaseCost > 0 and CostGrowth >= 1."));
+                return;
+            }
+            if (definition.RarityWeights.Length != EggDefinition.RarityTierCount || !HasPositive(definition.RarityWeights))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Egg needs " + EggDefinition.RarityTierCount + " rarity weights with a positive total."));
+                return;
+            }
+            if (definition.Pool.Length == 0)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Egg pool is empty."));
+                return;
+            }
             if (TryClaim(definition.Id, sourceId))
                 _eggs.Add(definition);
         }
@@ -209,11 +224,31 @@ namespace PocketWilds.Content
                 if (!speciesIds.Contains(variant.Species))
                     _issues.Add(new ContentIssue(ContentIssueSeverity.Error, variant.Id.ToString(), "Variant references an unknown species."));
             }
+            foreach (var egg in _eggs)
+            {
+                foreach (var entry in egg.Pool)
+                {
+                    if (!speciesIds.Contains(entry.Species) || !(entry.Weight > 0.0))
+                        _issues.Add(new ContentIssue(ContentIssueSeverity.Error, egg.Id.ToString(), "Egg pool entry needs a known species and a positive weight."));
+                }
+            }
 
             if (HasErrors)
                 throw new InvalidOperationException("Content has errors: " + string.Join("; ", _issues));
             return new ContentRegistry(new ContentTable<SpeciesDefinition>(_species), new ContentTable<VariantDefinition>(_variants),
                 new ContentTable<EggDefinition>(_eggs), new ContentTable<PaletteDefinition>(_palettes));
+        }
+
+        private static bool HasPositive(double[] values)
+        {
+            double total = 0.0;
+            foreach (var v in values)
+            {
+                if (v < 0.0)
+                    return false;
+                total += v;
+            }
+            return total > 0.0;
         }
 
         private bool TryClaim(ContentId id, string sourceId)
