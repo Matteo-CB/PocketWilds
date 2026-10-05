@@ -117,13 +117,17 @@ namespace PocketWilds.Tests.EditMode
                 Assert.Greater(now, rate, "Each animal also adds production.");
                 rate = now;
             }
-            // Same total whatever the split between levels: XP is never lost on a level up.
+            // Same total whatever the split between levels and species: XP is never lost on a level up.
             int spent = 0;
-            var progress = mastery.Get(Rabbit);
-            for (int level = 0; level < progress.Level; level++)
-                spent += mastery.XpForNext(level);
-            Assert.AreEqual(totalXp, spent + progress.Xp);
-            Assert.Greater(progress.Level, 5);
+            foreach (var pair in state.Mastery.Species)
+            {
+                var progress = mastery.Get(pair.Key);
+                for (int level = 0; level < progress.Level; level++)
+                    spent += mastery.XpForNext(level);
+                spent += progress.Xp;
+                Assert.Greater(progress.Level, 5, pair.Key.ToString());
+            }
+            Assert.AreEqual(totalXp, spent);
         }
 
         [Test]

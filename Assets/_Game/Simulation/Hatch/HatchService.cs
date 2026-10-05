@@ -79,7 +79,8 @@ namespace PocketWilds.Simulation
     /// economy and save, then returns an immutable result for the presentation. Traits (T26) plug in here.
     /// <list type="bullet">
     /// <item>Cost(n) = round(BaseCost x CostGrowth^n), n = eggs of this type bought this cycle (doc 02).</item>
-    /// <item>The very first hatch of a profile is free: the tutorial egg needs a single touch.</item>
+    /// <item>The very first hatch of a profile is free: the tutorial egg needs a single touch. When the egg
+    /// names a starter species, that hatch gives it (rarity tier still rolled).</item>
     /// <item>The roll seed is derived from the profile and the next instance id: reproducible from the save,
     /// no extra persisted RNG state, never UnityEngine.Random.</item>
     /// <item>Pity (doc 02): while the pool has normal species to find, chance of a missing one =
@@ -197,7 +198,9 @@ namespace PocketWilds.Simulation
                 var rng = new DeterministicRandom(SeedHash.Mix(_profileSeed ^ _state.Collection.NextInstanceId, RollSalt));
                 var rolled = RollTier(egg, ref rng);
                 bool speciesPityActive = MissingWeight(egg) > 0.0;
-                if (!TryPick(egg, rolled, speciesPityActive, ref rng, out int variantIndex, out var pity))
+                // The tutorial egg can name the first species of a profile; the tier is still rolled.
+                var starter = free ? egg.StarterSpecies : ContentId.None;
+                if (!TryPick(egg, rolled, speciesPityActive, starter, ref rng, out int variantIndex, out var pity))
                     return HatchResult.Failed(HatchStatus.NoCandidate, eggId, cost);
 
                 // Pay only once the result is known to exist: a failed roll never costs Light.
@@ -252,7 +255,7 @@ namespace PocketWilds.Simulation
         /// the rolled tier. A species without that tier falls back to its nearest lower tier (then higher):
         /// the roll describes a tier, never a promise of a species. Variant pity stays inside that tier.
         /// </summary>
-        private bool TryPick(EggDefinition egg, RarityTier tier, bool speciesPityActive, ref DeterministicRandom rng,
+        private bool TryPick(EggDefinition egg, RarityTier tier, bool speciesPityActive, ContentId starter, ref DeterministicRandom rng,
             out int variantIndex, out PityOutcome pity)
         {
             variantIndex = -1;
@@ -265,8 +268,12 @@ namespace PocketWilds.Simulation
             if (total <= 0.0)
                 return false;
 
+            ContentId species = default;
             bool onlyMissing = false;
-            if (speciesPityActive)
+            bool forced = starter.IsValid && _variantsBySpeciesTier.ContainsKey(starter);
+            if (forced)
+                species = starter;
+            else if (speciesPityActive)
             {
                 _state.Pity.NewSpeciesMisses.TryGetValue(egg.Id, out int misses);
                 if (misses >= egg.PityHardLimit)
@@ -281,17 +288,19 @@ namespace PocketWilds.Simulation
                 }
             }
 
-            double weight = onlyMissing ? MissingWeight(egg) : total;
-            double roll = rng.NextDouble() * weight;
-            ContentId species = default;
-            for (int i = 0; i < pool.Length; i++)
+            if (!forced)
             {
-                if (!_variantsBySpeciesTier.ContainsKey(pool[i].Species) || (onlyMissing && !IsMissing(pool[i].Species)))
-                    continue;
-                species = pool[i].Species;
-                roll -= pool[i].Weight;
-                if (roll < 0.0)
-                    break;
+                double weight = onlyMissing ? MissingWeight(egg) : total;
+                double roll = rng.NextDouble() * weight;
+                for (int i = 0; i < pool.Length; i++)
+                {
+                    if (!_variantsBySpeciesTier.ContainsKey(pool[i].Species) || (onlyMissing && !IsMissing(pool[i].Species)))
+                        continue;
+                    species = pool[i].Species;
+                    roll -= pool[i].Weight;
+                    if (roll < 0.0)
+                        break;
+                }
             }
 
             var tiers = _variantsBySpeciesTier[species];

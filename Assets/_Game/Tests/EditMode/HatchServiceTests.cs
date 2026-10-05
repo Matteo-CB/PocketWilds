@@ -206,5 +206,72 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual(1.0, brown / (double)white, 0.08);
             Assert.AreEqual(Samples + 0, f.State.Collection.Count);
         }
+
+        /// <summary>Rabbit and squirrel in one pool; the egg may name the species of the tutorial hatch (T23).</summary>
+        private static ContentRegistry TwoSpecies(bool starter, string starterId = "species.rabbit")
+        {
+            var builder = new ContentRegistryBuilder();
+            TestUtil.AddSpecies(builder, "species.rabbit", 1.0);
+            TestUtil.AddSpecies(builder, "species.squirrel", 1.0);
+            var squirrel = ContentId.FromSource("species.squirrel");
+            foreach (var (species, id) in new[] { (Rabbit, "variant.rabbit.brown"), (squirrel, "variant.squirrel.red") })
+                builder.AddVariant(new VariantDefinition(ContentId.FromSource(id), species, id + ".name", RarityTier.Common,
+                    new Color32[VariantDefinition.PaletteSize], PatternChannel.None, 0), id);
+            builder.AddEgg(new EggDefinition(Basic, "egg.grassland.basic.name", ContentId.FromSource("biome.grassland"), EggTier.Basic,
+                new Color32[EggDefinition.PaletteSize], 15, 0, 15, "PF_Egg_Base", 10.0, 1.18,
+                new[] { 72.0, 20.0, 6.0, 1.6, 0.36, 0.04 }, new[] { new EggDropEntry(Rabbit, 1.0), new EggDropEntry(squirrel, 1.0) },
+                EggDefinition.DefaultPityHardLimit, starter ? ContentId.FromSource(starterId) : ContentId.None), "egg.grassland.basic");
+            return builder.Build();
+        }
+
+        [Test]
+        public void TutorialHatch_GivesTheStarterSpecies_ForEveryProfile()
+        {
+            var content = TwoSpecies(starter: true);
+            int squirrelsAfter = 0;
+            for (int profile = 0; profile < 200; profile++)
+            {
+                var state = PlayerState.CreateNew(TestUtil.T0.AddSeconds(profile * 7919));
+                var f = Create(content, state);
+                var first = f.Hatch.Hatch(Basic);
+                Assert.IsTrue(first.Succeeded && first.WasFree);
+                Assert.AreEqual(Rabbit, first.Animal.Species, "Profile " + profile);
+
+                // Paid eggs roll the whole pool again.
+                f.Economy.Grant(CurrencyId.Light, BigValue.FromDouble(1e6), EconomyReason.Reward);
+                for (int i = 0; i < 4; i++)
+                    if (f.Hatch.Hatch(Basic).Animal.Species != Rabbit)
+                        squirrelsAfter++;
+            }
+            Assert.Greater(squirrelsAfter, 200, "After the tutorial both species come out of the egg.");
+        }
+
+        [Test]
+        public void WithoutStarter_TheTutorialHatchRollsThePool()
+        {
+            var content = TwoSpecies(starter: false);
+            int squirrels = 0;
+            for (int profile = 0; profile < 200; profile++)
+            {
+                var f = Create(content, PlayerState.CreateNew(TestUtil.T0.AddSeconds(profile * 7919)));
+                if (f.Hatch.Hatch(Basic).Animal.Species != Rabbit)
+                    squirrels++;
+            }
+            Assert.That(squirrels, NUnit.Framework.Is.InRange(60, 140));
+        }
+
+        [Test]
+        public void StarterOutsideThePool_IsAContentError()
+        {
+            var builder = new ContentRegistryBuilder();
+            TestUtil.AddSpecies(builder, "species.rabbit", 1.0);
+            TestUtil.AddSpecies(builder, "species.hedgehog", 1.0);
+            builder.AddEgg(new EggDefinition(Basic, "egg.grassland.basic.name", ContentId.FromSource("biome.grassland"), EggTier.Basic,
+                new Color32[EggDefinition.PaletteSize], 15, 0, 15, "PF_Egg_Base", 10.0, 1.18,
+                new[] { 72.0, 20.0, 6.0, 1.6, 0.36, 0.04 }, new[] { new EggDropEntry(Rabbit, 1.0) },
+                EggDefinition.DefaultPityHardLimit, ContentId.FromSource("species.hedgehog")), "egg.grassland.basic");
+            Assert.Throws<System.InvalidOperationException>(() => builder.Build());
+            Assert.IsTrue(builder.HasErrors);
+        }
     }
 }

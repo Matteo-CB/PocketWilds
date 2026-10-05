@@ -117,8 +117,103 @@ namespace PocketWilds.Editor.Capture
             return result;
         }
 
-        internal static void Populate(ContentRegistry registry, PaletteTable palettes, WorldChunk chunk, int rabbits, List<GameObject> temp)
+        private static readonly string[] RabbitMix = { "rabbit.brown", "rabbit.white", "rabbit.grey", "rabbit.spotted", "rabbit.black", "rabbit.sakura" };
+
+        /// <summary>T23: both grassland species side by side in the gameplay frame, plus a closer view.</summary>
+        public static readonly string[] SpeciesMix = { "rabbit.brown", "squirrel.red", "rabbit.white", "squirrel.autumn", "squirrel.grey", "rabbit.spotted" };
+
+        [MenuItem("Pocket Wilds/Capture/Species Mix and Squirrel Variants", priority = 522)]
+        public static void CaptureSpeciesMenu() =>
+            Debug.Log("[WorldCapture] " + CaptureSpecies("T23", "squirrel", new[] { "red", "brown", "grey", "cream", "black", "autumn" }));
+
+        /// <summary>
+        /// Shared variant prompt: the six palettes of one species on one prefab in a 2 x 3 grid on the meadow
+        /// (Medium lighting), then the gameplay frame with a species mix and a closer three-quarter view.
+        /// </summary>
+        public static string CaptureSpecies(string prefix, string species, string[] variants)
         {
+            var active = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (active.path != ScenePath && !string.IsNullOrEmpty(active.path) && active.isDirty)
+                return "refused: save or discard changes in " + active.path;
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var registry = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath).CreateBuilder().Build();
+            var temp = new List<GameObject>();
+            var results = new List<string>();
+            using (var palettes = new PaletteTable(registry))
+            {
+                try
+                {
+                    var chunk = Object.FindAnyObjectByType<WorldChunk>();
+                    var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
+                    var camera = Camera.main;
+                    chunk.Bind(palettes);
+                    entry.Lighting.Apply(Object.FindAnyObjectByType<Light>(), camera, QualityTier.Medium);
+                    chunk.ApplyQuality(QualityTier.Medium);
+                    var position = camera.transform.position;
+                    var rotation = camera.transform.rotation;
+
+                    // 2 x 3 grid, every animal facing the camera three-quarter.
+                    var origin = chunk.EggSpawn.position + new Vector3(0f, 0f, 1.6f);
+                    var resolver = new AnimalVisualResolver(registry, palettes);
+                    for (int i = 0; i < variants.Length; i++)
+                    {
+                        var spot = origin + new Vector3((i % 3 - 1) * 0.85f, 0f, (i / 3) * 0.95f);
+                        temp.Add(Spawn(registry, resolver, species + "." + variants[i], (uint)(i + 1), (uint)(i * 31 + 3), spot, 200f, 0.6f).gameObject);
+                    }
+                    camera.transform.position = origin + new Vector3(0.9f, 1.55f, -2.7f);
+                    camera.transform.LookAt(origin + new Vector3(0f, 0.15f, 0.5f));
+                    string grid = $"{CaptureUtility.DefaultFolder}/{prefix}_{species}_variants.png";
+                    CaptureUtility.Render(camera, 1200, 800, grid);
+                    results.Add(CaptureUtility.Render(camera, 1200, 800, grid));
+                    foreach (var go in temp)
+                        Object.DestroyImmediate(go);
+                    temp.Clear();
+
+                    camera.transform.SetPositionAndRotation(position, rotation);
+                    Populate(registry, palettes, chunk, SpeciesMix.Length, temp, SpeciesMix);
+                    string world = $"{CaptureUtility.DefaultFolder}/{prefix}_world_species_mix.png";
+                    CaptureUtility.Render(camera, 540, 1170, world);
+                    results.Add(CaptureUtility.Render(camera, 540, 1170, world));
+                    var focus = chunk.EggSpawn.position;
+                    camera.transform.position = focus + new Vector3(2.4f, 2.6f, -5.2f);
+                    camera.transform.LookAt(focus + new Vector3(0f, 0.4f, 1.2f));
+                    results.Add(CaptureUtility.Render(camera, 1200, 760, $"{CaptureUtility.DefaultFolder}/{prefix}_world_species_mix_close.png"));
+                    camera.transform.SetPositionAndRotation(position, rotation);
+                }
+                finally
+                {
+                    foreach (var go in temp)
+                        Object.DestroyImmediate(go);
+                    EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+                }
+            }
+            return string.Join(", ", results);
+        }
+
+        private static AnimalView Spawn(ContentRegistry registry, AnimalVisualResolver resolver, string speciesAndVariant, uint instanceId,
+            uint seed, Vector3 position, float yaw, float animationTime)
+        {
+            string speciesName = speciesAndVariant.Substring(0, speciesAndVariant.IndexOf('.'));
+            var speciesId = ContentId.FromSource("species." + speciesName);
+            var catalog = AssetDatabase.LoadAssetAtPath<AnimalVisualCatalog>(AnimalPipeline.VisualCatalogPath);
+            catalog.TryGet(registry.Species.Get(speciesId).VisualKey, out var visual);
+            var animal = new AnimalInstance
+            {
+                InstanceId = instanceId, Seed = seed, Species = speciesId,
+                Variant = ContentId.FromSource("variant." + speciesAndVariant),
+            };
+            resolver.TryResolve(animal, position, yaw, out var snapshot);
+            var view = Object.Instantiate(visual.prefab);
+            view.Configure(snapshot);
+            view.Animator.Rebind();
+            view.Animator.Update(animationTime);
+            return view;
+        }
+
+        internal static void Populate(ContentRegistry registry, PaletteTable palettes, WorldChunk chunk, int rabbits, List<GameObject> temp,
+            string[] animals = null)
+        {
+            animals = animals ?? RabbitMix;
             var config = AssetDatabase.LoadAssetAtPath<HatchPresentationConfig>(EggPipeline.HatchConfigPath);
             var egg = Object.Instantiate(config.eggPrefab);
             var basic = registry.Eggs.Get(ContentId.FromSource("egg.grassland.basic"));
@@ -126,30 +221,15 @@ namespace PocketWilds.Editor.Capture
             egg.Configure(chunk.EggSpawn.position, 180f, EggVisualPacking.FromDefinition(basic, row));
             temp.Add(egg.gameObject);
 
-            var catalog = AssetDatabase.LoadAssetAtPath<AnimalVisualCatalog>(AnimalPipeline.VisualCatalogPath);
-            catalog.TryGet("PF_Animal_Rabbit", out var entry);
             var resolver = new AnimalVisualResolver(registry, palettes);
-            string[] variants = { "brown", "white", "grey", "spotted", "black", "sakura" };
             Vector3[] offsets =
             {
                 new Vector3(1.0f, 0f, 0.4f), new Vector3(-1.1f, 0f, 0.9f), new Vector3(0.3f, 0f, 1.9f),
                 new Vector3(-0.5f, 0f, -1.3f), new Vector3(1.2f, 0f, -0.8f), new Vector3(-0.2f, 0f, 3.0f),
             };
             for (int i = 0; i < rabbits && i < offsets.Length; i++)
-            {
-                var animal = new AnimalInstance
-                {
-                    InstanceId = (uint)(i + 1), Seed = (uint)(i * 31 + 3),
-                    Species = ContentId.FromSource("species.rabbit"),
-                    Variant = ContentId.FromSource("variant.rabbit." + variants[i % variants.Length]),
-                };
-                resolver.TryResolve(animal, chunk.EggSpawn.position + offsets[i], 150f + i * 23f, out var snapshot);
-                var view = Object.Instantiate(entry.prefab);
-                view.Configure(snapshot);
-                view.Animator.Rebind();
-                view.Animator.Update(0.4f * i);
-                temp.Add(view.gameObject);
-            }
+                temp.Add(Spawn(registry, resolver, animals[i % animals.Length], (uint)(i + 1), (uint)(i * 31 + 3),
+                    chunk.EggSpawn.position + offsets[i], 150f + i * 23f, 0.4f * i).gameObject);
         }
     }
 }

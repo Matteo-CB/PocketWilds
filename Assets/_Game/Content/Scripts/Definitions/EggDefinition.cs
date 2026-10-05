@@ -45,9 +45,11 @@ namespace PocketWilds.Content
 
         public EggDefinition(ContentId id, string displayKey, ContentId biome, EggTier tier, Color32[] palette,
             byte maskStrengthR, byte maskStrengthG, byte maskStrengthB, string visualKey,
-            double baseCost, double costGrowth, double[] rarityWeights, EggDropEntry[] pool, int pityHardLimit = DefaultPityHardLimit)
+            double baseCost, double costGrowth, double[] rarityWeights, EggDropEntry[] pool, int pityHardLimit = DefaultPityHardLimit,
+            ContentId starterSpecies = default)
         {
             PityHardLimit = pityHardLimit;
+            StarterSpecies = starterSpecies;
             Id = id;
             DisplayKey = displayKey;
             Biome = biome;
@@ -92,5 +94,11 @@ namespace PocketWilds.Content
 
         /// <summary>Eggs in a row without a new species before one is guaranteed (while any is missing).</summary>
         public int PityHardLimit { get; }
+
+        /// <summary>
+        /// Species of the free tutorial hatch when this egg is the first of a profile (Vertical Slice:
+        /// the player starts with a rabbit). None: the tutorial hatch rolls the pool like any other.
+        /// </summary>
+        public ContentId StarterSpecies { get; }
     }
 }

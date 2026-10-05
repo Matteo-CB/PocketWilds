@@ -67,6 +67,12 @@ namespace PocketWilds.Editor.Animals
             }
         }
 
+        [MenuItem("Pocket Wilds/Animals/Build Squirrel (T23)", priority = 151)]
+        public static void BuildSquirrel()
+        {
+            BuildSpecies("Squirrel", "SmallQuadruped", EnsureSquirrelDefinition);
+        }
+
         public static void BuildSpecies(string species, string family, Func<SpeciesDefinitionAsset> ensureDefinition)
         {
             var material = EnsureAnimalMaterial();
@@ -112,8 +118,12 @@ namespace PocketWilds.Editor.Animals
                 throw new InvalidOperationException("No clips imported from " + clipsPath);
 
             string path = ControllerPath(family);
-            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(path)
-                             ?? AnimatorController.CreateAnimatorControllerAtPath(path);
+            var existing = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
+            // Every species of the family shares this controller: rebuild only when it drifted from the
+            // family table, so adding a species does not rewrite it.
+            if (existing != null && IsUpToDate(existing, family, clips))
+                return existing;
+            var controller = existing ?? AnimatorController.CreateAnimatorControllerAtPath(path);
 
             var layer = controller.layers[0];
             var machine = layer.stateMachine;
@@ -152,6 +162,29 @@ namespace PocketWilds.Editor.Animals
 
             EditorUtility.SetDirty(controller);
             return controller;
+        }
+
+        private static bool IsUpToDate(AnimatorController controller, string family, Dictionary<string, AnimationClip> clips)
+        {
+            if (controller.layers.Length == 0 || controller.parameters.Length != 0)
+                return false;
+            var machine = controller.layers[0].stateMachine;
+            var states = machine.states.ToDictionary(s => s.state.name, s => s.state);
+            if (states.Count != FamilyStates.Length || machine.defaultState == null || machine.defaultState.name != "Idle")
+                return false;
+            foreach (var (stateName, clipSuffix, returnsToIdle, next) in FamilyStates)
+            {
+                if (!states.TryGetValue(stateName, out var state))
+                    return false;
+                if (!clips.TryGetValue($"AN_{family}_{clipSuffix}", out var clip) || state.motion != clip)
+                    return false;
+                string target = next ?? (returnsToIdle ? "Idle" : null);
+                if (target == null ? state.transitions.Length != 0
+                        : state.transitions.Length != 1 || state.transitions[0].destinationState == null
+                          || state.transitions[0].destinationState.name != target)
+                    return false;
+            }
+            return true;
         }
 
         // ---------------- Prefab ----------------
@@ -258,6 +291,33 @@ namespace PocketWilds.Editor.Animals
                 Variant("variant.rabbit.spotted", RarityTier.Rare, Hex("F4EBDD"), Hex("F2BCBC"), Hex("FFF8EE"), Hex("E98A93"), Hex("1E1414"),
                     pattern: Hex("C9A27E"), channel: PatternChannel.MaskA, strength: 15),
                 Variant("variant.rabbit.sakura", RarityTier.Epic, Hex("F6C9D4"), Hex("FBE3E8"), Hex("FFF1F4"), Hex("E77D95"), Hex("2B1820")),
+            };
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
+        private static SpeciesDefinitionAsset EnsureSquirrelDefinition()
+        {
+            var asset = LoadOrCreate<SpeciesDefinitionAsset>(DefinitionPath("Squirrel"));
+            asset.sourceId = "species.squirrel";
+            asset.displayKey = "species.squirrel.name";
+            asset.rigFamily = RigFamily.SmallQuadruped;
+            asset.biomeId = "biome.grassland";
+            // Same base as Rabbit: inside a biome, rarity and mastery carry the production curve.
+            asset.baseProduction = 1.0;
+            asset.visualKey = "PF_Animal_Squirrel";
+
+            // Squirrel regions (pw_masks.squirrel_masks): secondary = tail, belly = chest, chin and muzzle,
+            // detail = nose, mask A = tail tip and ear tufts. Autumn = warm orange/red palette (A-SP-002).
+            asset.variants = new List<SpeciesDefinitionAsset.VariantEntry>
+            {
+                Variant("variant.squirrel.red", RarityTier.Common, Hex("C9693A"), Hex("B4552E"), Hex("F4E3CB"), Hex("5E3329"), Hex("1A1210")),
+                Variant("variant.squirrel.brown", RarityTier.Common, Hex("8A5F43"), Hex("6E4835"), Hex("EEDDC4"), Hex("4E3128"), Hex("160F0D")),
+                Variant("variant.squirrel.grey", RarityTier.Uncommon, Hex("9C9896"), Hex("C4C0BC"), Hex("F2EEE8"), Hex("6B5A58"), Hex("141012")),
+                Variant("variant.squirrel.cream", RarityTier.Uncommon, Hex("EAD6B6"), Hex("F6E9D3"), Hex("FFF9EE"), Hex("C48D80"), Hex("2A1C1A")),
+                Variant("variant.squirrel.black", RarityTier.Rare, Hex("443833"), Hex("332A27"), Hex("9C8C82"), Hex("5E4A46"), Hex("0B0808")),
+                Variant("variant.squirrel.autumn", RarityTier.Epic, Hex("E58A35"), Hex("C8442E"), Hex("FBE5C2"), Hex("8E3A2C"), Hex("1E1210"),
+                    pattern: Hex("F4C24C"), channel: PatternChannel.MaskA, strength: 15),
             };
             EditorUtility.SetDirty(asset);
             return asset;

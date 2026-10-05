@@ -71,17 +71,20 @@ namespace PocketWilds.Tests.PlayMode
             {
                 if (hatch > 0)
                     context.Economy.Grant(CurrencyId.Light, context.Hatch.GetCost(ContentId.FromSource("egg.grassland.basic")), EconomyReason.Reward);
-                var before = context.State.Mastery.Species.TryGetValue(Rabbit, out var m) ? m : default;
+                var masteryBefore = new System.Collections.Generic.Dictionary<ContentId, SpeciesMastery>(context.State.Mastery.Species);
                 sanctuary.RequestHatch();
                 Assert.AreEqual(hatch + 1, context.State.Collection.Count);
+                // Grassland eggs give rabbits and squirrels (T23): follow the species that hatched.
+                var species = context.State.Collection[context.State.Collection.Count - 1].Species;
+                var before = masteryBefore.TryGetValue(species, out var m) ? m : default;
                 sanctuary.RequestHatch(); // skip the staging: the reveal shows the progress
                 yield return null;
                 Assert.IsTrue(hud.MasteryVisible, "Hatch " + hatch + " shows species progress.");
-                var after = context.State.Mastery.Species[Rabbit];
+                var after = context.State.Mastery.Species[species];
                 Assert.IsTrue(after.Level > before.Level || after.Xp > before.Xp, "Progress on every hatch.");
 
                 float until = Time.realtimeSinceStartup + 4f;
-                while (hud.MasteryVisible || sanctuary.WaitingEgg == null)
+                while (hud.MasteryVisible || sanctuary.WaitingEgg == null || sanctuary.Hatch.IsPlaying)
                 {
                     Assert.Less(Time.realtimeSinceStartup, until, "Toast or next egg stuck.");
                     yield return null;

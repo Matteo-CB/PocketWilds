@@ -73,6 +73,64 @@ def rabbit_masks(co, n, ctx):
     return secondary, belly, mask_a, mask_b
 
 
+def _path_project(co, points):
+    """Closest point on a polyline: (arc length, distance, total length)."""
+    best = (0.0, 1e9); run = 0.0
+    for a, b in zip(points[:-1], points[1:]):
+        a = Vector(a); b = Vector(b); seg = (b - a).length
+        p, t = intersect_point_line(co, a, b)
+        t = max(0.0, min(1.0, t)); p = a + (b - a) * t
+        d = (co - p).length
+        if d < best[1]:
+            best = (run + seg * t, d)
+        run += seg
+    return best[0], best[1], run
+
+
+def squirrel_masks(co, n, ctx):
+    """Secondary = tail, belly = chest, chin and muzzle, mask A = tail tip and ear tufts,
+    mask B = dorsal stripe (reserved)."""
+    axes = ctx["ears"]
+    side = "L" if co.x > 0 else "R"
+    base, tip = axes[side]
+    p, t = intersect_point_line(co, base, tip)
+    radial = (co - p).length
+    on_ear = co.z > 0.40 and radial < 0.05 and -0.05 < t < 0.65
+
+    tail = 0.0
+    s, d, total = _path_project(co, ctx["tail_path"])
+    if d < 0.13 and not on_ear:
+        tail = smoothstep(0.01, 0.06, s) * max(smoothstep(0.17, 0.22, co.y), smoothstep(0.30, 0.36, co.z))
+
+    head_c = ctx["head_center"]
+    hr = ctx["head_radii"]
+    dh = co - head_c
+    head_s = math.sqrt((dh.x / hr[0]) ** 2 + (dh.y / hr[1]) ** 2 + (dh.z / hr[2]) ** 2)
+
+    belly = 0.0
+    if not on_ear:
+        front = max(n.dot(Vector((0, -1, 0))), 0.85 * n.dot(Vector((0, 0, -1))))
+        body = smoothstep(0.25, 0.65, front) * (1.0 - smoothstep(0.19, 0.25, co.z)) * (1.0 - smoothstep(0.03, 0.11, co.y))
+        body *= smoothstep(0.85, 1.05, head_s)
+        nose = ctx["nose"]
+        muzzle = smoothstep(0.050, 0.022, (co - nose).length)
+        # Chin and throat below the nose join the chest bib.
+        facing = n.dot(Vector((0, -1, 0)))
+        chin = smoothstep(0.30, 0.70, max(facing, 0.8 * n.dot(Vector((0, 0, -1))))) * smoothstep(nose.z + 0.004, nose.z - 0.030, co.z)
+        chin *= 1.0 - smoothstep(1.05, 1.25, head_s)
+        belly = max(body, muzzle, chin) * (1.0 - tail)
+
+    mask_a = 0.0
+    if tail > 0.0:
+        mask_a = smoothstep(0.68 * total, 0.86 * total, s) * tail
+    if on_ear:
+        mask_a = max(mask_a, smoothstep(0.16, 0.30, t))
+
+    mask_b = smoothstep(0.035, 0.015, abs(co.x)) * smoothstep(-0.03, 0.02, co.y) * (1.0 - smoothstep(0.17, 0.21, co.y))
+    mask_b *= smoothstep(0.2, 0.5, n.z) * (1.0 - belly) * (1.0 - tail)
+    return tail, belly, mask_a, mask_b
+
+
 RULES = {
     "Rabbit": dict(
         fn=rabbit_masks,
@@ -81,7 +139,21 @@ RULES = {
                ((0.125, 0.10, 0.15), 0.055), ((-0.125, 0.13, 0.12), 0.055), ((0.11, -0.01, 0.12), 0.045),
                ((0.075, -0.17, 0.33), 0.045)],
     ),
+    "Squirrel": dict(
+        fn=squirrel_masks,
+        head_center=(0.0, -0.080, 0.300),
+        head_radii=(0.132, 0.126, 0.132),
+        spots=[],
+    ),
 }
+
+
+def _tail_path(species):
+    try:
+        import pw_species
+    except ImportError:
+        return []
+    return pw_species.SPECS.get(species, {}).get("tail_path", [])
 
 
 def apply(species, armature_name="SK_SmallQuadruped", nose_object="WORK_Nose"):
@@ -92,6 +164,10 @@ def apply(species, armature_name="SK_SmallQuadruped", nose_object="WORK_Nose"):
         "head_center": Vector(rule["head_center"]),
         "nose": bpy.data.objects[nose_object].location.copy(),
         "spots": rule["spots"],
+        "head_radii": rule.get("head_radii", (0.150, 0.135, 0.140)),
+        "eyes": [(bpy.data.objects[n].location.copy(), bpy.data.objects[n].get("pw_radius", 0.023))
+                 for n in ("WORK_Eye_L", "WORK_Eye_R") if n in bpy.data.objects],
+        "tail_path": _tail_path(species),
     }
     report = []
     for lod in range(3):

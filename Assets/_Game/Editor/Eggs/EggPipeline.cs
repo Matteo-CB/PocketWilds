@@ -467,6 +467,8 @@ namespace PocketWilds.Editor.Eggs
                 egg.baseCost = 10.0;
                 egg.costGrowth = 1.18;
                 egg.rarityWeights = new[] { 72.0, 20.0, 6.0, 1.6, 0.36, 0.04 };
+                // Vertical Slice: the tutorial egg gives the first rabbit.
+                egg.starterSpeciesId = "species.rabbit";
             });
             var focus = EnsureEgg("DEF_Egg_Grassland_Focus", "egg.grassland.focus", EggTier.Focus, egg =>
             {
@@ -494,6 +496,8 @@ namespace PocketWilds.Editor.Eggs
             EditorUtility.SetDirty(database);
         }
 
+        public static readonly string[] GrasslandSpecies = { "species.rabbit", "species.squirrel" };
+
         private static EggDefinitionAsset EnsureEgg(string assetName, string sourceId, EggTier tier, Action<EggDefinitionAsset> fill)
         {
             string path = $"{EggDefinitionsFolder}/{assetName}.asset";
@@ -509,11 +513,12 @@ namespace PocketWilds.Editor.Eggs
             asset.biomeId = "biome.grassland";
             asset.tier = tier;
             asset.visualKey = "PF_Egg_Base";
-            // Grassland pool: species of the biome. Squirrel and Hedgehog join when integrated (T23, T24).
-            asset.pool = new System.Collections.Generic.List<EggDefinitionAsset.PoolEntry>
-            {
-                new EggDefinitionAsset.PoolEntry { speciesId = "species.rabbit", weight = 1f },
-            };
+            // Grassland pool: integrated species of the biome, equal weights (rarity comes from the tier
+            // roll, discovery from pity). Hedgehog joins when integrated (T24).
+            asset.pool = new System.Collections.Generic.List<EggDefinitionAsset.PoolEntry>();
+            foreach (var species in GrasslandSpecies)
+                asset.pool.Add(new EggDefinitionAsset.PoolEntry { speciesId = species, weight = 1f });
+            asset.starterSpeciesId = "";
             fill(asset);
             EditorUtility.SetDirty(asset);
             return asset;

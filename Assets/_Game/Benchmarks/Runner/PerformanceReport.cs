@@ -12,6 +12,8 @@ namespace PocketWilds.Benchmarks
         public int rabbits;
         public PocketWilds.Core.QualityTier tier;
         public bool hatchBurst;
+        /// <summary>T23: every other animal of the save is a squirrel (two species share the meadow).</summary>
+        public bool mixed;
         public float warmupSeconds = 2f;
         public float measureSeconds = 8f;
 
@@ -46,6 +48,8 @@ namespace PocketWilds.Benchmarks
         public int rabbitsInSave;
         public int visibleAnimals;
         public int frames;
+        /// <summary>FrameTimingManager samples contradicted by the wall clock and replaced by it.</summary>
+        public int rejectedTimings;
         public float seconds;
 
         public SampleStats cpuFrameMs;

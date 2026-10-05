@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T02:30:22Z",
+  "updatedUtc": "2026-10-05T03:47:23Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -169,8 +169,8 @@
     {
       "task": "T23",
       "title": "Squirrel",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "Squirrel produced by reusing rig, clips, material and pipeline. New SourceArt/Blender/Tools/pw_species.py turns the Rabbit recipe into species steps; Blender species work about 20 min (spec to FBX) against about 50 min for the Rabbit model, skin, LODs and masks. One-time generalizations for every next species: multi-species sanctuary pools/profiles, egg starter species, idempotent family controller, mixed benchmark scenarios, species capture. EditMode 238/238, PlayMode 30/30 (+1 explicit)."
     },
     {
       "task": "T24",
@@ -470,7 +470,7 @@
         "L-SC-004",
         "A-SP-001"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Animals/Squirrel/BL_Animal_Squirrel.blend",
       "runtimePath": "Assets/_Game/Art/Animals/Squirrel/Models/",
       "validationGates": [
@@ -489,8 +489,8 @@
         "G34"
       ],
       "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "",
+      "lastValidationUtc": "2026-10-05T03:47:23Z",
+      "notes": "T23: metaball blockout from SourceArt/Blender/Tools/pw_species.py SPECS[Squirrel] (narrower face, compact body, tucked front paws, small tufted ears on the shared ear bones, S-curled solid tail with back-edge lobes). Captures SourceArt/Blender/Animals/Squirrel/Captures/T23_blockout3_sheet.png. | LOD0 2398 tris (quad remesh 1210 faces + bead eyes/nose), skinned on the unchanged SmallQuadruped skeleton: rigid head volume (head, cheeks, muzzle), small ears turn as one piece at half the family ear motion, tail weights along its path. Pose review T23_close3_sheet.png, palettes T23_pal2_sheet.png, LODs T23_lod_sheet.png (LOD1 948 by symmetric collapse of LOD0 so ears survive, LOD2 418). | T23 Unity: SKM_Squirrel.fbx (Animal_Rigged rules, 3 LODs, 6 exposed sockets, same bone paths and bind poses as Rabbit), PF_Animal_Squirrel (MAT_Animal_Master, AC_SmallQuadruped shared), DEF_Species_Squirrel 6 variants (Red, Brown Common; Grey, Cream Uncommon; Black Rare; Autumn Epic, warm orange/red with golden tail tip on MaskA), en/fr names, Codex thumbnails, Grassland Basic and Focus pools (tutorial egg still gives the first rabbit via starterSpeciesId). AssetValidator 0 errors. Captures TestResults/Captures/T23_squirrel_variants.png, T23_world_species_mix.png, _close.png. Performance Docs/Performance/T23_Squirrel.md: 10+10 vs 20 rabbits same batches/GPU, +1.5 MB pooled. Pending: device measurement (same as Rabbit).",
       "contentId": "species.squirrel",
       "biome": "Grassland",
       "rigFamily": "SmallQuadruped",
@@ -501,7 +501,16 @@
         "SKM_Squirrel_LOD1",
         "SKM_Squirrel_LOD2"
       ],
-      "variants": 6
+      "variants": 6,
+      "passedGates": [
+        "G01",
+        "G02",
+        "G03",
+        "G04",
+        "G06",
+        "G08",
+        "G16"
+      ]
     },
     {
       "id": "A-SP-003",

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using PocketWilds.Content;
 using PocketWilds.Core;
@@ -39,8 +40,10 @@ namespace PocketWilds.Presentation
         private readonly VfxPool _vfx;
         private readonly HatchSequencePlayer _hatch;
         private readonly AnimalScheduler _scheduler;
-        private readonly BehaviorProfile _profile;
-        private readonly int _rabbitHandle;
+        // One pool and behavior profile per species with a visual (T23): the visible budget is shared.
+        private readonly int[] _speciesHandles;
+        private readonly BehaviorProfile[] _speciesProfiles;
+        private readonly Dictionary<ContentId, int> _speciesSlot;
         private readonly int _visibleBudget;
         private readonly AnimalView[] _views;
         private readonly int[] _agentByView;
@@ -49,6 +52,7 @@ namespace PocketWilds.Presentation
         private EggView _waitingEgg;
         private AnimalView _hatchingAnimal;
         private uint _hatchingInstance;
+        private ContentId _hatchingSpecies;
         private uint _hatchingSeed;
         private float _nextEggTime = -1f;
         private float _time;
@@ -78,11 +82,6 @@ namespace PocketWilds.Presentation
             context.Palettes.TryGetRow(_eggId, out int eggRow);
             _eggVisual = EggVisualPacking.FromDefinition(_egg, eggRow);
 
-            var catalog = context.VisualCatalog;
-            if (catalog == null || !catalog.TryGet("PF_Animal_Rabbit", out var rabbit))
-                throw new InvalidOperationException("Visual catalog has no PF_Animal_Rabbit.");
-            _profile = rabbit.behavior;
-
             var settings = SchedulerSettings.ForQuality(context.Quality.CurrentTier, false);
             // Visible population: every tier A slot plus a calm background (Performance Test Matrix P3 shape).
             _visibleBudget = settings.MaxTierA + (context.Quality.CurrentTier == QualityTier.Low ? 10 : 20);
@@ -92,7 +91,27 @@ namespace PocketWilds.Presentation
                 _agentByView[i] = AnimalScheduler.InvalidHandle;
 
             _animals = new AnimalViewPool(root);
-            _rabbitHandle = _animals.Register(rabbit.visualKey, rabbit.prefab, _visibleBudget + 1, _visibleBudget + 2);
+            var catalog = context.VisualCatalog;
+            if (catalog == null)
+                throw new InvalidOperationException("No animal visual catalog.");
+            var handles = new List<int>(8);
+            var profiles = new List<BehaviorProfile>(8);
+            _speciesSlot = new Dictionary<ContentId, int>(8);
+            var table = context.Content.Species;
+            for (int i = 0; i < table.Count; i++)
+            {
+                var species = table[i];
+                // Each species may show the whole budget: its pool is sized like the budget.
+                if (!catalog.TryGet(species.VisualKey, out var entry) || entry.prefab == null)
+                    continue;
+                _speciesSlot.Add(species.Id, handles.Count);
+                handles.Add(_animals.Register(entry.visualKey, entry.prefab, _visibleBudget + 1, _visibleBudget + 2));
+                profiles.Add(entry.behavior);
+            }
+            if (handles.Count == 0)
+                throw new InvalidOperationException("Visual catalog has no species prefab.");
+            _speciesHandles = handles.ToArray();
+            _speciesProfiles = profiles.ToArray();
             _eggs = new GameObjectPool<EggView>(hatchConfig.eggPrefab, root, 2, 2);
             _eggs.Warmup(2);
             float burst = context.Quality.CurrentTier == QualityTier.Low ? 0.5f : 1f;
@@ -107,7 +126,7 @@ namespace PocketWilds.Presentation
             _scheduler = new AnimalScheduler(_visibleBudget + 2, settings, chunk.WanderArea);
 
             SpawnSavedAnimals();
-            _ = WarmupSparesAsync();
+            WarmupSpares();
             PresentEgg();
             _hud?.Bind(this);
             RefreshEggCost();
@@ -245,11 +264,12 @@ namespace PocketWilds.Presentation
 
             var reveal = _waitingEgg.RevealPoint;
             _context.Visuals.TryResolve(result.Animal, reveal.position, reveal.eulerAngles.y, out var snapshot);
-            if (!_animals.TryAcquire(_rabbitHandle, snapshot, out _hatchingAnimal))
+            if (!TryAcquire(snapshot, out _hatchingAnimal))
                 _hatchingAnimal = null;
             _pendingMastery = result.Mastery;
             _masteryShown = false;
             _hatchingInstance = result.Animal.InstanceId;
+            _hatchingSpecies = result.Animal.Species;
             _hatchingSeed = result.Animal.Seed;
 
             bool repeat = _time - _lastHatchEnd < RepeatWindowSeconds;
@@ -327,7 +347,7 @@ namespace PocketWilds.Presentation
             }
             if (_hatchingAnimal != null)
             {
-                AddToMeadow(_hatchingAnimal, _hatchingInstance, _hatchingSeed);
+                AddToMeadow(_hatchingAnimal, _hatchingSpecies, _hatchingInstance, _hatchingSeed);
                 _hatchingAnimal = null;
             }
             _rig?.ReturnToWorld();
@@ -336,23 +356,64 @@ namespace PocketWilds.Presentation
         }
 
         /// <summary>
-        /// Fills the rest of the visible budget with pooled views, two per frame right after entering: later
-        /// hatches never instantiate during gameplay (Performance Bible: pooling, no runtime Instantiate).
+        /// Fills the rest of the visible budget with pooled views for every species the egg can give, about
+        /// two per frame in total right after entering: later hatches never instantiate during gameplay
+        /// (Performance Bible: pooling, no runtime Instantiate). Species are warmed side by side.
         /// </summary>
-        private async Awaitable WarmupSparesAsync()
+        private void WarmupSpares()
+        {
+            int spares = _visibleBudget + 1 - VisibleAnimals;
+            if (spares <= 0)
+                return;
+            int warmed = 0;
+            foreach (var entry in _egg.Pool)
+                if (_speciesSlot.ContainsKey(entry.Species))
+                    warmed++;
+            int perFrame = Math.Max(1, 2 / Math.Max(1, warmed));
+            foreach (var entry in _egg.Pool)
+                if (_speciesSlot.TryGetValue(entry.Species, out int slot))
+                    _ = WarmupSpeciesAsync(_speciesHandles[slot], spares, perFrame);
+        }
+
+        private async Awaitable WarmupSpeciesAsync(int handle, int count, int perFrame)
         {
             try
             {
-                int spares = _visibleBudget + 1 - VisibleAnimals;
-                if (spares > 0)
-                    await _animals.WarmupAsync(_rabbitHandle, spares, 2, _lifetime.Token);
+                int missing = count - _animals.GetPool(handle).Stats.Inactive;
+                if (missing > 0)
+                    await _animals.WarmupAsync(handle, missing, perFrame, _lifetime.Token);
             }
             catch (OperationCanceledException)
             {
             }
         }
 
-        public int PooledSpares => _animals.GetPool(_rabbitHandle).Stats.Inactive;
+        /// <summary>Spares of the least warmed species the egg can give: the next hatch is covered while this is above 0.</summary>
+        public int PooledSpares
+        {
+            get
+            {
+                int min = int.MaxValue;
+                foreach (var entry in _egg.Pool)
+                    if (_speciesSlot.TryGetValue(entry.Species, out int slot))
+                        min = Math.Min(min, _animals.GetPool(_speciesHandles[slot]).Stats.Inactive);
+                return min == int.MaxValue ? 0 : min;
+            }
+        }
+
+        /// <summary>Spares of one species (tests and diagnostics).</summary>
+        public int PooledSparesOf(ContentId species) =>
+            _speciesSlot.TryGetValue(species, out int slot) ? _animals.GetPool(_speciesHandles[slot]).Stats.Inactive : 0;
+
+        private bool TryAcquire(in AnimalVisualSnapshot snapshot, out AnimalView view)
+        {
+            view = null;
+            return _speciesSlot.TryGetValue(snapshot.Species, out int slot)
+                   && _animals.TryAcquire(_speciesHandles[slot], snapshot, out view);
+        }
+
+        private BehaviorProfile ProfileOf(ContentId species) =>
+            _speciesSlot.TryGetValue(species, out int slot) ? _speciesProfiles[slot] : _speciesProfiles[0];
 
         public void Dispose()
         {
@@ -431,14 +492,14 @@ namespace PocketWilds.Presentation
                     var position = area.Center + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
                     if (!_context.Visuals.TryResolve(animal, position, SeedHash.Unit(animal.Seed, 0x51A70003u) * 360f, out var snapshot))
                         continue;
-                    if (!_animals.TryAcquire(_rabbitHandle, snapshot, out var view))
-                        return;
-                    AddToMeadow(view, animal.InstanceId, animal.Seed);
+                    if (!TryAcquire(snapshot, out var view))
+                        continue;
+                    AddToMeadow(view, animal.Species, animal.InstanceId, animal.Seed);
                 }
             }
         }
 
-        private void AddToMeadow(AnimalView view, uint instanceId, uint seed)
+        private void AddToMeadow(AnimalView view, ContentId species, uint instanceId, uint seed)
         {
             int slot = Array.IndexOf(_views, null);
             if (slot < 0)
@@ -453,7 +514,7 @@ namespace PocketWilds.Presentation
             }
             var transform = view.transform;
             _views[slot] = view;
-            _agentByView[slot] = _scheduler.Register(view, instanceId, seed, transform.position, transform.eulerAngles.y, _profile, _time);
+            _agentByView[slot] = _scheduler.Register(view, instanceId, seed, transform.position, transform.eulerAngles.y, ProfileOf(species), _time);
             VisibleAnimals++;
         }
 

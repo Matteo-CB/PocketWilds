@@ -27,6 +27,8 @@ namespace PocketWilds.Benchmarks
     public sealed class PerformanceBaselineRunner : MonoBehaviour
     {
         public const string CommandLineFlag = "-pw-benchmark";
+        /// <summary>Optional: "-pw-scenarios P2,P2-Mix" runs only these scenario ids.</summary>
+        public const string ScenarioFilterFlag = "-pw-scenarios";
         public const string BootstrapScene = "SC_Bootstrap";
         public const string SliceScene = "SC_VerticalSlice_Grassland";
 
@@ -35,6 +37,13 @@ namespace PocketWilds.Benchmarks
             ("variant.rabbit.brown", RarityTier.Common), ("variant.rabbit.white", RarityTier.Common),
             ("variant.rabbit.grey", RarityTier.Uncommon), ("variant.rabbit.black", RarityTier.Uncommon),
             ("variant.rabbit.spotted", RarityTier.Rare), ("variant.rabbit.sakura", RarityTier.Epic),
+        };
+
+        private static readonly (string id, RarityTier rarity)[] SquirrelVariants =
+        {
+            ("variant.squirrel.red", RarityTier.Common), ("variant.squirrel.brown", RarityTier.Common),
+            ("variant.squirrel.grey", RarityTier.Uncommon), ("variant.squirrel.cream", RarityTier.Uncommon),
+            ("variant.squirrel.black", RarityTier.Rare), ("variant.squirrel.autumn", RarityTier.Epic),
         };
 
         public static PerformanceScenario[] DefaultScenarios() => new[]
@@ -51,7 +60,21 @@ namespace PocketWilds.Benchmarks
             {
                 measureSeconds = 14f,
             },
+            new PerformanceScenario("P2-Mix", "20 animals, 10 rabbits + 10 squirrels", 20, QualityTier.Medium) { mixed = true },
+            new PerformanceScenario("S50-Mix", "50 animals, 25 rabbits + 25 squirrels", 50, QualityTier.Medium) { mixed = true },
         };
+
+        private static PerformanceScenario[] Filter(PerformanceScenario[] all, string[] args)
+        {
+            for (int i = 0; i < args.Length - 1; i++)
+            {
+                if (args[i] != ScenarioFilterFlag)
+                    continue;
+                var wanted = new System.Collections.Generic.HashSet<string>(args[i + 1].Split(','));
+                return Array.FindAll(all, s => wanted.Contains(s.id));
+            }
+            return all;
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void StartFromCommandLine()
@@ -72,10 +95,20 @@ namespace PocketWilds.Benchmarks
         private IEnumerator RunAndQuit(string outPath)
         {
             PerformanceReport report = null;
-            yield return RunAll(DefaultScenarios(), "Player (development)", r => report = r);
-            Write(report, outPath);
-            Debug.Log("[Benchmark] Report written to " + outPath);
-            Application.Quit(0);
+            yield return RunAll(Filter(DefaultScenarios(), Environment.GetCommandLineArgs()), "Player (development)", r => report = r);
+            int exitCode = 0;
+            try
+            {
+                Write(report, outPath);
+                Debug.Log("[Benchmark] Report written to " + outPath);
+            }
+            catch (Exception ex)
+            {
+                // An unwritable report path must not leave the player running forever.
+                Debug.LogException(ex);
+                exitCode = 1;
+            }
+            Application.Quit(exitCode);
         }
 
         public static void Write(PerformanceReport report, string path)
@@ -109,7 +142,7 @@ namespace PocketWilds.Benchmarks
             foreach (var scenario in scenarios)
             {
                 string saveDir = Path.Combine(Application.temporaryCachePath, "pw-benchmark", scenario.id);
-                PrepareSave(saveDir, scenario.rabbits);
+                PrepareSave(saveDir, scenario.rabbits, scenario.mixed);
                 yield return Boot(saveDir, scenario.tier);
                 var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                 var bootstrap = Object.FindAnyObjectByType<GameBootstrap>();
@@ -130,6 +163,8 @@ namespace PocketWilds.Benchmarks
                 // Everything the measure needs is created before the warmup: its allocations never land in a sample.
                 var sampler = new FrameSampler(Mathf.CeilToInt(scenario.measureSeconds * 240f) + 64);
                 IEnumerator burst = scenario.hatchBurst ? HatchBurst(entry.Sanctuary, bootstrap.Context) : null;
+                // Garbage left by earlier scenarios (one process, many boots) is collected now, not in a sample.
+                GC.Collect();
                 float until = Time.realtimeSinceStartup + scenario.warmupSeconds;
                 while (Time.realtimeSinceStartup < until)
                     yield return null;
@@ -155,8 +190,11 @@ namespace PocketWilds.Benchmarks
             done(report);
         }
 
-        /// <summary>A real save: N rabbits cycling the six variants, all seen, Light for the hatch burst.</summary>
-        private static void PrepareSave(string directory, int rabbits)
+        /// <summary>
+        /// A real save: N rabbits cycling the six variants (mixed: every other one a squirrel cycling its own
+        /// six), all seen, Light for the hatch burst.
+        /// </summary>
+        private static void PrepareSave(string directory, int rabbits, bool mixed)
         {
             if (Directory.Exists(directory))
                 Directory.Delete(directory, true);
@@ -165,10 +203,14 @@ namespace PocketWilds.Benchmarks
                 new RuntimeGameClock(), new SaveServiceOptions { AppVersion = Application.version });
             service.LoadOrCreate();
             var state = service.State;
-            var species = ContentId.FromSource("species.rabbit");
+            var rabbit = ContentId.FromSource("species.rabbit");
+            var squirrel = ContentId.FromSource("species.squirrel");
             for (int i = 0; i < rabbits; i++)
             {
-                var (id, rarity) = RabbitVariants[i % RabbitVariants.Length];
+                bool isSquirrel = mixed && (i & 1) == 1;
+                var species = isSquirrel ? squirrel : rabbit;
+                var table = isSquirrel ? SquirrelVariants : RabbitVariants;
+                var (id, rarity) = table[(mixed ? i >> 1 : i) % table.Length];
                 var variant = ContentId.FromSource(id);
                 state.Collection.Add(new AnimalInstance
                 {
@@ -241,6 +283,7 @@ namespace PocketWilds.Benchmarks
             private int _count;
             private int _spikes;
             private int _gcFrames;
+            private int _rejected;
 
             public FrameSampler(int capacity)
             {
@@ -301,8 +344,16 @@ namespace PocketWilds.Benchmarks
                     return;
                 FrameTimingManager.CaptureFrameTimings();
                 bool timing = FrameTimingManager.GetLatestTimings(1, _timing) > 0;
+                // FrameTimingManager now and then returns a value far above the real frame (6.9 s inside a
+                // 14 s run of 841 frames, T23): a timing the wall clock contradicts is replaced by the clock.
+                float wallMs = Time.unscaledDeltaTime * 1000f;
+                if (timing && _timing[0].cpuFrameTime > Math.Max(100.0, wallMs * 3.0))
+                {
+                    timing = false;
+                    _rejected++;
+                }
                 int i = _count++;
-                _cpu[i] = timing ? (float)_timing[0].cpuFrameTime : Time.unscaledDeltaTime * 1000f;
+                _cpu[i] = timing ? (float)_timing[0].cpuFrameTime : wallMs;
                 _main[i] = timing && _timing[0].cpuMainThreadFrameTime > 0 ? (float)_timing[0].cpuMainThreadFrameTime : Ms(_mainThread);
                 _render[i] = timing ? (float)_timing[0].cpuRenderThreadFrameTime : 0f;
                 _gpu[i] = timing ? (float)_timing[0].gpuFrameTime : 0f;
@@ -343,6 +394,7 @@ namespace PocketWilds.Benchmarks
                     rabbitsInSave = scenario.rabbits,
                     visibleAnimals = visible,
                     frames = _count,
+                    rejectedTimings = _rejected,
                     seconds = seconds,
                     cpuFrameMs = Stats(_cpu),
                     mainThreadMs = Stats(_main),

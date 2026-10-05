@@ -64,10 +64,15 @@ namespace PocketWilds.Editor.Build
                 locationPathName = WindowsBenchmarkPath,
                 options = BuildOptions.Development,
             };
+            var activeTarget = EditorUserBuildSettings.activeBuildTarget;
+            var activeGroup = BuildPipeline.GetBuildTargetGroup(activeTarget);
             var report = BuildPipeline.BuildPlayer(options);
             var summary = report.summary;
             Debug.Log($"[Build] Windows benchmark: {summary.result}, {summary.totalSize / (1024f * 1024f):F1} MB, " +
                       $"{summary.totalTime.TotalSeconds:F0} s, {summary.totalErrors} errors -> {summary.outputPath}");
+            // BuildPlayer leaves the editor on Windows: the project stays an Android project.
+            if (EditorUserBuildSettings.activeBuildTarget != activeTarget)
+                EditorUserBuildSettings.SwitchActiveBuildTarget(activeGroup, activeTarget);
             return report;
         }
 

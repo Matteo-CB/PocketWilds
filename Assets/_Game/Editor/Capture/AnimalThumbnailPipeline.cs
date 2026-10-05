@@ -69,6 +69,8 @@ namespace PocketWilds.Editor.Capture
                         lighting.Apply(sun, camera, QualityTier.High);
                     RenderSettings.fog = false;
                     camera.clearFlags = CameraClearFlags.SolidColor;
+                    DynamicGI.UpdateEnvironment();
+                    bool warmed = false;
 
                     foreach (var speciesAsset in database.species)
                     {
@@ -99,6 +101,13 @@ namespace PocketWilds.Editor.Capture
                                 view.Configure(snapshot);
                                 Prepare(view);
                                 Frame(camera, view);
+                                if (!warmed)
+                                {
+                                    // The first render after the scene switch still lacks the ambient and
+                                    // shadow setup: its black/white pair disagrees. Render once, discard it.
+                                    Capture(camera, out _, out _);
+                                    warmed = true;
+                                }
                                 Capture(camera, out var premultiplied, out var alpha);
                                 if (i == 0)
                                 {

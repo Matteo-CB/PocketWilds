@@ -3,7 +3,7 @@
 Reads the JSON reports written by PerformanceBaselineRunner and writes a Markdown summary checked
 against the Performance Test Matrix budgets (Target 60 FPS).
 
-Usage: python Tools/perf_report.py <out.md> <label>=<report.json> [<label>=<report.json> ...]
+Usage: python Tools/perf_report.py [--title <title>] <out.md> <label>=<report.json> [<label>=<report.json> ...]
 The first report is the reference; the others are compared with it.
 """
 import json
@@ -85,10 +85,15 @@ def comparison(ref_label, ref, label, other):
 
 
 def main():
-    out = sys.argv[1]
-    pairs = [a.split("=", 1) for a in sys.argv[2:]]
+    args = sys.argv[1:]
+    title = "T22 Performance baseline"
+    if args and args[0] == "--title":
+        title = args[1]
+        args = args[2:]
+    out = args[0]
+    pairs = [a.split("=", 1) for a in args[1:]]
     reports = [(label, json.load(open(path, encoding="utf-8"))) for label, path in pairs]
-    lines = ["# T22 Performance baseline", "",
+    lines = [f"# {title}", "",
              "Mesures produites par `PerformanceBaselineRunner` (vrai démarrage, vraie scène, sauvegarde de N lapins).",
              "Aucun téléphone n'était branché : ces chiffres valent pour la régression relative, pas pour les budgets mobiles.",
              ""]

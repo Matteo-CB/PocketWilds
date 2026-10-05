@@ -258,6 +258,8 @@ namespace PocketWilds.Content
                     if (!speciesIds.Contains(entry.Species) || !(entry.Weight > 0.0))
                         _issues.Add(new ContentIssue(ContentIssueSeverity.Error, egg.Id.ToString(), "Egg pool entry needs a known species and a positive weight."));
                 }
+                if (egg.StarterSpecies.IsValid && Array.FindIndex(egg.Pool, e => e.Species == egg.StarterSpecies) < 0)
+                    _issues.Add(new ContentIssue(ContentIssueSeverity.Error, egg.Id.ToString(), "Starter species must be in the egg pool."));
             }
 
             if (_biomes.Count > 0)

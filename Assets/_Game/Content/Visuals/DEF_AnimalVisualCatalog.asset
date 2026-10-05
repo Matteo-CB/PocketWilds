@@ -41,3 +41,31 @@ MonoBehaviour:
       fade: 0.2
       moveFade: 0.12
       reactFade: 0.06
+  - visualKey: PF_Animal_Squirrel
+    prefab: {fileID: 2656354822248577632, guid: ef6749a5acd559d4ea570012087ef4f2, type: 3}
+    softCapacity: 24
+    hardCapacity: 48
+    behavior:
+      idleWeight: 0.2
+      idleLookWeight: 0.18
+      wanderWeight: 0.32
+      eatWeight: 0.14
+      inspectWeight: 0.1
+      sleepWeight: 0.06
+      idleSeconds: {x: 2.5, y: 6}
+      eatSeconds: {x: 4, y: 9}
+      sleepSeconds: {x: 10, y: 24}
+      idleLookSeconds: 3.8
+      inspectSeconds: 1.5
+      reactSeconds: 0.67
+      happySeconds: 1.04
+      wakeSeconds: 0.67
+      moveSpeed: 0.38
+      turnDegreesPerSecond: 300
+      wanderDistance: {x: 0.5, y: 1.6}
+      personalSpace: 0.45
+      tierBDurationScale: 1.5
+      tierBWanderScale: 0.5
+      fade: 0.2
+      moveFade: 0.12
+      reactFade: 0.06

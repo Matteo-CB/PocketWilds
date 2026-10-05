@@ -50,6 +50,9 @@ namespace PocketWilds.Content
         [Tooltip("Doc 02: eggs in a row without a new species before one is guaranteed.")]
         [Min(1)] public int pityHardLimit = EggDefinition.DefaultPityHardLimit;
 
+        [Tooltip("Species of the free first hatch of a profile. Empty: the pool is rolled.")]
+        public string starterSpeciesId = "";
+
         public EggDefinition ToRuntime()
         {
             var palette = new Color32[EggDefinition.PaletteSize];
@@ -63,7 +66,8 @@ namespace PocketWilds.Content
             palette[7] = shell;
             return new EggDefinition(ContentId.FromSource(sourceId), displayKey, ContentId.FromSource(biomeId), tier, palette,
                 (byte)Mathf.Clamp(spotsStrength, 0, 15), (byte)Mathf.Clamp(bandStrength, 0, 15), (byte)Mathf.Clamp(flowersStrength, 0, 15),
-                visualKey, baseCost, costGrowth, (double[])rarityWeights.Clone(), BuildPool(), pityHardLimit);
+                visualKey, baseCost, costGrowth, (double[])rarityWeights.Clone(), BuildPool(), pityHardLimit,
+                string.IsNullOrEmpty(starterSpeciesId) ? ContentId.None : ContentId.FromSource(starterSpeciesId));
         }
 
         private EggDropEntry[] BuildPool()
