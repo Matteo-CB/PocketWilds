@@ -19,6 +19,44 @@
         {
             "first": {
                 "serializedVersion": "2",
+                "Hash": "092e6e1e846a4ea6f2c63825cef9e9bf"
+            },
+            "second": {
+                "shader": {
+                    "fileID": 4800000,
+                    "guid": "fe393ace9b354375a9cb14cdbbc28be4",
+                    "type": 3
+                },
+                "shaderName": "TextMeshPro/Mobile/Distance Field",
+                "shaderAssetGUID": "fe393ace9b354375a9cb14cdbbc28be4",
+                "shaderAssetLocalIdentifierInFile": 4800000,
+                "keywordNames": "OUTLINE_ON UNDERLAY_ON",
+                "subShaderIndex": 0,
+                "passIndex": 0,
+                "graphicsStateInfoSet": [
+                    {
+                        "vertexLayout": 976940153445574426,
+                        "renderPass": 16855782186674346950,
+                        "renderState": 5448349286154582394,
+                        "subPassIndex": 1,
+                        "topology": 0,
+                        "forceCullMode": -1,
+                        "shadingRateCombinerPrimitive": 0,
+                        "shadingRateCombinerFragment": 0,
+                        "baseShadingRate": 0,
+                        "depthBias": 0.0,
+                        "slopeDepthBias": 0.0,
+                        "userBackface": false,
+                        "appBackface": false,
+                        "wireframe": false,
+                        "invertProjectionMatrix": false
+                    }
+                ]
+            }
+        },
+        {
+            "first": {
+                "serializedVersion": "2",
                 "Hash": "2d0c7e9fe30954f47d9f613e1413ec6f"
             },
             "second": {
@@ -57,25 +95,25 @@
         {
             "first": {
                 "serializedVersion": "2",
-                "Hash": "40a8f7dc31a808adf7dfc8b382cd3d67"
+                "Hash": "4746fc5a2f377a51992db3ef98022855"
             },
             "second": {
                 "shader": {
-                    "fileID": 4800000,
-                    "guid": "d1ce4ebf8cebe284a872a01c7fb32ad9",
-                    "type": 3
+                    "fileID": 10770,
+                    "guid": "0000000000000000f000000000000000",
+                    "type": 0
                 },
-                "shaderName": "PocketWilds/EnvironmentOpaque",
-                "shaderAssetGUID": "d1ce4ebf8cebe284a872a01c7fb32ad9",
+                "shaderName": "UI/Default",
+                "shaderAssetGUID": "203dea5f7870f4649b7b371a655d12b9",
                 "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS",
+                "keywordNames": "UNITY_UI_CLIP_RECT",
                 "subShaderIndex": 0,
                 "passIndex": 0,
                 "graphicsStateInfoSet": [
                     {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
+                        "vertexLayout": 976940153445574426,
+                        "renderPass": 5621589468862056137,
+                        "renderState": 5448349286154582394,
                         "subPassIndex": -1,
                         "topology": 0,
                         "forceCullMode": -1,
@@ -87,7 +125,7 @@
                         "userBackface": false,
                         "appBackface": false,
                         "wireframe": false,
-                        "invertProjectionMatrix": true
+                        "invertProjectionMatrix": false
                     }
                 ]
             }
@@ -133,137 +171,6 @@
         {
             "first": {
                 "serializedVersion": "2",
-                "Hash": "79803a889c9492b4946d0a9737ccb070"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "d1ce4ebf8cebe284a872a01c7fb32ad9",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/EnvironmentOpaque",
-                "shaderAssetGUID": "d1ce4ebf8cebe284a872a01c7fb32ad9",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR",
-                "subShaderIndex": 0,
-                "passIndex": 1,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 4388559411159596020,
-                        "renderState": 17259535550629827284,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 1.0,
-                        "slopeDepthBias": 2.5,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 4388559411159596020,
-                        "renderState": 17259535550629827284,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 1.0,
-                        "slopeDepthBias": 2.5,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "72f09efb9b43a96076e42d7c3f83f3d0"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "7ec132cdf12c2304ab5df4b95c460a51",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/EggMaster",
-                "shaderAssetGUID": "7ec132cdf12c2304ab5df4b95c460a51",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "acf038a7d26eb72109e6cf40ea0d42f6"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "98009eae4d790bd448d6cc25a282c308",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/GroundMaster",
-                "shaderAssetGUID": "98009eae4d790bd448d6cc25a282c308",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS_CASCADE _SHADOWS_SOFT",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
                 "Hash": "c2908f4294f06d6656aac34db6eb70fe"
             },
             "second": {
@@ -284,6 +191,44 @@
                         "renderPass": 5621589468862056137,
                         "renderState": 5448349286154582394,
                         "subPassIndex": -1,
+                        "topology": 0,
+                        "forceCullMode": -1,
+                        "shadingRateCombinerPrimitive": 0,
+                        "shadingRateCombinerFragment": 0,
+                        "baseShadingRate": 0,
+                        "depthBias": 0.0,
+                        "slopeDepthBias": 0.0,
+                        "userBackface": false,
+                        "appBackface": false,
+                        "wireframe": false,
+                        "invertProjectionMatrix": false
+                    }
+                ]
+            }
+        },
+        {
+            "first": {
+                "serializedVersion": "2",
+                "Hash": "c526bbf78b9c490babd451bae1dde4f7"
+            },
+            "second": {
+                "shader": {
+                    "fileID": 4800000,
+                    "guid": "93446b5c5339d4f00b85c159e1159b7c",
+                    "type": 3
+                },
+                "shaderName": "Hidden/Universal/CoreBlit",
+                "shaderAssetGUID": "93446b5c5339d4f00b85c159e1159b7c",
+                "shaderAssetLocalIdentifierInFile": 4800000,
+                "keywordNames": "",
+                "subShaderIndex": 0,
+                "passIndex": 23,
+                "graphicsStateInfoSet": [
+                    {
+                        "vertexLayout": 15807068410263000910,
+                        "renderPass": 16855782186674346950,
+                        "renderState": 17623681824384884761,
+                        "subPassIndex": 0,
                         "topology": 0,
                         "forceCullMode": -1,
                         "shadingRateCombinerPrimitive": 0,
@@ -367,6 +312,44 @@
                         "appBackface": false,
                         "wireframe": false,
                         "invertProjectionMatrix": true
+                    }
+                ]
+            }
+        },
+        {
+            "first": {
+                "serializedVersion": "2",
+                "Hash": "c59ed7119894b9f932141beb4a48924c"
+            },
+            "second": {
+                "shader": {
+                    "fileID": 4800000,
+                    "guid": "fe393ace9b354375a9cb14cdbbc28be4",
+                    "type": 3
+                },
+                "shaderName": "TextMeshPro/Mobile/Distance Field",
+                "shaderAssetGUID": "fe393ace9b354375a9cb14cdbbc28be4",
+                "shaderAssetLocalIdentifierInFile": 4800000,
+                "keywordNames": "UNDERLAY_ON",
+                "subShaderIndex": 0,
+                "passIndex": 0,
+                "graphicsStateInfoSet": [
+                    {
+                        "vertexLayout": 976940153445574426,
+                        "renderPass": 16855782186674346950,
+                        "renderState": 5448349286154582394,
+                        "subPassIndex": 1,
+                        "topology": 0,
+                        "forceCullMode": -1,
+                        "shadingRateCombinerPrimitive": 0,
+                        "shadingRateCombinerFragment": 0,
+                        "baseShadingRate": 0,
+                        "depthBias": 0.0,
+                        "slopeDepthBias": 0.0,
+                        "userBackface": false,
+                        "appBackface": false,
+                        "wireframe": false,
+                        "invertProjectionMatrix": false
                     }
                 ]
             }
@@ -488,6 +471,44 @@
         {
             "first": {
                 "serializedVersion": "2",
+                "Hash": "347b8f5aefd1dad7c15a05a328e5fd0a"
+            },
+            "second": {
+                "shader": {
+                    "fileID": 4800000,
+                    "guid": "35da566af2976e2478844d8ac558c32e",
+                    "type": 3
+                },
+                "shaderName": "PocketWilds/AmbientLife",
+                "shaderAssetGUID": "35da566af2976e2478844d8ac558c32e",
+                "shaderAssetLocalIdentifierInFile": 4800000,
+                "keywordNames": "FOG_LINEAR INSTANCING_ON",
+                "subShaderIndex": 0,
+                "passIndex": 0,
+                "graphicsStateInfoSet": [
+                    {
+                        "vertexLayout": 11876421558531108630,
+                        "renderPass": 3733775928291157110,
+                        "renderState": 15649462741326987297,
+                        "subPassIndex": 1,
+                        "topology": 0,
+                        "forceCullMode": -1,
+                        "shadingRateCombinerPrimitive": 0,
+                        "shadingRateCombinerFragment": 0,
+                        "baseShadingRate": 0,
+                        "depthBias": 0.0,
+                        "slopeDepthBias": 0.0,
+                        "userBackface": false,
+                        "appBackface": false,
+                        "wireframe": false,
+                        "invertProjectionMatrix": true
+                    }
+                ]
+            }
+        },
+        {
+            "first": {
+                "serializedVersion": "2",
                 "Hash": "3f418174783911382271c1dad526f482"
             },
             "second": {
@@ -581,253 +602,16 @@
         {
             "first": {
                 "serializedVersion": "2",
-                "Hash": "71ddcfa38c5cff2fa25ea8469430367a"
+                "Hash": "888b202acb978eb4f4b6a3c12ad96dd3"
             },
             "second": {
                 "shader": {
                     "fileID": 4800000,
-                    "guid": "48237c738fc219441be9ae4a97b868e1",
+                    "guid": "35da566af2976e2478844d8ac558c32e",
                     "type": 3
                 },
-                "shaderName": "PocketWilds/AnimalMaster",
-                "shaderAssetGUID": "48237c738fc219441be9ae4a97b868e1",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS_CASCADE _SHADOWS_SOFT",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 3948097699067784950,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 3948097699067784950,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "7c2d4c9f73e8835f81284cb204f69e5c"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "48237c738fc219441be9ae4a97b868e1",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/AnimalMaster",
-                "shaderAssetGUID": "48237c738fc219441be9ae4a97b868e1",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 3948097699067784950,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 3948097699067784950,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "8239f5d616652a132582c90f86f7f8a4"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "7ec132cdf12c2304ab5df4b95c460a51",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/EggMaster",
-                "shaderAssetGUID": "7ec132cdf12c2304ab5df4b95c460a51",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "7e35fc3fc8ff5d87d913b3d741a47f59"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "fee4cb3939692394ebe8a588d6ebaeba",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/FoliageWind",
-                "shaderAssetGUID": "fee4cb3939692394ebe8a588d6ebaeba",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR INSTANCING_ON",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "9e159679eaf47e52d351f2c184910241"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "fee4cb3939692394ebe8a588d6ebaeba",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/FoliageWind",
-                "shaderAssetGUID": "fee4cb3939692394ebe8a588d6ebaeba",
+                "shaderName": "PocketWilds/AmbientLife",
+                "shaderAssetGUID": "35da566af2976e2478844d8ac558c32e",
                 "shaderAssetLocalIdentifierInFile": 4800000,
                 "keywordNames": "FOG_LINEAR INSTANCING_ON _MAIN_LIGHT_SHADOWS_CASCADE _SHADOWS_SOFT",
                 "subShaderIndex": 0,
@@ -854,62 +638,7 @@
                         "vertexLayout": 11876421558531108630,
                         "renderPass": 17880418536511588877,
                         "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
                         "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "a07d389357e1e2a2221a6d7cbf49c7c1"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "d1ce4ebf8cebe284a872a01c7fb32ad9",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/EnvironmentOpaque",
-                "shaderAssetGUID": "d1ce4ebf8cebe284a872a01c7fb32ad9",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 0,
                         "topology": 0,
                         "forceCullMode": -1,
                         "shadingRateCombinerPrimitive": 0,
@@ -959,911 +688,6 @@
                         "appBackface": false,
                         "wireframe": false,
                         "invertProjectionMatrix": false
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "baf16516b575ec2014deeae6bff30ace"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "e7857e9d0c934dc4f83f270f8447b006",
-                    "type": 3
-                },
-                "shaderName": "Hidden/Universal Render Pipeline/UberPost",
-                "shaderAssetGUID": "e7857e9d0c934dc4f83f270f8447b006",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 15807068410263000910,
-                        "renderPass": 16855782186674346950,
-                        "renderState": 17623681824384884761,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": false
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "e9ad394fc8933a18bd78cbb22bd207e0"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "7ec132cdf12c2304ab5df4b95c460a51",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/EggMaster",
-                "shaderAssetGUID": "7ec132cdf12c2304ab5df4b95c460a51",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR",
-                "subShaderIndex": 0,
-                "passIndex": 1,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 4388559411159596020,
-                        "renderState": 17259535550629827284,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 1.0,
-                        "slopeDepthBias": 2.5,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 4388559411159596020,
-                        "renderState": 17259535550629827284,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 1.0,
-                        "slopeDepthBias": 2.5,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "092e6e1e846a4ea6f2c63825cef9e9bf"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "fe393ace9b354375a9cb14cdbbc28be4",
-                    "type": 3
-                },
-                "shaderName": "TextMeshPro/Mobile/Distance Field",
-                "shaderAssetGUID": "fe393ace9b354375a9cb14cdbbc28be4",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "OUTLINE_ON UNDERLAY_ON",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 976940153445574426,
-                        "renderPass": 16855782186674346950,
-                        "renderState": 5448349286154582394,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": false
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "2242a8aa78f898486d1a705ca5e2d612"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "7647a8af95eb8a14e8cb0274a4af1e29",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/WaterLite",
-                "shaderAssetGUID": "7647a8af95eb8a14e8cb0274a4af1e29",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "4746fc5a2f377a51992db3ef98022855"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 10770,
-                    "guid": "0000000000000000f000000000000000",
-                    "type": 0
-                },
-                "shaderName": "UI/Default",
-                "shaderAssetGUID": "203dea5f7870f4649b7b371a655d12b9",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "UNITY_UI_CLIP_RECT",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 976940153445574426,
-                        "renderPass": 5621589468862056137,
-                        "renderState": 5448349286154582394,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": false
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "486a28c45470ea388a5c4907a527f32b"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "d1ce4ebf8cebe284a872a01c7fb32ad9",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/EnvironmentOpaque",
-                "shaderAssetGUID": "d1ce4ebf8cebe284a872a01c7fb32ad9",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "99faa6e70a09d64445ed824de7e15024"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "d1ce4ebf8cebe284a872a01c7fb32ad9",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/EnvironmentOpaque",
-                "shaderAssetGUID": "d1ce4ebf8cebe284a872a01c7fb32ad9",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS_CASCADE _SHADOWS_SOFT",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "a92e4c0a3d50a5bb7b3b0e1bc445bec4"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "98009eae4d790bd448d6cc25a282c308",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/GroundMaster",
-                "shaderAssetGUID": "98009eae4d790bd448d6cc25a282c308",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "c526bbf78b9c490babd451bae1dde4f7"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "93446b5c5339d4f00b85c159e1159b7c",
-                    "type": 3
-                },
-                "shaderName": "Hidden/Universal/CoreBlit",
-                "shaderAssetGUID": "93446b5c5339d4f00b85c159e1159b7c",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "",
-                "subShaderIndex": 0,
-                "passIndex": 23,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 15807068410263000910,
-                        "renderPass": 16855782186674346950,
-                        "renderState": 17623681824384884761,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": false
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "c59ed7119894b9f932141beb4a48924c"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "fe393ace9b354375a9cb14cdbbc28be4",
-                    "type": 3
-                },
-                "shaderName": "TextMeshPro/Mobile/Distance Field",
-                "shaderAssetGUID": "fe393ace9b354375a9cb14cdbbc28be4",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "UNDERLAY_ON",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 976940153445574426,
-                        "renderPass": 16855782186674346950,
-                        "renderState": 5448349286154582394,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": false
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "d3ea7d761bfce7d1e7b8093b28737009"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "63b1c712ee2290240b42567048bff33a",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/AdditiveVFXLite",
-                "shaderAssetGUID": "63b1c712ee2290240b42567048bff33a",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 6372454957218125122,
-                        "subPassIndex": 2,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 6372454957218125122,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 6372454957218125122,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 6372454957218125122,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "fd0ebf9b7d86eabde6fa431771763dea"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "7fcec03656284a144bd38dacdc42cf65",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/BlobShadow",
-                "shaderAssetGUID": "7fcec03656284a144bd38dacdc42cf65",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 2678698996222534488,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 17255548443229623167,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 2678698996222534488,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 17255548443229623167,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "15aff572ded92da4c13140ac8aacac8f"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "fee4cb3939692394ebe8a588d6ebaeba",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/FoliageWind",
-                "shaderAssetGUID": "fee4cb3939692394ebe8a588d6ebaeba",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR INSTANCING_ON _MAIN_LIGHT_SHADOWS",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "31635388be720314b595a4283058966a"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "98009eae4d790bd448d6cc25a282c308",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/GroundMaster",
-                "shaderAssetGUID": "98009eae4d790bd448d6cc25a282c308",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "347b8f5aefd1dad7c15a05a328e5fd0a"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "35da566af2976e2478844d8ac558c32e",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/AmbientLife",
-                "shaderAssetGUID": "35da566af2976e2478844d8ac558c32e",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR INSTANCING_ON",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "37dfba2fd1587c85d1a346c91a330ea7"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "7ec132cdf12c2304ab5df4b95c460a51",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/EggMaster",
-                "shaderAssetGUID": "7ec132cdf12c2304ab5df4b95c460a51",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS_CASCADE _SHADOWS_SOFT",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "83f7a51735c39bb4aed016e07eeac7d6"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "48237c738fc219441be9ae4a97b868e1",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/AnimalMaster",
-                "shaderAssetGUID": "48237c738fc219441be9ae4a97b868e1",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR",
-                "subShaderIndex": 0,
-                "passIndex": 1,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 3948097699067784950,
-                        "renderPass": 4388559411159596020,
-                        "renderState": 17259535550629827284,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 1.0,
-                        "slopeDepthBias": 2.5,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 3948097699067784950,
-                        "renderPass": 4388559411159596020,
-                        "renderState": 17259535550629827284,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 1.0,
-                        "slopeDepthBias": 2.5,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "888b202acb978eb4f4b6a3c12ad96dd3"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "35da566af2976e2478844d8ac558c32e",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/AmbientLife",
-                "shaderAssetGUID": "35da566af2976e2478844d8ac558c32e",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR INSTANCING_ON _MAIN_LIGHT_SHADOWS_CASCADE _SHADOWS_SOFT",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 2,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
                     }
                 ]
             }
@@ -1926,42 +750,25 @@
         {
             "first": {
                 "serializedVersion": "2",
-                "Hash": "923f1274488eb8498baea8f6a6673a11"
+                "Hash": "baf16516b575ec2014deeae6bff30ace"
             },
             "second": {
                 "shader": {
                     "fileID": 4800000,
-                    "guid": "fee4cb3939692394ebe8a588d6ebaeba",
+                    "guid": "e7857e9d0c934dc4f83f270f8447b006",
                     "type": 3
                 },
-                "shaderName": "PocketWilds/FoliageWind",
-                "shaderAssetGUID": "fee4cb3939692394ebe8a588d6ebaeba",
+                "shaderName": "Hidden/Universal Render Pipeline/UberPost",
+                "shaderAssetGUID": "e7857e9d0c934dc4f83f270f8447b006",
                 "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR INSTANCING_ON _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT",
+                "keywordNames": "",
                 "subShaderIndex": 0,
                 "passIndex": 0,
                 "graphicsStateInfoSet": [
                     {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
+                        "vertexLayout": 15807068410263000910,
+                        "renderPass": 16855782186674346950,
+                        "renderState": 17623681824384884761,
                         "subPassIndex": 0,
                         "topology": 0,
                         "forceCullMode": -1,
@@ -1973,168 +780,7 @@
                         "userBackface": false,
                         "appBackface": false,
                         "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 2,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "8e573ea52b1fbfe5db84a0a3638ab98f"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "48237c738fc219441be9ae4a97b868e1",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/AnimalMaster",
-                "shaderAssetGUID": "48237c738fc219441be9ae4a97b868e1",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 3948097699067784950,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 0,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 3948097699067784950,
-                        "renderPass": 17880418536511588877,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 3948097699067784950,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "c2abdb9398278f3b42ced136030a9fe3"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "98009eae4d790bd448d6cc25a282c308",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/GroundMaster",
-                "shaderAssetGUID": "98009eae4d790bd448d6cc25a282c308",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
+                        "invertProjectionMatrix": false
                     }
                 ]
             }
@@ -2179,61 +825,6 @@
                         "renderPass": 14955936386437854722,
                         "renderState": 2874810695172648804,
                         "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "d14f76c6008ba9193f35b70212eb41d3"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "7ec132cdf12c2304ab5df4b95c460a51",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/EggMaster",
-                "shaderAssetGUID": "7ec132cdf12c2304ab5df4b95c460a51",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    },
-                    {
-                        "vertexLayout": 11876421558531108630,
-                        "renderPass": 3733775928291157110,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": 0,
                         "topology": 0,
                         "forceCullMode": -1,
                         "shadingRateCombinerPrimitive": 0,
@@ -2320,44 +911,6 @@
                     },
                     {
                         "vertexLayout": 11876421558531108630,
-                        "renderPass": 14955936386437854722,
-                        "renderState": 15649462741326987297,
-                        "subPassIndex": -1,
-                        "topology": 0,
-                        "forceCullMode": -1,
-                        "shadingRateCombinerPrimitive": 0,
-                        "shadingRateCombinerFragment": 0,
-                        "baseShadingRate": 0,
-                        "depthBias": 0.0,
-                        "slopeDepthBias": 0.0,
-                        "userBackface": false,
-                        "appBackface": false,
-                        "wireframe": false,
-                        "invertProjectionMatrix": true
-                    }
-                ]
-            }
-        },
-        {
-            "first": {
-                "serializedVersion": "2",
-                "Hash": "ed83f4b5752680a698206926d29416eb"
-            },
-            "second": {
-                "shader": {
-                    "fileID": 4800000,
-                    "guid": "48237c738fc219441be9ae4a97b868e1",
-                    "type": 3
-                },
-                "shaderName": "PocketWilds/AnimalMaster",
-                "shaderAssetGUID": "48237c738fc219441be9ae4a97b868e1",
-                "shaderAssetLocalIdentifierInFile": 4800000,
-                "keywordNames": "FOG_LINEAR _MAIN_LIGHT_SHADOWS",
-                "subShaderIndex": 0,
-                "passIndex": 0,
-                "graphicsStateInfoSet": [
-                    {
-                        "vertexLayout": 3948097699067784950,
                         "renderPass": 14955936386437854722,
                         "renderState": 15649462741326987297,
                         "subPassIndex": -1,
@@ -2685,108 +1238,6 @@
             }
         },
         {
-            "first": 2678698996222534488,
-            "second": {
-                "vertexChannelsInfo": [
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 3
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 12,
-                        "format": 0,
-                        "dimension": 3
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 24,
-                        "format": 0,
-                        "dimension": 4
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 40,
-                        "format": 0,
-                        "dimension": 2
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    }
-                ],
-                "vertexStrides": [
-                    48,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0
-                ],
-                "vertexStreamCount": 1
-            }
-        },
-        {
             "first": 11876421558531108630,
             "second": {
                 "vertexChannelsInfo": [
@@ -2988,108 +1439,6 @@
                     0
                 ],
                 "vertexStreamCount": 1
-            }
-        },
-        {
-            "first": 3948097699067784950,
-            "second": {
-                "vertexChannelsInfo": [
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 3
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 12,
-                        "format": 0,
-                        "dimension": 3
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 1,
-                        "offset": 0,
-                        "format": 2,
-                        "dimension": 4
-                    },
-                    {
-                        "stream": 1,
-                        "offset": 4,
-                        "format": 1,
-                        "dimension": 2
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    },
-                    {
-                        "stream": 0,
-                        "offset": 0,
-                        "format": 0,
-                        "dimension": 0
-                    }
-                ],
-                "vertexStrides": [
-                    24,
-                    8,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0
-                ],
-                "vertexStreamCount": 2
             }
         },
         {
@@ -4966,319 +3315,6 @@
             }
         },
         {
-            "first": 4388559411159596020,
-            "second": {
-                "attachments": [
-                    {
-                        "format": 90,
-                        "needsResolve": false,
-                        "canMultiview": false,
-                        "loadAction": 1,
-                        "storeAction": 0,
-                        "sampleCount": 1
-                    },
-                    {
-                        "format": 0,
-                        "needsResolve": false,
-                        "canMultiview": false,
-                        "loadAction": 0,
-                        "storeAction": 0,
-                        "sampleCount": 0
-                    },
-                    {
-                        "format": 0,
-                        "needsResolve": false,
-                        "canMultiview": false,
-                        "loadAction": 0,
-                        "storeAction": 0,
-                        "sampleCount": 0
-                    },
-                    {
-                        "format": 0,
-                        "needsResolve": false,
-                        "canMultiview": false,
-                        "loadAction": 0,
-                        "storeAction": 0,
-                        "sampleCount": 0
-                    },
-                    {
-                        "format": 0,
-                        "needsResolve": false,
-                        "canMultiview": false,
-                        "loadAction": 0,
-                        "storeAction": 0,
-                        "sampleCount": 0
-                    },
-                    {
-                        "format": 0,
-                        "needsResolve": false,
-                        "canMultiview": false,
-                        "loadAction": 0,
-                        "storeAction": 0,
-                        "sampleCount": 0
-                    },
-                    {
-                        "format": 0,
-                        "needsResolve": false,
-                        "canMultiview": false,
-                        "loadAction": 0,
-                        "storeAction": 0,
-                        "sampleCount": 0
-                    },
-                    {
-                        "format": 0,
-                        "needsResolve": false,
-                        "canMultiview": false,
-                        "loadAction": 0,
-                        "storeAction": 0,
-                        "sampleCount": 0
-                    }
-                ],
-                "attachmentCount": 1,
-                "subPasses": [
-                    {
-                        "inputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "colorOutputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "flags": 0
-                    },
-                    {
-                        "inputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "colorOutputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "flags": 0
-                    },
-                    {
-                        "inputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "colorOutputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "flags": 0
-                    },
-                    {
-                        "inputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "colorOutputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "flags": 0
-                    },
-                    {
-                        "inputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "colorOutputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "flags": 0
-                    },
-                    {
-                        "inputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "colorOutputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "flags": 0
-                    },
-                    {
-                        "inputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "colorOutputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "flags": 0
-                    },
-                    {
-                        "inputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "colorOutputs": {
-                            "attachments": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
-                            "activeAttachments": 0
-                        },
-                        "flags": 0
-                    }
-                ],
-                "subPassCount": 1,
-                "depthAttachmentIndex": 0,
-                "shadingRateIndex": -1,
-                "foveationImageIndex": -1,
-                "multiviewCount": 0,
-                "sampleCount": 1,
-                "hasEyeTexture": false
-            }
-        },
-        {
             "first": 3733775928291157110,
             "second": {
                 "attachments": [
@@ -6355,118 +4391,6 @@
             }
         },
         {
-            "first": 17259535550629827284,
-            "second": {
-                "renderState": {
-                    "blendState": {
-                        "rt": [
-                            {
-                                "writeMask": 0,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            }
-                        ],
-                        "separateMRTBlend": 0,
-                        "alphaToMask": 0
-                    },
-                    "rasterState": {
-                        "cullMode": 2,
-                        "depthBias": 0,
-                        "slopeScaledDepthBias": 0.0,
-                        "depthClip": 1,
-                        "conservative": 0
-                    },
-                    "depthState": {
-                        "depthWrite": 1,
-                        "depthFunc": 4
-                    },
-                    "stencilState": {
-                        "stencilEnable": 0,
-                        "readMask": 255,
-                        "writeMask": 255,
-                        "padding": 0,
-                        "stencilFuncFront": 8,
-                        "stencilPassOpFront": 0,
-                        "stencilFailOpFront": 0,
-                        "stencilZFailOpFront": 0,
-                        "stencilFuncBack": 8,
-                        "stencilPassOpBack": 0,
-                        "stencilFailOpBack": 0,
-                        "stencilZFailOpBack": 0
-                    },
-                    "stencilRef": 0,
-                    "mask": 15
-                }
-            }
-        },
-        {
             "first": 6372454957218125122,
             "second": {
                 "renderState": {
@@ -6894,118 +4818,6 @@
                     "depthState": {
                         "depthWrite": 0,
                         "depthFunc": 8
-                    },
-                    "stencilState": {
-                        "stencilEnable": 0,
-                        "readMask": 255,
-                        "writeMask": 255,
-                        "padding": 0,
-                        "stencilFuncFront": 8,
-                        "stencilPassOpFront": 0,
-                        "stencilFailOpFront": 0,
-                        "stencilZFailOpFront": 0,
-                        "stencilFuncBack": 8,
-                        "stencilPassOpBack": 0,
-                        "stencilFailOpBack": 0,
-                        "stencilZFailOpBack": 0
-                    },
-                    "stencilRef": 0,
-                    "mask": 15
-                }
-            }
-        },
-        {
-            "first": 17255548443229623167,
-            "second": {
-                "renderState": {
-                    "blendState": {
-                        "rt": [
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 2,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 2,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            },
-                            {
-                                "writeMask": 15,
-                                "srcBlend": 1,
-                                "dstBlend": 0,
-                                "srcBlendAlpha": 1,
-                                "dstBlendAlpha": 0,
-                                "blendOp": 0,
-                                "blendOpAlpha": 0
-                            }
-                        ],
-                        "separateMRTBlend": 0,
-                        "alphaToMask": 0
-                    },
-                    "rasterState": {
-                        "cullMode": 0,
-                        "depthBias": -1,
-                        "slopeScaledDepthBias": -1.0,
-                        "depthClip": 1,
-                        "conservative": 0
-                    },
-                    "depthState": {
-                        "depthWrite": 0,
-                        "depthFunc": 4
                     },
                     "stencilState": {
                         "stencilEnable": 0,

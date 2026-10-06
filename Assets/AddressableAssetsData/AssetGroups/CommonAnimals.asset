@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: CommonAnimals
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: CommonAnimals
+  m_GUID: b4a28c13c7d046844871b6d6cb8159db
+  m_SerializeEntries:
+  - m_GUID: 2a14585e60e24eb4bbc4065ca1e3bd40
+    m_Address: animals.hatch
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - animal_common
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 45924ff4f3e24b84791735eedb00db91
+    m_Address: warmup.animals
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - animal_common
+    - warmup
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8fff2b9dd2f876845b91848bf5195be1
+    m_Address: animals.catalog
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - animal_common
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: bba271c30b0852e40b8a8d3b57031504, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 9f21fc0e64b1d9f408a7c4474fb84a53, type: 2}
+    - {fileID: 11400000, guid: 4bc891c2a3f0e4845be2c6671e30400f, type: 2}
+    m_SchemaDisplayOrder:
+    - CommonAnimals_BundledAssetGroupSchema
+    - CommonAnimals_ContentUpdateGroupSchema
+  m_IncludeInBuild: 1
+  m_IncludeInBuildMigrated: 1

@@ -9260,15 +9260,18 @@
       "family": "Addressables",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Addressables/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/World/CommonContentPipeline.cs",
+      "runtimePath": "Assets/AddressableAssetsData/AssetGroups/Bootstrap.asset",
       "validationGates": [
         "G17"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T21:00:00Z",
+      "notes": "T34C: group Bootstrap (label boot, LZ4, local): the world master shaders every biome uses (SH_GroundMaster, SH_FoliageWind, SH_WaterLite, SH_EnvironmentOpaque) and DEF_ShaderWarmup_World (their traced states, label warmup) warmed at boot. Before: the four shaders were in the player (through the built-in warmup set) and in the kit bundle; Addressables analyze now finds no duplicate (CommonContentTests).",
+      "passedGates": [
+        "G17"
+      ]
     },
     {
       "id": "N-GRP-CommonAnimals",
@@ -9276,15 +9279,18 @@
       "family": "Addressables",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Addressables/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/World/CommonContentPipeline.cs",
+      "runtimePath": "Assets/AddressableAssetsData/AssetGroups/CommonAnimals.asset",
       "validationGates": [
         "G17"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T21:00:00Z",
+      "notes": "T34C: group CommonAnimals (label animal_common): DEF_AnimalVisualCatalog (3 species prefabs, rigs, animations, MAT_Animal_Master, SH_AnimalMaster) and DEF_HatchPresentation (egg, feedback effects, blob shadow) with DEF_ShaderWarmup_Animals; GameBootstrap and VerticalSliceEntry hold keys (animals.catalog, animals.hatch). Player built and benchmarked: animals and hatches from the bundle, 82 states warmed in 93 ms (longest frame 16.7 ms).",
+      "passedGates": [
+        "G17"
+      ]
     },
     {
       "id": "N-GRP-Biome_Grassland",
@@ -9356,15 +9362,15 @@
       "family": "Addressables",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Addressables/",
       "validationGates": [
         "G17"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T21:00:00Z",
+      "notes": "T34C: deferred with reason: the interface ships inside the two scenes (HUD, Codex, shop, sheets) and no bundle depends on any UI asset (analysis: 0 duplicates). A group helps when shop or event screens load on demand: with T48 (events) or T54 (Pass and Club)."
     },
     {
       "id": "N-GRP-UI_Shop",
@@ -9394,9 +9400,9 @@
       "validationGates": [
         "G17"
       ],
-      "lastValidationVersion": "T34B",
-      "lastValidationUtc": "2026-10-06T09:00:00Z",
-      "notes": "T34B: deferred with reason: the effects (33 short clips, about 1.3 MB compressed) are needed from the first frame and ship with SC_Bootstrap through DEF_AudioEvents; a separate group would only add an async load before the first touch. To revisit with the Bootstrap group in T34C."
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T21:00:00Z",
+      "notes": "T34B: deferred with reason: the effects (33 short clips, about 1.3 MB compressed) are needed from the first frame and ship with SC_Bootstrap through DEF_AudioEvents; a separate group would only add an async load before the first touch. To revisit with the Bootstrap group in T34C. | T34C: still deferred with reason: the effects are needed from the first frame and no bundle depends on them (analysis: 0 duplicates); to revisit with event audio packs (T48)."
     },
     {
       "id": "N-GRP-Audio_Grassland",

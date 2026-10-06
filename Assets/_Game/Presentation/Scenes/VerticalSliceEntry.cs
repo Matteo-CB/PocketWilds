@@ -41,7 +41,8 @@ namespace PocketWilds.Presentation
         [SerializeField] private string _biomeAudioKey = "audio.grassland";
 
         [Header("Refuge loop")]
-        [SerializeField] private HatchPresentationConfig _hatchConfig;
+        [Tooltip("T34C: hatch staging (egg prefab, feedback effects) in the Addressables group CommonAnimals.")]
+        [SerializeField] private string _hatchConfigKey = "animals.hatch";
         [SerializeField] private string _eggId = "egg.grassland.basic";
         [Tooltip("HUD component implementing IRefugeHud (UI assembly).")]
         [SerializeField] private MonoBehaviour _hud;
@@ -69,6 +70,7 @@ namespace PocketWilds.Presentation
         private Action<int, ChunkStreamState> _onChunkState;
         private Action<QualityState> _onQuality;
         private AsyncOperationHandle<BiomeAudioSet> _biomeAudio;
+        private AsyncOperationHandle<HatchPresentationConfig> _hatch;
 
         public bool HasContext => _context != null;
         public WorldChunkSet ChunkSet => _chunkSet;
@@ -86,6 +88,9 @@ namespace PocketWilds.Presentation
             _worldQuality != null ? _worldQuality.Get(tier) : WorldQualityProfile.Default(tier);
         public RefugeController Refuge => _refuge;
 
+        /// <summary>Hatch staging once loaded (null before PrepareAsync or when it failed).</summary>
+        public HatchPresentationConfig HatchConfig => _hatch.IsValid() && _hatch.Status == AsyncOperationStatus.Succeeded ? _hatch.Result : null;
+
         /// <summary>The biome's beds once loaded (null before PrepareAsync or when the key is empty or failed).</summary>
         public BiomeAudioSet BiomeAudio => _biomeAudio.IsValid() && _biomeAudio.Status == AsyncOperationStatus.Succeeded ? _biomeAudio.Result : null;
 
@@ -101,6 +106,8 @@ namespace PocketWilds.Presentation
             // T34B: the biome's music and ambience load beside the start chunk (small asset; the clips stream).
             if (!string.IsNullOrEmpty(_biomeAudioKey) && !_biomeAudio.IsValid())
                 _biomeAudio = Addressables.LoadAssetAsync<BiomeAudioSet>(_biomeAudioKey);
+            if (!string.IsNullOrEmpty(_hatchConfigKey) && !_hatch.IsValid())
+                _hatch = Addressables.LoadAssetAsync<HatchPresentationConfig>(_hatchConfigKey);
             // T34: each world part follows its own dimension of the adaptive quality state.
             var quality = context.Quality.State;
             _streamer = new WorldStreamer(_chunkSet, new AddressablesChunkSource(), context.Palettes, quality.Ground);
@@ -134,11 +141,13 @@ namespace PocketWilds.Presentation
             }
             _onChunkState = OnChunkState;
             _streamer.StateChanged += _onChunkState;
-            while (_biomeAudio.IsValid() && !_biomeAudio.IsDone)
+            while ((_biomeAudio.IsValid() && !_biomeAudio.IsDone) || (_hatch.IsValid() && !_hatch.IsDone))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 await Task.Yield();
             }
+            if (_hatch.IsValid() && _hatch.Status != AsyncOperationStatus.Succeeded)
+                GameLog.Error(LogCategory.Presentation, "Hatch staging did not load: " + _hatchConfigKey);
             if (_biomeAudio.IsValid() && _biomeAudio.Status != AsyncOperationStatus.Succeeded)
                 GameLog.Warning(LogCategory.Presentation, "Biome audio did not load: " + _biomeAudioKey);
         }
@@ -166,10 +175,11 @@ namespace PocketWilds.Presentation
                 _cameraRig.SnapTo(egg);
             }
 
-            if (_startChunk != null && _hatchConfig != null && context.VisualCatalog != null && context.Content.Eggs.TryGet(ContentId.FromSource(_eggId), out _))
+            var hatchConfig = HatchConfig;
+            if (_startChunk != null && hatchConfig != null && context.VisualCatalog != null && context.Content.Eggs.TryGet(ContentId.FromSource(_eggId), out _))
             {
                 ApplyReduceMotion(context.State.Settings.ReduceMotion);
-                _refuge = new RefugeController(context, _startChunk, _cameraRig, _hud as IRefugeHud, _hatchConfig, _eggId, transform,
+                _refuge = new RefugeController(context, _startChunk, _cameraRig, _hud as IRefugeHud, hatchConfig, _eggId, transform,
                     _offlineReturn as IOfflineReturnView, _codex as ICodexView, _shop as IShopView, _offerModal as IOfferModalView,
                     _animalSheet as IAnimalSheetView, _modal as IModalView);
                 var input = _cameraRig != null ? _cameraRig.GetComponent<RefugeCameraInput>() : null;
@@ -251,6 +261,10 @@ namespace PocketWilds.Presentation
             _weather = null;
             _startChunk = null;
             _context = null;
+            // After the refuge is gone (its pools are destroyed): the staging assets can leave memory.
+            if (_hatch.IsValid())
+                Addressables.Release(_hatch);
+            _hatch = default;
         }
 
         public void OnTap(Vector2 screenPosition)

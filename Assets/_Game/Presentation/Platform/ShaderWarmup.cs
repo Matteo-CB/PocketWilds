@@ -31,7 +31,15 @@ namespace PocketWilds.Presentation
         /// <summary>"states" (traced collection), "variants" (fallback), "none" or "skipped".</summary>
         public static string LastSource { get; private set; } = "none";
 
-        public static async Awaitable RunAsync(ShaderWarmupSet set, CancellationToken cancellationToken, int perBatch = 16)
+        public static Awaitable RunAsync(ShaderWarmupSet set, CancellationToken cancellationToken, int perBatch = 16) =>
+            RunAsync(new[] { set }, cancellationToken, perBatch);
+
+        /// <summary>
+        /// T34C: several sets, one per place the shaders live (built into the player, Addressables groups Bootstrap and
+        /// CommonAnimals): each set warms its own copy of its shaders. Totals are summed.
+        /// </summary>
+        public static async Awaitable RunAsync(System.Collections.Generic.IReadOnlyList<ShaderWarmupSet> sets, CancellationToken cancellationToken,
+            int perBatch = 16)
         {
             LastWarmed = 0;
             LastLongestFrameMs = 0f;
@@ -41,43 +49,47 @@ namespace PocketWilds.Presentation
                 LastSource = "skipped";
                 return;
             }
-            if (set == null)
+            if (sets == null)
                 return;
             var watch = Stopwatch.StartNew();
-            bool traced = false;
-            foreach (var collection in set.collections)
+            bool anyTraced = false, anyVariants = false;
+            foreach (var set in sets)
             {
-                if (collection == null || collection.graphicsDeviceType != SystemInfo.graphicsDeviceType || collection.runtimePlatform != Application.platform)
+                if (set == null)
                     continue;
-                traced = true;
-                while (!collection.isWarmedUp)
+                bool traced = false;
+                foreach (var collection in set.collections)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var batch = collection.WarmUpProgressively(perBatch);
-                    do
+                    if (collection == null || collection.graphicsDeviceType != SystemInfo.graphicsDeviceType || collection.runtimePlatform != Application.platform)
+                        continue;
+                    traced = true;
+                    while (!collection.isWarmedUp)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var batch = collection.WarmUpProgressively(perBatch);
+                        do
+                        {
+                            await NextFrame(cancellationToken);
+                        }
+                        while (!batch.IsCompleted);
+                        batch.Complete();
+                    }
+                    LastWarmed += collection.totalGraphicsStateCount;
+                }
+                if (!traced && set.variants != null)
+                {
+                    while (!set.variants.isWarmedUp)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        set.variants.WarmUpProgressively(perBatch);
                         await NextFrame(cancellationToken);
                     }
-                    while (!batch.IsCompleted);
-                    batch.Complete();
+                    LastWarmed += set.variants.variantCount;
+                    anyVariants = true;
                 }
-                LastWarmed += collection.totalGraphicsStateCount;
+                anyTraced |= traced;
             }
-            if (traced)
-            {
-                LastSource = "states";
-            }
-            else if (set.variants != null)
-            {
-                while (!set.variants.isWarmedUp)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    set.variants.WarmUpProgressively(perBatch);
-                    await NextFrame(cancellationToken);
-                }
-                LastWarmed = set.variants.variantCount;
-                LastSource = "variants";
-            }
+            LastSource = anyTraced ? (anyVariants ? "states+variants" : "states") : anyVariants ? "variants" : "none";
             LastMilliseconds = watch.Elapsed.TotalMilliseconds;
             GameLog.Info(LogCategory.Boot, $"Shader warmup: {LastWarmed} {LastSource} in {LastMilliseconds:F0} ms, longest frame {LastLongestFrameMs:F1} ms");
         }

@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!200 &20000000
+ShaderVariantCollection:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: SVC_World
+  m_Shaders:
+  - first: {fileID: 4800000, guid: d1ce4ebf8cebe284a872a01c7fb32ad9, type: 3}
+    second:
+      variants:
+      - keywords: FOG_LINEAR
+        passType: 13
+      - keywords: FOG_LINEAR _MAIN_LIGHT_SHADOWS
+        passType: 13
+      - keywords: FOG_LINEAR _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT
+        passType: 13
+      - keywords: FOG_LINEAR _MAIN_LIGHT_SHADOWS_CASCADE _SHADOWS_SOFT
+        passType: 13
+  - first: {fileID: 4800000, guid: 98009eae4d790bd448d6cc25a282c308, type: 3}
+    second:
+      variants:
+      - keywords: FOG_LINEAR
+        passType: 13
+      - keywords: FOG_LINEAR _MAIN_LIGHT_SHADOWS
+        passType: 13
+      - keywords: FOG_LINEAR _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT
+        passType: 13
+      - keywords: FOG_LINEAR _MAIN_LIGHT_SHADOWS_CASCADE _SHADOWS_SOFT
+        passType: 13
+  - first: {fileID: 4800000, guid: fee4cb3939692394ebe8a588d6ebaeba, type: 3}
+    second:
+      variants:
+      - keywords: FOG_LINEAR INSTANCING_ON
+        passType: 13
+      - keywords: FOG_LINEAR INSTANCING_ON _MAIN_LIGHT_SHADOWS
+        passType: 13
+      - keywords: FOG_LINEAR INSTANCING_ON _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT
+        passType: 13
+      - keywords: FOG_LINEAR INSTANCING_ON _MAIN_LIGHT_SHADOWS_CASCADE _SHADOWS_SOFT
+        passType: 13
+  - first: {fileID: 4800000, guid: 7647a8af95eb8a14e8cb0274a4af1e29, type: 3}
+    second:
+      variants:
+      - keywords: FOG_LINEAR _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT
+        passType: 13

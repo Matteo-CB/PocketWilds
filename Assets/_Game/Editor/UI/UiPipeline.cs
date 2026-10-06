@@ -863,7 +863,7 @@ namespace PocketWilds.Editor.UI
             so.FindProperty("_hud").objectReferenceValue = hud;
             so.FindProperty("_offlineReturn").objectReferenceValue = offline;
             so.FindProperty("_codex").objectReferenceValue = codex;
-            so.FindProperty("_hatchConfig").objectReferenceValue = AssetDatabase.LoadAssetAtPath<HatchPresentationConfig>(HatchConfigPath);
+            so.FindProperty("_hatchConfigKey").stringValue = "animals.hatch";
             so.FindProperty("_eggId").stringValue = "egg.grassland.basic";
             so.ApplyModifiedPropertiesWithoutUndo();
 

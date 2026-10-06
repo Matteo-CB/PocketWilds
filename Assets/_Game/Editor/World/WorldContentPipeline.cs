@@ -68,7 +68,13 @@ namespace PocketWilds.Editor.World
             foreach (var entry in stale)
                 settings.RemoveAssetEntry(entry.guid);
             foreach (var path in shared)
+            {
+                // T34C: the world master shaders belong to the Bootstrap group (every biome shares them): never moved back.
+                var owned = settings.FindAssetEntry(AssetDatabase.AssetPathToGUID(path));
+                if (owned != null && owned.parentGroup != kit && owned.parentGroup != chunks)
+                    continue;
                 AddEntry(settings, kit, path, "kit.grassland." + Path.GetFileNameWithoutExtension(path).ToLowerInvariant());
+            }
 
             EnsureChunkSet();
             MigrateScene();

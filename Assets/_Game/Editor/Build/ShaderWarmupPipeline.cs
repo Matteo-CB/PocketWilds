@@ -114,17 +114,22 @@ namespace PocketWilds.Editor.Build
             AssetDatabase.SaveAssets();
             WireBootstrap(set);
             Object.DestroyImmediate(probe);
-            return $"{name} from {files.Count} traces: {collection.variantCount} variants, {collection.totalGraphicsStateCount} states; fallback {fallback} variants";
+            // T34C: each Addressables group warms its own copy of its shaders: the new trace is split by owner.
+            string split = PocketWilds.Editor.World.CommonContentPipeline.SplitAfterImport(collection.runtimePlatform, collection.graphicsDeviceType);
+            return $"{name} from {files.Count} traces: {collection.variantCount} variants, {collection.totalGraphicsStateCount} states; fallback {fallback} variants; {split}";
         }
 
         /// <summary>The traced variants as a ShaderVariantCollection (compiles them where no traced states exist).</summary>
-        public static int RebuildVariants(ShaderWarmupSet set)
+        public static int RebuildVariants(ShaderWarmupSet set) => RebuildVariants(set, VariantsPath);
+
+        /// <summary>T34C: one fallback collection per warmup set (built-in, world, animals).</summary>
+        public static int RebuildVariants(ShaderWarmupSet set, string path)
         {
-            var svc = AssetDatabase.LoadAssetAtPath<ShaderVariantCollection>(VariantsPath);
+            var svc = AssetDatabase.LoadAssetAtPath<ShaderVariantCollection>(path);
             if (svc == null)
             {
                 svc = new ShaderVariantCollection();
-                AssetDatabase.CreateAsset(svc, VariantsPath);
+                AssetDatabase.CreateAsset(svc, path);
             }
             svc.Clear();
             var list = new List<GraphicsStateCollection.ShaderVariant>();

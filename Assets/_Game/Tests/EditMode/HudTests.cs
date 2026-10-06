@@ -1,5 +1,6 @@
 using System.Linq;
 using NUnit.Framework;
+using PocketWilds.Editor.World;
 using PocketWilds.Core;
 using PocketWilds.Editor.UI;
 using PocketWilds.Presentation;
@@ -88,7 +89,8 @@ namespace PocketWilds.Tests.EditMode
                 var entry = roots.Select(r => r.GetComponent<VerticalSliceEntry>()).First(e => e != null);
                 var so = new SerializedObject(entry);
                 Assert.IsInstanceOf<RefugeHud>(so.FindProperty("_hud").objectReferenceValue);
-                Assert.IsNotNull(so.FindProperty("_hatchConfig").objectReferenceValue);
+                // T34C: the scene holds the key of the hatch staging (group CommonAnimals), never the asset.
+                Assert.AreEqual(CommonContentPipeline.HatchAddress, so.FindProperty("_hatchConfigKey").stringValue);
                 Assert.AreEqual("egg.grassland.basic", so.FindProperty("_eggId").stringValue);
                 Assert.IsInstanceOf<OfflineReturnScreen>(so.FindProperty("_offlineReturn").objectReferenceValue);
                 Assert.IsInstanceOf<CodexScreen>(so.FindProperty("_codex").objectReferenceValue);

@@ -14,7 +14,9 @@ using PocketWilds.Services.Save;
 using PocketWilds.Services.Store;
 using PocketWilds.Simulation;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 using UnityEngine.Profiling;
+using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.SceneManagement;
 using Debug = UnityEngine.Debug;
 
@@ -41,7 +43,10 @@ namespace PocketWilds.Bootstrap
 
         [SerializeField] private string _targetScene = "SC_VerticalSlice_Grassland";
         [SerializeField] private ContentDatabaseAsset _contentDatabase;
-        [SerializeField] private AnimalVisualCatalog _visualCatalog;
+        [Tooltip("T34C: the animal catalog (prefabs, rigs, master material) lives in the Addressables group CommonAnimals.")]
+        [SerializeField] private string _animalCatalogKey = "animals.catalog";
+        [Tooltip("T34C: warmup sets of the shaders that live in Addressables groups (label), warmed after the built-in set.")]
+        [SerializeField] private string _warmupLabel = "warmup";
         [Tooltip("T34: graphics states warmed behind the loading screen (first displays never stutter).")]
         [SerializeField] private ShaderWarmupSet _shaderWarmup;
         [Tooltip("T34A boot screen (PF_UI_Splash): shown from the first frame until the refuge is ready.")]
@@ -78,6 +83,8 @@ namespace PocketWilds.Bootstrap
         private AudioService _audio;
         private HapticService _haptics;
         private IHapticBackend _hapticBackend;
+        private AsyncOperationHandle<AnimalVisualCatalog> _animalCatalog;
+        private AsyncOperationHandle<System.Collections.Generic.IList<ShaderWarmupSet>> _warmupSets;
 
         public BootState State { get; private set; } = BootState.NotStarted;
         public GameContext Context { get; private set; }
@@ -268,14 +275,40 @@ namespace PocketWilds.Bootstrap
                     AudioListener.volume = 0f;
             });
 
+            // T34C: shared content is loaded once from Addressables (groups Bootstrap and CommonAnimals): one copy in the
+            // build, shared later by biome and species packs without duplicating it.
+            sequence.AddBlocking("CommonContent", async cancellationToken =>
+            {
+                if (!string.IsNullOrEmpty(_warmupLabel))
+                    _warmupSets = Addressables.LoadAssetsAsync<ShaderWarmupSet>(_warmupLabel, null);
+                if (_options.VisualCatalogOverride == null && !string.IsNullOrEmpty(_animalCatalogKey))
+                    _animalCatalog = Addressables.LoadAssetAsync<AnimalVisualCatalog>(_animalCatalogKey);
+                while ((_warmupSets.IsValid() && !_warmupSets.IsDone) || (_animalCatalog.IsValid() && !_animalCatalog.IsDone))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await Task.Yield();
+                }
+                if (_warmupSets.IsValid() && _warmupSets.Status != AsyncOperationStatus.Succeeded)
+                    GameLog.Warning(LogCategory.Boot, "Shader warmup sets did not load (label " + _warmupLabel + ").");
+                if (_animalCatalog.IsValid() && _animalCatalog.Status != AsyncOperationStatus.Succeeded)
+                    throw new InvalidOperationException("The animal catalog did not load: " + _animalCatalogKey);
+            });
+
             // T34: every traced graphics state is built now, behind the loading screen, not at its first display.
-            sequence.AddBlocking("ShaderWarmup", async cancellationToken => await ShaderWarmup.RunAsync(_shaderWarmup, cancellationToken));
+            sequence.AddBlocking("ShaderWarmup", async cancellationToken =>
+            {
+                var sets = new System.Collections.Generic.List<ShaderWarmupSet> { _shaderWarmup };
+                if (_warmupSets.IsValid() && _warmupSets.Status == AsyncOperationStatus.Succeeded && _warmupSets.Result != null)
+                    sets.AddRange(_warmupSets.Result);
+                await ShaderWarmup.RunAsync(sets, cancellationToken);
+            });
 
             sequence.AddBlocking("Presentation", async cancellationToken =>
             {
                 _palettes = new PaletteTable(_content);
                 var visuals = new AnimalVisualResolver(_content, _palettes);
-                var catalog = _options.VisualCatalogOverride != null ? _options.VisualCatalogOverride : _visualCatalog;
+                var catalog = _options.VisualCatalogOverride != null ? _options.VisualCatalogOverride
+                    : _animalCatalog.IsValid() && _animalCatalog.Status == AsyncOperationStatus.Succeeded ? _animalCatalog.Result : null;
                 Context = new GameContext(_clock, _content, _save, _economy, _hatch, _quality, _frameRate, _palettes, visuals, catalog,
                     _audio, _haptics, _offline, _localization, _codex, _store, _analytics);
                 _loop = gameObject.AddComponent<GameLoop>();
@@ -396,6 +429,12 @@ namespace PocketWilds.Bootstrap
             _quality?.Dispose();
             _audio?.Dispose();
             _audio = null;
+            if (_animalCatalog.IsValid())
+                Addressables.Release(_animalCatalog);
+            _animalCatalog = default;
+            if (_warmupSets.IsValid())
+                Addressables.Release(_warmupSets);
+            _warmupSets = default;
             (_hapticBackend as IDisposable)?.Dispose();
             _hapticBackend = null;
             if (_options != null && _options.MuteAudio)

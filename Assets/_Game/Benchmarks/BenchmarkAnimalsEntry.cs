@@ -3,6 +3,8 @@ using PocketWilds.Core;
 using PocketWilds.Presentation;
 using PocketWilds.Simulation;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace PocketWilds.Benchmarks
 {
@@ -14,7 +16,8 @@ namespace PocketWilds.Benchmarks
     /// </summary>
     public sealed class BenchmarkAnimalsEntry : MonoBehaviour, ISceneEntry
     {
-        [SerializeField] private AnimalVisualCatalog _catalog;
+        [Tooltip("T34C: the animal catalog key in the Addressables group CommonAnimals (standalone runs load it themselves).")]
+        [SerializeField] private string _catalogKey = "animals.catalog";
         [SerializeField] private ContentDatabaseAsset _contentDatabase;
         [SerializeField] private string _visualKey = "PF_Animal_Rabbit";
         [SerializeField] private string _speciesId = "species.rabbit";
@@ -45,10 +48,16 @@ namespace PocketWilds.Benchmarks
 
         public void Exit() => Teardown();
 
-        private void Start()
+        private AsyncOperationHandle<AnimalVisualCatalog> _catalogLoad;
+
+        private async void Start()
         {
-            // Benchmarks also run straight from the scene, without the bootstrap.
-            if (_scheduler == null)
+            // Benchmarks also run straight from the scene, without the bootstrap: the catalog comes from Addressables.
+            if (_scheduler != null)
+                return;
+            _catalogLoad = Addressables.LoadAssetAsync<AnimalVisualCatalog>(_catalogKey);
+            await _catalogLoad.Task;
+            if (this != null && _scheduler == null)
                 Build(null);
         }
 
@@ -57,7 +66,8 @@ namespace PocketWilds.Benchmarks
             if (_scheduler != null)
                 return;
 
-            var catalog = context?.VisualCatalog ?? _catalog;
+            var catalog = context?.VisualCatalog
+                          ?? (_catalogLoad.IsValid() && _catalogLoad.Status == AsyncOperationStatus.Succeeded ? _catalogLoad.Result : null);
             if (catalog == null || !catalog.TryGet(_visualKey, out var entry) || entry.prefab == null)
             {
                 GameLog.Error(LogCategory.Benchmark, "Benchmark: no prefab for " + _visualKey);
@@ -183,6 +193,12 @@ namespace PocketWilds.Benchmarks
             _ownedPalettes = null;
         }
 
-        private void OnDestroy() => Teardown();
+        private void OnDestroy()
+        {
+            Teardown();
+            if (_catalogLoad.IsValid())
+                Addressables.Release(_catalogLoad);
+            _catalogLoad = default;
+        }
     }
 }
