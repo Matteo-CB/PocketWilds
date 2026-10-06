@@ -1,6 +1,7 @@
 using System.Linq;
 using NUnit.Framework;
 using PocketWilds.Editor.Build;
+using UnityEditor;
 
 namespace PocketWilds.Tests.EditMode
 {
@@ -56,6 +57,14 @@ namespace PocketWilds.Tests.EditMode
                 "Every project Resources folder ships, referenced or not.");
             foreach (var path in BuildValidator.PerformanceTestRunFiles)
                 Assert.IsTrue(BuildValidator.ForbiddenParts.Any(part => path.Contains(part)), path + " is test content.");
+        }
+
+        [Test]
+        public void OwnerDecisions_NoUnitySplash_NoTmpEmoji()
+        {
+            // Owner decisions, 2026-10-07: the game opens on its own splash, and the unused TMP emoji sheet is gone.
+            Assert.IsFalse(PlayerSettings.SplashScreen.show, "No Unity splash screen.");
+            Assert.IsFalse(BuildValidator.ResourcesContent().Any(p => p.Contains("EmojiOne")), "No TMP emoji sprites in a Resources folder.");
         }
     }
 }

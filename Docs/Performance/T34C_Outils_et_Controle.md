@@ -201,7 +201,11 @@ Aucune image au-dessus de 33 ms et aucun chevauchement. La marge minimale des an
 | M-DEF-DENSITY (densité par biome) | La densité suit le palier (`DEF_WorldQuality`) ; un profil par biome servira avec le deuxième biome (Forêt) |
 | N-GRP-UI_Common, N-GRP-Audio_Common | Voir partie 1/3 : aucun bundle ne dépend de ces assets, et ils servent dès la première image |
 
-## 9. Décisions ouvertes pour le propriétaire
+## 9. Décisions du propriétaire (7 octobre)
 
-1. Retirer le splash Unity : 2,7 Mo et environ 2 s de lancement en moins ; le jeu garde son propre écran d'accueil.
-2. Supprimer EmojiOne de TextMesh Pro : 0,35 Mo ; il n'est utilisé nulle part.
+Les deux décisions ouvertes par l'audit sont prises et appliquées :
+
+1. Le splash Unity est retiré (`PlayerSettings.SplashScreen.show` à faux) : 2,7 Mo et environ 2 s de lancement en moins. Le jeu s'ouvre sur son propre écran d'accueil.
+2. EmojiOne de TextMesh Pro est supprimé (planche, données, attribution, dossiers vides), et la référence par défaut des réglages TMP est vidée : 0,35 Mo.
+
+Le test `BuildValidatorTests.OwnerDecisions_NoUnitySplash_NoTmpEmoji` empêche leur retour. L'audit de la section 2 date d'avant ces deux retraits.
