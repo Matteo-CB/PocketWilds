@@ -734,7 +734,8 @@ namespace PocketWilds.Presentation
                 view.SetPlaybackSpeed(state == AnimalBehaviorState.Wander && agent.Emerging ? EmergeSpeedScale : 1f);
                 // A greeting is voiced once, by the animal that started it (its partner follows, induced).
                 if (_voices != null && !induced && agent.Tier == SimulationTier.A
-                    && (state == AnimalBehaviorState.Happy || state == AnimalBehaviorState.Social || state == AnimalBehaviorState.Sleep))
+                    && (state == AnimalBehaviorState.Happy || state == AnimalBehaviorState.Social || state == AnimalBehaviorState.Sleep
+                        || state == AnimalBehaviorState.Eat))
                     _voices.AnimalVoice(view, state, agent.Position);
             }
         }

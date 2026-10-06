@@ -187,6 +187,7 @@ namespace PocketWilds.UI
             if (!_open || _closing || !card.Discovered)
                 return;
             OpenSheet(card.CodexIndex);
+            _actions?.CodexNavigated(true);
         }
 
         public void OpenSheet(int codexIndex)
@@ -525,7 +526,10 @@ namespace PocketWilds.UI
         private void OnBackPressed()
         {
             if (_sheetIndex >= 0)
+            {
                 CloseSheet();
+                _actions?.CodexNavigated(false);
+            }
             else
                 Close();
         }

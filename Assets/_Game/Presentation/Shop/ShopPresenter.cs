@@ -182,7 +182,7 @@ namespace PocketWilds.Presentation
             if (!ShopOpen)
                 return;
             _shopView.Close();
-            _audio.Play(AudioEventId.UiBack, Vector3.zero, default);
+            _audio.Play(AudioEventId.PanelClose, Vector3.zero, default);
             _setWorldVisible(true);
         }
 
@@ -275,6 +275,7 @@ namespace PocketWilds.Presentation
                     Message(ShopMessage.Failed, 0);
                     break;
                 case PurchaseFlowStatus.Pending:
+                    _audio.Play(AudioEventId.PurchasePending, Vector3.zero, default);
                     Message(ShopMessage.Pending, 0);
                     break;
                 case PurchaseFlowStatus.StoreUnavailable:

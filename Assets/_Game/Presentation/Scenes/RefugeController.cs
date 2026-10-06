@@ -302,7 +302,10 @@ namespace PocketWilds.Presentation
                     // T34A unlock toast: only when the shop opens during play, never for a shop already open at entry.
                     int state = unlocked ? 1 : 0;
                     if (_shopUnlockState == 0 && state == 1)
+                    {
                         _hud.ShowToast(ToastKind.Unlock, _context.Localization.Get(FeedbackText.ToastShopOpen));
+                        _context.Audio.Play(AudioEventId.Claim, Vector3.zero, default);
+                    }
                     _shopUnlockState = state;
                 }
                 UpdateTapHint(deltaTime);
@@ -436,12 +439,12 @@ namespace PocketWilds.Presentation
                     _vfx?.Play(VfxId.FavoriteHeart, _scheduler.GetPosition(_agentByView[i]) + new Vector3(0f, 0.2f * scale, 0f), _time);
                     break;
                 }
-                _context.Audio.Play(AudioEventId.UiConfirm, Vector3.zero, default);
+                _context.Audio.Play(AudioEventId.ToggleOn, Vector3.zero, default);
                 _context.Haptics.Play(HapticEventId.Confirm);
             }
             else
             {
-                _context.Audio.Play(AudioEventId.UiTap, Vector3.zero, default);
+                _context.Audio.Play(AudioEventId.ToggleOff, Vector3.zero, default);
                 _context.Haptics.Play(HapticEventId.TapLight);
             }
             if (TryBuildSheet(instanceId, out var data))
@@ -522,7 +525,9 @@ namespace PocketWilds.Presentation
                 return;
             if (_tappedView >= 0 && _views[_tappedView] == view && _time - _tappedTime < AfterTouchQuietSeconds)
                 return;
-            var id = state == AnimalBehaviorState.Sleep ? AudioEventId.AnimalSleep : AudioEventId.AnimalChatter;
+            var id = state == AnimalBehaviorState.Sleep ? AudioEventId.AnimalSleep
+                : state == AnimalBehaviorState.Eat ? AudioEventId.AnimalEat
+                : AudioEventId.AnimalChatter;
             _context.Audio.Play(id, position + new Vector3(0f, 0.2f, 0f), view.Species);
         }
 
@@ -552,6 +557,7 @@ namespace PocketWilds.Presentation
                 return;
             }
 
+            bool paid = !_context.Hatch.IsNextHatchFree;
             var result = _context.Hatch.Hatch(_eggId);
             if (!result.Succeeded)
             {
@@ -560,6 +566,9 @@ namespace PocketWilds.Presentation
                 return;
             }
             RefreshEggCost();
+            // T34B2: a paid egg is heard leaving the counter (soft, under the egg tap).
+            if (paid)
+                _context.Audio.Play(AudioEventId.SpendLight, Vector3.zero, default);
 
             var reveal = _waitingEgg.RevealPoint;
             _context.Visuals.TryResolve(result.Animal, reveal.position, reveal.eulerAngles.y, out var snapshot);
@@ -603,9 +612,12 @@ namespace PocketWilds.Presentation
 
         public void CodexClosed()
         {
-            _context.Audio.Play(AudioEventId.UiBack, Vector3.zero, default);
+            _context.Audio.Play(AudioEventId.PanelClose, Vector3.zero, default);
             SetWorldVisible(true);
         }
+
+        public void CodexNavigated(bool deeper) =>
+            _context.Audio.Play(deeper ? AudioEventId.UiTab : AudioEventId.UiBack, Vector3.zero, default);
 
         /// <summary>HUD shortcut. Like the Codex, the shop is opaque: the world camera stops while it is open.</summary>
         public void OpenShop()

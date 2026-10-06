@@ -361,6 +361,164 @@ MonoBehaviour:
     burstDelay: 0
     burstInterval: 0.1
     burstSemitones: 
+  - id: 20
+    clips:
+    - {fileID: 8300000, guid: 9e694eec945e6b143a56efa95128f4f3, type: 3}
+    group: 3
+    volume: 1
+    volumeJitter: 0.05
+    pitchJitter: 0.03
+    cooldown: 0.08
+    maxVoices: 1
+    priority: 1
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 21
+    clips:
+    - {fileID: 8300000, guid: 3eefd637e2e551548a0c23888ce2c58d, type: 3}
+    - {fileID: 8300000, guid: 69dbf3571766efa459716cd17e929905, type: 3}
+    group: 3
+    volume: 1
+    volumeJitter: 0.08
+    pitchJitter: 0.04
+    cooldown: 0.05
+    maxVoices: 2
+    priority: 1
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 22
+    clips:
+    - {fileID: 8300000, guid: 8491f69931cc16844aeb5c48922ec155, type: 3}
+    group: 3
+    volume: 1
+    volumeJitter: 0.05
+    pitchJitter: 0.02
+    cooldown: 0.08
+    maxVoices: 1
+    priority: 1
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 23
+    clips:
+    - {fileID: 8300000, guid: 51f9b85c9b71bd544b1668f98216b5d9, type: 3}
+    group: 3
+    volume: 1
+    volumeJitter: 0.05
+    pitchJitter: 0.02
+    cooldown: 0.08
+    maxVoices: 1
+    priority: 1
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 24
+    clips:
+    - {fileID: 8300000, guid: 2a3d4492dcc2843468d4e4a8d3eb6cbf, type: 3}
+    group: 3
+    volume: 1
+    volumeJitter: 0
+    pitchJitter: 0
+    cooldown: 1
+    maxVoices: 1
+    priority: 1
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 25
+    clips:
+    - {fileID: 8300000, guid: 93893c436a3566a4eb040c6981e72901, type: 3}
+    group: 4
+    volume: 0.9
+    volumeJitter: 0.05
+    pitchJitter: 0.02
+    cooldown: 0.1
+    maxVoices: 1
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 26
+    clips:
+    - {fileID: 8300000, guid: 79ac774703f78a8458e2594061550d58, type: 3}
+    group: 4
+    volume: 1
+    volumeJitter: 0
+    pitchJitter: 0
+    cooldown: 0.5
+    maxVoices: 1
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 27
+    clips:
+    - {fileID: 8300000, guid: 25f8686abc20718439a14749985fa1fa, type: 3}
+    - {fileID: 8300000, guid: f2cd18311ae188c47aa98a387482e433, type: 3}
+    - {fileID: 8300000, guid: 8724d3ad6b3dc6543aa9e45c0e4fd318, type: 3}
+    group: 2
+    volume: 0.8
+    volumeJitter: 0.1
+    pitchJitter: 0.05
+    cooldown: 4
+    maxVoices: 1
+    priority: 5
+    world: 1
+    skipOnBatterySaver: 1
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 28
+    clips:
+    - {fileID: 8300000, guid: 1bcda10a81aa9b44aa8d94690c54de14, type: 3}
+    - {fileID: 8300000, guid: 40cba63cc070e2940b4e2c38d8ad31f1, type: 3}
+    - {fileID: 8300000, guid: b3b7f9f731ef45546b4ee651dd916f6a, type: 3}
+    group: 5
+    volume: 0.8
+    volumeJitter: 0.1
+    pitchJitter: 0.06
+    cooldown: 2.5
+    maxVoices: 1
+    priority: 5
+    world: 1
+    skipOnBatterySaver: 1
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
   species:
   - species: species.rabbit
     happy:
@@ -370,6 +528,9 @@ MonoBehaviour:
     sleep:
     - {fileID: 8300000, guid: 595b0b7a1c1f7c249b984b474e4e6b1f, type: 3}
     - {fileID: 8300000, guid: 226b71c6a56407740be9ed7fcc208a51, type: 3}
+    eat:
+    - {fileID: 8300000, guid: b9343e803b26c824bb5cc500663986f9, type: 3}
+    - {fileID: 8300000, guid: 7100925d62d3b0c4c857721cc2cdf062, type: 3}
     pitch: 1
   - species: species.squirrel
     happy:
@@ -380,6 +541,10 @@ MonoBehaviour:
     sleep:
     - {fileID: 8300000, guid: 499957530427e9b47b7d5d824dfd8899, type: 3}
     - {fileID: 8300000, guid: 10941dcbcd4dd6a4bb5b72ab9d566d42, type: 3}
+    eat:
+    - {fileID: 8300000, guid: 25f8686abc20718439a14749985fa1fa, type: 3}
+    - {fileID: 8300000, guid: f2cd18311ae188c47aa98a387482e433, type: 3}
+    - {fileID: 8300000, guid: 8724d3ad6b3dc6543aa9e45c0e4fd318, type: 3}
     pitch: 1.12
   - species: species.hedgehog
     happy:
@@ -390,6 +555,10 @@ MonoBehaviour:
     sleep:
     - {fileID: 8300000, guid: 499957530427e9b47b7d5d824dfd8899, type: 3}
     - {fileID: 8300000, guid: 10941dcbcd4dd6a4bb5b72ab9d566d42, type: 3}
+    eat:
+    - {fileID: 8300000, guid: 25f8686abc20718439a14749985fa1fa, type: 3}
+    - {fileID: 8300000, guid: f2cd18311ae188c47aa98a387482e433, type: 3}
+    - {fileID: 8300000, guid: 8724d3ad6b3dc6543aa9e45c0e4fd318, type: 3}
     pitch: 0.84
   familyFallback:
     species: 
@@ -401,4 +570,8 @@ MonoBehaviour:
     sleep:
     - {fileID: 8300000, guid: 499957530427e9b47b7d5d824dfd8899, type: 3}
     - {fileID: 8300000, guid: 10941dcbcd4dd6a4bb5b72ab9d566d42, type: 3}
+    eat:
+    - {fileID: 8300000, guid: 25f8686abc20718439a14749985fa1fa, type: 3}
+    - {fileID: 8300000, guid: f2cd18311ae188c47aa98a387482e433, type: 3}
+    - {fileID: 8300000, guid: 8724d3ad6b3dc6543aa9e45c0e4fd318, type: 3}
     pitch: 1

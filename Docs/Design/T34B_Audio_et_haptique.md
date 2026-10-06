@@ -243,3 +243,62 @@ Rapports : `Docs/Performance/Baselines/T34B_player_windows_audio.json` (22 scén
   l'erreur douce et l'achat existaient déjà comme événements dans le code ; ils ont maintenant leur son.
 - **Pluie et nuit :** l'ambiance de pluie (J-WEATHER-RainLight) et une ambiance de nuit restent pour plus tard
   (SoftLaunch).
+
+## 9. T34B2 : complément de la tranche
+
+Ajouté le 6 octobre au soir, après la question du propriétaire sur les sons manquants. Le principe : tout ce que le
+jeu actuel peut déjà jouer a maintenant son son ; le reste arrive avec sa fonction ou en T65.
+
+### Ambiance : le soir et la pluie
+
+- **Soirée (AMB_Grassland_Evening).**
+    - Une boucle de 60 s : brise légère et six grillons lointains à des distances différentes, sans chant d'oiseau, à
+      -29 LUFS.
+    - Le jeu suit l'heure réelle du téléphone :
+        - les grillons arrivent entre 19 h et 20 h 30 ;
+        - ils repartent entre 5 h 30 et 7 h ;
+        - la nuit des événements compte comme le soir.
+- **Pluie fine (AMB_Rain_Light).**
+    - Une boucle de 30 s : un lit feutré, des milliers de petites gouttes et quelques gouttes rondes qui tombent des
+      feuilles, à -27 LUFS.
+    - Elle se mêle selon la force de l'averse (WeatherSystem). La prairie du jour baisse de moitié et les grillons
+      s'adoucissent.
+- **Mélange.** Les couches bougent d'au plus 0,4 par seconde : jamais de coupure nette. Une couche silencieuse
+  s'arrête et n'est plus décodée.
+
+### Nouveaux sons
+
+| Événement | Fichiers | Où |
+| :-- | :-- | :-- |
+| PanelClose | SFX_UI_PanelClose_01 | fermeture du Codex et de la boutique |
+| UiTab | SFX_UI_Tab_01..02 | page d'une espèce dans le Codex (le retour joue UiBack) |
+| ToggleOn, ToggleOff | SFX_UI_ToggleOn_01, SFX_UI_ToggleOff_01 | cœur favori |
+| PurchasePending | SFX_UI_PurchasePending_01 | achat en attente |
+| SpendLight | SFX_Currency_SpendLight_01 | œuf payé, sous le toc de l'œuf |
+| Claim | SFX_Reward_Claim_01 | message de déblocage (boutique ouverte) ; plus tard les cadeaux |
+| AnimalEat | SFX_Animal_Rabbit_Eat_01..02, SFX_Animal_Small_Eat_01..03 | un animal proche qui commence à manger |
+| BirdTakeOff | SFX_World_BirdTakeOff_01..03 | un petit oiseau qui s'envole près de la vue |
+
+- **Repas et envols :** au plus une voix pour tout le refuge, un repas toutes les 4 s et un envol toutes les 2,5 s au
+  plus. Ils sont coupés en économie de batterie.
+- **Offre :** son ouverture garde PanelOpen, comme le doc 08 le permet.
+
+### Pas encore
+
+- **Pas des animaux (J-MOVE).** Ils doivent tomber sur le contact des pattes. Cela demande de mesurer ce contact sur
+  chaque clip d'animation et de stocker ces repères, plutôt que des événements d'animation qui allouent. Ce sera fait
+  en T65.
+- **Gemmes, Essence, biome débloqué, Renouveau.** Ces sons arrivent avec leur fonction.
+
+### Validation et mesures
+
+- **Tests :**
+    - côté éditeur, 399 sur 399 : couches soir et pluie exactes et sans raccord, voix de repas pour chaque espèce, poids
+      du soir selon l'heure ;
+    - en jeu, 72 réussis, plus 1 benchmark qui ne se lance qu'à la demande : mélange des couches, repas et envols
+      plafonnés.
+- **Lecteur Windows (8 scénarios, dont la pluie R1) :**
+    - image la plus longue 17,5 ms, aucune au-dessus de 33 ms, 0 chevauchement ;
+    - audio 0,04 à 0,06 ms par image ;
+    - tempête audio : 8 voix au plus en même temps.
+- **Rapport :** `Docs/Performance/Baselines/T34B2_player_windows_layers.json`.

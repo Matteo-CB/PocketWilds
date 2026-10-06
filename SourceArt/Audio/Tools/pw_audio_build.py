@@ -46,12 +46,18 @@ def render_sfx():
 
 
 def render_ambience():
-    from pw_audio_ambience import grassland_day
-    x = normalize_integrated(grassland_day(), AMBIENCE_LUFS)
-    write_wav(MASTERS / 'Ambience' / 'AMB_Grassland_Day.wav', x, 24)
-    write_wav(RUNTIME / 'Ambience' / 'AMB_Grassland_Day.wav', x, 16)
-    return {'AMB_Grassland_Day.wav': {'seconds': len(x) / SR, 'lufs': round(integrated_lufs(x), 1),
-                                      'peakDb': round(peak_db(x), 1), 'seam': round(seam_jump(x), 3)}}
+    from pw_audio_ambience import grassland_day, grassland_evening, rain_light
+    out = {}
+    # Day under the feedback; evening a little quieter still; rain as loud as the day bed it replaces.
+    for name, recipe, target in (('AMB_Grassland_Day', grassland_day, AMBIENCE_LUFS),
+                                 ('AMB_Grassland_Evening', grassland_evening, AMBIENCE_LUFS - 2.0),
+                                 ('AMB_Rain_Light', rain_light, AMBIENCE_LUFS)):
+        x = normalize_integrated(recipe(), target)
+        write_wav(MASTERS / 'Ambience' / (name + '.wav'), x, 24)
+        write_wav(RUNTIME / 'Ambience' / (name + '.wav'), x, 16)
+        out[name + '.wav'] = {'seconds': len(x) / SR, 'lufs': round(integrated_lufs(x), 1), 'peakDb': round(peak_db(x), 1),
+                              'seam': round(seam_jump(x), 3)}
+    return out
 
 
 def render_music():

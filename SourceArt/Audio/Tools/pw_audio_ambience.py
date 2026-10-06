@@ -129,3 +129,101 @@ def grassland_day(seed=34):
     # Gentle master: no rumble (phones), soften the 2-5 kHz band, keep it airy.
     mix = fft_filter(mix, chain(highpass(90.0, 2), peak(3500.0, -2.0, 1.4), lowpass(9000.0, 2)), pad=False)
     return mix / (np.max(np.abs(mix)) + 1e-12) * db(-6.0)
+
+
+# ---------------------------------------------------------------- T34B2: evening and rain layers
+
+EVENING_SECONDS = 60.0
+RAIN_SECONDS = 30.0
+
+
+def cricket_track(n, rng, carrier, chirp_every, pulses, pulse_rate, level):
+    """One distant cricket: chirps of a few rapid pulses on a high carrier, irregular gaps, circular."""
+    out = np.zeros(n)
+    t_chirp = np.arange(samples(pulses / pulse_rate + 0.01)) / SR
+    phase_in = (t_chirp * pulse_rate) % 1.0
+    am = np.sin(np.pi * phase_in) ** 2 * (t_chirp * pulse_rate < pulses)
+    at = rng.uniform(0.0, chirp_every)
+    total = n / SR
+    while at < total:
+        f = carrier * rng.uniform(0.995, 1.005)
+        chirp = np.sin(2 * np.pi * f * t_chirp) * am * rng.uniform(0.75, 1.0)
+        idx = (samples(at) + np.arange(len(chirp))) % n
+        np.add.at(out, idx, chirp)
+        at += chirp_every * rng.uniform(0.75, 1.35)
+        # Now and then a cricket pauses for a few seconds.
+        if rng.random() < 0.06:
+            at += rng.uniform(2.0, 6.0)
+    return out * level
+
+
+def grassland_evening(seed=35):
+    """
+    Evening and night layer of the meadow: a light breeze and a few distant crickets at different distances, no bird
+    song. Crossfaded with the day loop by the local hour (and by the night mood of events).
+    """
+    rng = np.random.default_rng(seed)
+    n = samples(EVENING_SECONDS)
+    gust = periodic_curve(n, rng, (2, 3, 5), (1.0, 0.6, 0.3))
+    gust = 0.4 + 0.6 * gust ** 1.3
+    breeze = np.zeros((n, 2))
+    common = pink(n, rng, circular=True)
+    for c in range(2):
+        own = pink(n, rng, circular=True)
+        breeze[:, c] = fft_filter(0.6 * common + 0.4 * own, chain(bandpass(120.0, 800.0, 2), peak(380.0, 1.5, 1.4)), pad=False)
+    breeze /= np.std(breeze) + 1e-12
+    breeze *= gust[:, None]
+
+    crickets = np.zeros((n, 2))
+    for k in range(6):
+        carrier = rng.uniform(3900.0, 4900.0)
+        track = cricket_track(n, rng, carrier, rng.uniform(0.45, 0.9), int(rng.integers(3, 5)), rng.uniform(26.0, 34.0),
+                              rng.uniform(0.35, 1.0))
+        # Farther crickets are darker and quieter.
+        distance = rng.uniform(0.0, 1.0)
+        track = fft_filter(track, lowpass(6500.0 - 2500.0 * distance, 2), pad=False) * (1.0 - 0.6 * distance)
+        crickets += pan(track, rng.uniform(-0.8, 0.8))
+    crickets_wet = convolve_circular(crickets, reverb_ir(1.8, 1.2, damping_hz=3000.0, predelay=0.02, seed=36))
+    mix = breeze * db(0.0) + crickets * db(-30.0) + crickets_wet * db(-27.0)
+    mix = fft_filter(mix, chain(highpass(80.0, 2), peak(4300.0, -2.0, 1.0), lowpass(8000.0, 2)), pad=False)
+    return mix / (np.max(np.abs(mix)) + 1e-12) * db(-6.0)
+
+
+def rain_light(seed=37):
+    """
+    J-WEATHER-RainLight: soft rain on grass and leaves, layered over the meadow by the shower's strength. A hushed
+    bed, thousands of tiny drops, a few round drips from the leaves. Circular, so it loops without a seam.
+    """
+    rng = np.random.default_rng(seed)
+    n = samples(RAIN_SECONDS)
+    bed = np.zeros((n, 2))
+    for c in range(2):
+        bed[:, c] = fft_filter(pink(n, rng, circular=True), chain(bandpass(500.0, 7000.0, 2), peak(2500.0, -3.0, 1.5)), pad=False)
+    bed /= np.std(bed) + 1e-12
+
+    drops = np.zeros((n, 2))
+    count = int(140 * RAIN_SECONDS)
+    for _ in range(count):
+        length = samples(rng.uniform(0.002, 0.006))
+        t = np.arange(length) / SR
+        f = rng.uniform(2200.0, 7000.0)
+        drop = np.sin(2 * np.pi * f * t) * np.exp(-t / rng.uniform(0.0008, 0.0025)) * rng.uniform(0.2, 1.0)
+        stereo = pan(drop, rng.uniform(-0.9, 0.9))
+        idx = (int(rng.integers(0, n)) + np.arange(length)) % n
+        np.add.at(drops, idx, stereo)
+    drops = fft_filter(drops, chain(lowpass(8000.0, 2), peak(4000.0, -3.0, 1.0)), pad=False)
+
+    drips = np.zeros((n, 2))
+    for _ in range(int(2.2 * RAIN_SECONDS)):
+        length = samples(0.06)
+        t = np.arange(length) / SR
+        f0 = rng.uniform(700.0, 1400.0)
+        f = f0 * (1.0 + 0.5 * np.exp(-t / 0.01))
+        drip = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / 0.018) * np.clip(t / 0.0015, 0, 1) * rng.uniform(0.4, 1.0)
+        stereo = pan(drip, rng.uniform(-0.8, 0.8))
+        idx = (int(rng.integers(0, n)) + np.arange(length)) % n
+        np.add.at(drips, idx, stereo)
+
+    mix = bed * db(0.0) + drops * (np.std(bed) / (np.std(drops) + 1e-12)) * db(-6.0) + drips * db(-24.0)
+    mix = fft_filter(mix, chain(highpass(150.0, 2), lowpass(9500.0, 2)), pad=False)
+    return mix / (np.max(np.abs(mix)) + 1e-12) * db(-6.0)

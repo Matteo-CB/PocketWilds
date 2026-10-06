@@ -377,6 +377,133 @@ def small_sleep(v):
     return fft_filter(x, lowpass(4500.0, 3))
 
 
+# ---------------------------------------------------------------- T34B2: interface, currency, rewards
+
+def panel_close():
+    """J-UI-005: the panel leaves: a soft pop, then a short downward whoosh."""
+    rng = np.random.default_rng(930)
+    t = t_axis(0.3)
+    n = len(t)
+    out = np.zeros(n)
+    pop_t = t_axis(0.1)
+    place(out, np.sin(phase_of(glide(pop_t, 480.0, 360.0, 0.02))) * env_ad(pop_t, 0.003, 0.035) * 0.45, 0.0)
+    for i, center in enumerate((2400.0, 1600.0, 1050.0, 700.0, 460.0)):
+        bandn = band_noise(n, center / 1.4, center * 1.4, rng)
+        mid = 0.05 + 0.028 * i
+        out += bandn * np.exp(-0.5 * ((t - mid) / 0.032) ** 2) * (0.6 + 0.1 * i) * 0.14
+    return fft_filter(out, chain(lowpass(6500.0, 2), highpass(200.0, 2)))
+
+
+def ui_tab(v):
+    """J-UI-006: subtle page turn of the Codex: a soft paper flick on a tiny wooden tick."""
+    rng = np.random.default_rng(940 + v)
+    t = t_axis(0.12)
+    flick = band_noise(len(t), (1800.0, 2200.0)[v], 5200.0, rng) * env_ad(t, 0.004, 0.018) * 0.35
+    tick = damped_sine(t, (880.0, 960.0)[v], 0.012) * np.clip(t / 0.0005, 0, 1) * 0.6
+    return fft_filter(flick + tick, chain(lowpass(7000.0, 2), highpass(250.0, 2)))
+
+
+def toggle_on():
+    """J-UI-007: something switched on (favorite heart): two small rising glass notes."""
+    out = np.zeros(samples(0.5))
+    place(out, glass(hz('C6'), 0.45, 0.55) * 0.5, 0.0)
+    place(out, glass(hz('F6'), 0.45, 0.6) * 0.5, 0.055)
+    x = fft_filter(out, chain(lowpass(9000.0, 2), highpass(200.0, 2)))
+    return wet(x, ROOM, 0.1)
+
+
+def toggle_off():
+    """J-UI-008: switched off: two muted wooden notes stepping down."""
+    out = np.zeros(samples(0.35))
+    place(out, mallet(hz('F5'), 0.3, 0.6, damp=0.35), 0.0)
+    place(out, mallet(hz('C5'), 0.3, 0.55, damp=0.35), 0.06)
+    return fft_filter(out, chain(lowpass(3000.0, 2), highpass(200.0, 2)))
+
+
+def purchase_pending():
+    """J-UI-011: the store is still answering: two calm wooden ticks, neutral."""
+    out = np.zeros(samples(0.4))
+    place(out, mallet(hz('A4'), 0.2, 0.6, damp=0.25), 0.0)
+    place(out, mallet(hz('A4'), 0.2, 0.45, damp=0.25), 0.16)
+    return fft_filter(out, chain(lowpass(2500.0, 2), highpass(180.0, 2)))
+
+
+def spend_light():
+    """J-SFX-CURRENCY-002: Light leaves the counter: a soft glass tick gliding down (about 150 ms)."""
+    t = t_axis(0.25)
+    f = glide(t, hz('F6'), hz('C6'), 0.03)
+    x = np.sin(phase_of(f)) * env_ad(t, 0.002, 0.05)
+    x += 0.18 * np.sin(phase_of(f * 2.76)) * env_ad(t, 0.002, 0.02)
+    x = fft_filter(x, chain(lowpass(9000.0, 2), highpass(300.0, 2)))
+    return wet(x, ROOM, 0.1)
+
+
+def claim():
+    """J-SFX-REWARD-001: a reward or an unlock is yours: a soft strummed F major chord (about 400 ms)."""
+    rng = np.random.default_rng(950)
+    out = np.zeros(samples(1.0))
+    place(out, tine(hz('F4'), 0.9, 0.6, rng) * 0.35, 0.0)
+    for i, note in enumerate(('F5', 'A5', 'C6')):
+        place(out, tine(hz(note), 0.8, 0.7, rng) * 0.4, 0.03 * i)
+    x = fft_filter(out, chain(lowpass(9000.0, 2), highpass(120.0, 2)))
+    return wet(x, HALL, 0.16)
+
+
+# ---------------------------------------------------------------- T34B2: eating, birds
+
+def _nibble(rng, body_hz, bright):
+    """One tiny bite: a short crunchy burst on a small body."""
+    n = samples(0.03)
+    t = np.arange(n) / SR
+    crunch = band_noise(n, 1500.0 * bright, 5200.0 * bright, rng) * np.exp(-t / 0.006)
+    clicks = np.zeros(n)
+    for _ in range(3):
+        at = int(rng.integers(0, samples(0.012)))
+        clicks[at:at + 24] += rng.uniform(0.4, 1.0) * np.hanning(24)
+    clicks = fft_filter(clicks, highpass(2000.0, 2))
+    body = damped_sine(t, body_hz, 0.01) * 0.5
+    return (crunch * 0.6 + clicks * 0.5 + body) * np.clip(t / 0.0008, 0, 1)
+
+
+def rabbit_eat(v):
+    """J-AN-RabbitEat: quick little nibbles of a rabbit eating grass."""
+    rng = np.random.default_rng(1400 + v)
+    count, gap = ((4, 0.085), (5, 0.075))[v]
+    out = np.zeros(samples(count * gap + 0.12))
+    for i in range(count):
+        place(out, _nibble(rng, 520.0 + 40.0 * rng.standard_normal(), 1.0) * rng.uniform(0.7, 1.0), i * gap + rng.uniform(0.0, 0.012), release=0.004)
+    x = fft_filter(out, chain(lowpass(7500.0, 2), highpass(250.0, 2), peak(3200.0, -3.0, 1.2)))
+    return wet(x, ROOM, 0.05)
+
+
+def small_eat(v):
+    """J-DECOR-EatBiteSoft: family bank of soft bites (seeds, leaves)."""
+    rng = np.random.default_rng(1500 + v)
+    count, gap, bright = ((3, 0.13, 0.9), (4, 0.11, 1.0), (3, 0.15, 0.8))[v]
+    out = np.zeros(samples(count * gap + 0.12))
+    for i in range(count):
+        place(out, _nibble(rng, 430.0 + 50.0 * rng.standard_normal(), bright) * rng.uniform(0.7, 1.0), i * gap + rng.uniform(0.0, 0.015), release=0.004)
+    x = fft_filter(out, chain(lowpass(7000.0, 2), highpass(250.0, 2), peak(3200.0, -3.0, 1.2)))
+    return wet(x, ROOM, 0.05)
+
+
+def bird_takeoff(v):
+    """J-WORLD-BirdTakeOff: a small bird flies off: soft wing beats slowing and fading away."""
+    rng = np.random.default_rng(1600 + v)
+    beats = (7, 6, 8)[v]
+    out = np.zeros(samples(0.75))
+    at = 0.0
+    rate = (15.0, 13.0, 17.0)[v]
+    for i in range(beats):
+        n = samples(0.05)
+        t = np.arange(n) / SR
+        flap = band_noise(n, 350.0, 2600.0, rng) * np.sin(np.pi * np.clip(t / 0.045, 0, 1)) ** 2
+        place(out, flap * (1.0 - 0.1 * i) * rng.uniform(0.8, 1.0), at, release=0.005)
+        at += 1.0 / rate * (1.0 + 0.06 * i)
+    x = fft_filter(out, chain(lowpass(5000.0, 2), highpass(250.0, 2)))
+    return wet(x, ROOM, 0.12)
+
+
 # ---------------------------------------------------------------- catalog
 
 # name: (recipe, variants, loudness target (loudest 200 ms, K-weighted, LUFS scale), group)
@@ -400,4 +527,15 @@ SFX = {
     'SFX_Animal_Rabbit_Sleep': (rabbit_sleep, 2, -27.0, 'Animals'),
     'SFX_Animal_Small_Chirp': (small_chirp, 4, -21.0, 'Animals'),
     'SFX_Animal_Small_Sleep': (small_sleep, 2, -27.0, 'Animals'),
+    # T34B2
+    'SFX_UI_PanelClose': (lambda v: panel_close(), 1, -26.0, 'UI'),
+    'SFX_UI_Tab': (ui_tab, 2, -29.0, 'UI'),
+    'SFX_UI_ToggleOn': (lambda v: toggle_on(), 1, -23.0, 'UI'),
+    'SFX_UI_ToggleOff': (lambda v: toggle_off(), 1, -25.0, 'UI'),
+    'SFX_UI_PurchasePending': (lambda v: purchase_pending(), 1, -26.0, 'UI'),
+    'SFX_Currency_SpendLight': (lambda v: spend_light(), 1, -26.0, 'Rewards'),
+    'SFX_Reward_Claim': (lambda v: claim(), 1, -18.0, 'Rewards'),
+    'SFX_Animal_Rabbit_Eat': (rabbit_eat, 2, -25.0, 'Animals'),
+    'SFX_Animal_Small_Eat': (small_eat, 3, -25.0, 'Animals'),
+    'SFX_World_BirdTakeOff': (bird_takeoff, 3, -26.0, 'World'),
 }

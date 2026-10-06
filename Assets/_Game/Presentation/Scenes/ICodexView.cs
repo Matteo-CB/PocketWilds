@@ -21,5 +21,10 @@ namespace PocketWilds.Presentation
     {
         /// <summary>The Codex closed itself (back from the list).</summary>
         void CodexClosed();
+
+        /// <summary>T34B2: a species page opened (deeper) or closed back to the list.</summary>
+        void CodexNavigated(bool deeper)
+        {
+        }
     }
 }

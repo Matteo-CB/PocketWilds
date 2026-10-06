@@ -15,7 +15,7 @@ namespace PocketWilds.Presentation
     /// runs the playable refuge loop (RefugeController). The only Update of the scene.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class VerticalSliceEntry : MonoBehaviour, ISceneEntry, ISceneEntryPreparation, IRefugeTapHandler
+    public sealed class VerticalSliceEntry : MonoBehaviour, ISceneEntry, ISceneEntryPreparation, IRefugeTapHandler, IAmbientLifeListener
     {
         [Tooltip("Chunks of the biome, streamed through Addressables. The pinned one hosts the refuge.")]
         [SerializeField] private WorldChunkSet _chunkSet;
@@ -182,7 +182,12 @@ namespace PocketWilds.Presentation
             context.Quality.StateChanged += _onQuality;
             var beds = BiomeAudio;
             if (beds != null)
+            {
                 context.Audio.SetBeds(beds.music, beds.ambience, beds.fadeSeconds);
+                context.Audio.SetAmbienceLayers(beds.ambienceEvening, beds.rain);
+                UpdateAmbienceMix();
+            }
+            _life?.SetListener(this);
             GameLog.Info(LogCategory.Presentation, "Vertical slice entered.");
         }
 
@@ -228,6 +233,7 @@ namespace PocketWilds.Presentation
                 _context.Quality.StateChanged -= _onQuality;
             _onQuality = null;
             _life?.SetAnimals(null);
+            _life?.SetListener(null);
             _refuge?.Dispose();
             _refuge = null;
             if (_streamer != null)
@@ -323,7 +329,34 @@ namespace PocketWilds.Presentation
             }
             if (_weather != null && _cameraRig != null)
                 _weather.Render(camera, _cameraRig.Focus);
+            if (_context != null)
+                UpdateAmbienceMix();
         }
+
+        /// <summary>
+        /// T34B2: evening weight from the local hour (the crickets come in from 19:00 to 20:30 and leave from 5:30 to
+        /// 7:00; the night mood of events is full evening), rain weight from the shower. No allocation.
+        /// </summary>
+        private void UpdateAmbienceMix()
+        {
+            float evening = 0f;
+            if (_atmosphere != null)
+                evening = _atmosphere.Night ? 1f : EveningWeight(_atmosphere.Hour);
+            _context.Audio.SetAmbienceMix(evening, _weather != null ? _weather.Rain : 0f);
+        }
+
+        public static float EveningWeight(float hour)
+        {
+            if (hour >= 20.5f || hour <= 5.5f)
+                return 1f;
+            if (hour > 19f)
+                return Mathf.SmoothStep(0f, 1f, (hour - 19f) / 1.5f);
+            if (hour < 7f)
+                return Mathf.SmoothStep(1f, 0f, (hour - 5.5f) / 1.5f);
+            return 0f;
+        }
+
+        void IAmbientLifeListener.BirdTookOff(Vector3 position) => _context?.Audio.Play(PocketWilds.Services.Feedback.AudioEventId.BirdTakeOff, position, default);
 
         private void OnDestroy() => Exit();
 

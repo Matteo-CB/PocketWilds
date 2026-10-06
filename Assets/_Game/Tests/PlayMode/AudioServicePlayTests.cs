@@ -245,6 +245,77 @@ namespace PocketWilds.Tests.PlayMode
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator AmbienceLayers_FollowEveningAndRain()
+        {
+            var catalog = RealCatalog();
+            if (catalog == null)
+                Assert.Ignore("Editor only.");
+            _service = new AudioService(catalog);
+            var day = Tone("day", 4f);
+            var evening = Tone("evening", 4f);
+            var rain = Tone("rain", 4f);
+            _service.SetBeds(null, day, 1f);
+            _service.SetAmbienceLayers(evening, rain);
+            _service.SetAmbienceMix(0f, 0f);
+            Run(3f);
+            Assert.AreEqual(1f, _service.DayAmbienceLevel, 0.02f, "Day: the birds.");
+            Assert.AreEqual(0f, _service.EveningLevel, 0.001f);
+            Assert.AreEqual(0f, _service.RainLevel, 0.001f);
+
+            _service.SetAmbienceMix(1f, 0f);
+            Run(3f);
+            Assert.AreEqual(0f, _service.DayAmbienceLevel, 0.02f, "Evening: the birds give way...");
+            Assert.AreEqual(1f, _service.EveningLevel, 0.02f, "...to the crickets.");
+
+            _service.SetAmbienceMix(1f, 1f);
+            Run(3f);
+            Assert.AreEqual(1f, _service.RainLevel, 0.02f, "A shower comes in.");
+            Assert.AreEqual(0.6f, _service.EveningLevel, 0.02f, "The crickets soften under the rain.");
+
+            _service.SetAmbienceMix(0f, 0.5f);
+            Run(4f);
+            Assert.AreEqual(0.75f, _service.DayAmbienceLevel, 0.03f, "Day under a light shower.");
+            Assert.AreEqual(0.5f, _service.RainLevel, 0.02f);
+            Assert.AreEqual(0f, _service.EveningLevel, 0.02f);
+
+            _service.ApplySettings(0f, 0.8f, false);
+            Run(3f);
+            Assert.AreEqual(0f, _service.RainLevel, 0.001f, "Sounds off: the layers are silent too.");
+
+            _service.StopBeds();
+            Assert.IsNull(_service.EveningClip);
+            Assert.IsNull(_service.RainClip);
+            Object.Destroy(day);
+            Object.Destroy(evening);
+            Object.Destroy(rain);
+            yield return null;
+        }
+
+        [Test]
+        public void EatingAndBirds_AreRareForTheWholeRefuge()
+        {
+            var catalog = RealCatalog();
+            if (catalog == null)
+                Assert.Ignore("Editor only.");
+            _service = new AudioService(catalog);
+            _service.SetView(Vector3.zero, Vector3.right, 12f);
+            var rabbit = ContentId.FromSource("species.rabbit");
+            int peakEat = 0, peakBirds = 0;
+            // 20 s: every frame some animal starts eating and some bird flies off.
+            for (int frame = 0; frame < 20 * 60; frame++)
+            {
+                _service.Play(AudioEventId.AnimalEat, new Vector3(frame % 5 * 0.4f, 0f, 0.5f), rabbit);
+                _service.Play(AudioEventId.BirdTakeOff, new Vector3(-1f, 0f, frame % 7 * 0.3f), default);
+                _service.Tick(Dt);
+                peakEat = Mathf.Max(peakEat, _service.ActiveVoicesOf(AudioEventId.AnimalEat));
+                peakBirds = Mathf.Max(peakBirds, _service.ActiveVoicesOf(AudioEventId.BirdTakeOff));
+            }
+            Assert.AreEqual(1, peakEat, "One nibbling animal heard at a time.");
+            Assert.AreEqual(1, peakBirds, "One flight heard at a time.");
+            Assert.LessOrEqual(_service.Started, 20 / 4 + 20 / 2.5f + 2, "Cooldowns: every 4 s and 2.5 s at most.");
+        }
+
         [Test]
         public void PlayAndTick_DoNotAllocate()
         {

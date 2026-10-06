@@ -41,6 +41,8 @@ namespace PocketWilds.Editor.Audio
         public const string GrasslandAddress = "audio.grassland";
         public const string MusicClip = MusicFolder + "/MUS_RefugeTheme.wav";
         public const string AmbienceClip = AmbienceFolder + "/AMB_Grassland_Day.wav";
+        public const string EveningClip = AmbienceFolder + "/AMB_Grassland_Evening.wav";
+        public const string RainClip = AmbienceFolder + "/AMB_Rain_Light.wav";
         public const string BootstrapScenePath = "Assets/_Game/Scenes/SC_Bootstrap.unity";
 
         /// <summary>Mixer groups in AudioGroup order, with their parent.</summary>
@@ -234,6 +236,14 @@ namespace PocketWilds.Editor.Audio
                 Def(AudioEventId.UiTap, "SFX_UI_Tap", AudioGroup.UI, 1, 0.04f, 2, volumeJitter: 0.08f, pitchJitter: 0.04f),
                 Def(AudioEventId.UiConfirm, "SFX_UI_Confirm", AudioGroup.UI, 1, 0.06f, 1),
                 Def(AudioEventId.UiBack, "SFX_UI_Back", AudioGroup.UI, 1, 0.06f, 1),
+                // T34B2
+                Def(AudioEventId.PanelClose, "SFX_UI_PanelClose", AudioGroup.UI, 1, 0.08f, 1, pitchJitter: 0.03f),
+                Def(AudioEventId.UiTab, "SFX_UI_Tab", AudioGroup.UI, 1, 0.05f, 2, volumeJitter: 0.08f, pitchJitter: 0.04f),
+                Def(AudioEventId.ToggleOn, "SFX_UI_ToggleOn", AudioGroup.UI, 1, 0.08f, 1),
+                Def(AudioEventId.ToggleOff, "SFX_UI_ToggleOff", AudioGroup.UI, 1, 0.08f, 1),
+                Def(AudioEventId.PurchasePending, "SFX_UI_PurchasePending", AudioGroup.UI, 1, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                Def(AudioEventId.SpendLight, "SFX_Currency_SpendLight", AudioGroup.Rewards, 2, 0.1f, 1, 0.9f, pitchJitter: 0.02f),
+                Def(AudioEventId.Claim, "SFX_Reward_Claim", AudioGroup.Rewards, 2, 0.5f, 1, volumeJitter: 0f, pitchJitter: 0f),
             };
             foreach (var (id, prefix) in new[]
                      {
@@ -269,6 +279,15 @@ namespace PocketWilds.Editor.Audio
             sleep.world = true;
             sleep.skipOnBatterySaver = true;
             events.Add(sleep);
+            // T34B2: nibbles of a near animal eating, and small birds flying off; both rare for the whole refuge.
+            var eat = Def(AudioEventId.AnimalEat, "SFX_Animal_Small_Eat", AudioGroup.Animals, 5, 4f, 1, 0.8f, 0.1f, 0.05f);
+            eat.world = true;
+            eat.skipOnBatterySaver = true;
+            events.Add(eat);
+            var birds = Def(AudioEventId.BirdTakeOff, "SFX_World_BirdTakeOff", AudioGroup.World, 5, 2.5f, 1, 0.8f, 0.1f, 0.06f);
+            birds.world = true;
+            birds.skipOnBatterySaver = true;
+            events.Add(birds);
             return events.OrderBy(e => (int)e.id).ToArray();
         }
 
@@ -286,13 +305,18 @@ namespace PocketWilds.Editor.Audio
             catalog.events = Events();
             var smallHappy = Clips("SFX_Animal_Small_Chirp");
             var smallSleep = Clips("SFX_Animal_Small_Sleep");
+            var smallEat = Clips("SFX_Animal_Small_Eat");
             catalog.species = new[]
             {
-                new SpeciesVoice { species = "species.rabbit", happy = Clips("SFX_Animal_Rabbit_Happy"), sleep = Clips("SFX_Animal_Rabbit_Sleep"), pitch = 1f },
-                new SpeciesVoice { species = "species.squirrel", happy = smallHappy, sleep = smallSleep, pitch = 1.12f },
-                new SpeciesVoice { species = "species.hedgehog", happy = smallHappy, sleep = smallSleep, pitch = 0.84f },
+                new SpeciesVoice
+                {
+                    species = "species.rabbit", happy = Clips("SFX_Animal_Rabbit_Happy"), sleep = Clips("SFX_Animal_Rabbit_Sleep"),
+                    eat = Clips("SFX_Animal_Rabbit_Eat"), pitch = 1f,
+                },
+                new SpeciesVoice { species = "species.squirrel", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 1.12f },
+                new SpeciesVoice { species = "species.hedgehog", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 0.84f },
             };
-            catalog.familyFallback = new SpeciesVoice { species = string.Empty, happy = smallHappy, sleep = smallSleep, pitch = 1f };
+            catalog.familyFallback = new SpeciesVoice { species = string.Empty, happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 1f };
             EditorUtility.SetDirty(catalog);
             return catalog;
         }
@@ -367,6 +391,8 @@ namespace PocketWilds.Editor.Audio
             }
             beds.music = AssetDatabase.LoadAssetAtPath<AudioClip>(MusicClip) ?? throw new InvalidOperationException("Missing " + MusicClip);
             beds.ambience = AssetDatabase.LoadAssetAtPath<AudioClip>(AmbienceClip) ?? throw new InvalidOperationException("Missing " + AmbienceClip);
+            beds.ambienceEvening = AssetDatabase.LoadAssetAtPath<AudioClip>(EveningClip) ?? throw new InvalidOperationException("Missing " + EveningClip);
+            beds.rain = AssetDatabase.LoadAssetAtPath<AudioClip>(RainClip) ?? throw new InvalidOperationException("Missing " + RainClip);
             beds.fadeSeconds = 2.5f;
             EditorUtility.SetDirty(beds);
             AssetDatabase.SaveAssets();

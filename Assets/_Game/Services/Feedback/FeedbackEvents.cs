@@ -54,6 +54,33 @@ namespace PocketWilds.Services.Feedback
         /// rate-limited for the whole refuge: 20 animals never become a chorus).
         /// </summary>
         AnimalChatter = 19,
+
+        /// <summary>T34B2: a full screen closes (Codex, shop): a short downward whoosh.</summary>
+        PanelClose = 20,
+
+        /// <summary>T34B2: a page of the Codex turns (species page in, back to the list).</summary>
+        UiTab = 21,
+
+        /// <summary>T34B2: something switched on (favorite heart on).</summary>
+        ToggleOn = 22,
+
+        /// <summary>T34B2: switched off.</summary>
+        ToggleOff = 23,
+
+        /// <summary>T34B2: the store is still answering (pending purchase).</summary>
+        PurchasePending = 24,
+
+        /// <summary>T34B2: Light paid for an egg (a soft tick under the egg tap).</summary>
+        SpendLight = 25,
+
+        /// <summary>T34B2: a reward or an unlock is yours (unlock toast, later daily gifts).</summary>
+        Claim = 26,
+
+        /// <summary>T34B2: a near animal eats (soft nibbles; the species travels as context).</summary>
+        AnimalEat = 27,
+
+        /// <summary>T34B2: a small bird flies off near the view (wing beats).</summary>
+        BirdTakeOff = 28,
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>
@@ -91,6 +118,19 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>T34B: the place is leaving and its clips are about to be released: beds stop at once.</summary>
         void StopBeds()
+        {
+        }
+
+        /// <summary>T34B2: the layers mixed over the day ambience: evening and night (crickets), rain. Null: none.</summary>
+        void SetAmbienceLayers(AudioClip evening, AudioClip rain)
+        {
+        }
+
+        /// <summary>
+        /// T34B2: evening 0 (day) to 1 (evening and night) and rain 0 (dry) to 1 (full shower). Called every frame by
+        /// the place; the service smooths the changes.
+        /// </summary>
+        void SetAmbienceMix(float evening, float rain)
         {
         }
     }

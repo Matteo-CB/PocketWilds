@@ -61,6 +61,8 @@ namespace PocketWilds.Services.Feedback
         public string species = string.Empty;
         public AudioClip[] happy = Array.Empty<AudioClip>();
         public AudioClip[] sleep = Array.Empty<AudioClip>();
+        [Tooltip("T34B2: nibbles while eating.")]
+        public AudioClip[] eat = Array.Empty<AudioClip>();
         [Range(0.5f, 2f)] public float pitch = 1f;
     }
 

@@ -15,6 +15,12 @@ namespace PocketWilds.Presentation
     /// keep apart; birds hop and land only on free ground (no prop, no water, no animal, no other bird), stand on the
     /// chunk's ground heights, fly off when an animal comes near, and pick flight paths that clear every crown.
     /// </summary>
+    /// <summary>T34B2: told when a small bird flies off (its wing beats are heard near the view).</summary>
+    public interface IAmbientLifeListener
+    {
+        void BirdTookOff(Vector3 position);
+    }
+
     public sealed class AmbientLife
     {
         private static readonly int PaletteRowId = Shader.PropertyToID("_PaletteRow");
@@ -78,6 +84,7 @@ namespace PocketWilds.Presentation
         private Obstacle[] _obstacles = new Obstacle[0];
         private int[] _near = new int[0];
         private AnimalScheduler _animals;
+        private IAmbientLifeListener _listener;
         private float _density = 1f;
         private uint _seed = 0x9E3779B9u;
 
@@ -131,6 +138,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>The refuge's animals: insects fly around them, birds keep away from them.</summary>
         public void SetAnimals(AnimalScheduler animals) => _animals = animals;
+
+        /// <summary>T34B2: who hears the birds fly off. Null: silent.</summary>
+        public void SetListener(IAmbientLifeListener listener) => _listener = listener;
 
         /// <summary>Spawns the chunk's individuals at its anchors (allocates: call when the chunk becomes active).</summary>
         public bool Add(WorldChunk chunk)
@@ -582,6 +592,7 @@ namespace PocketWilds.Presentation
                     a.Apex = apex;
                     a.Target = target;
                     a.Forward = dir;
+                    _listener?.BirdTookOff(a.Position);
                     return true;
                 }
             }

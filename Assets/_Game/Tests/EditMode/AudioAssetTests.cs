@@ -75,7 +75,7 @@ namespace PocketWilds.Tests.EditMode
                     settings.compressionFormat, path);
                 Assert.LessOrEqual(clip.length, 3.2f, path + " is a short effect.");
             }
-            foreach (var path in new[] { AudioPipeline.MusicClip, AudioPipeline.AmbienceClip })
+            foreach (var path in new[] { AudioPipeline.MusicClip, AudioPipeline.AmbienceClip, AudioPipeline.EveningClip, AudioPipeline.RainClip })
             {
                 var importer = (AudioImporter)AssetImporter.GetAtPath(path);
                 var settings = importer.defaultSampleSettings;
@@ -97,7 +97,15 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual(75f, ambience.length, 0.001f);
             Assert.GreaterOrEqual(ambience.length, 45f, "Doc 08: ambience loops of 45 to 120 s.");
             Assert.GreaterOrEqual(music.length, 150f, "Doc 08: theme of 2.5 to 4 min.");
-            foreach (var path in new[] { AudioPipeline.MusicClip, AudioPipeline.AmbienceClip })
+            // T34B2 layers: whole seconds, so their loop points are whole samples too.
+            foreach (var (path, seconds) in new[] { (AudioPipeline.EveningClip, 60f), (AudioPipeline.RainClip, 30f) })
+            {
+                var layer = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+                Assert.IsNotNull(layer, path);
+                Assert.AreEqual(seconds, layer.length, 0.001f, path);
+                Assert.AreEqual((int)seconds * layer.frequency, layer.samples, path);
+            }
+            foreach (var path in new[] { AudioPipeline.MusicClip, AudioPipeline.AmbienceClip, AudioPipeline.EveningClip, AudioPipeline.RainClip })
             {
                 var (samples, channels) = ReadPcm16(Path.Combine(Root, path));
                 int frames = samples.Length / channels;
@@ -133,6 +141,8 @@ namespace PocketWilds.Tests.EditMode
             Assert.IsNotNull(beds);
             Assert.AreEqual(AudioPipeline.MusicClip, AssetDatabase.GetAssetPath(beds.music));
             Assert.AreEqual(AudioPipeline.AmbienceClip, AssetDatabase.GetAssetPath(beds.ambience));
+            Assert.AreEqual(AudioPipeline.EveningClip, AssetDatabase.GetAssetPath(beds.ambienceEvening), "T34B2 evening layer.");
+            Assert.AreEqual(AudioPipeline.RainClip, AssetDatabase.GetAssetPath(beds.rain), "T34B2 rain layer.");
             var settings = AddressableAssetSettingsDefaultObject.Settings;
             var entry = settings.FindAssetEntry(AssetDatabase.AssetPathToGUID(AudioPipeline.GrasslandBedsPath));
             Assert.IsNotNull(entry, "DEF_BiomeAudio_Grassland is addressable.");
@@ -154,6 +164,7 @@ namespace PocketWilds.Tests.EditMode
                 Assert.IsNotNull(voice, species.Id + " has a voice.");
                 Assert.IsNotEmpty(voice.happy, species.Id + " happy clips.");
                 Assert.IsNotEmpty(voice.sleep, species.Id + " sleep clips.");
+                Assert.IsNotEmpty(voice.eat, species.Id + " eat clips.");
                 checkedSpecies++;
             }
             Assert.GreaterOrEqual(checkedSpecies, 3);
@@ -175,6 +186,20 @@ namespace PocketWilds.Tests.EditMode
             var collect = catalog.Find(AudioEventId.CollectLight);
             Assert.LessOrEqual(collect.burstCount, 8, "Collect plays a bounded run, never one sound per mote.");
             Assert.Greater(collect.burstCount, 0);
+        }
+
+        [Test]
+        public void EveningLayer_FollowsTheLocalHour()
+        {
+            Assert.AreEqual(0f, PocketWilds.Presentation.VerticalSliceEntry.EveningWeight(13f), "Afternoon: birds.");
+            Assert.AreEqual(0f, PocketWilds.Presentation.VerticalSliceEntry.EveningWeight(7f));
+            Assert.AreEqual(0f, PocketWilds.Presentation.VerticalSliceEntry.EveningWeight(19f));
+            Assert.AreEqual(1f, PocketWilds.Presentation.VerticalSliceEntry.EveningWeight(22f), "Night: crickets.");
+            Assert.AreEqual(1f, PocketWilds.Presentation.VerticalSliceEntry.EveningWeight(3f));
+            float dusk = PocketWilds.Presentation.VerticalSliceEntry.EveningWeight(19.75f);
+            Assert.That(dusk, Is.InRange(0.2f, 0.8f), "Dusk blends.");
+            float dawn = PocketWilds.Presentation.VerticalSliceEntry.EveningWeight(6.25f);
+            Assert.That(dawn, Is.InRange(0.2f, 0.8f), "Dawn blends.");
         }
 
         private static (short[] samples, int channels) ReadPcm16(string path)

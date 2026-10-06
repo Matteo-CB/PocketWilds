@@ -10,7 +10,12 @@ namespace PocketWilds.Services.Feedback
     public sealed class BiomeAudioSet : ScriptableObject
     {
         public AudioClip music;
+        [Tooltip("Day ambience (birds).")]
         public AudioClip ambience;
+        [Tooltip("T34B2: evening and night layer (crickets), crossfaded by the local hour and the night mood.")]
+        public AudioClip ambienceEvening;
+        [Tooltip("T34B2: light rain layer, mixed by the shower strength.")]
+        public AudioClip rain;
         [Tooltip("Cross-fade when the place changes (doc 08: 1 to 4 s).")]
         [Range(1f, 4f)] public float fadeSeconds = 2.5f;
     }

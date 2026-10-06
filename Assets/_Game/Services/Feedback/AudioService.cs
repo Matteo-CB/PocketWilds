@@ -28,6 +28,8 @@ namespace PocketWilds.Services.Feedback
         private const float DuckDb = -5f;
         private const float DuckHold = 1.3f;
         private const int MaxBursts = 4;
+        /// <summary>Ambience layers move at most this much per second (2.5 s from silent to full).</summary>
+        private const float LayerSpeed = 0.4f;
 
         private struct Voice
         {
@@ -59,8 +61,12 @@ namespace PocketWilds.Services.Feedback
         {
             private readonly AudioSource[] _sources = new AudioSource[2];
             private readonly float[] _target = new float[2];
+            private readonly float[] _fade = new float[2];
             private int _active;
             private float _speed = 1f;
+
+            /// <summary>Extra level on top of the fades (the day ambience gives way to evening and rain).</summary>
+            public float Gain = 1f;
 
             public Bed(GameObject root, AudioService owner, AudioGroup group)
             {
@@ -78,7 +84,8 @@ namespace PocketWilds.Services.Feedback
 
             public AudioClip Clip => _sources[_active].clip;
             public bool IsPlaying => _sources[_active].isPlaying;
-            public float Volume => _sources[_active].volume;
+            public float Volume => _fade[_active];
+            public float OutputVolume => _sources[_active].volume;
 
             public void Set(AudioClip clip, float fadeSeconds)
             {
@@ -96,6 +103,7 @@ namespace PocketWilds.Services.Feedback
                 source.Stop();
                 source.clip = clip;
                 source.volume = 0f;
+                _fade[next] = 0f;
                 source.Play();
                 _target[next] = 1f;
                 _active = next;
@@ -114,12 +122,14 @@ namespace PocketWilds.Services.Feedback
                         if (source.isPlaying)
                             source.Stop();
                         source.volume = 0f;
+                        _fade[i] = 0f;
                         continue;
                     }
                     if (_target[i] > 0f && !source.isPlaying)
                         source.Play();
-                    float volume = Mathf.MoveTowards(source.volume, _target[i], _speed * deltaTime);
-                    source.volume = volume;
+                    float volume = Mathf.MoveTowards(_fade[i], _target[i], _speed * deltaTime);
+                    _fade[i] = volume;
+                    source.volume = volume * Gain;
                     if (volume <= 0f && _target[i] <= 0f && source.isPlaying)
                     {
                         source.Stop();
@@ -139,7 +149,63 @@ namespace PocketWilds.Services.Feedback
                     _sources[i].clip = null;
                     _sources[i].volume = 0f;
                     _target[i] = 0f;
+                    _fade[i] = 0f;
                 }
+            }
+        }
+
+        /// <summary>T34B2: a looping ambience layer (evening, rain) mixed by weight; silent layers do not decode.</summary>
+        private sealed class Layer
+        {
+            private readonly AudioSource _source;
+            private float _level;
+
+            public Layer(GameObject root, AudioService owner)
+            {
+                _source = root.AddComponent<AudioSource>();
+                Configure(_source);
+                _source.loop = true;
+                _source.priority = 0;
+                _source.volume = 0f;
+                _source.outputAudioMixerGroup = owner._catalog != null ? owner._catalog.Group(AudioGroup.Ambience) : null;
+            }
+
+            public AudioClip Clip => _source.clip;
+            public float Level => _level;
+            public bool IsPlaying => _source.isPlaying;
+
+            public void SetClip(AudioClip clip)
+            {
+                if (_source.clip == clip)
+                    return;
+                _source.Stop();
+                _source.clip = clip;
+                _source.volume = 0f;
+                _level = 0f;
+            }
+
+            public void Tick(float deltaTime, float target, bool enabled)
+            {
+                if (_source.clip == null)
+                    return;
+                if (!enabled)
+                    target = 0f;
+                _level = Mathf.MoveTowards(_level, Mathf.Clamp01(target), LayerSpeed * deltaTime);
+                _source.volume = _level;
+                if (_level > 0f && !_source.isPlaying)
+                    _source.Play();
+                else if (_level <= 0f && _source.isPlaying)
+                    _source.Stop();
+            }
+
+            public void StopNow()
+            {
+                if (_source == null)
+                    return;
+                _source.Stop();
+                _source.clip = null;
+                _source.volume = 0f;
+                _level = 0f;
             }
         }
 
@@ -153,6 +219,11 @@ namespace PocketWilds.Services.Feedback
         private readonly Burst[] _bursts = new Burst[MaxBursts];
         private readonly Bed _music;
         private readonly Bed _ambience;
+        private readonly Layer _evening;
+        private readonly Layer _rain;
+        private float _eveningMix;
+        private float _rainMix;
+        private float _dayGain = 1f;
 
         private uint _rng = 0x9E3779B9u;
         private float _time;
@@ -215,6 +286,8 @@ namespace PocketWilds.Services.Feedback
 
             _music = new Bed(_root, this, AudioGroup.Music);
             _ambience = new Bed(_root, this, AudioGroup.Ambience);
+            _evening = new Layer(_root, this);
+            _rain = new Layer(_root, this);
             ApplyMixer(true);
         }
 
@@ -255,6 +328,13 @@ namespace PocketWilds.Services.Feedback
         public float MusicFade => _music.Volume;
         public float DuckDecibels => _duck;
 
+        /// <summary>T34B2: current levels of the day ambience, the evening layer and the rain layer (0-1).</summary>
+        public float DayAmbienceLevel => _ambience.OutputVolume;
+        public float EveningLevel => _evening.Level;
+        public float RainLevel => _rain.Level;
+        public AudioClip EveningClip => _evening.Clip;
+        public AudioClip RainClip => _rain.Clip;
+
         public void ResetStats()
         {
             Started = Dropped = Stolen = PeakVoices = 0;
@@ -293,6 +373,24 @@ namespace PocketWilds.Services.Feedback
                 return;
             _music.StopNow();
             _ambience.StopNow();
+            _evening.StopNow();
+            _rain.StopNow();
+            _eveningMix = _rainMix = 0f;
+            _dayGain = 1f;
+        }
+
+        public void SetAmbienceLayers(AudioClip evening, AudioClip rain)
+        {
+            if (_root == null)
+                return;
+            _evening.SetClip(evening);
+            _rain.SetClip(rain);
+        }
+
+        public void SetAmbienceMix(float evening, float rain)
+        {
+            _eveningMix = Mathf.Clamp01(evening);
+            _rainMix = Mathf.Clamp01(rain);
         }
 
         public void Play(AudioEventId id, Vector3 position, ContentId context)
@@ -327,12 +425,13 @@ namespace PocketWilds.Services.Feedback
 
             float pitch = 1f;
             var clips = def.clips;
-            if (context.IsValid && (id == AudioEventId.AnimalHappy || id == AudioEventId.AnimalChatter || id == AudioEventId.AnimalSleep))
+            if (context.IsValid && (id == AudioEventId.AnimalHappy || id == AudioEventId.AnimalChatter || id == AudioEventId.AnimalSleep
+                                    || id == AudioEventId.AnimalEat))
             {
                 var voice = FindSpecies(context);
                 if (voice != null)
                 {
-                    var own = id == AudioEventId.AnimalSleep ? voice.sleep : voice.happy;
+                    var own = id == AudioEventId.AnimalSleep ? voice.sleep : id == AudioEventId.AnimalEat ? voice.eat : voice.happy;
                     if (own != null && own.Length > 0)
                         clips = own;
                     pitch = voice.pitch;
@@ -376,7 +475,13 @@ namespace PocketWilds.Services.Feedback
             }
 
             _music.Tick(deltaTime, _musicLevel > 0f);
+            // The day meadow gives way to the evening crickets and half way to the rain; the crickets soften under rain.
+            float dayTarget = (1f - _eveningMix) * (1f - 0.5f * _rainMix);
+            _dayGain = Mathf.MoveTowards(_dayGain, dayTarget, LayerSpeed * deltaTime);
+            _ambience.Gain = _dayGain;
             _ambience.Tick(deltaTime, _sfxLevel > 0f);
+            _evening.Tick(deltaTime, _eveningMix * (1f - 0.4f * _rainMix), _sfxLevel > 0f);
+            _rain.Tick(deltaTime, _rainMix, _sfxLevel > 0f);
 
             float duckTarget = _time < _duckUntil ? DuckDb : 0f;
             _duck = Mathf.MoveTowards(_duck, duckTarget, (duckTarget < _duck ? 30f : 6f) * deltaTime);

@@ -269,6 +269,12 @@
       "notes": "Added by the T30 gate. Done 2026-10-06. Every sound synthesized in-house (SourceArt/Audio/Tools, numpy only, deterministic; masters 48 kHz 24-bit): 33 effects (egg, cracks, pop, Rare to Fabulous reveals, collect, mastery, UI, purchase, soft error, rabbit voice, small quadruped family bank), AMB_Grassland_Day (75 s seamless loop, -27 LUFS), MUS_RefugeTheme (64 bars at 80 BPM, F major, 192 s exact loop, -20 LUFS). AudioService: 12 pooled voices, cooldowns, voice caps, priorities, view attenuation and pan for animals, collect burst, beds cross-faded and ducked, settings from the save, the only AudioListener; AM_Game mixer; DEF_AudioEvents (19 sounds, 3 species voices); beds in Addressables group Audio_Grassland. Haptics: DEF_HapticProfiles (9 patterns under 300 ms), HapticService (setting, cooldowns, 45 ms gap, battery saver), Android PwHaptics library (composed primitives, amplitude waveform or on/off; VIBRATE; touch usage on API 33+), APK checked. Tests: AudioAssetTests, HapticTests, AudioServicePlayTests, AudioBootPlayTests; EditMode 398/398, PlayMode 70 + 1 explicit. Windows player: 22 scenarios, longest frame 19.1 ms, 0 over 33 ms, A1 audio storm 7 voices max (4 animals), audio main thread 0.04-0.06 ms. Phone listening and haptic feel pending (no test phone). Report: Docs/Design/T34B_Audio_et_haptique.md."
     },
     {
+      "task": "T34B2",
+      "title": "Audio de la tranche, complément (pluie, soir, repas, envol, interface, dépense, réclamé)",
+      "status": "DONE",
+      "notes": "Added 2026-10-06 after the owner asked about missing sounds; done the same day. Everything the current game can already play: AMB_Rain_Light and AMB_Grassland_Evening layers mixed by the shower and the local hour, AnimalEat (rabbit nibbles + family bank), BirdTakeOff, PanelClose, UiTab (Codex pages), ToggleOn/Off (favorite), PurchasePending, SpendLight (paid egg), Claim (unlock toast). 9 AudioEventIds appended (20-28). Tests: AudioAssetTests (layers, eat voices, evening weight), AudioServicePlayTests (layer mix, eat and birds capped); EditMode 399/399, PlayMode 72 + 1 explicit. Windows player: 8 scenarios incl. rain R1, longest frame 17.5 ms, audio 0.04-0.06 ms. Footsteps wait for measured contact markers per clip (T65)."
+    },
+    {
       "task": "T34C",
       "title": "Outils et contrôle (BuildValidator, debug LOD et overdraw, captures de référence, benchmark VFX et Codex 5000, groupes Addressables)",
       "status": "PLANNED",
@@ -7179,15 +7185,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "T34B2: SFX_Currency_SpendLight_01: soft glass tick gliding down, under the egg tap of a paid egg. Synthesized in-house, master 48 kHz 24-bit, defined in DEF_AudioEvents, game trigger covered. Phone listening pending (no test phone).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-CURRENCY-003",
@@ -7227,15 +7236,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "T34B2: SFX_Reward_Claim_01: soft strummed F major chord; unlock toast (shop open), later daily gifts. Synthesized in-house, master 48 kHz 24-bit, defined in DEF_AudioEvents, game trigger covered. Phone listening pending (no test phone).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-REWARD-002",
@@ -7370,15 +7382,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "T34B2: SFX_UI_PanelClose_01: soft pop then a short downward whoosh; Codex and shop close. Synthesized in-house, master 48 kHz 24-bit, defined in DEF_AudioEvents, game trigger covered. Phone listening pending (no test phone).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-UI-006",
@@ -7386,15 +7401,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "T34B2: SFX_UI_Tab_01..02: soft paper flick on a tiny wooden tick; Codex species page in (back plays UiBack). Synthesized in-house, master 48 kHz 24-bit, defined in DEF_AudioEvents, game trigger covered. Phone listening pending (no test phone).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-UI-007",
@@ -7402,15 +7420,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "T34B2: SFX_UI_ToggleOn_01: two small rising glass notes; favorite heart on. Synthesized in-house, master 48 kHz 24-bit, defined in DEF_AudioEvents, game trigger covered. Phone listening pending (no test phone).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-UI-008",
@@ -7418,15 +7439,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "T34B2: SFX_UI_ToggleOff_01: two muted wooden notes stepping down; favorite heart off. Synthesized in-house, master 48 kHz 24-bit, defined in DEF_AudioEvents, game trigger covered. Phone listening pending (no test phone).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-UI-009",
@@ -7472,15 +7496,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "T34B2: SFX_UI_PurchasePending_01: two calm wooden ticks; the store is still answering. Synthesized in-house, master 48 kHz 24-bit, defined in DEF_AudioEvents, game trigger covered. Phone listening pending (no test phone).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-UI-012",
@@ -7488,15 +7515,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/SFX_UI_PanelOpen_01.wav",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "T34B2: reuses PanelOpen as doc 08 allows (no unique value proven); the offer modal opens with SFX_UI_PanelOpen.",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-AN-SmallQuadruped_CuteChirp",
@@ -7660,15 +7690,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Optional."
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "Optional. | T34B2: SFX_Animal_Rabbit_Eat_01..02: quick little nibbles; a near rabbit that starts eating (AnimalEat, rare for the whole refuge). Synthesized in-house, master 48 kHz 24-bit, defined in DEF_AudioEvents, game trigger covered. Phone listening pending (no test phone).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-AN-DuckQuackCute",
@@ -7884,15 +7917,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "T34B2: SFX_Animal_Small_Eat_01..03: family bank of soft bites (squirrel, hedgehog and fallback). Synthesized in-house, master 48 kHz 24-bit, defined in DEF_AudioEvents, game trigger covered. Phone listening pending (no test phone).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-DECOR-DrinkSipSoft",
@@ -7970,9 +8006,9 @@
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": "T34B",
-      "lastValidationUtc": "2026-10-06T09:00:00Z",
-      "notes": "T34B: AMB_Grassland_Day: 75 s stereo loop (soft breeze, grass rustle in the gusts, 70 leaf grains, 8 distant birds at irregular times, never closer than 5 s), circular render (seam step 0.27 of a typical step), -27 LUFS. Streamed Vorbis q0.35 at 32 kHz, in Audio_Grassland with the theme. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "T34B: AMB_Grassland_Day: 75 s stereo loop (soft breeze, grass rustle in the gusts, 70 leaf grains, 8 distant birds at irregular times, never closer than 5 s), circular render (seam step 0.27 of a typical step), -27 LUFS. Streamed Vorbis q0.35 at 32 kHz, in Audio_Grassland with the theme. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent). | T34B2: second layer AMB_Grassland_Evening (60 s seamless: light breeze, six distant crickets, no bird song, -29 LUFS) crossfaded by the local hour (in from 19:00 to 20:30, out from 5:30 to 7:00; event night = full evening).",
       "passedGates": [
         "G14"
       ]
@@ -8143,15 +8179,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_ambience.py",
+      "runtimePath": "Assets/_Game/Art/Audio/Ambience/AMB_Rain_Light.wav",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "notes": "T34B2: AMB_Rain_Light: 30 s seamless stereo loop (hushed bed, thousands of tiny drops, round leaf drips), -27 LUFS; layered over the meadow by WeatherSystem.Rain (the day ambience halves, the crickets soften); fades, never a hard cut. Phone listening pending (no test phone).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-WEATHER-RainTropical",
@@ -16124,6 +16163,25 @@
         "G10"
       ],
       "notes": "T34A: G-SH-006 option 1: three soft bubbles of light colored by the glow kind (white for Epic and Shiny, gold, sky), near one visible rare animal at a time."
+    },
+    {
+      "id": "J-WORLD-BirdTakeOff",
+      "name": "BirdTakeOff x3",
+      "family": "Audio",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T34B2",
+      "lastValidationUtc": "2026-10-06T19:30:00Z",
+      "passedGates": [
+        "G14"
+      ],
+      "notes": "T34B2: SFX_World_BirdTakeOff_01..03, soft wing beats slowing and fading; small birds of AmbientLife flying off near the view (startled or approached), one at a time, every 2.5 s at most, skipped in battery saver. Phone listening pending (no test phone)."
     }
   ]
 }

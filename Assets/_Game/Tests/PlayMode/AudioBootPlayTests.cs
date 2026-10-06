@@ -157,6 +157,8 @@ namespace PocketWilds.Tests.PlayMode
             Assert.AreSame(entry.BiomeAudio.music, audio.MusicClip, "The refuge theme plays.");
             Assert.AreSame(entry.BiomeAudio.ambience, audio.AmbienceClip, "The meadow ambience plays.");
             Assert.AreEqual("MUS_RefugeTheme", audio.MusicClip.name);
+            Assert.AreSame(entry.BiomeAudio.ambienceEvening, audio.EveningClip, "T34B2: the evening layer is ready.");
+            Assert.AreSame(entry.BiomeAudio.rain, audio.RainClip, "T34B2: the rain layer is ready.");
             for (int i = 0; i < 30; i++)
                 yield return null;
             Assert.IsTrue(audio.MusicPlaying);
