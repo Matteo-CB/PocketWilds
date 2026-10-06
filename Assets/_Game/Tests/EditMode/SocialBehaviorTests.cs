@@ -89,7 +89,7 @@ namespace PocketWilds.Tests.EditMode
                 if (startedAt > 0f && time - startedAt > 0.4f && time - startedAt < 1.2f)
                 {
                     float gap = Vector3.Distance(s.GetPosition(a), s.GetPosition(b));
-                    Assert.AreEqual(0.42f, gap, 0.06f, "Roots socialGap apart: noses just touch.");
+                    Assert.AreEqual(0.48f, gap, 0.03f, "Roots socialGap apart: noses just touch, never overlap (T33C).");
                     Assert.Less(FacingError(s, a, b), 6f);
                     Assert.Less(FacingError(s, b, a), 6f);
                 }

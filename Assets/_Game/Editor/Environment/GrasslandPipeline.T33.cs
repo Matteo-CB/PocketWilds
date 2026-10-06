@@ -407,11 +407,12 @@ namespace PocketWilds.Editor.Environment
             var groundMesh = prefabs["GL_Ground_Core_A"].GetComponent<MeshFilter>().sharedMesh;
             var egg = ClearingCenter(groundMesh);
             var layout = StartLayoutT33();
+            var moves = SettleProps("Start", Vector3.zero, layout, prefabs);
             var area = new WanderArea(egg + new Vector3(0f, 0f, 0.6f), 3.2f);
             var rules = new ScatterRules
             {
                 // The east side is joined to the meadow chunk (square, flat): scatter runs up to the seam there.
-                Seed = 3301, Ground = groundMesh, Worn = WornMask(groundMesh),
+                Seed = 3301, Ground = groundMesh, Worn = WornMask(groundMesh), Solids = PlaceLayout(layout, prefabs),
                 Inside = p => p.x > 0f ? p.x < 6.95f && Mathf.Abs(p.z) < 6.6f : InsideIsland(p, 0.35f),
                 Clear = egg, ClearRadius = 0.95f, Lawn = area.Center, LawnRadius = 3.0f, FlowerPatches = 22, RimPatches = 8, FlowerSingles = 30,
             };
@@ -456,8 +457,11 @@ namespace PocketWilds.Editor.Environment
                 };
                 chunk.SetAuthoring(bindings.ToArray(), area, eggSpawn, animals, InterestsT33(layout, centers, area), vfxAnchors, links);
                 chunk.SetScatter(scatter);
+                var (obstacles, groundField) = BuildCollision(layout, prefabs, groundMesh, null);
+                chunk.SetCollision(obstacles, groundField);
+                ClearSpawns(animals, obstacles, groundField);
                 PrefabUtility.SaveAsPrefabAsset(root, ChunkPath);
-                return $"Start: {layout.Count} props, {scatter.Count} scatter instances, {bindings.Count} renderers";
+                return $"Start: {layout.Count} props ({SettleSummary(moves)}), {obstacles.Length} obstacles, {scatter.Count} scatter instances, {bindings.Count} renderers";
             }
             finally
             {
@@ -469,10 +473,11 @@ namespace PocketWilds.Editor.Environment
         {
             var groundMesh = AssetDatabase.LoadAllAssetsAtPath($"{ModelsFolder}/GL_Ground_Core_B.fbx").OfType<Mesh>().First();
             var layout = MeadowLayoutT33();
+            var moves = SettleProps("Meadow", MeadowOffset, layout, prefabs);
             var area = new WanderArea(Vector3.zero, 3.5f);
             var rules = new ScatterRules
             {
-                Seed = 3302, Ground = groundMesh, Worn = WornMask(groundMesh),
+                Seed = 3302, Ground = groundMesh, Worn = WornMask(groundMesh), Solids = PlaceLayout(layout, prefabs),
                 // T33B: joined on both sides (start to the west, StreamBend to the east): scatter runs up to both seams.
                 Inside = p => Mathf.Abs(p.x) < 6.95f && Mathf.Abs(p.z) < 6.6f,
                 Clear = new Vector3(0f, 0f, -100f), ClearRadius = 0f, Lawn = area.Center, LawnRadius = 2.2f,
@@ -512,8 +517,11 @@ namespace PocketWilds.Editor.Environment
                 var links = new[] { Point(linksRoot, "Link_W", new Vector3(-7f, 0f, 0f)), Point(linksRoot, "Link_E", new Vector3(7f, 0f, 0f)) };
                 chunk.SetAuthoring(bindings.ToArray(), area, null, animals, InterestsT33(layout, centers, area), vfxAnchors, links);
                 chunk.SetScatter(scatter);
+                var (obstacles, groundField) = BuildCollision(layout, prefabs, groundMesh, null);
+                chunk.SetCollision(obstacles, groundField);
+                ClearSpawns(animals, obstacles, groundField);
                 PrefabUtility.SaveAsPrefabAsset(root, MeadowChunkPath);
-                return $"Meadow: {layout.Count} props, {scatter.Count} scatter instances, {bindings.Count} renderers";
+                return $"Meadow: {layout.Count} props ({SettleSummary(moves)}), {obstacles.Length} obstacles, {scatter.Count} scatter instances, {bindings.Count} renderers";
             }
             finally
             {
@@ -613,8 +621,10 @@ namespace PocketWilds.Editor.Environment
             /// <summary>Patches placed first on the lawn rim, inside the gameplay frame.</summary>
             public int RimPatches;
             public int FlowerSingles;
-            /// <summary>T33B: nothing grows here (stream and pond water).</summary>
-            public Func<Vector3, bool> Excluded;
+            /// <summary>T33B: nothing grows here (stream and pond water), given the plant's radius.</summary>
+            public Func<Vector3, float, bool> Excluded;
+            /// <summary>T33C: the props' measured volumes; no plant, flower or pebble ever enters one.</summary>
+            public List<CollisionProxies.Placed> Solids;
         }
 
         private struct ScatterPoint
@@ -644,30 +654,65 @@ namespace PocketWilds.Editor.Environment
             var points = new List<ScatterPoint>();
             int Kind(string id) => kit.IndexOf(id);
 
+            // T33C: each plant's own footprint (mesh extent seen from above) and the props' measured outlines at ground level.
+            var kindRadius = kit.kinds.Select(k =>
+            {
+                if (k.mesh == null)
+                    return 0.05f;
+                var b = k.mesh.bounds;
+                return Mathf.Max(Mathf.Max(Mathf.Abs(b.min.x), Mathf.Abs(b.max.x)), Mathf.Max(Mathf.Abs(b.min.z), Mathf.Abs(b.max.z)));
+            }).ToArray();
+            var solidKind = kit.kinds.Select(k => k.id.StartsWith("flower.", StringComparison.Ordinal)
+                || k.id.StartsWith("detail.pebble", StringComparison.Ordinal) || k.id == "detail.mushroom").ToArray();
+            var outlines = (rules.Solids ?? throw new InvalidOperationException("ScatterRules.Solids: the props' volumes are required (T33C).")).Select(s => s.Ground).Where(b => b != null)
+                .Select(b =>
+                {
+                    var c = Vector2.zero;
+                    foreach (var v in b.Hull)
+                        c += v;
+                    c /= b.Hull.Length;
+                    return (hull: b.Hull, center: c, reach: b.Hull.Max(v => (v - c).magnitude));
+                }).ToList();
+            var solids = new Dictionary<(int, int), List<(Vector2 p, float r)>>();
+
             float Clearance(Vector3 p)
             {
+                var q = new Vector2(p.x, p.z);
                 float best = float.MaxValue;
-                foreach (var prop in props)
+                foreach (var (hull, center, reach) in outlines)
                 {
-                    float d = Vector3.Distance(new Vector3(p.x, 0f, p.z), prop.Position) - PropRadius(prop.Prop) * prop.Scale;
-                    if (prop.Prop == "GL_Log" || prop.Prop == "GL_Fence_A" || prop.Prop == "GL_Fence_B")
-                    {
-                        // Long props: distance to their segment.
-                        var axis = Quaternion.Euler(0f, prop.Yaw, 0f) * Vector3.right * (prop.Prop == "GL_Log" ? 0.5f : prop.Prop == "GL_Fence_B" ? 0.7f : 0.6f) * prop.Scale;
-                        var a = prop.Position - axis;
-                        var b = prop.Position + axis;
-                        var ab = b - a;
-                        float t = Mathf.Clamp01(Vector3.Dot(new Vector3(p.x, 0f, p.z) - a, ab) / ab.sqrMagnitude);
-                        d = Vector3.Distance(new Vector3(p.x, 0f, p.z), a + ab * t) - (prop.Prop == "GL_Log" ? 0.2f : 0.08f);
-                    }
-                    best = Mathf.Min(best, d);
+                    float far = (q - center).magnitude - reach;
+                    if (far >= best)
+                        continue;
+                    best = Mathf.Min(best, CollisionProxies.HullDistance(hull, q));
                 }
                 return best;
             }
 
+            float maxSolidRadius = 0.05f;
+            bool SolidFree(Vector2 q, float r)
+            {
+                // Search every cell a neighbour's footprint may reach from.
+                int range = Mathf.CeilToInt((r + maxSolidRadius) / 0.25f);
+                int cx = Mathf.FloorToInt(q.x / 0.25f), cz = Mathf.FloorToInt(q.y / 0.25f);
+                for (int x = cx - range; x <= cx + range; x++)
+                    for (int z = cz - range; z <= cz + range; z++)
+                        if (solids.TryGetValue((x, z), out var list))
+                            foreach (var (other, radius) in list)
+                                if ((other - q).sqrMagnitude < (radius + r) * (radius + r))
+                                    return false;
+                return true;
+            }
+
             bool Place(int kind, Vector3 p, float scale, double rank, float minClearance = 0.02f)
             {
-                if (kind < 0 || !rules.Inside(p) || Clearance(p) < minClearance || (rules.Excluded != null && rules.Excluded(p)))
+                if (kind < 0 || !rules.Inside(p))
+                    return false;
+                float radius = kindRadius[kind] * scale;
+                var q = new Vector2(p.x, p.z);
+                if (Clearance(p) < Mathf.Max(minClearance, radius) || (rules.Excluded != null && rules.Excluded(p, radius)))
+                    return false;
+                if (solidKind[kind] && !SolidFree(q, radius))
                     return false;
                 if (rules.ClearRadius > 0f && Vector3.Distance(new Vector3(p.x, 0f, p.z), new Vector3(rules.Clear.x, 0f, rules.Clear.z)) < rules.ClearRadius)
                     return false;
@@ -678,6 +723,14 @@ namespace PocketWilds.Editor.Environment
                     Kind = kind, Position = new Vector3(p.x, height - 0.01f, p.z), Yaw = (float)(rng.NextDouble() * Math.PI * 2.0),
                     Scale = scale, Rank = rank,
                 });
+                if (solidKind[kind])
+                {
+                    var cell = (Mathf.FloorToInt(q.x / 0.25f), Mathf.FloorToInt(q.y / 0.25f));
+                    if (!solids.TryGetValue(cell, out var list))
+                        solids[cell] = list = new List<(Vector2, float)>();
+                    list.Add((q, radius));
+                    maxSolidRadius = Mathf.Max(maxSolidRadius, radius);
+                }
                 return true;
             }
 

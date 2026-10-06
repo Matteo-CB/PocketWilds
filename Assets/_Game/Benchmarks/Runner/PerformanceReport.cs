@@ -74,6 +74,15 @@ namespace PocketWilds.Benchmarks
         public float scatterInstances;
         public float lifeInstances;
 
+        /// <summary>
+        /// T33C no-collision rule, checked in the player every 60 frames: smallest free space (cm) between an animal
+        /// body and a prop, the water, the egg spot or another animal; between an insect or bird and a volume, an
+        /// animal or its kind. overlapSamples counts the checks that found an overlap (must stay 0).
+        /// </summary>
+        public float minAnimalClearanceCm;
+        public float minLifeClearanceCm;
+        public int overlapSamples;
+
         /// <summary>Managed allocation per frame (bytes).</summary>
         public SampleStats gcBytes;
         public int framesWithGc;

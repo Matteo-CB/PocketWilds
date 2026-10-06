@@ -193,8 +193,11 @@ namespace PocketWilds.Editor.Environment
             }
         }
 
-        /// <summary>Hub of the sails in the tower's space (Blender (0, 0.95, 3.9): Y toward the camera, Z up).</summary>
-        public static readonly Vector3 WindmillHub = new Vector3(0f, 3.9f, -0.98f);
+        /// <summary>
+        /// Hub of the sails in the tower's space (Blender (0, 1.40, 3.9): Y toward the camera, Z up). T33C: 1.40 m in
+        /// front of the axis, so the sails turn in front of the gallery (1.28 m) and never through it.
+        /// </summary>
+        public static readonly Vector3 WindmillHub = new Vector3(0f, 3.9f, -1.40f);
 
         private static void SaveWindmill(Dictionary<string, Mesh> meshes, Material material)
         {
@@ -333,13 +336,15 @@ namespace PocketWilds.Editor.Environment
             }
             Mesh waterMesh = def.Water != null ? meshes[def.Water] : null;
             var waterSampler = waterMesh != null ? new GroundSampler(waterMesh) : null;
-            bool InWater(Vector3 p)
+            // A plant (radius r) stays out of the water: its center and its rim all around.
+            bool InWater(Vector3 p, float r)
             {
                 if (waterSampler == null)
                     return false;
-                for (int k = 0; k < 5; k++)
+                float reach = Mathf.Max(r, 0.14f);
+                for (int k = 0; k < 9; k++)
                 {
-                    var o = k == 0 ? Vector3.zero : Quaternion.Euler(0f, k * 90f, 0f) * new Vector3(0.14f, 0f, 0f);
+                    var o = k == 0 ? Vector3.zero : Quaternion.Euler(0f, k * 45f, 0f) * new Vector3(reach, 0f, 0f);
                     if (waterSampler.TrySample(p.x + o.x, p.z + o.z, out _, out _))
                         return true;
                 }
@@ -370,10 +375,15 @@ namespace PocketWilds.Editor.Environment
                 }
             }
 
+            // T33C: no prop enters another (neighbours at the seams included); moved props follow the ground.
+            var moves = SettleProps(def.Name, new Vector3(def.OriginX, 0f, 0f), layout, prefabs,
+                (x, z) => groundSampler.TrySample(x, z, out float gh, out _) ? gh - 0.02f : 0f);
+
             const float Margin = 0.35f;
             var rules = new ScatterRules
             {
                 Seed = def.Seed, Ground = groundMesh, Worn = WornMask(groundMesh),
+                Solids = PlaceLayout(layout, prefabs),
                 Inside = def.EastIsland
                     ? p => p.x < 0f ? p.x > -6.95f && Mathf.Abs(p.z) < 6.9f : InsideIsland(p, Margin)
                     : p => Mathf.Abs(p.x) < 6.95f && Mathf.Abs(p.z) < 6.9f,
@@ -423,9 +433,12 @@ namespace PocketWilds.Editor.Environment
                 var area = new WanderArea(Vector3.zero, 3.5f);
                 chunk.SetAuthoring(bindings.ToArray(), area, null, animals, InterestsT33(layout, centers, area), anchors, links);
                 chunk.SetScatter(scatter);
+                var (obstacles, groundField) = BuildCollision(layout, prefabs, groundMesh, waterMesh);
+                chunk.SetCollision(obstacles, groundField);
+                ClearSpawns(animals, obstacles, groundField);
                 Directory.CreateDirectory(StripChunkFolder);
                 PrefabUtility.SaveAsPrefabAsset(root, def.Path);
-                return $"{def.Name}: {layout.Count} props, {scatter.Count} scatter instances, {bindings.Count} renderers";
+                return $"{def.Name}: {layout.Count} props ({SettleSummary(moves)}), {obstacles.Length} obstacles, {scatter.Count} scatter instances, {bindings.Count} renderers";
             }
             finally
             {

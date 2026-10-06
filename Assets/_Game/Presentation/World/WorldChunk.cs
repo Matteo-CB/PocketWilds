@@ -38,6 +38,10 @@ namespace PocketWilds.Presentation
         [SerializeField] private Transform[] _links = Array.Empty<Transform>();
         [Tooltip("Ground details drawn by the ScatterRenderer (T33): data only, no GameObject per plant.")]
         [SerializeField] private ScatterData _scatter;
+        [Tooltip("T33C no-collision rule: solid volumes measured from the props' meshes, the water, chunk space.")]
+        [SerializeField] private Obstacle[] _obstacles = Array.Empty<Obstacle>();
+        [Tooltip("T33C: ground heights sampled from the ground mesh, animals and ground birds stand on it.")]
+        [SerializeField] private GroundHeightField _ground;
 
         public int BindingCount => _bindings.Length;
         public Transform EggSpawn => _eggSpawn;
@@ -47,6 +51,12 @@ namespace PocketWilds.Presentation
         public Transform[] VfxAnchors => _vfxAnchors;
         public Transform[] Links => _links;
         public ScatterData Scatter => _scatter;
+        public int ObstacleCount => _obstacles.Length;
+        public Obstacle GetObstacle(int index) => _obstacles[index];
+        public GroundHeightField GroundField => _ground;
+
+        /// <summary>The chunk's ground in world space. Chunks are only ever translated (never rotated or scaled).</summary>
+        public GroundSurface Ground => new GroundSurface(_ground, transform.position);
 
         /// <summary>Walkable disk in world space (simple region data, no NavMesh).</summary>
         public WanderArea WanderArea => new WanderArea(transform.TransformPoint(_wanderArea.Center), _wanderArea.Radius);
@@ -64,6 +74,23 @@ namespace PocketWilds.Presentation
                 result[i] = new InterestPoint(transform.TransformPoint(p.position), p.standOff, p.kind);
             }
             return result;
+        }
+
+        /// <summary>World-space copy of the obstacles for the scheduler and the ambient life. Allocates: call once when entering.</summary>
+        public Obstacle[] GetWorldObstacles()
+        {
+            var result = new Obstacle[_obstacles.Length];
+            var origin = transform.position;
+            for (int i = 0; i < _obstacles.Length; i++)
+                result[i] = _obstacles[i].Translated(origin);
+            return result;
+        }
+
+        /// <summary>Editor/composer hook: obstacles and ground heights in chunk space.</summary>
+        public void SetCollision(Obstacle[] obstacles, GroundHeightField ground)
+        {
+            _obstacles = obstacles ?? Array.Empty<Obstacle>();
+            _ground = ground;
         }
 
         /// <summary>Editor/composer hook: points of interest in chunk space.</summary>
@@ -127,6 +154,18 @@ namespace PocketWilds.Presentation
             {
                 Gizmos.color = p.kind == InterestKind.Eat ? new Color(1f, 0.6f, 0.2f) : new Color(0.3f, 0.7f, 1f);
                 Gizmos.DrawWireSphere(transform.TransformPoint(p.position), Mathf.Max(0.05f, p.standOff));
+            }
+            var origin = transform.position;
+            foreach (var o in _obstacles)
+            {
+                if (o.bottom > 0.01f)
+                    continue;
+                Gizmos.color = o.kind == ObstacleKind.Water ? new Color(0.2f, 0.5f, 1f) : new Color(1f, 0.3f, 0.3f);
+                var a = origin + new Vector3(o.a.x, o.baseY + 0.05f, o.a.y);
+                var b = origin + new Vector3(o.b.x, o.baseY + 0.05f, o.b.y);
+                Gizmos.DrawWireSphere(a, o.radius);
+                Gizmos.DrawWireSphere(b, o.radius);
+                Gizmos.DrawLine(a, b);
             }
         }
 #endif

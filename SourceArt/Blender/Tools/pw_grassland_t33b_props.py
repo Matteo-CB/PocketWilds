@@ -155,9 +155,14 @@ def _windmill_tower(lod):
 
 
 def _windmill_sails(lod, cloth=None):
-    """Four sails around the hub at the origin, in the XZ plane. `cloth` collects the canvas vertex indices."""
+    """Four sails around the hub at the origin, in the XZ plane. `cloth` collects the canvas vertex indices.
+
+    T33C no-collision rule: the hub stands 1.40 m in front of the tower axis (Unity WindmillHub), so the sails turn in
+    front of the gallery (1.28 m) instead of through it; the windshaft behind the hub reaches back into the cap.
+    """
     bm = bmesh.new()
     hub_sides = {0: 8, 1: 6, 2: 4}[lod]
+    _tube(bm, [Vector((0, -0.65, 0)), Vector((0, -0.12, 0))], [0.075, 0.08], hub_sides, cap_top=False)
     _tube(bm, [Vector((0, -0.12, 0)), Vector((0, 0.18, 0))], [0.17, 0.15], hub_sides, cap_top=True)
     for k in range(4):
         a = k / 4 * math.tau + 0.3

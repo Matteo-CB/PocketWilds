@@ -128,12 +128,15 @@ namespace PocketWilds.Tests.PlayMode
 
             // Hatch until a squirrel and a hedgehog came out of the grassland egg.
             bool squirrel = false, hedgehog = false;
+            var log = new System.Text.StringBuilder();
             for (int hatch = 0; hatch < 30 && !(squirrel && hedgehog); hatch++)
             {
                 context.Economy.Grant(CurrencyId.Light, context.Hatch.GetCost(Basic), EconomyReason.Reward);
+                int before = context.State.Collection.Count;
                 refuge.RequestHatch();
                 refuge.RequestHatch(); // skip the staging
                 var hatched = context.State.Collection[context.State.Collection.Count - 1].Species;
+                log.Append(context.State.Collection.Count > before ? hatched.ToString() : $"(no hatch, modal {refuge.ModalOpen})").Append(' ');
                 squirrel |= hatched == Squirrel;
                 hedgehog |= hatched == Hedgehog;
                 float until = Time.realtimeSinceStartup + 6f;
@@ -143,7 +146,7 @@ namespace PocketWilds.Tests.PlayMode
                     yield return null;
                 }
             }
-            Assert.IsTrue(squirrel && hedgehog, "Both new species hatch from the grassland egg.");
+            Assert.IsTrue(squirrel && hedgehog, "Both new species hatch from the grassland egg: " + log);
             int viewsAfter = Object.FindObjectsByType<AnimalView>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
             Assert.AreEqual(viewsBefore, viewsAfter, "Hatching reused pooled views: no Instantiate.");
             Assert.AreEqual(context.State.Collection.Count, refuge.VisibleAnimals);

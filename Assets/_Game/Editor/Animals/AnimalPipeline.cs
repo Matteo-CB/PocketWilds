@@ -87,12 +87,9 @@ namespace PocketWilds.Editor.Animals
         [MenuItem("Pocket Wilds/Animals/Build Hedgehog (T24)", priority = 152)]
         public static void BuildHedgehog()
         {
-            // Short legs and a scurry: a little slower than the hopping species. Longer snout: noses meet a bit farther apart.
-            BuildSpecies("Hedgehog", "SmallQuadruped", EnsureHedgehogDefinition, LowBodyClips, behavior =>
-            {
-                behavior.moveSpeed = 0.28f;
-                behavior.socialGap = 0.46f;
-            });
+            // Short legs and a scurry: a little slower than the hopping species. The longer snout comes from the measured
+            // body: noses meet a bit farther apart (T33C).
+            BuildSpecies("Hedgehog", "SmallQuadruped", EnsureHedgehogDefinition, LowBodyClips, behavior => behavior.moveSpeed = 0.28f);
         }
 
         public static void BuildSpecies(string species, string family, Func<SpeciesDefinitionAsset> ensureDefinition,
@@ -470,8 +467,66 @@ namespace PocketWilds.Editor.Animals
             catalog.entries.RemoveAll(e => e == null || e.visualKey == visualKey);
             var entry = new AnimalVisualCatalog.Entry { visualKey = visualKey, prefab = prefab, softCapacity = 24, hardCapacity = 48 };
             behavior?.Invoke(entry.behavior);
+            ApplyBody(entry);
             catalog.entries.Add(entry);
             EditorUtility.SetDirty(catalog);
+        }
+
+        [MenuItem("Pocket Wilds/Animals/Measure Bodies (T33C)", priority = 160)]
+        public static void MeasureBodiesMenu() => Debug.Log("[AnimalPipeline] " + MeasureBodies());
+
+        /// <summary>T33C no-collision rule: every catalog species gets its footprint measured from its mesh.</summary>
+        public static string MeasureBodies()
+        {
+            var catalog = AssetDatabase.LoadAssetAtPath<AnimalVisualCatalog>(VisualCatalogPath);
+            var lines = new List<string>();
+            foreach (var entry in catalog.entries)
+            {
+                ApplyBody(entry);
+                var b = entry.behavior.body;
+                lines.Add($"{entry.visualKey}: front {b.front:F3}, back {b.back:F3}, half width {b.halfWidth:F3}, height {b.height:F3}, gap {entry.behavior.socialGap:F3}");
+            }
+            EditorUtility.SetDirty(catalog);
+            AssetDatabase.SaveAssets();
+            return string.Join("; ", lines);
+        }
+
+        /// <summary>The body capsule from the bind pose (nose, tail, flanks, ears) plus 1 cm for the moving fur and paws.</summary>
+        private static void ApplyBody(AnimalVisualCatalog.Entry entry)
+        {
+            if (entry.prefab == null)
+                return;
+            entry.behavior.body = MeasureBody(entry.prefab.gameObject);
+            // Greeting noses touch, never overlap (a longer snout meets farther away).
+            entry.behavior.socialGap = 2f * entry.behavior.body.front + 0.01f;
+        }
+
+        public static BodyShape MeasureBody(GameObject prefab)
+        {
+            const float Margin = 0.01f;
+            float front = 0f, back = 0f, side = 0f, top = 0f;
+            var root = prefab.transform;
+            // The skinned body only: the blob shadow and the sockets are not part of it.
+            foreach (var renderer in prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                var mesh = renderer.sharedMesh;
+                if (mesh == null)
+                    continue;
+                // LOD0 only: the lower LODs sit inside it.
+                var lodGroup = prefab.GetComponent<LODGroup>();
+                if (lodGroup != null && lodGroup.lodCount > 0 && Array.IndexOf(lodGroup.GetLODs()[0].renderers, renderer) < 0)
+                    continue;
+                var toRoot = root.worldToLocalMatrix * renderer.transform.localToWorldMatrix;
+                foreach (var v in mesh.vertices)
+                {
+                    var p = toRoot.MultiplyPoint3x4(v);
+                    front = Mathf.Max(front, p.z);
+                    back = Mathf.Min(back, p.z);
+                    side = Mathf.Max(side, Mathf.Abs(p.x));
+                    top = Mathf.Max(top, p.y);
+                }
+            }
+            return new BodyShape(front + Margin, back - Margin, side + Margin, top + Margin);
         }
 
         private static T LoadOrCreate<T>(string path) where T : ScriptableObject

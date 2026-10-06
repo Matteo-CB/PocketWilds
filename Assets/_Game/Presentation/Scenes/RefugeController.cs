@@ -20,6 +20,10 @@ namespace PocketWilds.Presentation
     public sealed class RefugeController : IRefugeActions, IHatchListener, IOfflineReturnActions, ICodexActions, IDisposable
     {
         private const float NextEggDelay = 0.45f;
+        // Room around the egg spot no animal enters: the egg (0.33 m) or a giant newborn squirrel standing on it.
+        public const float EggSpotRadius = 0.55f;
+        // The egg's own footprint: the next egg appears once no body is within it (the newborn is bounding off).
+        public const float EggBodyRadius = 0.36f;
         private const float RepeatWindowSeconds = 15f;
         private const float EggTapRadius = 0.32f;
         private const float AnimalTapRadius = 0.34f;
@@ -70,6 +74,9 @@ namespace PocketWilds.Presentation
         private float _collectTime = -1f;
         private readonly ShopPresenter _shop;
         private float _momentOfferTime = -1f;
+        // A hatch ended: the moment offer may come once the next egg is ready and the player pauses (T33C: the egg
+        // now waits for the newborn to bound off its spot, so the pause is counted from the egg, not the hatch).
+        private bool _momentOfferArmed;
 
         public RefugeController(GameContext context, WorldChunk chunk, RefugeCameraRig rig, IRefugeHud hud,
             HatchPresentationConfig hatchConfig, string eggSourceId, Transform root, IOfflineReturnView offlineView = null,
@@ -131,6 +138,11 @@ namespace PocketWilds.Presentation
             _hatch = new HatchSequencePlayer(hatchConfig, _vfx, crack, common, rare, context.Audio, context.Haptics);
             _scheduler = new AnimalScheduler(_visibleBudget + 2, settings, chunk.WanderArea);
             _scheduler.SetInterests(chunk.GetWorldInterests());
+            // T33C no-collision rule: animals stand on the chunk's ground, never enter a prop, the water or the egg spot.
+            _scheduler.SetGround(chunk.Ground);
+            _scheduler.SetObstacles(chunk.GetWorldObstacles());
+            if (chunk.EggSpawn != null)
+                _scheduler.SetEggSpot(chunk.EggSpawn.position, EggSpotRadius, EggBodyRadius);
 
             if (context.Store != null && (shopView != null || offerView != null))
             {
@@ -181,7 +193,8 @@ namespace PocketWilds.Presentation
         public void Tick(float time, float deltaTime)
         {
             _time = time;
-            if (_nextEggTime >= 0f && time >= _nextEggTime)
+            // A new egg waits until the newborn has walked off its spot (no-collision rule).
+            if (_nextEggTime >= 0f && time >= _nextEggTime && _scheduler.IsEggSpotClear())
             {
                 _nextEggTime = -1f;
                 PresentEgg();
@@ -392,14 +405,15 @@ namespace PocketWilds.Presentation
             }
             if (_hatchingAnimal != null)
             {
-                AddToMeadow(_hatchingAnimal, _hatchingSpecies, _hatchingInstance, _hatchingSeed);
+                AddToMeadow(_hatchingAnimal, _hatchingSpecies, _hatchingInstance, _hatchingSeed, emerging: true);
                 _hatchingAnimal = null;
             }
             _rig?.ReturnToWorld();
             _hud?.SetHatching(false);
             _nextEggTime = _time + NextEggDelay;
             // A hatch is a happy moment (doc 09): the only time a moment offer may appear.
-            _momentOfferTime = _time + MomentOfferDelay;
+            _momentOfferTime = -1f;
+            _momentOfferArmed = true;
         }
 
         /// <summary>
@@ -519,6 +533,12 @@ namespace PocketWilds.Presentation
             // The egg faces the camera (its stage-1 crack is on its front).
             _waitingEgg.Configure(_chunk.EggSpawn.position, 180f, _eggVisual);
             _hatch.Present(_waitingEgg);
+            if (_momentOfferArmed)
+            {
+                // Same pause as before the newborn walked off: 1.6 s after the hatch, the egg being back after 0.45 s.
+                _momentOfferArmed = false;
+                _momentOfferTime = _time + (MomentOfferDelay - NextEggDelay);
+            }
         }
 
         private void RefreshEggCost() => _eggCost = _context.Hatch.GetCost(_eggId);
@@ -543,12 +563,13 @@ namespace PocketWilds.Presentation
                         continue;
                     if (!TryAcquire(snapshot, out var view))
                         continue;
-                    AddToMeadow(view, animal.Species, animal.InstanceId, animal.Seed);
+                    AddToMeadow(view, animal.Species, animal.InstanceId, animal.Seed, emerging: false);
                 }
             }
         }
 
-        private void AddToMeadow(AnimalView view, ContentId species, uint instanceId, uint seed)
+        /// <summary>emerging: the newborn stands on the egg spot and first walks out of it.</summary>
+        private void AddToMeadow(AnimalView view, ContentId species, uint instanceId, uint seed, bool emerging)
         {
             int slot = Array.IndexOf(_views, null);
             if (slot < 0)
@@ -563,7 +584,8 @@ namespace PocketWilds.Presentation
             }
             var transform = view.transform;
             _views[slot] = view;
-            _agentByView[slot] = _scheduler.Register(view, instanceId, seed, transform.position, transform.eulerAngles.y, ProfileOf(species), _time);
+            _agentByView[slot] = _scheduler.Register(view, instanceId, seed, transform.position, transform.eulerAngles.y, ProfileOf(species), _time,
+                transform.localScale.x, emerging);
             VisibleAnimals++;
         }
 

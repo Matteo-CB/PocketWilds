@@ -462,9 +462,23 @@ namespace PocketWilds.Editor.Capture
                 new Vector3(1.0f, 0f, 0.4f), new Vector3(-1.1f, 0f, 0.9f), new Vector3(0.3f, 0f, 1.9f),
                 new Vector3(-0.5f, 0f, -1.3f), new Vector3(1.2f, 0f, -0.8f), new Vector3(-0.2f, 0f, 3.0f),
             };
+            // T33C no-collision rule: every animal is placed through the scheduler, which moves it to the nearest pose
+            // where its body enters no rock, no bush, no egg spot and no other animal, standing on the ground heights.
+            var catalog = AssetDatabase.LoadAssetAtPath<AnimalVisualCatalog>(AnimalPipeline.VisualCatalogPath);
+            var placement = new AnimalScheduler(offsets.Length, SchedulerSettings.ForQuality(QualityTier.Medium, false), chunk.WanderArea);
+            placement.SetGround(chunk.Ground);
+            placement.SetObstacles(chunk.GetWorldObstacles());
+            placement.SetEggSpot(chunk.EggSpawn.position, RefugeController.EggSpotRadius, RefugeController.EggBodyRadius);
             for (int i = 0; i < rabbits && i < offsets.Length; i++)
-                temp.Add(Spawn(registry, resolver, animals[i % animals.Length], (uint)(i + 1), (uint)(i * 31 + 3),
-                    chunk.EggSpawn.position + offsets[i], 150f + i * 23f, 0.4f * i).gameObject);
+            {
+                string speciesAndVariant = animals[i % animals.Length];
+                float yaw = 150f + i * 23f;
+                var view = Spawn(registry, resolver, speciesAndVariant, (uint)(i + 1), (uint)(i * 31 + 3), chunk.EggSpawn.position + offsets[i], yaw, 0.4f * i);
+                var species = registry.Species.Get(ContentId.FromSource("species." + speciesAndVariant.Substring(0, speciesAndVariant.IndexOf('.'))));
+                catalog.TryGet(species.VisualKey, out var visual);
+                placement.Register(view, (uint)(i + 1), (uint)(i * 31 + 3), view.transform.position, yaw, visual.behavior, 0f, view.transform.localScale.x);
+                temp.Add(view.gameObject);
+            }
         }
     }
 }

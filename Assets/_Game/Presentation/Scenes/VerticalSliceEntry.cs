@@ -147,12 +147,15 @@ namespace PocketWilds.Presentation
                 var input = _cameraRig != null ? _cameraRig.GetComponent<RefugeCameraInput>() : null;
                 if (input != null)
                     input.SetTapHandler(this);
+                // No-collision rule: insects fly around the animals, birds fly off when one comes near.
+                _life?.SetAnimals(_refuge.Scheduler);
             }
             GameLog.Info(LogCategory.Presentation, "Vertical slice entered.");
         }
 
         public void Exit()
         {
+            _life?.SetAnimals(null);
             _refuge?.Dispose();
             _refuge = null;
             if (_streamer != null)

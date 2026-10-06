@@ -464,7 +464,49 @@ namespace PocketWilds.Editor.Validation
                 ValidateChunk(strip.path, allowed, issues, needsEgg: false);
             ValidateChunkSet(issues);
             ValidateLife(issues);
+            ValidatePropOverlaps(issues);
             return issues;
+        }
+
+        /// <summary>T33C no-collision rule: no prop's volume enters another one, inside a chunk or across a seam.</summary>
+        private static void ValidatePropOverlaps(List<ValidationIssue> issues)
+        {
+            foreach (var (a, b, depth) in PocketWilds.Editor.Environment.GrasslandPipeline.PropOverlaps())
+                issues.Add(new ValidationIssue(IssueSeverity.Error, a.Chunk, "Collision",
+                    $"{a.Prop} at ({a.Placed.Position.x:F2}, {a.Placed.Position.z:F2}) enters {b.Chunk}/{b.Prop} by {depth * 100f:F1} cm."));
+        }
+
+        /// <summary>
+        /// T33C: the chunk carries its obstacles and ground heights; spawn points and the egg spot stand clear of every
+        /// obstacle (a rabbit fits there whatever its heading).
+        /// </summary>
+        private static void ValidateCollision(WorldChunk world, string path, List<ValidationIssue> issues)
+        {
+            if (world.ObstacleCount == 0)
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Collision", "Chunk has no obstacles (Build Grassland Strip, T33C)."));
+            if (world.GroundField == null || !world.GroundField.IsValid)
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Collision", "Chunk has no ground height field (T33C)."));
+            var body = new BehaviorProfile().body;
+            void Check(Transform point, float radius, string label)
+            {
+                if (point == null)
+                    return;
+                var p = point.localPosition;
+                var c = new Vector2(p.x, p.z);
+                for (int i = 0; i < world.ObstacleCount; i++)
+                {
+                    var o = world.GetObstacle(i);
+                    if (!o.BlocksWalker(p.y, body.height))
+                        continue;
+                    float gap = Mathf.Sqrt(CollisionMath.PointSegmentDistanceSq(c, o.a, o.b)) - o.radius - radius;
+                    if (gap < 0f)
+                        issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Collision",
+                            $"{label} at ({p.x:F2}, {p.z:F2}) is {-gap * 100f:F1} cm inside a {o.kind} obstacle."));
+                }
+            }
+            Check(world.EggSpawn, PocketWilds.Presentation.RefugeController.EggSpotRadius, "Egg spot");
+            foreach (var spawn in world.AnimalSpawns)
+                Check(spawn, body.Reach, spawn != null ? spawn.name : "Animal spawn");
         }
 
         /// <summary>T33: the biome's ambient life uses its instanced material and light meshes.</summary>
@@ -530,6 +572,7 @@ namespace PocketWilds.Editor.Validation
                 if (!bound.Contains(renderer))
                     issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Palette", renderer.name + " has no palette binding."));
             ValidateScatter(world, path, issues);
+            ValidateCollision(world, path, issues);
             if ((needsEgg && world.EggSpawn == null) || world.AnimalSpawns.Length < 3)
                 issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Points", needsEgg
                     ? "Start chunk needs an egg spawn and 3 animal spawns." : "Chunk needs 3 animal spawns."));

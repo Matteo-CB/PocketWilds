@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using PocketWilds.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -10,6 +11,9 @@ namespace PocketWilds.Presentation
     /// vertex shader (SH_AmbientLife). The scene entry calls <see cref="Tick"/> and <see cref="Render"/> once per
     /// frame. The quality tier keeps a share of each anchor's individuals. Nothing allocates per frame; adding a
     /// chunk allocates its agents once. A tap near them makes them flee (<see cref="Startle"/>).
+    /// T33C no-collision rule: insects fly around the props' volumes (never through a bush, a crown or an animal) and
+    /// keep apart; birds hop and land only on free ground (no prop, no water, no animal, no other bird), stand on the
+    /// chunk's ground heights, fly off when an animal comes near, and pick flight paths that clear every crown.
     /// </summary>
     public sealed class AmbientLife
     {
@@ -22,6 +26,12 @@ namespace PocketWilds.Presentation
         private const float FlightDuration = 3.2f;
         private const float HopDuration = 0.22f;
         private const float PeckDuration = 0.45f;
+        // Obstacles within this distance of an agent's home are the ones it may ever meet (flights included).
+        private const float NearRadius = 4.5f;
+        private const float BirdHeight = 0.2f;
+        // An animal this close (beyond both bodies) sends a grounded bird off.
+        private const float BirdShyDistance = 0.35f;
+        private static readonly float[] FlightAngles = { 0f, 40f, -40f, 80f, -80f, 130f, -130f, 180f };
 
         private struct Agent
         {
@@ -40,6 +50,11 @@ namespace PocketWilds.Presentation
             public float Seed;
             public byte State;
             public uint Random;
+            public GroundSurface Ground;
+            public int NearStart;
+            public int NearCount;
+            /// <summary>A bird that found no clear flight waits this long before trying again.</summary>
+            public float Retry;
         }
 
         private sealed class SpeciesState
@@ -53,10 +68,16 @@ namespace PocketWilds.Presentation
             public RenderParams FlyParams;
             public RenderParams GroundParams;
             public Bounds Bounds;
+            /// <summary>Body radius seen from above (mesh extent times scale).</summary>
+            public float Radius;
         }
 
         private readonly SpeciesState[] _species;
         private readonly Plane[] _planes = new Plane[6];
+        private readonly List<WorldChunk> _chunks = new List<WorldChunk>();
+        private Obstacle[] _obstacles = new Obstacle[0];
+        private int[] _near = new int[0];
+        private AnimalScheduler _animals;
         private float _density = 1f;
         private uint _seed = 0x9E3779B9u;
 
@@ -68,9 +89,11 @@ namespace PocketWilds.Presentation
             {
                 var def = kit.species[i];
                 int row = palettes != null && palettes.TryGetRow(new ContentId(def.paletteId), out int r) ? r : 0;
+                var extents = def.mesh != null ? def.mesh.bounds.extents : Vector3.one * 0.05f;
                 _species[i] = new SpeciesState
                 {
                     Def = def,
+                    Radius = Mathf.Max(extents.x, extents.z) * def.scale,
                     FlyParams = Params(kit.material, row, def.flap, def.shoulder),
                     GroundParams = Params(kit.material, row, def.flapGrounded, def.shoulder),
                 };
@@ -106,12 +129,16 @@ namespace PocketWilds.Presentation
                 s.ActiveSlots = _density <= 0f ? 0 : Mathf.Clamp(Mathf.CeilToInt(s.Def.perAnchor * _density - 0.0001f), 1, s.Def.perAnchor);
         }
 
+        /// <summary>The refuge's animals: insects fly around them, birds keep away from them.</summary>
+        public void SetAnimals(AnimalScheduler animals) => _animals = animals;
+
         /// <summary>Spawns the chunk's individuals at its anchors (allocates: call when the chunk becomes active).</summary>
         public bool Add(WorldChunk chunk)
         {
             if (chunk == null || Contains(chunk))
                 return false;
             bool added = false;
+            _chunks.Add(chunk);
             var anchors = chunk.VfxAnchors;
             foreach (var s in _species)
             {
@@ -131,6 +158,27 @@ namespace PocketWilds.Presentation
                     }
                 }
                 UpdateBounds(s);
+            }
+            RebuildObstacles();
+            // Birds start on free ground.
+            foreach (var s in _species)
+            {
+                if (s.Def.behaviour != AmbientLifeBehaviour.Bird)
+                    continue;
+                for (int i = 0; i < s.Count; i++)
+                {
+                    ref var a = ref s.Agents[i];
+                    if (a.Chunk != chunk)
+                        continue;
+                    a.Position.y = a.Ground.HeightAt(a.Position.x, a.Position.z);
+                    for (int attempt = 0; attempt < 12 && !GroundFree(ref a, s, i, a.Position); attempt++)
+                    {
+                        var disc = RandomDisc(ref a.Random) * 1.2f;
+                        a.Position = new Vector3(a.Home.x + disc.x, 0f, a.Home.z + disc.y);
+                        a.Position.y = a.Ground.HeightAt(a.Position.x, a.Position.z);
+                    }
+                    a.Target = a.Position;
+                }
             }
             return added;
         }
@@ -155,6 +203,8 @@ namespace PocketWilds.Presentation
                 s.Count = write;
                 UpdateBounds(s);
             }
+            if (_chunks.Remove(chunk))
+                RebuildObstacles();
             return removed;
         }
 
@@ -165,6 +215,7 @@ namespace PocketWilds.Presentation
                 System.Array.Clear(s.Agents, 0, s.Count);
                 s.Count = 0;
             }
+            _chunks.Clear();
         }
 
         /// <summary>Everything within <paramref name="radius"/> of the point flees: insects dart away, birds fly off.</summary>
@@ -186,9 +237,8 @@ namespace PocketWilds.Presentation
                     var away = offset.sqrMagnitude > 1e-4f ? offset.normalized : RandomDirection(ref a.Random);
                     if (s.Def.behaviour == AmbientLifeBehaviour.Bird)
                     {
-                        if (a.State == Fly)
+                        if (a.State == Fly || !TryTakeOff(ref a, s, i, away))
                             continue;
-                        TakeOff(ref a, away);
                     }
                     else
                     {
@@ -219,18 +269,20 @@ namespace PocketWilds.Presentation
                     switch (s.Def.behaviour)
                     {
                         case AmbientLifeBehaviour.Butterfly:
-                            TickInsect(ref a, dt, 1.4f, -0.25f, 0.6f, 2f, 4.5f, 0.55f, 1.6f);
+                            TickInsect(ref a, s.Radius, dt, 1.4f, -0.25f, 0.6f, 2f, 4.5f, 0.55f, 1.6f);
                             break;
                         case AmbientLifeBehaviour.Bee:
-                            TickInsect(ref a, dt, 0.8f, -0.2f, 0.12f, 0.5f, 1.3f, 1.3f, 4f);
+                            TickInsect(ref a, s.Radius, dt, 0.8f, -0.2f, 0.12f, 0.5f, 1.3f, 1.3f, 4f);
                             break;
                         default:
-                            TickBird(ref a, dt);
+                            TickBird(ref a, s, i, dt);
                             if (a.State == Fly)
                                 airborne++;
                             break;
                     }
                 }
+                if (s.Def.behaviour != AmbientLifeBehaviour.Bird)
+                    Separate(s);
             }
             LastActive = active;
             LastAirborne = airborne;
@@ -288,10 +340,77 @@ namespace PocketWilds.Presentation
             }
         }
 
+        /// <summary>
+        /// Smallest free space between an active individual and a solid volume, an animal or one of its kind (m,
+        /// negative: overlap). Tests check it never goes below zero.
+        /// </summary>
+        public float MinClearance() => Clearance(false, out _);
+
+        /// <summary>Same, with what the closest pair is (tests: allocates strings).</summary>
+        public float MinClearance(out string closest) => Clearance(true, out closest);
+
+        private float Clearance(bool describe, out string closest)
+        {
+            float best = float.MaxValue;
+            string where = null;
+            void Keep(float gap, SpeciesState s, ref Agent a, string what)
+            {
+                if (gap >= best)
+                    return;
+                best = gap;
+                if (describe)
+                    where = $"{s.Def.id} ({StateName(s, ref a)}) at {a.Position} vs {what}";
+            }
+            foreach (var s in _species)
+            {
+                for (int i = 0; i < s.Count; i++)
+                {
+                    ref var a = ref s.Agents[i];
+                    if (a.Slot >= s.ActiveSlots)
+                        continue;
+                    var c = new Vector2(a.Position.x, a.Position.z);
+                    bool grounded = s.Def.behaviour == AmbientLifeBehaviour.Bird && a.State != Fly;
+                    for (int k = 0; k < a.NearCount; k++)
+                    {
+                        ref var o = ref _obstacles[_near[a.NearStart + k]];
+                        bool blocks = grounded
+                            ? o.BlocksWalker(a.Position.y, BirdHeight)
+                            : o.IsSolid && a.Position.y + s.Radius > o.WorldBottom && a.Position.y - s.Radius < o.WorldTop;
+                        if (blocks)
+                            Keep(Mathf.Sqrt(CollisionMath.PointSegmentDistanceSq(c, o.a, o.b)) - o.radius - s.Radius, s, ref a,
+                                describe ? $"{o.kind} obstacle {o.Center} r{o.radius:F2} y{o.WorldBottom:F2}-{o.WorldTop:F2}" : null);
+                    }
+                    if (_animals != null)
+                    {
+                        for (int j = 0; j < _animals.Count; j++)
+                        {
+                            int handle = _animals.GetActiveHandle(j);
+                            _animals.GetBody(handle, out var s0, out var s1, out float radius, out float groundY, out float height);
+                            if (a.Position.y - s.Radius > groundY + height)
+                                continue;
+                            Keep(Mathf.Sqrt(CollisionMath.PointSegmentDistanceSq(c, s0, s1)) - radius - s.Radius, s, ref a, describe ? $"animal {handle}" : null);
+                        }
+                    }
+                    for (int j = i + 1; j < s.Count; j++)
+                    {
+                        ref var b = ref s.Agents[j];
+                        if (b.Slot < s.ActiveSlots)
+                            Keep(Vector3.Distance(a.Position, b.Position) - 2f * s.Radius, s, ref a, describe ? $"its kind at {b.Position}" : null);
+                    }
+                }
+            }
+            closest = where;
+            return best;
+        }
+
+        private static string StateName(SpeciesState s, ref Agent a) =>
+            s.Def.behaviour != AmbientLifeBehaviour.Bird ? (a.State == Flee ? "flee" : "wander")
+            : a.State == Fly ? "fly" : a.State == Hop ? "hop" : a.State == Peck ? "peck" : "idle";
+
         // ---------------- behaviours ----------------
 
         /// <summary>Heights are relative to the anchor, which marks the middle of the flight layer.</summary>
-        private static void TickInsect(ref Agent a, float dt, float radius, float minHeight, float maxHeight, float minTime, float maxTime,
+        private void TickInsect(ref Agent a, float bodyRadius, float dt, float radius, float minHeight, float maxHeight, float minTime, float maxTime,
             float speed, float response)
         {
             a.Timer -= dt;
@@ -308,8 +427,14 @@ namespace PocketWilds.Presentation
             {
                 if (a.Timer <= 0f || (a.Target - a.Position).sqrMagnitude < 0.01f)
                 {
-                    var disc = RandomDisc(ref a.Random) * radius;
-                    a.Target = a.Home + new Vector3(disc.x, Mathf.Lerp(minHeight, maxHeight, Next(ref a.Random)), disc.y);
+                    // A free point of air: never inside a bush, a crown or a rock.
+                    for (int attempt = 0; attempt < 4; attempt++)
+                    {
+                        var disc = RandomDisc(ref a.Random) * radius;
+                        a.Target = a.Home + new Vector3(disc.x, Mathf.Lerp(minHeight, maxHeight, Next(ref a.Random)), disc.y);
+                        if (!InsideVolume(ref a, a.Target, bodyRadius + 0.08f))
+                            break;
+                    }
                     a.Timer = Mathf.Lerp(minTime, maxTime, Next(ref a.Random));
                 }
                 var desired = a.Target - a.Position;
@@ -322,15 +447,26 @@ namespace PocketWilds.Presentation
             float floor = a.Home.y + minHeight;
             if (a.Position.y < floor)
                 a.Position.y = floor;
+            KeepOut(ref a, bodyRadius);
             var flat = new Vector3(a.Velocity.x, 0f, a.Velocity.z);
             if (flat.sqrMagnitude > 0.0025f)
                 a.Forward = Vector3.Slerp(a.Forward, flat.normalized, Mathf.Clamp01(dt * 6f));
             a.Pitch = Mathf.Clamp(a.Velocity.y * 40f, -25f, 30f);
         }
 
-        private static void TickBird(ref Agent a, float dt)
+        private void TickBird(ref Agent a, SpeciesState s, int index, float dt)
         {
             a.Timer += dt;
+            a.Retry -= dt;
+            // An animal coming near: the bird flies off, away from it.
+            if (a.State != Fly && a.Retry <= 0f && NearestAnimal(a.Position, s.Radius + BirdShyDistance, out var animal))
+            {
+                var away = a.Position - animal;
+                away.y = 0f;
+                if (TryTakeOff(ref a, s, index, away.sqrMagnitude > 1e-4f ? away.normalized : RandomDirection(ref a.Random)))
+                    return;
+                a.Retry = 0.5f;
+            }
             switch (a.State)
             {
                 case Hop:
@@ -364,6 +500,9 @@ namespace PocketWilds.Presentation
                         a.Position = a.Target;
                         a.Pitch = 0f;
                         Rest(ref a);
+                        // Someone took the landing spot meanwhile: off again.
+                        if (!GroundFree(ref a, s, index, a.Position))
+                            TryTakeOff(ref a, s, index, a.Forward);
                     }
                     break;
                 }
@@ -380,9 +519,18 @@ namespace PocketWilds.Presentation
                         var direction = toHome.sqrMagnitude > 1.2f * 1.2f
                             ? toHome.normalized
                             : Quaternion.Euler(0f, (Next(ref a.Random) - 0.5f) * 100f, 0f) * a.Forward;
+                        var target = new Vector3(a.Position.x + direction.x * 0.14f, 0f, a.Position.z + direction.z * 0.14f);
+                        target.y = a.Ground.HeightAt(target.x, target.z);
+                        if (!GroundFree(ref a, s, index, target))
+                        {
+                            // A stone, a root, water or a neighbour in the way: it turns around instead.
+                            a.Forward = Quaternion.Euler(0f, 150f + (Next(ref a.Random) - 0.5f) * 60f, 0f) * a.Forward;
+                            Rest(ref a);
+                            break;
+                        }
                         a.Forward = direction;
                         a.From = a.Position;
-                        a.Target = new Vector3(a.Position.x + direction.x * 0.14f, a.Home.y, a.Position.z + direction.z * 0.14f);
+                        a.Target = target;
                         a.State = Hop;
                     }
                     else if (roll < 0.92f)
@@ -409,15 +557,35 @@ namespace PocketWilds.Presentation
             a.Duration = Mathf.Lerp(0.3f, 1.8f, Next(ref a.Random));
         }
 
-        private static void TakeOff(ref Agent a, Vector3 away)
+        /// <summary>
+        /// Flies off roughly away from a disturbance: the first direction (then a higher arc) whose whole curve clears
+        /// every volume and that lands on free ground. False when none does (the bird stays).
+        /// </summary>
+        private bool TryTakeOff(ref Agent a, SpeciesState s, int index, Vector3 away)
         {
-            a.State = Fly;
-            a.Timer = 0f;
-            a.From = a.Position;
-            a.Apex = a.Position + away * 2.2f + Vector3.up * 3.4f;
-            var disc = RandomDisc(ref a.Random) * 0.6f;
-            a.Target = new Vector3(a.Home.x + away.x * 0.9f + disc.x, a.Home.y, a.Home.z + away.z * 0.9f + disc.y);
-            a.Forward = away;
+            float clearance = s.Radius + 0.1f;
+            for (int lift = 0; lift < 2; lift++)
+            {
+                float height = lift == 0 ? 3.4f : 5.6f;
+                foreach (float angle in FlightAngles)
+                {
+                    var dir = Quaternion.Euler(0f, angle, 0f) * away;
+                    var apex = a.Position + dir * 2.2f + Vector3.up * height;
+                    var disc = RandomDisc(ref a.Random) * 0.6f;
+                    var target = new Vector3(a.Home.x + dir.x * 0.9f + disc.x, 0f, a.Home.z + dir.z * 0.9f + disc.y);
+                    target.y = a.Ground.HeightAt(target.x, target.z);
+                    if (!GroundFree(ref a, s, index, target) || !FlightClear(ref a, a.Position, apex, target, clearance))
+                        continue;
+                    a.State = Fly;
+                    a.Timer = 0f;
+                    a.From = a.Position;
+                    a.Apex = apex;
+                    a.Target = target;
+                    a.Forward = dir;
+                    return true;
+                }
+            }
+            return false;
         }
 
         private Agent Spawn(AmbientLifeBehaviour behaviour, WorldChunk chunk, int slot, Vector3 anchor)
@@ -435,6 +603,239 @@ namespace PocketWilds.Presentation
             a.Duration = Mathf.Lerp(0.2f, 1.5f, Next(ref a.Random));
             a.Target = a.Position;
             return a;
+        }
+
+        // ---------------- no-collision checks ----------------
+
+        /// <summary>All active chunks' obstacles, and for each agent the ones near its home (allocates: Add/Remove only).</summary>
+        private void RebuildObstacles()
+        {
+            int total = 0;
+            foreach (var chunk in _chunks)
+                total += chunk != null ? chunk.ObstacleCount : 0;
+            if (_obstacles.Length < total)
+                _obstacles = new Obstacle[total];
+            int count = 0;
+            foreach (var chunk in _chunks)
+            {
+                if (chunk == null)
+                    continue;
+                var origin = chunk.transform.position;
+                for (int i = 0; i < chunk.ObstacleCount; i++)
+                    _obstacles[count++] = chunk.GetObstacle(i).Translated(origin);
+            }
+            var near = new List<int>();
+            foreach (var s in _species)
+            {
+                for (int i = 0; i < s.Count; i++)
+                {
+                    ref var a = ref s.Agents[i];
+                    a.Ground = a.Chunk != null ? a.Chunk.Ground : GroundSurface.Flat(a.Home.y);
+                    a.NearStart = near.Count;
+                    var home = new Vector2(a.Home.x, a.Home.z);
+                    for (int k = 0; k < count; k++)
+                    {
+                        float span = _obstacles[k].Reach + NearRadius;
+                        if ((_obstacles[k].Center - home).sqrMagnitude < span * span)
+                            near.Add(k);
+                    }
+                    a.NearCount = near.Count - a.NearStart;
+                }
+            }
+            _near = near.ToArray();
+        }
+
+        /// <summary>Inside a solid volume (inflated by r) near this agent. Fliers pass over water.</summary>
+        private bool InsideVolume(ref Agent a, Vector3 p, float r)
+        {
+            var c = new Vector2(p.x, p.z);
+            for (int k = 0; k < a.NearCount; k++)
+            {
+                ref var o = ref _obstacles[_near[a.NearStart + k]];
+                if (!o.IsSolid || p.y + r < o.WorldBottom || p.y - r > o.WorldTop)
+                    continue;
+                float min = o.radius + r;
+                if (CollisionMath.PointSegmentDistanceSq(c, o.a, o.b) < min * min)
+                    return true;
+            }
+            return false;
+        }
+
+        private bool FlightClear(ref Agent a, Vector3 from, Vector3 apex, Vector3 to, float r)
+        {
+            for (int k = 1; k < 12; k++)
+            {
+                float t = k / 12f, u = 1f - t;
+                if (InsideVolume(ref a, u * u * from + 2f * u * t * apex + t * t * to, r))
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Pushes a flying insect out of any volume and any animal it entered (sideways to the nearest surface) and
+        /// takes away the speed that carried it in: it glides along the leaves instead of passing through. Wedged
+        /// between two of them, it rises over the lower one.
+        /// </summary>
+        private void KeepOut(ref Agent a, float r)
+        {
+            for (int pass = 0; pass < 3; pass++)
+            {
+                if (!PushOutAll(ref a, r, out _))
+                    return;
+            }
+            if (PushOutAll(ref a, r, out float top))
+            {
+                a.Position.y = top + r + 0.01f;
+                if (a.Velocity.y < 0f)
+                    a.Velocity.y = 0f;
+            }
+        }
+
+        /// <summary>One push out of everything overlapping; true when something was hit (top: the highest one).</summary>
+        private bool PushOutAll(ref Agent a, float r, out float top)
+        {
+            bool hit = false;
+            top = float.MinValue;
+            for (int k = 0; k < a.NearCount; k++)
+            {
+                ref var o = ref _obstacles[_near[a.NearStart + k]];
+                if (!o.IsSolid || a.Position.y + r < o.WorldBottom || a.Position.y - r > o.WorldTop)
+                    continue;
+                if (PushOut(ref a, o.a, o.b, o.radius + r))
+                {
+                    hit = true;
+                    top = Mathf.Max(top, o.WorldTop);
+                }
+            }
+            if (_animals == null)
+                return hit;
+            for (int i = 0; i < _animals.Count; i++)
+            {
+                _animals.GetBody(_animals.GetActiveHandle(i), out var s0, out var s1, out float radius, out float groundY, out float height);
+                if (a.Position.y - r > groundY + height)
+                    continue;
+                if (PushOut(ref a, s0, s1, radius + r))
+                {
+                    hit = true;
+                    top = Mathf.Max(top, groundY + height);
+                }
+            }
+            return hit;
+        }
+
+        private static bool PushOut(ref Agent a, Vector2 s0, Vector2 s1, float min)
+        {
+            var c = new Vector2(a.Position.x, a.Position.z);
+            var closest = CollisionMath.ClosestOnSegment(c, s0, s1);
+            var d = c - closest;
+            float distance = d.magnitude;
+            if (distance >= min)
+                return false;
+            var n = distance > 1e-4f ? d / distance : new Vector2(a.Forward.x, a.Forward.z);
+            n = n.sqrMagnitude > 1e-6f ? n.normalized : Vector2.right;
+            c = closest + n * (min + 0.0005f);
+            a.Position.x = c.x;
+            a.Position.z = c.y;
+            var v = new Vector2(a.Velocity.x, a.Velocity.z);
+            float inward = Vector2.Dot(v, n);
+            if (inward < 0f)
+            {
+                v -= n * inward;
+                a.Velocity.x = v.x;
+                a.Velocity.z = v.y;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Insects of one species never fly through each other: overlapping pairs are pushed apart (and out of the
+        /// leaves again), a few passes when a little crowd gathers on one flower patch.
+        /// </summary>
+        private void Separate(SpeciesState s)
+        {
+            float min = s.Radius * 2f;
+            for (int pass = 0; pass < 4; pass++)
+            {
+                bool any = false;
+                for (int i = 0; i < s.Count; i++)
+                {
+                    ref var a = ref s.Agents[i];
+                    if (a.Slot >= s.ActiveSlots)
+                        continue;
+                    for (int j = i + 1; j < s.Count; j++)
+                    {
+                        ref var b = ref s.Agents[j];
+                        if (b.Slot >= s.ActiveSlots)
+                            continue;
+                        var d = b.Position - a.Position;
+                        float distanceSq = d.sqrMagnitude;
+                        if (distanceSq >= min * min)
+                            continue;
+                        any = true;
+                        float distance = Mathf.Sqrt(distanceSq);
+                        var n = distance > 1e-4f ? d / distance : Vector3.up;
+                        var shift = n * ((min - distance) * 0.5f + 0.0005f);
+                        a.Position -= shift;
+                        b.Position += shift;
+                        KeepOut(ref a, s.Radius);
+                        KeepOut(ref b, s.Radius);
+                    }
+                }
+                if (!any)
+                    return;
+            }
+        }
+
+        /// <summary>Free ground for a bird: no prop at its feet, no water, no animal close, no other bird there.</summary>
+        private bool GroundFree(ref Agent a, SpeciesState s, int self, Vector3 p)
+        {
+            var c = new Vector2(p.x, p.z);
+            float r = s.Radius;
+            for (int k = 0; k < a.NearCount; k++)
+            {
+                ref var o = ref _obstacles[_near[a.NearStart + k]];
+                if (!o.BlocksWalker(p.y, BirdHeight))
+                    continue;
+                float min = o.radius + r;
+                if (CollisionMath.PointSegmentDistanceSq(c, o.a, o.b) < min * min)
+                    return false;
+            }
+            if (NearestAnimal(p, r + BirdShyDistance, out _))
+                return false;
+            for (int j = 0; j < s.Count; j++)
+            {
+                if (j == self)
+                    continue;
+                ref var b = ref s.Agents[j];
+                if (b.Slot >= s.ActiveSlots || b.State == Fly)
+                    continue;
+                var spot = b.State == Hop ? b.Target : b.Position;
+                if (new Vector2(spot.x - p.x, spot.z - p.z).sqrMagnitude < 4f * r * r)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>An animal body within <paramref name="distance"/> of the point (seen from above); its root position.</summary>
+        private bool NearestAnimal(Vector3 p, float distance, out Vector3 root)
+        {
+            root = default;
+            if (_animals == null)
+                return false;
+            var c = new Vector2(p.x, p.z);
+            for (int i = 0; i < _animals.Count; i++)
+            {
+                int handle = _animals.GetActiveHandle(i);
+                _animals.GetBody(handle, out var s0, out var s1, out float radius, out _, out _);
+                float min = radius + distance;
+                if (CollisionMath.PointSegmentDistanceSq(c, s0, s1) < min * min)
+                {
+                    root = _animals.GetPosition(handle);
+                    return true;
+                }
+            }
+            return false;
         }
 
         // ---------------- helpers ----------------

@@ -199,10 +199,15 @@ namespace PocketWilds.Benchmarks
                 while (Time.realtimeSinceStartup < until)
                     yield return null;
                 float start = Time.realtimeSinceStartup;
+                float animalClearance = float.MaxValue, lifeClearance = float.MaxValue;
+                int overlaps = 0, frame = 0;
                 while (Time.realtimeSinceStartup - start < scenario.measureSeconds)
                 {
                     yield return null;
                     sampler.Sample();
+                    // One frame in 60 (under the 5 % the p95 looks at): the check itself never shows in the timings.
+                    if (++frame % 60 == 0)
+                        CheckCollisions(entry, ref animalClearance, ref lifeClearance, ref overlaps);
                     sampler.SampleWorld(entry.Scatter != null ? entry.Scatter.LastInstances : 0, entry.Life != null ? entry.Life.LastInstances : 0);
                     probe?.AfterSample(sampler.LastCpuMs);
                     shopProbe?.AfterSample(sampler.LastCpuMs);
@@ -211,6 +216,9 @@ namespace PocketWilds.Benchmarks
                 }
                 var result = sampler.Finish(scenario, entry.Refuge.VisibleAnimals, Time.realtimeSinceStartup - start);
                 sampler.Dispose();
+                result.minAnimalClearanceCm = animalClearance < float.MaxValue ? animalClearance * 100f : 0f;
+                result.minLifeClearanceCm = lifeClearance < float.MaxValue ? lifeClearance * 100f : 0f;
+                result.overlapSamples = overlaps;
                 if (shopProbe != null)
                 {
                     result.shop = shopProbe.Finish();
@@ -236,7 +244,8 @@ namespace PocketWilds.Benchmarks
                           $"GPU {(result.gpuMs.valid ? result.gpuMs.mean.ToString("F2") : "n/a")}, sim {result.simulationMs.mean:F3}, " +
                           $"GC {result.gcBytes.mean:F0} B/frame ({result.framesWithGc} frames), batches {result.batches:F0}, " +
                           $"world {result.worldMs.mean:F3} ms (max {result.worldMs.max:F3}), scatter {result.scatterInstances:F0}, life {result.lifeInstances:F0}, " +
-                          $"triangles {result.triangles:F0}");
+                          $"triangles {result.triangles:F0}, clearance animals {result.minAnimalClearanceCm:F1} cm, life {result.minLifeClearanceCm:F1} cm, " +
+                          $"overlaps {result.overlapSamples}");
             }
 
             foreach (var leftover in Object.FindObjectsByType<GameBootstrap>(FindObjectsSortMode.None))
@@ -245,6 +254,25 @@ namespace PocketWilds.Benchmarks
         }
 
         /// <summary>T33B: east along the whole strip of chunks, then back to the refuge. No allocation per step.</summary>
+        /// <summary>T33C: every animal and every insect or bird against everything it must never enter.</summary>
+        private static void CheckCollisions(VerticalSliceEntry entry, ref float animals, ref float life, ref int overlaps)
+        {
+            var scheduler = entry.Refuge.Scheduler;
+            for (int i = 0; i < scheduler.Count; i++)
+            {
+                float clearance = scheduler.Clearance(scheduler.GetActiveHandle(i));
+                animals = Mathf.Min(animals, clearance);
+                if (clearance < -AnimalScheduler.ContactTolerance - 1e-4f)
+                    overlaps++;
+            }
+            if (entry.Life == null)
+                return;
+            float lifeClearance = entry.Life.MinClearance();
+            life = Mathf.Min(life, lifeClearance);
+            if (lifeClearance < -0.005f)
+                overlaps++;
+        }
+
         private static IEnumerator StripTravel(RefugeCameraRig rig, float speed)
         {
             const float East = 98f, West = -3.5f;

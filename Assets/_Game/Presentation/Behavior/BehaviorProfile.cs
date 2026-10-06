@@ -42,8 +42,8 @@ namespace PocketWilds.Presentation
         [Min(0)] public int socialGroup;
         [Tooltip("Farthest partner a greeting looks for (meters).")]
         [Min(0.3f)] public float socialRadius = 2.2f;
-        [Tooltip("Root to root distance of two greeting animals: their noses just touch.")]
-        [Min(0.1f)] public float socialGap = 0.42f;
+        [Tooltip("Root to root distance of two greeting animals: their noses just touch (never less than the two body fronts).")]
+        [Min(0.1f)] public float socialGap = 0.48f;
         [Tooltip("How long the first animal at the meeting point waits for its partner.")]
         [Min(0.5f)] public float socialWaitSeconds = 3f;
         [Tooltip("Farthest rock, tree or flower patch an inspect or a snack walks to (meters).")]
@@ -56,6 +56,10 @@ namespace PocketWilds.Presentation
         [Min(30f)] public float turnDegreesPerSecond = 300f;
         public Vector2 wanderDistance = new Vector2(0.5f, 1.6f);
         [Min(0f)] public float personalSpace = 0.45f;
+
+        [Header("Body (T33C no-collision rule)")]
+        [Tooltip("Footprint from the species mesh (AnimalPipeline): nose, tail, flanks and height at scale 1.")]
+        public BodyShape body = new BodyShape(0.235f, -0.304f, 0.163f, 0.658f);
 
         [Header("Tier B")]
         [Tooltip("Background animals stay calmer: longer states, shorter walks, no look/inspect one-shots.")]

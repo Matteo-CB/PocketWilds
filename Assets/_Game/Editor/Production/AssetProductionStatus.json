@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-05T23:01:06Z",
+  "updatedUtc": "2026-10-06T01:07:03Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -229,14 +229,20 @@
     {
       "task": "T33",
       "title": "Prairie Magnifique",
-      "status": "REVIEW",
+      "status": "DONE",
       "notes": "Part 1 done (systems + vegetation/props kit), part 2 queued as T33B. ScatterRenderer (RenderMeshInstanced, one batch per kind and chunk, chunk culling, stable-rank tier prefix 30/65/100 %, min share for flowers 55 %, pebbles 30 %, mushrooms 50 %), SH_FoliageWind (global wind with gusts and flutter, per-instance tint and brightness), AmbientLife (butterflies yellow/cream, blue/lilac, rare golden on 35 % of anchors; bees; robins that hop, peck and fly off when a tap lands near them; wings hinged in SH_AmbientLife; 25/60/100 %), SH_SkyGradient clouds and mood globals (linear colours), height fog folded into linear fog, WorldAtmosphere morning/day/evening from the local hour (softened, no black night, re-applied when the clock moves a minute), DEF_WorldQuality (doc 07 table). Kit: 6 grass, 8 flower kinds on 6 meshes, 7 detail kinds, trees A-D, bushes A-C, rocks S/M/L + hero A/B, log, stump, fence A, hay bale, bird bath; both chunks recomposed (46 and 38 renderers, 2 847 and 2 941 scatter instances). Beauty review: Medium keeps about 90 % of High (SSIM 0.86, dE 2.2, detail energy 74 %), Low keeps the identity. Windows player (T33_player_windows_prairie.json): 16 scenarios at vsync, 0 frame over 33 ms, world CPU 0.08 ms mean (0.54 max), Medium P2 109 batches / 181 k tris / 238 MB, High S50 161 batches / 334 k tris, Low 83 batches / 68 k tris; GC pattern unchanged vs T30/T32. EditMode 337/337 (WorldBeautyTests 11, reworked EnvironmentAssetTests), PlayMode 35 + 1 explicit skip. No phone measurement (no device). Report: Docs/Performance/T33_Prairie_Magnifique.md."
     },
     {
       "task": "T33B",
       "title": "Prairie Magnifique, partie 2 : eau, monuments, chunks, météo",
-      "status": "PLANNED",
-      "notes": "Rest of the doc 04 D-BIO-001 kit: GL_Stream_A/B (SH_WaterLite) + GL_StreamStones, GL_Landmark_OldTree and GL_Landmark_Windmill, impostors (SH_Impostor), GL_Fence_B, GL_WellTiny, GL_Path_A/B, GL_Edge_A/B, GL_Ground_Core_C, chunks StreamBend, Orchard, Hill, WindmillRise, PondEdge, ForestEdge, weather (light rain, rainbow), night mood, sun rays on High, scatter LOD by distance. Criterion: BIOME DONE rules of doc 04 (phone measurement pending)."
+      "status": "DONE",
+      "notes": "Done. Strip of 8 Grassland chunks (start, meadow, StreamBend, Orchard, Hill, WindmillRise, PondEdge, ForestEdge; 112 m), grounds from BL_Biome_Grassland_Magnifique.blend (pw_grassland_t33b.py) sharing world-space grass patches and the worn path; GL_Stream_A (waterfall over the rim) and GL_Stream_B pond on SH_WaterLite (3 quality levels); GL_Landmark_OldTree (swing, LOD 1682/760/240) and GL_Landmark_Windmill (sails turn in SH_EnvironmentOpaque, rotor flag, no script); GL_Fence_B, GL_WellTiny, GL_Edge_A/B, GL_StreamStones; WeatherSystem (light rain 900 drops max animated in the shader, rainbow after it, sun rays on High; tiers 40/70/100 %), night mood for events (stars, never black), scatter distance fade 16-26 / 22-34 / 30-46 m. Deviations: paths are painted wear (GL_Path_A/B deferred), GL_Ground_Core_C replaced by the six strip grounds, impostors deferred (G-SH-010). Windows player (T33B_player_windows_strip.json): W2 strip travel main 1.57 ms (p95 2.13), rain +0.1 ms CPU. Report: Docs/Performance/T33B_Prairie_Partie2.md."
+    },
+    {
+      "task": "T33C",
+      "title": "Règle « aucune collision » (animaux, vie ambiante, décors, dispersion)",
+      "status": "DONE",
+      "notes": "Owner rule of 2026-10-06: nothing ever enters anything (Docs/Design/Collision_Rule.md, project CLAUDE.md). Bodies measured from the species meshes (AnimalPipeline.MeasureBody: rabbit 54x33 cm, squirrel 64x30, hedgehog 53x33); prop volumes per height band from LOD0 surfaces (CollisionProxies: convex outlines + capsules, windmill sails swept); WorldChunk stores obstacles (props, water, ground steeper than 32 deg) and a 0.25 m ground height field; AnimalScheduler checks every step, turn and spawn (capsule vs obstacles, egg spot, other animals), plans one waypoint around obstacles, sidesteps animals, slides, gives up blocked walks, stands on the ground tilted with the slope; greetings nose to nose without overlap; the newborn bounds off the egg (x2.5 pace, clip sped up) and the next egg waits for its footprint to be free (about 1 s, moment offer counted from the egg); AmbientLife keeps insects out of volumes, animals and each other, birds land only on free ground, fly off when an animal comes near, flights clear the crowns; props settled at build time (2 Orchard fences moved 4 cm), scatter never grows inside a prop, solid details keep apart, spawn points cleared; windmill sails moved 1.40 m in front of the tower axis with a windshaft so they never sweep through the gallery. CollisionRuleTests (10, incl. TurningParts), AssetValidator collision checks, benchmark overlapSamples (0 in every scenario)."
     },
     {
       "task": "T33V",
@@ -3505,7 +3511,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3515,9 +3521,9 @@
         "G06",
         "G08"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Only if camera can see the edge. | Scheduled in T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Only if camera can see the edge. | Scheduled in T33B. | T33B: island rim piece with roots."
     },
     {
       "id": "D-BIO-001/GL_Edge_B",
@@ -3527,7 +3533,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3537,9 +3543,9 @@
         "G06",
         "G08"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Scheduled in T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Scheduled in T33B. | T33B: island rim piece."
     },
     {
       "id": "D-BIO-001/GL_GrassTuft_S",
@@ -3960,7 +3966,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3970,9 +3976,9 @@
         "G06",
         "G08"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "1.2-1.8k max | Scheduled in T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "1.2-1.8k max | Scheduled in T33B. | T33B: old tree with swing, LOD 1682/760/240, crown of 13 rounded masses (kit style)."
     },
     {
       "id": "D-BIO-001/GL_PathPebble",
@@ -4012,9 +4018,9 @@
         "G17",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T33: recomposed by GrasslandPipeline.BuildMagnifique: 46 renderers, 2 847 scatter instances, 2 materials, VFX anchors for butterflies, bees and birds on the ground surface; merged grass meshes removed."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T15: composed by GrasslandPipeline (deterministic layout): open clearing for the egg and animals, 7 framing trees, 12 rocks, 160 grass tufts, flower patches; WorldChunk binds palettes, egg/animal spawns, interest points, VFX anchors, links; 2 materials total. Low drops ~40% of small props. | T33: recomposed by GrasslandPipeline.BuildMagnifique: 46 renderers, 2 847 scatter instances, 2 materials, VFX anchors for butterflies, bees and birds on the ground surface; merged grass meshes removed. | T33C: obstacles (props per height band), ground height field, spawn points cleared, scatter outside every prop."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_Meadow",
@@ -4032,9 +4038,9 @@
         "G17",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T27: GrasslandPipeline.BuildMeadowChunk on GL_Ground_Core_B at +14 m east of the start chunk. Trees framing north/south, tree and big rock on the seam ends, tufts straddling the seam, 44 flower patches (denser than Start), 341 placements, 38 renderers (merged grass/flowers per palette). Wander area, 3 spawns, interest points, links W/E. Addressable chunk.grassland.meadow (385 KB bundle on Windows). Captures TestResults/Captures/T27_seam_*.png, T27_meadow_gameplay.png. | T33: recomposed by GrasslandPipeline.BuildMagnifique: 38 renderers, 2 941 scatter instances, 2 materials, VFX anchors for butterflies, bees and birds on the ground surface; merged grass meshes removed."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "T27: GrasslandPipeline.BuildMeadowChunk on GL_Ground_Core_B at +14 m east of the start chunk. Trees framing north/south, tree and big rock on the seam ends, tufts straddling the seam, 44 flower patches (denser than Start), 341 placements, 38 renderers (merged grass/flowers per palette). Wander area, 3 spawns, interest points, links W/E. Addressable chunk.grassland.meadow (385 KB bundle on Windows). Captures TestResults/Captures/T27_seam_*.png, T27_meadow_gameplay.png. | T33: recomposed by GrasslandPipeline.BuildMagnifique: 38 renderers, 2 941 scatter instances, 2 materials, VFX anchors for butterflies, bees and birds on the ground surface; merged grass meshes removed. | T33C: obstacles (props per height band), ground height field, spawn points cleared, scatter outside every prop."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_PondEdge",
@@ -4044,7 +4050,7 @@
       "dependencies": [
         "D-BIO-001/GL_Ground_Core_A"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/World/Chunks/Grassland/PF_Chunk_Grassland_PondEdge.prefab",
       "validationGates": [
@@ -4052,9 +4058,9 @@
         "G17",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Scheduled in T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Scheduled in T33B. | T33B at +84 m (pond); T33C water obstacles, ground field."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_Hill",
@@ -4064,7 +4070,7 @@
       "dependencies": [
         "D-BIO-001/GL_Ground_Core_A"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/World/Chunks/Grassland/PF_Chunk_Grassland_Hill.prefab",
       "validationGates": [
@@ -4072,9 +4078,9 @@
         "G17",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Scheduled in T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Scheduled in T33B. | T33B at +56 m (old tree on the hill); T33C obstacles incl. steep flanks."
     },
     {
       "id": "D-BIO-001/LP_Grassland_Day",
@@ -5104,7 +5110,7 @@
       "family": "Shader",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": "Assets/_Game/Art/Shaders/SH_WaterLite.shadergraph",
       "runtimePath": "Assets/_Game/Art/Shaders/",
       "validationGates": [
@@ -5113,9 +5119,9 @@
         "G19",
         "G29"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "T33B: PocketWilds/WaterLite (deep/shallow/foam/sparkle palette columns, ddx/ddy ripples, glints, 3 quality levels)."
     },
     {
       "id": "G-SH-005",
@@ -5851,16 +5857,16 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/VFX/VFX_Rainbow.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "T33B: rainbow arc (SH_Rainbow) after each shower, daylight only (WeatherSystem)."
     },
     {
       "id": "H-VFX-015",
@@ -5889,16 +5895,16 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/VFX/VFX_RainLight.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "T33B: light rain (SH_RainLite, instanced streaks animated in the shader, tier 40/70/100 %)."
     },
     {
       "id": "H-VFX-017",
@@ -14313,16 +14319,16 @@
       "family": "Shader",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/Shaders/",
       "validationGates": [
         "G06",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026')."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). | T33B: impostors deferred, no far view needs them yet (distance fade and LODs hold the budget)."
     },
     {
       "id": "G-SH-011",
@@ -14350,15 +14356,15 @@
       "family": "Shader",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Art/Shaders/",
       "validationGates": [
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026')."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). | T33: height fog folded into linear fog (PW_World.hlsl PW_FogFactor), off on Low."
     },
     {
       "id": "H-VFX-026",
@@ -15685,7 +15691,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15693,9 +15699,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04 D-BIO-001, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04 D-BIO-001, T33B. | T33B: white picket fence (Orchard, StreamBend)."
     },
     {
       "id": "D-BIO-001/GL_WellTiny",
@@ -15705,7 +15711,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15713,9 +15719,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04 D-BIO-001, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04 D-BIO-001, T33B. | T33B: tiny well (Orchard)."
     },
     {
       "id": "D-BIO-001/GL_Stream_A",
@@ -15725,7 +15731,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15733,9 +15739,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04: WaterLite strip, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04: WaterLite strip, T33B. | T33B: stream with waterfall over the rim, 1212 tris, SH_WaterLite; T33C: water obstacles, nothing grows or walks in it."
     },
     {
       "id": "D-BIO-001/GL_Stream_B",
@@ -15745,7 +15751,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15753,9 +15759,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04: WaterLite strip, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04: WaterLite strip, T33B. | T33B: pond 440 tris, SH_WaterLite (planar UVs)."
     },
     {
       "id": "D-BIO-001/GL_StreamStones",
@@ -15765,7 +15771,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15773,9 +15779,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04, T33B. | T33B: stepping stones where the worn path crosses the stream."
     },
     {
       "id": "D-BIO-001/GL_Path_A",
@@ -15785,7 +15791,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15793,9 +15799,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04: dirt path strip, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04: dirt path strip, T33B. | T33B: paths are painted wear running along the whole strip (seamless), no strip mesh."
     },
     {
       "id": "D-BIO-001/GL_Path_B",
@@ -15805,7 +15811,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15813,9 +15819,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04: dirt path strip, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04: dirt path strip, T33B. | T33B: paths are painted wear running along the whole strip (seamless), no strip mesh."
     },
     {
       "id": "D-BIO-001/GL_Ground_Core_C",
@@ -15825,7 +15831,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15833,9 +15839,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04: third seamless ground, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04: third seamless ground, T33B. | T33B: replaced by the six strip grounds (StreamBend to ForestEdge)."
     },
     {
       "id": "D-BIO-001/GL_Landmark_Windmill",
@@ -15845,7 +15851,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15853,9 +15859,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04: landmark up to 2.5k tris, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04: landmark up to 2.5k tris, T33B. | T33B: tower LOD0 740 + sails 246 tris, sails turn in the shader (rotor flag); T33C: hub 1.40 m out with a windshaft, sails clear the gallery."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_StreamBend",
@@ -15865,7 +15871,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15873,9 +15879,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04 chunk list, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04 chunk list, T33B. | T33B at +28 m; T33C obstacles, ground field, settled props."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_Orchard",
@@ -15885,7 +15891,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15893,9 +15899,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04 chunk list, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04 chunk list, T33B. | T33B at +42 m; T33C obstacles, ground field, 2 fences settled 4 cm."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_WindmillRise",
@@ -15905,7 +15911,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15913,9 +15919,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04 chunk list, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04 chunk list, T33B. | T33B at +70 m (windmill); T33C obstacles, ground field."
     },
     {
       "id": "D-BIO-001/PF_Chunk_Grassland_ForestEdge",
@@ -15925,7 +15931,7 @@
       "dependencies": [
         "G-SH-002"
       ],
-      "status": "PLANNED",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
@@ -15933,9 +15939,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 04 chunk list, T33B."
+      "lastValidationVersion": "T33C",
+      "lastValidationUtc": "2026-10-06T01:07:03Z",
+      "notes": "Doc 04 chunk list, T33B. | T33B at +98 m, east end of the island; T33C obstacles, ground field."
     }
   ]
 }

@@ -87,6 +87,21 @@ namespace PocketWilds.Presentation
             _transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yaw, 0f));
         }
 
+        /// <summary>Moves the view with a full rotation (yaw tilted with the ground slope, T33C).</summary>
+        public void SetPose(Vector3 position, Quaternion rotation)
+        {
+            EnsureInitialized();
+            _transform.SetPositionAndRotation(position, rotation);
+        }
+
+        /// <summary>Animator playback rate (1 normally; a newborn bounding out of its shell plays faster).</summary>
+        public void SetPlaybackSpeed(float speed)
+        {
+            EnsureInitialized();
+            if (_animator != null && !Mathf.Approximately(_animator.speed, speed))
+                _animator.speed = speed;
+        }
+
         /// <summary>Uniform scale, used by staged reveals (hatch). Configure sets the resting scale.</summary>
         public void SetScale(float scale)
         {
@@ -109,6 +124,8 @@ namespace PocketWilds.Presentation
             Species = ContentId.None;
             ApplyVisualData(0u);
             _transform.localScale = Vector3.one;
+            if (_animator != null)
+                _animator.speed = 1f;
         }
 
         private void ApplyVisualData(uint data)

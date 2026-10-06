@@ -14,8 +14,11 @@ namespace PocketWilds.Presentation
     /// <item>Only walking or turning agents touch their transform each frame (smooth motion between ticks).</item>
     /// <item>T25: a greeting reserves two animals and a meeting marker (two anchors on the line between them);
     /// both walk to their anchor, the first one waits facing the other, then both play Social nose to nose.
-    /// Inspect and Eat may walk to a reserved point of interest (rock, tree, flower patch) and face it.
-    /// No NavMesh, no physics: straight walks inside the chunk's wander area.</item>
+    /// Inspect and Eat may walk to a reserved point of interest (rock, tree, flower patch) and face it.</item>
+    /// <item>T33C no-collision rule (Docs/Design/Collision_Rule.md): every body is a capsule measured from its mesh.
+    /// No pose is ever taken if the body would enter a prop, the water, the egg spot or another animal: walks are
+    /// planned around obstacles (one waypoint at most), animals sidestep each other, slide along an edge, and give up
+    /// a blocked walk. They stand on the chunk's ground heights, tilted with the slope. No NavMesh, no physics.</item>
     /// </list>
     /// Preallocated arrays only: no allocation after construction. Views may be null (headless tests).
     /// </summary>
@@ -23,6 +26,10 @@ namespace PocketWilds.Presentation
     {
         public const int InvalidHandle = -1;
         public const int MaxInterests = 32;
+        public const int MaxObstacles = 256;
+
+        /// <summary>Bodies may touch: an overlap under this (m) is a contact, not a collision (float rounding).</summary>
+        public const float ContactTolerance = 0.002f;
 
         private const uint RngSalt = 0x5C4ED001u;
         private const uint TemperamentSalt = 0x7E3A0001u;
@@ -33,15 +40,37 @@ namespace PocketWilds.Presentation
         private const float Acceleration = 2.5f;
         private const float FacedDegrees = 2f;
         private const float HappyAfterGreeting = 0.6f;
+        private const float WaypointReach = 0.08f;
+        private const float PathMargin = 0.03f;
+        private const float DetourMargin = 0.08f;
+        private const float LookAhead = 0.55f;
+        private const float BlockedGiveUp = 0.8f;
+        // A blocked approach this close to its goal counts as arrived (the partner's nose, the rock's side).
+        private const float NearEnough = 0.3f;
+        private const float MaxTiltDegrees = 14f;
+        private const float NoseContact = 0.01f;
+        private static readonly float[] SlideAngles = { 0f, 35f, -35f, 70f, -70f };
+        private static readonly float[] DetourWidening = { 1f, 1.4f, 1.9f };
+        /// <summary>A newborn bounds out of its shell: faster than a stroll, its hop clip sped up to match.</summary>
+        public const float EmergeSpeedScale = 2.5f;
 
         private struct Agent
         {
             public Vector3 Position;
             public Vector3 Target;
+            public Vector3 Waypoint;
             public Vector3 Facing;
+            public Vector2 SegA;
+            public Vector2 SegB;
             public float Yaw;
             public float Speed;
             public float StateEnd;
+            public float Blocked;
+            public float Scale;
+            public float Radius;
+            public float Reach;
+            public float Height;
+            public BodyShape Body;
             public uint Rng;
             public uint InstanceId;
             public int Partner;
@@ -51,7 +80,11 @@ namespace PocketWilds.Presentation
             public AnimalBehaviorState Arrive;
             public Temperament Temperament;
             public SimulationTier Tier;
+            public sbyte Side;
             public bool Turn;
+            public bool HasWaypoint;
+            public bool Emerging;
+            public bool Newborn;
         }
 
         private readonly Agent[] _agents;
@@ -66,10 +99,19 @@ namespace PocketWilds.Presentation
         private readonly int[] _sortSlots;
         private readonly InterestPoint[] _interests = new InterestPoint[MaxInterests];
         private readonly int[] _interestOwner = new int[MaxInterests];
+        private readonly Obstacle[] _obstacles = new Obstacle[MaxObstacles];
+        private readonly Vector2[] _obstacleCenter = new Vector2[MaxObstacles];
+        private readonly float[] _obstacleReach = new float[MaxObstacles];
 
         private SchedulerSettings _settings;
         private WanderArea _area;
+        private GroundSurface _ground;
         private Vector3 _focus;
+        private Vector2 _eggSpot;
+        private float _eggRadius;
+        private float _eggBodyRadius;
+        private bool _hasEggSpot;
+        private int _obstacleCount;
         private int _activeCount;
         private int _freeCount;
         private int _countA;
@@ -90,6 +132,7 @@ namespace PocketWilds.Presentation
             Capacity = capacity;
             _settings = settings;
             _area = area;
+            _ground = GroundSurface.Flat(area.Center.y);
             _focus = area.Center;
             _agents = new Agent[capacity];
             _views = new AnimalView[capacity];
@@ -136,7 +179,14 @@ namespace PocketWilds.Presentation
         /// <summary>Arrivals at a point of interest.</summary>
         public long InterestVisits { get; private set; }
 
+        /// <summary>Walks that went around an obstacle through a waypoint.</summary>
+        public long Detours { get; private set; }
+
+        /// <summary>Walks ended early because the way stayed blocked (by another animal, mostly).</summary>
+        public long BlockedWalks { get; private set; }
+
         public int InterestCount => _interestCount;
+        public int ObstacleCount => _obstacleCount;
 
         public void SetSettings(SchedulerSettings settings)
         {
@@ -145,6 +195,61 @@ namespace PocketWilds.Presentation
         }
 
         public void SetArea(WanderArea area) => _area = area;
+
+        /// <summary>The ground animals stand on (a chunk's height field). Flat at the area's height by default.</summary>
+        public void SetGround(GroundSurface ground) => _ground = ground;
+
+        /// <summary>
+        /// World-space obstacles of the current chunk (copied: the ones a walking animal can meet, at most
+        /// <see cref="MaxObstacles"/>). Animals already standing are not moved.
+        /// </summary>
+        public void SetObstacles(Obstacle[] obstacles)
+        {
+            _obstacleCount = 0;
+            if (obstacles == null)
+                return;
+            foreach (var o in obstacles)
+            {
+                // Volumes starting above any animal's head (tree crowns, sails) never block a walk.
+                if (o.kind == ObstacleKind.Solid && o.bottom > 1.5f)
+                    continue;
+                if (_obstacleCount == MaxObstacles)
+                    break;
+                _obstacles[_obstacleCount] = o;
+                _obstacleCenter[_obstacleCount] = o.Center;
+                _obstacleReach[_obstacleCount] = o.Reach;
+                _obstacleCount++;
+            }
+        }
+
+        /// <summary>
+        /// The egg spot: no animal walks into <paramref name="radius"/>; a newborn registered as emerging bounds out of
+        /// it. A new egg may appear once no body is within <paramref name="eggRadius"/> (the egg itself).
+        /// </summary>
+        public void SetEggSpot(Vector3 center, float radius, float eggRadius)
+        {
+            _eggSpot = new Vector2(center.x, center.z);
+            _eggRadius = radius;
+            _eggBodyRadius = Mathf.Min(eggRadius, radius);
+            _hasEggSpot = radius > 0f;
+        }
+
+        public void ClearEggSpot() => _hasEggSpot = false;
+
+        /// <summary>No animal body overlaps the egg's own footprint: a new egg may appear there.</summary>
+        public bool IsEggSpotClear()
+        {
+            if (!_hasEggSpot)
+                return true;
+            for (int i = 0; i < _activeCount; i++)
+            {
+                ref var a = ref _agents[_active[i]];
+                float min = a.Radius + _eggBodyRadius;
+                if (CollisionMath.PointSegmentDistanceSq(_eggSpot, a.SegA, a.SegB) < min * min)
+                    return false;
+            }
+            return true;
+        }
 
         /// <summary>World-space points of interest of the current chunk (copied; at most <see cref="MaxInterests"/>).</summary>
         public void SetInterests(InterestPoint[] points)
@@ -165,19 +270,25 @@ namespace PocketWilds.Presentation
         /// <summary>Point the camera looks at. Nearest animals become tier A at the next tier update.</summary>
         public void SetFocus(Vector3 focus) => _focus = focus;
 
-        /// <summary>Adds a configured view (or null for headless use). Returns a handle, or InvalidHandle when full.</summary>
-        public int Register(AnimalView view, uint instanceId, uint seed, Vector3 position, float yaw, BehaviorProfile profile, float time)
+        /// <summary>
+        /// Adds a configured view (or null for headless use). Returns a handle, or InvalidHandle when full.
+        /// The pose is moved to the nearest free spot if the body would overlap anything there; an emerging animal
+        /// (a newborn on the egg spot) stays where it is and first walks out of the spot.
+        /// </summary>
+        public int Register(AnimalView view, uint instanceId, uint seed, Vector3 position, float yaw, BehaviorProfile profile, float time,
+            float bodyScale = 1f, bool emerging = false)
         {
             if (_freeCount == 0)
                 return InvalidHandle;
-            int slot = _freeSlots[--_freeCount];
             var p = profile ?? throw new ArgumentNullException(nameof(profile));
+            int slot = _freeSlots[--_freeCount];
 
             uint rng = SeedHash.Mix(seed, RngSalt) | 1u;
+            float scale = bodyScale > 0f ? bodyScale : 1f;
+            var body = p.body;
             var agent = new Agent
             {
-                Position = _area.Clamp(position),
-                Target = position,
+                Position = Grounded(_area.Clamp(position)),
                 Yaw = yaw,
                 InstanceId = instanceId,
                 Rng = rng,
@@ -188,19 +299,59 @@ namespace PocketWilds.Presentation
                 Arrive = AnimalBehaviorState.Idle,
                 Temperament = (Temperament)(SeedHash.Mix(seed, TemperamentSalt) % TemperamentTable.Count),
                 Tier = SimulationTier.B,
+                Scale = scale,
+                Body = body,
+                Radius = body.halfWidth * scale,
+                Reach = body.Reach * scale,
+                Height = body.height * scale,
             };
+            agent.Target = agent.Position;
             // First decision anywhere inside one idle window: a freshly spawned group never decides together.
             agent.StateEnd = time + Range(ref agent.Rng, 0.2f, p.idleSeconds.y);
 
+            bool walkOut = false;
+            if (!Fits(slot, ref agent, agent.Position, agent.Yaw, true))
+            {
+                if (emerging)
+                {
+                    agent.Emerging = true;
+                    walkOut = true;
+                }
+                else
+                {
+                    agent.Position = FindFreeSpot(slot, ref agent, agent.Position, agent.Yaw);
+                }
+            }
+            UpdateSegment(ref agent);
+
             _agents[slot] = agent;
             _views[slot] = view;
-            if (view != null)
-                view.SetPose(agent.Position, agent.Yaw);
             _profiles[slot] = p;
             _activeIndexBySlot[slot] = _activeCount;
             _active[_activeCount++] = slot;
             _tiersDirty = true;
+            ApplyPose(slot, ref _agents[slot]);
+
+            if (walkOut)
+                StartExit(slot, ref _agents[slot], p, time);
             return slot;
+        }
+
+        /// <summary>The newborn walks toward the nearest free place outside the egg spot (again after any blocked try).</summary>
+        private void StartExit(int slot, ref Agent agent, BehaviorProfile profile, float time)
+        {
+            agent.Newborn = true;
+            agent.Emerging = false;
+            // Straight ahead first (it faces the camera when revealed), checked with the heading of the walk there.
+            var exit = FindFreeSpot(slot, ref agent, agent.Position, agent.Yaw, true);
+            agent.Emerging = true;
+            if (Flat(exit - agent.Position).sqrMagnitude < 1e-4f)
+            {
+                // Nowhere to go yet (crowded): it waits and tries again at its next decision.
+                Play(slot, ref agent, profile, AnimalBehaviorState.Idle, time, false);
+                return;
+            }
+            StartApproach(slot, ref agent, profile, exit, exit + (exit - agent.Position), AnimalBehaviorState.Idle, time, false, exit, false);
         }
 
         public void Unregister(int handle)
@@ -230,6 +381,59 @@ namespace PocketWilds.Presentation
         public uint GetInstanceId(int handle) => _agents[handle].InstanceId;
         public int GetPartner(int handle) => _agents[handle].Partner;
         public int GetInterest(int handle) => _agents[handle].Interest;
+        public bool IsEmerging(int handle) => _agents[handle].Emerging;
+
+        /// <summary>Handle of the i-th registered animal (0 to <see cref="Count"/> - 1), for neighbours such as the ambient life.</summary>
+        public int GetActiveHandle(int index) => _active[index];
+
+        /// <summary>The animal's body seen from above (capsule axis and radius), its ground height and height.</summary>
+        public void GetBody(int handle, out Vector2 start, out Vector2 end, out float radius, out float groundY, out float height)
+        {
+            ref var a = ref _agents[handle];
+            start = a.SegA;
+            end = a.SegB;
+            radius = a.Radius;
+            groundY = a.Position.y;
+            height = a.Height;
+        }
+
+        /// <summary>Clearance never reports more than this (m): anything farther is skipped by a bounding test.</summary>
+        public const float ClearanceHorizon = 1f;
+
+        /// <summary>
+        /// Smallest free space between this animal's body and an obstacle, the egg spot (unless it is emerging) or
+        /// another animal (m, negative: overlap; at most <see cref="ClearanceHorizon"/>). Tests and the benchmark
+        /// check it never goes below the tolerance.
+        /// </summary>
+        public float Clearance(int handle)
+        {
+            ref var a = ref _agents[handle];
+            var center = new Vector2(a.Position.x, a.Position.z);
+            float best = ClearanceHorizon;
+            for (int i = 0; i < _obstacleCount; i++)
+            {
+                float span = a.Reach + _obstacleReach[i] + ClearanceHorizon;
+                if ((_obstacleCenter[i] - center).sqrMagnitude >= span * span)
+                    continue;
+                ref var o = ref _obstacles[i];
+                if (o.BlocksWalker(a.Position.y, a.Height))
+                    best = Mathf.Min(best, CollisionMath.Gap(a.SegA, a.SegB, a.Radius, o));
+            }
+            if (_hasEggSpot && !a.Emerging)
+                best = Mathf.Min(best, Mathf.Sqrt(CollisionMath.PointSegmentDistanceSq(_eggSpot, a.SegA, a.SegB)) - a.Radius - _eggRadius);
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int other = _active[i];
+                if (other == handle)
+                    continue;
+                ref var o = ref _agents[other];
+                float span = a.Reach + o.Reach + ClearanceHorizon;
+                if ((new Vector2(o.Position.x, o.Position.z) - center).sqrMagnitude >= span * span)
+                    continue;
+                best = Mathf.Min(best, CollisionMath.Gap(a.SegA, a.SegB, a.Radius, o.SegA, o.SegB, o.Radius));
+            }
+            return best;
+        }
 
         /// <summary>The player touched this animal: immediate reaction, outside the tick cadence.</summary>
         public void Poke(int handle, float time)
@@ -326,6 +530,13 @@ namespace PocketWilds.Presentation
                 return;
 
             var profile = _profiles[slot];
+            if (agent.Emerging)
+            {
+                // Still on the egg spot: nothing else until it has walked off.
+                EndActivity(slot, ref agent, time);
+                StartExit(slot, ref agent, profile, time);
+                return;
+            }
             switch (agent.State)
             {
                 case AnimalBehaviorState.Sleep:
@@ -442,10 +653,14 @@ namespace PocketWilds.Presentation
                 case AnimalBehaviorState.Wander:
                     animatorState = AnimalStateHashes.Move;
                     fade = profile.moveFade;
-                    float distance = Flat(agent.Target - agent.Position).magnitude;
-                    // Generous timeout: turning and easing in/out take longer than distance / speed.
+                    float distance = agent.HasWaypoint
+                        ? Flat(agent.Waypoint - agent.Position).magnitude + Flat(agent.Target - agent.Waypoint).magnitude
+                        : Flat(agent.Target - agent.Position).magnitude;
+                    // Generous timeout: turning, easing and sidestepping take longer than distance / speed.
                     duration = distance / profile.moveSpeed * 2f + 1.5f;
                     agent.Speed = 0f;
+                    agent.Blocked = 0f;
+                    agent.Side = 0;
                     break;
                 case AnimalBehaviorState.Eat:
                     animatorState = AnimalStateHashes.Eat;
@@ -488,7 +703,10 @@ namespace PocketWilds.Presentation
             }
 
             if (state != AnimalBehaviorState.Wander)
+            {
                 agent.Speed = 0f;
+                agent.HasWaypoint = false;
+            }
             // An approach walk counts as the activity it leads to.
             var choice = state == AnimalBehaviorState.Wander && agent.Arrive != AnimalBehaviorState.Idle ? agent.Arrive : state;
             if (choice != AnimalBehaviorState.React && choice != AnimalBehaviorState.Wake && choice != AnimalBehaviorState.Happy
@@ -504,8 +722,13 @@ namespace PocketWilds.Presentation
             TotalStateChanges++;
 
             var view = _views[slot];
-            if (view != null && !animatorAlreadyIdle)
-                view.PlayState(animatorState, fade);
+            if (view != null)
+            {
+                if (!animatorAlreadyIdle)
+                    view.PlayState(animatorState, fade);
+                // The bound out of the shell plays the hop faster, so paws keep pace with the ground.
+                view.SetPlaybackSpeed(state == AnimalBehaviorState.Wander && agent.Emerging ? EmergeSpeedScale : 1f);
+            }
         }
 
         private static bool ReturnsToIdle(AnimalBehaviorState state)
@@ -530,7 +753,8 @@ namespace PocketWilds.Presentation
 
         /// <summary>
         /// Nearest free tier-A neighbour of the same social group, idle or looking around, accepts by temperament.
-        /// The meeting marker is two anchors on the line between them, socialGap apart.
+        /// The meeting marker is two anchors on the line between them, socialGap apart (never closer than the two
+        /// noses); both anchors must be free of obstacles and reachable.
         /// </summary>
         private bool TryFormPair(int slot, ref Agent agent, BehaviorProfile profile, float time, bool ignoreTemperament)
         {
@@ -545,7 +769,7 @@ namespace PocketWilds.Presentation
                     continue;
                 ref var o = ref _agents[other];
                 var op = _profiles[other];
-                if (o.Tier != SimulationTier.A || o.Partner >= 0 || op.socialWeight <= 0f || op.socialGroup != profile.socialGroup)
+                if (o.Tier != SimulationTier.A || o.Partner >= 0 || o.Emerging || op.socialWeight <= 0f || op.socialGroup != profile.socialGroup)
                     continue;
                 if (o.State != AnimalBehaviorState.Idle && o.State != AnimalBehaviorState.IdleLook)
                     continue;
@@ -566,19 +790,27 @@ namespace PocketWilds.Presentation
             float distance = delta.magnitude;
             float yaw = agent.Yaw * Mathf.Deg2Rad;
             var dir = distance > 1e-3f ? delta / distance : new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw));
-            float halfGap = 0.25f * (profile.socialGap + _profiles[partner].socialGap);
+            float gap = Mathf.Max(0.5f * (profile.socialGap + _profiles[partner].socialGap),
+                agent.Body.front * agent.Scale + p.Body.front * p.Scale + NoseContact);
             var middle = _area.Clamp((agent.Position + p.Position) * 0.5f);
-            var anchorA = _area.Clamp(middle - dir * halfGap);
-            var anchorB = _area.Clamp(middle + dir * halfGap);
+            var anchorA = Grounded(_area.Clamp(middle - dir * (gap * 0.5f)));
+            var anchorB = Grounded(_area.Clamp(middle + dir * (gap * 0.5f)));
+            if (Flat(anchorB - anchorA).magnitude < gap - 0.005f)
+                return false; // squeezed by the area edge: noses would overlap
+            if (!Fits(slot, ref agent, anchorA, YawTo(anchorA, anchorB), false) || !Fits(partner, ref p, anchorB, YawTo(anchorB, anchorA), false))
+                return false;
+            if (!TryPlan(slot, ref agent, anchorA, out var waypointA, out bool detourA)
+                || !TryPlan(partner, ref p, anchorB, out var waypointB, out bool detourB))
+                return false;
 
             EndActivity(partner, ref p, time);
             agent.Partner = partner;
             p.Partner = slot;
             SocialInvitations++;
-            StartApproach(slot, ref agent, profile, anchorA, anchorB, AnimalBehaviorState.Social, time, false);
+            StartApproach(slot, ref agent, profile, anchorA, anchorB, AnimalBehaviorState.Social, time, false, waypointA, detourA);
             // The approach above may already end in a greeting if the partner was waiting: check the link first.
             if (p.Partner == slot && p.State != AnimalBehaviorState.Social)
-                StartApproach(partner, ref p, _profiles[partner], anchorB, anchorA, AnimalBehaviorState.Social, time, true);
+                StartApproach(partner, ref p, _profiles[partner], anchorB, anchorA, AnimalBehaviorState.Social, time, true, waypointB, detourB);
             return true;
         }
 
@@ -610,18 +842,30 @@ namespace PocketWilds.Presentation
             float distance = toPoint.magnitude;
             float yaw = agent.Yaw * Mathf.Deg2Rad;
             var dir = distance > 1e-3f ? toPoint / distance : new Vector3(Mathf.Sin(yaw), 0f, Mathf.Cos(yaw));
-            var stand = _area.Clamp(point.position - dir * point.standOff);
+            var wanted = point.position - dir * point.standOff;
+            var stand = Grounded(_area.Clamp(wanted));
             // A point outside the area would leave the animal staring from too far away.
-            if (Flat(point.position - stand).magnitude > point.standOff + 0.35f)
+            if (Flat(wanted - stand).magnitude > 0.35f)
                 return false;
+            // The body stops at the prop's side, nose toward it: step back until it fits.
+            float faceYaw = YawTo(stand, point.position);
+            int steps = 0;
+            while (!Fits(slot, ref agent, stand, faceYaw, false))
+            {
+                if (++steps > 30)
+                    return false;
+                stand = Grounded(_area.Clamp(stand - dir * 0.04f));
+            }
             // Someone already stands there: inspect or eat where it is instead.
             if (Crowded(slot, stand, profile.personalSpace * profile.personalSpace))
+                return false;
+            if (!TryPlan(slot, ref agent, stand, out var waypoint, out bool detour))
                 return false;
 
             _interestOwner[pick] = slot;
             agent.Interest = pick;
             StartApproach(slot, ref agent, profile, stand, point.position,
-                kind == InterestKind.Eat ? AnimalBehaviorState.Eat : AnimalBehaviorState.Inspect, time, false);
+                kind == InterestKind.Eat ? AnimalBehaviorState.Eat : AnimalBehaviorState.Inspect, time, false, waypoint, detour);
             return true;
         }
 
@@ -636,12 +880,16 @@ namespace PocketWilds.Presentation
         // ---------------- Walks, arrivals, endings ----------------
 
         private void StartApproach(int slot, ref Agent agent, BehaviorProfile profile, Vector3 target, Vector3 facing,
-            AnimalBehaviorState arrive, float time, bool induced)
+            AnimalBehaviorState arrive, float time, bool induced, Vector3 waypoint, bool hasWaypoint)
         {
             agent.Target = target;
             agent.Facing = facing;
             agent.Arrive = arrive;
-            if (Flat(target - agent.Position).sqrMagnitude <= ApproachArriveDistance * ApproachArriveDistance)
+            agent.Waypoint = waypoint;
+            agent.HasWaypoint = hasWaypoint;
+            if (hasWaypoint)
+                Detours++;
+            if (!hasWaypoint && Flat(target - agent.Position).sqrMagnitude <= ApproachArriveDistance * ApproachArriveDistance)
             {
                 Arrive(slot, ref agent, profile, time, induced);
                 return;
@@ -651,8 +899,25 @@ namespace PocketWilds.Presentation
 
         private void Arrive(int slot, ref Agent agent, BehaviorProfile profile, float time, bool induced)
         {
+            if (agent.Emerging && OverlapsEggSpot(ref agent))
+            {
+                StartExit(slot, ref agent, profile, time);
+                return;
+            }
+            if (agent.Newborn && !agent.Emerging)
+            {
+                // Out of its shell, it looks around a moment and goes exploring: the space before the egg stays open.
+                agent.Newborn = false;
+                agent.Arrive = AnimalBehaviorState.Idle;
+                agent.HasWaypoint = false;
+                Play(slot, ref agent, profile, AnimalBehaviorState.Idle, time, induced);
+                agent.StateEnd = time + Range(ref agent.Rng, 0.3f, 1f);
+                agent.LastChoice = AnimalBehaviorState.Idle;
+                return;
+            }
             var arrive = agent.Arrive;
             agent.Arrive = AnimalBehaviorState.Idle;
+            agent.HasWaypoint = false;
             switch (arrive)
             {
                 case AnimalBehaviorState.Inspect:
@@ -721,17 +986,26 @@ namespace PocketWilds.Presentation
         {
             float scale = agent.Tier == SimulationTier.B ? profile.tierBWanderScale : 1f;
             float minSpace = profile.personalSpace * profile.personalSpace;
-            for (int attempt = 0; attempt < 4; attempt++)
+            for (int attempt = 0; attempt < 6; attempt++)
             {
                 float angle = Next01(ref agent.Rng) * Mathf.PI * 2f;
                 float distance = Range(ref agent.Rng, profile.wanderDistance.x, profile.wanderDistance.y) * Mathf.Max(scale, 0.35f);
-                var candidate = _area.Clamp(agent.Position + new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle)) * distance);
+                var candidate = Grounded(_area.Clamp(agent.Position + new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle)) * distance));
                 if (Flat(candidate - agent.Position).sqrMagnitude < 0.04f)
                     continue;
                 if (Crowded(slot, candidate, minSpace))
                     continue;
+                // The body must fit where it stops (facing the way it came) and the way there must be walkable.
+                if (!Fits(slot, ref agent, candidate, YawTo(agent.Position, candidate), false))
+                    continue;
+                if (!TryPlan(slot, ref agent, candidate, out var waypoint, out bool detour))
+                    continue;
 
                 agent.Target = candidate;
+                agent.Waypoint = waypoint;
+                agent.HasWaypoint = detour;
+                if (detour)
+                    Detours++;
                 return true;
             }
             return false;
@@ -764,27 +1038,135 @@ namespace PocketWilds.Presentation
             }
 
             var profile = _profiles[slot];
-            var toTarget = Flat(agent.Target - agent.Position);
-            float distance = toTarget.magnitude;
-            if (distance <= (agent.Arrive == AnimalBehaviorState.Idle ? ArriveDistance : ApproachArriveDistance))
+            var toFinal = Flat(agent.Target - agent.Position);
+            float finalDistance = toFinal.magnitude;
+            if (agent.HasWaypoint && Flat(agent.Waypoint - agent.Position).magnitude <= WaypointReach)
+                agent.HasWaypoint = false;
+            if (!agent.HasWaypoint && finalDistance <= (agent.Arrive == AnimalBehaviorState.Idle ? ArriveDistance : ApproachArriveDistance))
             {
                 Arrive(slot, ref agent, profile, time, false);
                 return;
             }
 
-            float desiredYaw = Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
-            agent.Yaw = Mathf.MoveTowardsAngle(agent.Yaw, desiredYaw, profile.turnDegreesPerSecond * deltaTime);
+            var goal = agent.HasWaypoint ? agent.Waypoint : agent.Target;
+            var toGoal = Flat(goal - agent.Position);
+            float distance = toGoal.magnitude;
+            var dir = Steer(slot, ref agent, new Vector2(toGoal.x, toGoal.z) / Mathf.Max(distance, 1e-5f));
+
+            float desiredYaw = Mathf.Atan2(dir.x, dir.y) * Mathf.Rad2Deg;
+            float nextYaw = Mathf.MoveTowardsAngle(agent.Yaw, desiredYaw, profile.turnDegreesPerSecond * deltaTime);
+            bool blocked = false;
+            bool turned = false;
+            if (!Mathf.Approximately(nextYaw, agent.Yaw))
+            {
+                // Turning swings the nose and the tail: only when they stay clear.
+                if (Fits(slot, ref agent, agent.Position, nextYaw, true))
+                {
+                    agent.Yaw = nextYaw;
+                    turned = true;
+                }
+                else
+                {
+                    blocked = true;
+                }
+            }
             bool facing = Mathf.Abs(Mathf.DeltaAngle(agent.Yaw, desiredYaw)) < MaxFacingErrorToWalk;
 
             // Ease in from rest and brake over the last 20 cm so the hop does not stop dead.
-            float targetSpeed = facing ? profile.moveSpeed * Mathf.Clamp(distance / 0.2f, 0.35f, 1f) : 0f;
-            agent.Speed = Mathf.MoveTowards(agent.Speed, targetSpeed, Acceleration * deltaTime);
+            float brake = agent.HasWaypoint ? 1f : Mathf.Clamp(finalDistance / 0.2f, 0.35f, 1f);
+            float pace = agent.Emerging ? EmergeSpeedScale : 1f;
+            float targetSpeed = facing ? profile.moveSpeed * pace * brake : 0f;
+            agent.Speed = Mathf.MoveTowards(agent.Speed, targetSpeed, Acceleration * pace * deltaTime);
             float step = Mathf.Min(agent.Speed * deltaTime, distance);
-            agent.Position += toTarget * (step / distance);
+            bool moved = false;
+            if (step > 1e-5f)
+            {
+                // Straight on, else slide along whatever is in the way (the passing side first).
+                float side = agent.Side != 0 ? agent.Side : 1f;
+                for (int k = 0; k < SlideAngles.Length && !moved; k++)
+                {
+                    float angle = SlideAngles[k] * side;
+                    var d = Rotate(dir, angle);
+                    var candidate = agent.Position + new Vector3(d.x, 0f, d.y) * (step * Mathf.Cos(angle * Mathf.Deg2Rad));
+                    candidate = Grounded(_area.Clamp(candidate));
+                    if (Fits(slot, ref agent, candidate, agent.Yaw, true))
+                    {
+                        agent.Position = candidate;
+                        moved = true;
+                    }
+                }
+                if (!moved)
+                {
+                    agent.Speed = 0f;
+                    blocked = true;
+                }
+            }
 
-            var view = _views[slot];
-            if (view != null)
-                view.SetPose(agent.Position, agent.Yaw);
+            if (moved)
+                agent.Blocked = 0f;
+            else if (blocked)
+                agent.Blocked += deltaTime;
+
+            if (moved || turned)
+            {
+                ApplyPose(slot, ref agent);
+                if (agent.Emerging && !OverlapsEggSpot(ref agent))
+                    agent.Emerging = false;
+            }
+
+            if (agent.Blocked > BlockedGiveUp)
+            {
+                // The way stays blocked: an approach close to its goal counts as arrived, anything else settles here.
+                BlockedWalks++;
+                agent.Blocked = 0f;
+                agent.HasWaypoint = false;
+                float left = Flat(agent.Target - agent.Position).magnitude;
+                if (agent.Emerging)
+                {
+                    StartExit(slot, ref agent, profile, time);
+                }
+                else if (agent.Arrive == AnimalBehaviorState.Idle || left < NearEnough)
+                {
+                    Arrive(slot, ref agent, profile, time, false);
+                }
+                else
+                {
+                    EndActivity(slot, ref agent, time);
+                    Play(slot, ref agent, profile, AnimalBehaviorState.Idle, time, false);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sidestep: an animal standing or walking across the way ahead bends the walk to one side (always the same
+        /// side for this walk, the one away from it). Static obstacles are handled by the planned waypoint.
+        /// </summary>
+        private Vector2 Steer(int slot, ref Agent agent, Vector2 dir)
+        {
+            var center = new Vector2(agent.Position.x, agent.Position.z);
+            var right = new Vector2(dir.y, -dir.x);
+            float push = 0f;
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int other = _active[i];
+                if (other == slot || other == agent.Partner)
+                    continue;
+                ref var o = ref _agents[other];
+                var rel = new Vector2(o.Position.x, o.Position.z) - center;
+                float along = Vector2.Dot(rel, dir);
+                float look = agent.Reach + LookAhead + o.Reach;
+                if (along <= 0f || along > look)
+                    continue;
+                float lateral = Vector2.Dot(rel, right);
+                if (Mathf.Abs(lateral) >= agent.Radius + o.Reach + 0.05f)
+                    continue;
+                if (agent.Side == 0)
+                    agent.Side = lateral > 0f ? (sbyte)-1 : (sbyte)1;
+                push += 1f - along / look;
+            }
+            if (push <= 0f)
+                return dir;
+            return (dir + right * (agent.Side * Mathf.Min(push, 1f) * 1.4f)).normalized;
         }
 
         /// <summary>Turns in place toward the point of interest or the partner, then stops touching the transform.</summary>
@@ -797,12 +1179,224 @@ namespace PocketWilds.Presentation
                 return;
             }
             float desired = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
-            agent.Yaw = Mathf.MoveTowardsAngle(agent.Yaw, desired, _profiles[slot].turnDegreesPerSecond * deltaTime);
+            float next = Mathf.MoveTowardsAngle(agent.Yaw, desired, _profiles[slot].turnDegreesPerSecond * deltaTime);
+            if (!Fits(slot, ref agent, agent.Position, next, true))
+            {
+                // The tail would sweep into a neighbour or a rock: it keeps its current heading.
+                agent.Turn = false;
+                return;
+            }
+            agent.Yaw = next;
             if (Mathf.Abs(Mathf.DeltaAngle(agent.Yaw, desired)) < FacedDegrees)
                 agent.Turn = false;
+            ApplyPose(slot, ref agent);
+        }
+
+        // ---------------- Collision checks ----------------
+
+        /// <summary>The body fits at this pose: no obstacle, no egg spot (unless emerging), and no other animal.</summary>
+        private bool Fits(int slot, ref Agent agent, Vector3 position, float yaw, bool withAgents)
+        {
+            agent.Body.Segment(position, yaw, agent.Scale, out var s0, out var s1);
+            var center = new Vector2(position.x, position.z);
+            float radius = agent.Radius - ContactTolerance;
+            float reach = agent.Reach;
+            for (int i = 0; i < _obstacleCount; i++)
+            {
+                float span = reach + _obstacleReach[i];
+                if ((_obstacleCenter[i] - center).sqrMagnitude >= span * span)
+                    continue;
+                ref var o = ref _obstacles[i];
+                if (!o.BlocksWalker(position.y, agent.Height))
+                    continue;
+                float min = radius + o.radius;
+                if (CollisionMath.SegmentSegmentDistanceSq(s0, s1, o.a, o.b) < min * min)
+                    return false;
+            }
+            if (_hasEggSpot && !agent.Emerging)
+            {
+                float min = radius + _eggRadius;
+                if (CollisionMath.PointSegmentDistanceSq(_eggSpot, s0, s1) < min * min)
+                    return false;
+            }
+            if (!withAgents)
+                return true;
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int other = _active[i];
+                if (other == slot)
+                    continue;
+                ref var o = ref _agents[other];
+                float span = reach + o.Reach;
+                if ((new Vector2(o.Position.x, o.Position.z) - center).sqrMagnitude >= span * span)
+                    continue;
+                float min = radius + o.Radius;
+                if (CollisionMath.SegmentSegmentDistanceSq(s0, s1, o.SegA, o.SegB) < min * min)
+                    return false;
+            }
+            return true;
+        }
+
+        private bool OverlapsEggSpot(ref Agent agent)
+        {
+            if (!_hasEggSpot)
+                return false;
+            float min = agent.Radius + _eggRadius;
+            return CollisionMath.PointSegmentDistanceSq(_eggSpot, agent.SegA, agent.SegB) < min * min;
+        }
+
+        /// <summary>
+        /// The straight walk from <paramref name="from"/> to <paramref name="to"/>, body along the way, meets no
+        /// obstacle and no egg spot. <paramref name="blocker"/>: the first one in the way (-2: the egg spot).
+        /// </summary>
+        private bool PathClear(ref Agent agent, Vector3 from, Vector3 to, out int blocker)
+        {
+            blocker = -1;
+            var f = new Vector2(from.x, from.z);
+            var t = new Vector2(to.x, to.z);
+            var delta = t - f;
+            float length = delta.magnitude;
+            if (length < 1e-4f)
+                return true;
+            var dir = delta / length;
+            // The body sweeps from its tail at the start to its nose at the end.
+            var p0 = f + dir * (agent.Body.back * agent.Scale + agent.Radius);
+            var p1 = t + dir * (agent.Body.front * agent.Scale - agent.Radius);
+            float radius = agent.Radius + PathMargin;
+            float groundY = (from.y + to.y) * 0.5f;
+            float nearest = float.MaxValue;
+            for (int i = 0; i < _obstacleCount; i++)
+            {
+                ref var o = ref _obstacles[i];
+                float span = _obstacleReach[i] + radius;
+                if (CollisionMath.PointSegmentDistanceSq(_obstacleCenter[i], p0, p1) >= span * span)
+                    continue;
+                if (!o.BlocksWalker(groundY, agent.Height))
+                    continue;
+                float min = radius + o.radius;
+                if (CollisionMath.SegmentSegmentDistanceSq(p0, p1, o.a, o.b) >= min * min)
+                    continue;
+                float along = Vector2.Dot(_obstacleCenter[i] - f, dir);
+                if (along < nearest)
+                {
+                    nearest = along;
+                    blocker = i;
+                }
+            }
+            if (_hasEggSpot && !agent.Emerging)
+            {
+                float min = radius + _eggRadius;
+                if (CollisionMath.PointSegmentDistanceSq(_eggSpot, p0, p1) < min * min && Vector2.Dot(_eggSpot - f, dir) < nearest)
+                    blocker = -2;
+            }
+            return blocker == -1;
+        }
+
+        /// <summary>
+        /// Plans a walk to <paramref name="target"/>: straight when clear, else through one waypoint beside the first
+        /// obstacle in the way (the side nearer the straight line first). False when neither works.
+        /// </summary>
+        private bool TryPlan(int slot, ref Agent agent, Vector3 target, out Vector3 waypoint, out bool hasWaypoint)
+        {
+            waypoint = target;
+            hasWaypoint = false;
+            if (PathClear(ref agent, agent.Position, target, out int blocker))
+                return true;
+
+            Vector2 a, b;
+            float radius;
+            if (blocker == -2)
+            {
+                a = b = _eggSpot;
+                radius = _eggRadius;
+            }
+            else
+            {
+                a = _obstacles[blocker].a;
+                b = _obstacles[blocker].b;
+                radius = _obstacles[blocker].radius;
+            }
+            var f = new Vector2(agent.Position.x, agent.Position.z);
+            var t = new Vector2(target.x, target.z);
+            var dir = (t - f).normalized;
+            var right = new Vector2(dir.y, -dir.x);
+            var center = (a + b) * 0.5f;
+            var closest = CollisionMath.ClosestOnSegment(CollisionMath.ClosestOnSegment(center, f, t), a, b);
+            float clearance = radius + agent.Reach + DetourMargin;
+            // Pass on the side opposite to the obstacle's center; wider when a leg would still graze it.
+            float first = Vector2.Dot(center - CollisionMath.ClosestOnSegment(center, f, t), right) > 0f ? -1f : 1f;
+            for (int k = 0; k < 6; k++)
+            {
+                float side = (k & 1) == 0 ? first : -first;
+                float widen = DetourWidening[k >> 1];
+                var n = right * side;
+                float extent = Mathf.Max(0f, Mathf.Max(Vector2.Dot(a - closest, n), Vector2.Dot(b - closest, n)));
+                var w2 = closest + n * (extent + clearance * widen);
+                var w = Grounded(new Vector3(w2.x, 0f, w2.y));
+                if (Flat(_area.Clamp(w) - w).sqrMagnitude > 1e-4f)
+                    continue;
+                if (!Fits(slot, ref agent, w, YawTo(agent.Position, w), false))
+                    continue;
+                if (!PathClear(ref agent, agent.Position, w, out _) || !PathClear(ref agent, w, target, out _))
+                    continue;
+                waypoint = w;
+                hasWaypoint = true;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Nearest pose around <paramref name="position"/> where the body fits (rings of 12 cm, up to 2 m).
+        /// faceTravel: checked with the heading of a walk from <paramref name="position"/> to the spot.
+        /// </summary>
+        private Vector3 FindFreeSpot(int slot, ref Agent agent, Vector3 position, float yaw, bool faceTravel = false)
+        {
+            if (!faceTravel && Fits(slot, ref agent, position, yaw, true))
+                return position;
+            // A walk out starts with the heading it has (ahead, then a little left and right); a spawn anywhere.
+            float phase = faceTravel ? Mathf.PI * 0.5f - yaw * Mathf.Deg2Rad : Next01(ref agent.Rng) * Mathf.PI * 2f;
+            for (int ring = 1; ring <= 16; ring++)
+            {
+                float radius = ring * 0.12f;
+                int steps = 8 + ring * 2;
+                for (int k = 0; k < steps; k++)
+                {
+                    int step = faceTravel ? ((k & 1) == 0 ? k / 2 : -(k + 1) / 2) : k;
+                    float angle = phase + step * Mathf.PI * 2f / steps;
+                    var candidate = Grounded(_area.Clamp(position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius));
+                    if (Fits(slot, ref agent, candidate, faceTravel ? YawTo(position, candidate) : yaw, true))
+                        return candidate;
+                }
+            }
+            return position;
+        }
+
+        // ---------------- Pose ----------------
+
+        private Vector3 Grounded(Vector3 point) => new Vector3(point.x, _ground.HeightAt(point.x, point.z), point.z);
+
+        private static void UpdateSegment(ref Agent agent) =>
+            agent.Body.Segment(agent.Position, agent.Yaw, agent.Scale, out agent.SegA, out agent.SegB);
+
+        /// <summary>Caches the body for the neighbours' checks and moves the view, tilted with the ground slope.</summary>
+        private void ApplyPose(int slot, ref Agent agent)
+        {
+            UpdateSegment(ref agent);
             var view = _views[slot];
-            if (view != null)
-                view.SetPose(agent.Position, agent.Yaw);
+            if (view == null)
+                return;
+            var rotation = Quaternion.Euler(0f, agent.Yaw, 0f);
+            if (_ground.HasField)
+            {
+                var normal = _ground.NormalAt(agent.Position.x, agent.Position.z);
+                var tilt = Quaternion.FromToRotation(Vector3.up, normal);
+                float angle = Quaternion.Angle(Quaternion.identity, tilt);
+                if (angle > MaxTiltDegrees)
+                    tilt = Quaternion.Slerp(Quaternion.identity, tilt, MaxTiltDegrees / angle);
+                rotation = tilt * rotation;
+            }
+            view.SetPose(agent.Position, rotation);
         }
 
         private void UpdateTiers()
@@ -838,6 +1432,22 @@ namespace PocketWilds.Presentation
         }
 
         private static Vector3 Flat(Vector3 v) => new Vector3(v.x, 0f, v.z);
+
+        private static float YawTo(Vector3 from, Vector3 to)
+        {
+            var d = to - from;
+            return d.x * d.x + d.z * d.z < 1e-8f ? 0f : Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+        }
+
+        private static Vector2 Rotate(Vector2 v, float degrees)
+        {
+            if (degrees == 0f)
+                return v;
+            // Positive degrees turn clockwise seen from above, like a yaw.
+            float rad = -degrees * Mathf.Deg2Rad;
+            float c = Mathf.Cos(rad), s = Mathf.Sin(rad);
+            return new Vector2(v.x * c - v.y * s, v.x * s + v.y * c);
+        }
 
         private static uint NextUInt(ref uint state)
         {
