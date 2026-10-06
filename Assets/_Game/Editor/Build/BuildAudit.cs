@@ -91,6 +91,8 @@ namespace PocketWilds.Editor.Build
 
             var messages = report.steps.SelectMany(s => s.messages)
                 .Where(m => m.type == UnityEngine.LogType.Warning || m.type == UnityEngine.LogType.Error || m.type == UnityEngine.LogType.Exception)
+                // The MCP for Unity bridge logs its own disconnection while the build holds the editor: not a build message.
+                .Where(m => m.content == null || !m.content.Contains("MCP-FOR-UNITY"))
                 .Select(m => m.type + " : " + FirstLine(m.content)).Distinct().Take(12).ToList();
             if (messages.Count > 0)
             {

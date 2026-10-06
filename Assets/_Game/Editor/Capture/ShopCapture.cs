@@ -50,6 +50,7 @@ namespace PocketWilds.Editor.Capture
                     var shop = Object.FindAnyObjectByType<ShopScreen>();
                     var modal = Object.FindAnyObjectByType<OfferModalView>();
                     var camera = Camera.main;
+                    WorldCapture.FrameLikeGame(chunk);
                     chunk.Bind(palettes);
                     entry.Lighting.Apply(Object.FindAnyObjectByType<Light>(), camera, QualityTier.Medium);
                     chunk.ApplyQuality(QualityTier.Medium);

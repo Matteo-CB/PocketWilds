@@ -200,6 +200,7 @@ namespace PocketWilds.Editor.Capture
                     var sceneEntry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                     var sun = Object.FindAnyObjectByType<Light>();
                     var camera = Camera.main;
+                    WorldCapture.FrameLikeGame(start);
                     var tier = profile.tier;
                     QualitySettings.SetQualityLevel((int)tier, true);
                     sceneEntry.Lighting.Apply(sun, camera, tier);

@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-06T23:30:00Z",
+  "updatedUtc": "2026-10-07T03:00:00Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -283,8 +283,8 @@
     {
       "task": "T34D",
       "title": "Nouveau passage du gate de la tranche verticale",
-      "status": "PLANNED",
-      "notes": "Added by the T30 gate."
+      "status": "DONE",
+      "notes": "Added by the T30 gate; done 2026-10-07. VerticalSlice: 155 items, 139 integrated, 16 deferred with written reasons, 0 in review or planned. Content Wizard (ED-001, ED-003, ED-011) with tests; egg names localized; refuge captures framed like the game (rig snapped on the egg); golden references remade. Gate report Docs/Gates/T34D_Vertical_Slice_Gate.md, audit Docs/Gates/T34D_Audit.md. Verdict: slice complete on PC; only the phone measurement and the on-device video stay open (T66)."
     },
     {
       "task": "T35",
@@ -3138,7 +3138,7 @@
         "G-SH-002",
         "G-SH-003"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/Blender/Environment/Grassland/",
       "runtimePath": "Assets/_Game/Art/Environment/Grassland/",
       "validationGates": [
@@ -3153,11 +3153,21 @@
         "G19",
         "G29"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T15: core kit (ground, 3 grass, 3 flowers, tree A, 3 rocks), DEF_Palettes_Grassland (9 palettes), PF_Chunk_Grassland_Start in SC_VerticalSlice_Grassland. Pending: Ground_B, Edge A/B, Tree_B, Log, Stump, landmarks, other chunks, lighting profile (T16), streaming (T27). Perf note: ~160 renderers in view at Medium (SRP Batcher); measure on device at T22, combine grass/flowers per chunk if render thread exceeds budget. | T33 part 1: Magnifique kit (see T33 notes and Docs/Performance/T33_Prairie_Magnifique.md), scatter, ambient life, sky, moods, tiers. Part 2 (water, landmarks, paths, edges, ground C, 6 chunks, weather, night) in T33B.",
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "T15: core kit (ground, 3 grass, 3 flowers, tree A, 3 rocks), DEF_Palettes_Grassland (9 palettes), PF_Chunk_Grassland_Start in SC_VerticalSlice_Grassland. Pending: Ground_B, Edge A/B, Tree_B, Log, Stump, landmarks, other chunks, lighting profile (T16), streaming (T27). Perf note: ~160 renderers in view at Medium (SRP Batcher); measure on device at T22, combine grass/flowers per chunk if render thread exceeds budget. | T33 part 1: Magnifique kit (see T33 notes and Docs/Performance/T33_Prairie_Magnifique.md), scatter, ambient life, sky, moods, tiers. Part 2 (water, landmarks, paths, edges, ground C, 6 chunks, weather, night) in T33B. | T34D gate review: the strip of 8 chunks (Start, Meadow, StreamBend, Orchard, Hill, WindmillRise, PondEdge, ForestEdge) with the windmill, old tree, well, pond and stream, scatter, ambient life, sky, morning/day/evening/night moods, rain and rainbow, on the three tiers; golden references per tier (GoldenVisualTests), overdraw 1.5 layers on the refuge, 0 overlaps, Windows player 60 fps on every scenario. Only the phone measurement stays open (T66).",
       "definition": "Assets/_Game/Content/Biomes/DEF_Biome_Grassland.asset",
-      "contentId": "biome.grassland"
+      "contentId": "biome.grassland",
+      "passedGates": [
+        "G01",
+        "G02",
+        "G06",
+        "G07",
+        "G09",
+        "G11",
+        "G17",
+        "G29"
+      ]
     },
     {
       "id": "D-BIO-002",
@@ -6316,16 +6326,20 @@
       "family": "UIKit",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "BLOCKOUT",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/UI/",
       "runtimePath": "Assets/_Game/Art/UI/",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T17: 2 of 11 kit sprites: UI_Pill_9Slice (borders 64/70/64/62) and UI_Button_IconCircle, white for token tinting, cheap baked shadow; DEF_UiColorTokens (doc 06 token list); Atlas_CommonHUD (rect packing, ASTC 4x4 mobile). Panels, cards, progress, tooltip, divider still to do. | T17-T18: UI_Pill_9Slice, UI_Button_IconCircle, UI_Panel_Primary_9Slice (64/74/64/62), UI_Button_Primary_9Slice (72/98/72/70), UI_Glow_Soft from pw_ui_sprites.py; DEF_UiColorTokens; Atlas_CommonHUD. Still to do: secondary panel, card, secondary button, progress back/fill, divider, tooltip."
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "T17: 2 of 11 kit sprites: UI_Pill_9Slice (borders 64/70/64/62) and UI_Button_IconCircle, white for token tinting, cheap baked shadow; DEF_UiColorTokens (doc 06 token list); Atlas_CommonHUD (rect packing, ASTC 4x4 mobile). Panels, cards, progress, tooltip, divider still to do. | T17-T18: UI_Pill_9Slice, UI_Button_IconCircle, UI_Panel_Primary_9Slice (64/74/64/62), UI_Button_Primary_9Slice (72/98/72/70), UI_Glow_Soft from pw_ui_sprites.py; DEF_UiColorTokens; Atlas_CommonHUD. Still to do: secondary panel, card, secondary button, progress back/fill, divider, tooltip. | T34D: every kit role the slice screens use exists: panel, pill, primary button, icon circle, glow, ring, dot, gesture, splash gradient as white sprites, and the doc 06 secondary panel, card, secondary button and progress back/fill as token tints of the panel, button and pill sprites (UiColorTokens panelSecondary, success, accent). Divider and tooltip have no slice screen: drawn with the first screen that needs them (Settings, T56).",
+      "passedGates": [
+        "G12",
+        "G13"
+      ]
     },
     {
       "id": "I-RARITY",
@@ -6374,15 +6388,18 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "BLOCKOUT",
+      "status": "INTEGRATED",
       "sourcePath": "SourceArt/UI/",
       "runtimePath": "Assets/_Game/Art/UI/",
       "validationGates": [
         "G12"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T19: species silhouettes generated from the thumbnail capture alpha (AnimalThumbnailPipeline), New badge (pill + localized text), ICO_Rarity_Star. Trait badges come with T26."
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "T19: species silhouettes generated from the thumbnail capture alpha (AnimalThumbnailPipeline), New badge (pill + localized text), ICO_Rarity_Star. Trait badges come with T26. | T34D: silhouettes (AnimalThumbnailPipeline), New badge, rarity icons and frames (ICO_Rarity_*, UI_Frame_*) and the trait badges ICO_Trait_* (T34A, Atlas_Codex, DEF_UiRarity) all exist and show in the Codex and the animal sheet. Tabs Events, Visitors and Companions come with their content (T44, T47, T48).",
+      "passedGates": [
+        "G12"
+      ]
     },
     {
       "id": "I-SHOP",
@@ -6507,16 +6524,20 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 002. | T17: PF_UI_HUD_Main (Prefabs/UI/Screens): Light chip (value + rate) on its own canvas, hatch button with cost pill on its own canvas + raycaster, safe area, states via color tokens and scale, Reduce Motion flag, no layout groups, 0 GC formatting. Font TEMP: LiberationSans SDF (OFL, TMP Essentials) until the UI typeface is chosen. Codex/World/Settings shortcuts come with their tasks. | T17: PF_UI_HUD_Main (Prefabs/UI/Screens): Light chip (value + rate) on its own canvas, hatch button with cost pill on its own canvas + raycaster, safe area, states via color tokens and scale, Reduce Motion flag, no layout groups, 0 GC formatting. Font TEMP: LiberationSans SDF (OFL, TMP Essentials) until the UI typeface is chosen. Codex/World/Settings shortcuts come with their tasks."
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "Local ID for doc 06 SCREEN 002. | T17: PF_UI_HUD_Main (Prefabs/UI/Screens): Light chip (value + rate) on its own canvas, hatch button with cost pill on its own canvas + raycaster, safe area, states via color tokens and scale, Reduce Motion flag, no layout groups, 0 GC formatting. Font TEMP: LiberationSans SDF (OFL, TMP Essentials) until the UI typeface is chosen. Codex/World/Settings shortcuts come with their tasks. | T17: PF_UI_HUD_Main (Prefabs/UI/Screens): Light chip (value + rate) on its own canvas, hatch button with cost pill on its own canvas + raycaster, safe area, states via color tokens and scale, Reduce Motion flag, no layout groups, 0 GC formatting. Font TEMP: LiberationSans SDF (OFL, TMP Essentials) until the UI typeface is chosen. Codex/World/Settings shortcuts come with their tasks. | T34D review (captures at the game framing): Light chip and rate, hatch button with its cost and states, Codex shortcut, egg odds button, mastery row, toasts, reveal banner and collect motes; Pocket Round and Pocket Plush (T31-T32) replace the old temporary font; safe area and three phone shapes (FeedbackCapture). Phone check of one-hand reach stays with T66.",
+      "passedGates": [
+        "G12",
+        "G13"
+      ]
     },
     {
       "id": "I-SCR-003",
@@ -6526,18 +6547,19 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "BLOCKOUT",
+      "status": "INTEGRATED",
       "sourcePath": "Assets/_Game/Editor/UI/FeedbackUiPipeline.cs",
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": "T34A",
-      "lastValidationUtc": "2026-10-06T07:00:00Z",
-      "notes": "Local ID for doc 06 SCREEN 003. | T34A: reveal banner in PF_UI_HUD_Main (rarity word from Rare up, New species / New variant, badge motif, stars) and the egg odds button with its modal. Egg type name and multi-hatch come later.",
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "Local ID for doc 06 SCREEN 003. | T34A: reveal banner in PF_UI_HUD_Main (rarity word from Rare up, New species / New variant, badge motif, stars) and the egg odds button with its modal. Egg type name and multi-hatch come later. | T34D: the hatch overlay of the slice is complete: egg crack and reveal, banner from Rare up (rarity word, New species / New variant, motif, stars), rare glow, egg odds modal with the pity line; egg names localized (Meadow Egg / Oeuf de prairie, Precious Meadow Egg / Oeuf de prairie precieux). A multi-hatch only exists once several eggs can be bought at once (shop of eggs, T48).",
       "passedGates": [
-        "G12"
+        "G12",
+        "G13"
       ]
     },
     {
@@ -6548,16 +6570,20 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 004. | T18: PF_UI_OfflineReturn (Prefabs/UI/Screens): scrim, cream card (UI_Panel_Primary_9Slice), floating Light icon on UI_Glow_Soft, 'Welcome back' / 'Bon retour', +amount, Collect / Récolter (UI_Button_Primary_9Slice). Own overlay canvas above the HUD, closed = canvas disabled + content inactive, 2 raycast targets, open/close via CanvasGroup + scale, Reduce Motion. Light held back in the HUD then counted in on Collect. Font TEMP (LiberationSans). | T18: PF_UI_OfflineReturn (Prefabs/UI/Screens): scrim, cream card (UI_Panel_Primary_9Slice), floating Light icon on UI_Glow_Soft, 'Welcome back' / 'Bon retour', +amount, Collect / Récolter (UI_Button_Primary_9Slice). Own overlay canvas above the HUD, closed = canvas disabled + content inactive, 2 raycast targets, open/close via CanvasGroup + scale, Reduce Motion. Light held back in the HUD then counted in on Collect. Font TEMP (LiberationSans)."
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "Local ID for doc 06 SCREEN 004. | T18: PF_UI_OfflineReturn (Prefabs/UI/Screens): scrim, cream card (UI_Panel_Primary_9Slice), floating Light icon on UI_Glow_Soft, 'Welcome back' / 'Bon retour', +amount, Collect / Récolter (UI_Button_Primary_9Slice). Own overlay canvas above the HUD, closed = canvas disabled + content inactive, 2 raycast targets, open/close via CanvasGroup + scale, Reduce Motion. Light held back in the HUD then counted in on Collect. Font TEMP (LiberationSans). | T18: PF_UI_OfflineReturn (Prefabs/UI/Screens): scrim, cream card (UI_Panel_Primary_9Slice), floating Light icon on UI_Glow_Soft, 'Welcome back' / 'Bon retour', +amount, Collect / Récolter (UI_Button_Primary_9Slice). Own overlay canvas above the HUD, closed = canvas disabled + content inactive, 2 raycast targets, open/close via CanvasGroup + scale, Reduce Motion. Light held back in the HUD then counted in on Collect. Font TEMP (LiberationSans). | T34D review: welcome back card with the floating Light, amount and Collect button, in Pocket Round and Pocket Plush (no temporary font left), French and English captures.",
+      "passedGates": [
+        "G12",
+        "G13"
+      ]
     },
     {
       "id": "I-SCR-005",
@@ -6608,16 +6634,20 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": "T34C",
-      "lastValidationUtc": "2026-10-06T23:30:00Z",
-      "notes": "Local ID for doc 06 SCREEN 007. | T19: PF_UI_Codex list: biome headers + 3-card rows in a virtualized ScrollRect (VirtualListLayout, pooled rows, RectMask2D). 5000 species = 1674 rows bound with 7 row views. Completion bar, New badge, undiscovered = silhouette + ???. Font TEMP. | T19: PF_UI_Codex list: biome headers + 3-card rows in a virtualized ScrollRect (VirtualListLayout, pooled rows, RectMask2D). 5000 species = 1674 rows bound with 7 row views. Completion bar, New badge, undiscovered = silhouette + ???. Font TEMP. | T34C: rows leaving the window are reused in the same pass without a disable and enable (only unused views are hidden), the list has its own canvas (scrolling no longer rebuilds the header) and its raycaster; scenario C1 (5000 species, very fast scroll): UI 3.09 to 1.21 ms per frame, main thread 4.51 to 2.24 ms, 9 row views for 1674 rows, no allocation while scrolling."
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "Local ID for doc 06 SCREEN 007. | T19: PF_UI_Codex list: biome headers + 3-card rows in a virtualized ScrollRect (VirtualListLayout, pooled rows, RectMask2D). 5000 species = 1674 rows bound with 7 row views. Completion bar, New badge, undiscovered = silhouette + ???. Font TEMP. | T19: PF_UI_Codex list: biome headers + 3-card rows in a virtualized ScrollRect (VirtualListLayout, pooled rows, RectMask2D). 5000 species = 1674 rows bound with 7 row views. Completion bar, New badge, undiscovered = silhouette + ???. Font TEMP. | T34C: rows leaving the window are reused in the same pass without a disable and enable (only unused views are hidden), the list has its own canvas (scrolling no longer rebuilds the header) and its raycaster; scenario C1 (5000 species, very fast scroll): UI 3.09 to 1.21 ms per frame, main thread 4.51 to 2.24 ms, 9 row views for 1674 rows, no allocation while scrolling. | T34D review: biome header with completion, 3-card rows, New badges, silhouettes for undiscovered species, final fonts; Codex 5000 benchmark C1 at 60 fps (T34C).",
+      "passedGates": [
+        "G12",
+        "G13"
+      ]
     },
     {
       "id": "I-SCR-008",
@@ -6627,16 +6657,20 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "ART_REVIEW",
+      "status": "INTEGRATED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 008. | T19: species sheet inside PF_UI_Codex: portrait, name, owned count, variant slots (12, scrollable) with thumbnail or silhouette, rarity as star count + color, New badges cleared when the sheet is seen. Mastery joins in T20. Font TEMP. | T19: species sheet inside PF_UI_Codex: portrait, name, owned count, variant slots (12, scrollable) with thumbnail or silhouette, rarity as star count + color, New badges cleared when the sheet is seen. Mastery joins in T20. Font TEMP."
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "Local ID for doc 06 SCREEN 008. | T19: species sheet inside PF_UI_Codex: portrait, name, owned count, variant slots (12, scrollable) with thumbnail or silhouette, rarity as star count + color, New badges cleared when the sheet is seen. Mastery joins in T20. Font TEMP. | T19: species sheet inside PF_UI_Codex: portrait, name, owned count, variant slots (12, scrollable) with thumbnail or silhouette, rarity as star count + color, New badges cleared when the sheet is seen. Mastery joins in T20. Font TEMP. | T34D review: portrait, name, owned count, mastery level and bar, variant slots with rarity stars and New badges, final fonts, French and English captures.",
+      "passedGates": [
+        "G12",
+        "G13"
+      ]
     },
     {
       "id": "I-SCR-009",
@@ -8833,16 +8867,20 @@
       "family": "Prefab",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Prefabs/UI/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/FeedbackUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_HUD_Main.prefab",
       "validationGates": [
         "G08",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "T34D: the slice pooled feedback popups live in PF_UI_HUD_Main: ToastQueue (one reused panel, queue of four, six kinds), CollectMotes (12 pooled Light motes, 8 on Low) and RevealBanner, plus the 12 pooled feedback effects of DEF_VfxCatalog. No allocation once warm (FeedbackPlayTests, benchmark F1 and V1).",
+      "passedGates": [
+        "G08",
+        "G13"
+      ]
     },
     {
       "id": "K-PF-MONET",
@@ -10677,15 +10715,18 @@
       "family": "EditorTool",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "BLOCKOUT",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Production/ContentWizard.cs",
       "runtimePath": null,
       "validationGates": [
         "G16"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-05T18:03:08Z",
-      "notes": "T30 audit: AnimalPipeline + pw_species.py steps build a species end to end (Squirrel in about 20 min); a generic wizard window is still to do."
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "T30 audit: AnimalPipeline + pw_species.py steps build a species end to end (Squirrel in about 20 min); a generic wizard window is still to do. | T34D: Pocket Wilds/Content Wizard (Species, Eggs, IDs), tab Especes (Editor/Production/ContentWizard.cs): for every species of DEF_ContentDatabase it checks on the disk and in the data the Blender source, the exported model, the prefab, AssetValidator, the visual catalog, 6 base variants, English and French texts, thumbnails and silhouette, and at least one egg; it says the next step (pw_species.py steps on the Blender side) and runs the Unity steps (rebuild a species, update definitions, thumbnails). ContentWizardTests: Rabbit, Squirrel and Hedgehog complete.",
+      "passedGates": [
+        "G16"
+      ]
     },
     {
       "id": "ED-002",
@@ -10709,15 +10750,18 @@
       "family": "EditorTool",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "BLOCKOUT",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Production/ContentWizard.cs",
       "runtimePath": null,
       "validationGates": [
         "G33"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-05T18:03:08Z",
-      "notes": "T30 audit: EggPipeline (Build Egg Family, Update Egg Definitions) covers the slice eggs; generic wizard still to do."
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "T30 audit: EggPipeline (Build Egg Family, Update Egg Definitions) covers the slice eggs; generic wizard still to do. | T34D: Content Wizard, tab Oeufs: Blender source, prefab and egg validator, biome, pool (known species, positive weights), six rarity weights, price, English and French texts; buttons rebuild the egg family and update the definitions. It found the two egg names untranslated: fixed (UiPipeline.Texts). ContentWizardTests: both eggs complete.",
+      "passedGates": [
+        "G33"
+      ]
     },
     {
       "id": "ED-004",
@@ -10840,15 +10884,18 @@
       "family": "EditorTool",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "BLOCKOUT",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Production/ContentWizard.cs",
       "runtimePath": null,
       "validationGates": [
         "G16"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "ContentRegistryBuilder already rejects duplicates, collisions and tombstones (runtime side). | T29: AnalyticsIdTable (Pocket Wilds/Analytics/Export Id Table) lists every content id hash and wire enum value with its source name, test ContentIds_AreUniqueStableHashes_AndExported checks hash = FNV-1a(source id) and no collision. Tombstones and editing UI still to do."
+      "lastValidationVersion": "T34D",
+      "lastValidationUtc": "2026-10-07T03:00:00Z",
+      "notes": "ContentRegistryBuilder already rejects duplicates, collisions and tombstones (runtime side). | T29: AnalyticsIdTable (Pocket Wilds/Analytics/Export Id Table) lists every content id hash and wire enum value with its source name, test ContentIds_AreUniqueStableHashes_AndExported checks hash = FNV-1a(source id) and no collision. Tombstones and editing UI still to do. | T34D: Content Wizard, tab Identifiants: every content id (species, variants, eggs, biomes, products, offers, entitlements) with its FNV-1a hash, search, the tombstone list, and Retire for good (a live id is refused, a tombstone is never removed; ContentRegistryBuilder then refuses it). ContentWizardTests: unique hashes, live ids refused.",
+      "passedGates": [
+        "G16"
+      ]
     },
     {
       "id": "ED-012",

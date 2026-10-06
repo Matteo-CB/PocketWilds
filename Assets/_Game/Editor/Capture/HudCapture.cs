@@ -44,6 +44,7 @@ namespace PocketWilds.Editor.Capture
                     var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                     var hud = Object.FindAnyObjectByType<RefugeHud>();
                     var camera = Camera.main;
+                    WorldCapture.FrameLikeGame(chunk);
                     chunk.Bind(palettes);
                     entry.Lighting.Apply(Object.FindAnyObjectByType<Light>(), camera, QualityTier.Medium);
                     chunk.ApplyQuality(QualityTier.Medium);

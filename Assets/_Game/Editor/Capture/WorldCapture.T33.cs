@@ -43,6 +43,7 @@ namespace PocketWilds.Editor.Capture
                     var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                     var sun = Object.FindAnyObjectByType<Light>();
                     var camera = Camera.main;
+                    FrameLikeGame(start);
                     var chunks = new[] { start, meadow };
                     foreach (var chunk in chunks)
                         chunk.Bind(palettes);

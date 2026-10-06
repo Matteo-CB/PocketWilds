@@ -46,6 +46,7 @@ namespace PocketWilds.Editor.Capture
                     chunk.Bind(palettes);
 
                     var camera = Camera.main;
+                    FrameLikeGame(chunk);
                     for (int level = 0; level < QualitySettings.names.Length; level++)
                     {
                         var tier = (QualityTier)level;
@@ -126,6 +127,21 @@ namespace PocketWilds.Editor.Capture
         {
             var existing = Object.FindAnyObjectByType<WorldChunk>();
             return existing != null ? existing : WorldContentPipeline.SpawnForTools(WorldContentPipeline.StartAddress);
+        }
+
+        /// <summary>
+        /// The player's framing (T34D): at scene entry the rig snaps onto the start chunk's egg (VerticalSliceEntry), at
+        /// its default distance. Refuge captures start from it, not from the camera position saved in the scene (which
+        /// left the egg half off the right edge). The scene is reopened from disk afterwards, nothing is saved.
+        /// </summary>
+        internal static void FrameLikeGame(WorldChunk start)
+        {
+            var rig = Object.FindAnyObjectByType<RefugeCameraRig>();
+            if (rig == null || start == null || start.EggSpawn == null)
+                return;
+            var egg = start.EggSpawn.position;
+            rig.SetBounds(egg, new Vector2(100f, 100f));
+            rig.SnapTo(egg);
         }
 
         [MenuItem("Pocket Wilds/Capture/Chunk Seam (T27)", priority = 525)]

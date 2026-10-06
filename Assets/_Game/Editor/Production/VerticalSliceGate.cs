@@ -12,15 +12,19 @@ using UnityEngine;
 namespace PocketWilds.Editor.Production
 {
     /// <summary>
-    /// T30 Vertical Slice Gate, automated part (doc 12 VALIDATION): Gate 00 coverage for the VerticalSlice scope with
-    /// real file checks (the status file is never trusted on its own), Gate 06/31 materials, Gate 07 textures, Gate 08
-    /// prefabs, Gate 16 content data, Gate 30 source traceability and Gate 32 unused assets. Writes
-    /// Docs/Gates/T30_Audit.md. It reports; it never deletes or edits assets.
+    /// Vertical Slice Gate, automated part (doc 12 VALIDATION; T30, then T34D): Gate 00 coverage for the VerticalSlice
+    /// scope with real file checks (the status file is never trusted on its own), Gate 06/31 materials, Gate 07
+    /// textures, Gate 08 prefabs, Gate 16 content data, Gate 30 source traceability, Gate 32 unused assets and (T34D)
+    /// Gate 33 release content. Writes Docs/Gates/&lt;task&gt;_Audit.md. It reports; it never deletes or edits assets.
     /// </summary>
     public static class VerticalSliceGate
     {
         public const string StatusPath = "Assets/_Game/Editor/Production/AssetProductionStatus.json";
         public const string ReportPath = "Docs/Gates/T30_Audit.md";
+        public const string T34DReportPath = "Docs/Gates/T34D_Audit.md";
+
+        /// <summary>Editor-only debug content (DBG_LOD materials): BuildValidator keeps it out of every build.</summary>
+        public const string DebugFolder = "Assets/_Game/Art/Debug/";
 
         private static readonly string[] ApprovedShaderPrefixes =
         {
@@ -52,15 +56,17 @@ namespace PocketWilds.Editor.Production
             public bool Blocking;
         }
 
-        [MenuItem("Pocket Wilds/Gates/Vertical Slice Audit (T30)", priority = 600)]
-        public static void RunMenu() => Debug.Log("[VerticalSliceGate] " + Run());
+        [MenuItem("Pocket Wilds/Gates/Vertical Slice Audit (T34D)", priority = 600)]
+        public static void RunMenu() => Debug.Log("[VerticalSliceGate] " + Run("T34D", T34DReportPath));
 
-        public static string Run()
+        public static string Run() => Run("T30", ReportPath);
+
+        public static string Run(string task, string reportPath)
         {
             string root = Path.GetDirectoryName(Application.dataPath)!;
             var md = new StringBuilder();
-            md.Append("# T30 Vertical Slice Gate — audit automatique\n\n");
-            md.Append("Généré par `Pocket Wilds/Gates/Vertical Slice Audit (T30)` le ").Append(DateTime.UtcNow.ToString("u")).Append(".\n");
+            md.Append("# ").Append(task).Append(" Vertical Slice Gate — audit automatique\n\n");
+            md.Append("Généré par `Pocket Wilds/Gates/Vertical Slice Audit` le ").Append(DateTime.UtcNow.ToString("u")).Append(".\n");
             md.Append("Chaque ligne est vérifiée sur le disque ; le fichier de statut n'est jamais cru sur parole.\n\n");
 
             var coverage = Coverage(root);
@@ -71,13 +77,14 @@ namespace PocketWilds.Editor.Production
             var content = ContentData(md);
             var trace = Traceability(md, root);
             var unused = Unused(md);
+            var release = ReleaseContent(md);
 
-            string full = Path.Combine(root, ReportPath);
+            string full = Path.Combine(root, reportPath);
             Directory.CreateDirectory(Path.GetDirectoryName(full)!);
             File.WriteAllText(full, md.ToString(), new UTF8Encoding(false));
             int blocking = coverage.Count(r => r.Blocking);
             return $"coverage {coverage.Count} rows ({blocking} blocking), materials {materials}, textures {textures}, prefabs {prefabs}, " +
-                   $"content {content}, traceability {trace}, unused {unused} -> {ReportPath}";
+                   $"content {content}, traceability {trace}, unused {unused}, release {release} -> {reportPath}";
         }
 
         // ---------------- Gate 00 ----------------
@@ -167,7 +174,12 @@ namespace PocketWilds.Editor.Production
 
         private static string Materials(StringBuilder md)
         {
-            var guids = AssetDatabase.FindAssets("t:Material", new[] { "Assets/_Game" });
+            var guids = AssetDatabase.FindAssets("t:Material", new[] { "Assets/_Game" })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(p => !p.StartsWith(DebugFolder, StringComparison.Ordinal) && !IsFontSource(p))
+                .Distinct()
+                .Select(AssetDatabase.AssetPathToGUID)
+                .ToArray();
             var byShader = new Dictionary<string, List<string>>();
             var byHash = new Dictionary<string, List<string>>();
             var unapproved = new List<string>();
@@ -190,13 +202,17 @@ namespace PocketWilds.Editor.Production
             }
             var duplicates = byHash.Values.Where(v => v.Count > 1).ToList();
             md.Append("## Gates 06 et 31 — matériaux\n\n");
-            md.Append($"{guids.Length} matériaux dans Assets/_Game.\n\n| Shader | Matériaux |\n|---|---|\n");
+            md.Append($"{guids.Length} matériaux dans Assets/_Game (hors Art/Debug, matériaux de contrôle jamais dans un build, et hors matériaux internes des polices sources TTF).\n\n| Shader | Matériaux |\n|---|---|\n");
             foreach (var kv in byShader.OrderByDescending(k => k.Value.Count))
                 md.Append($"| {kv.Key} | {kv.Value.Count} |\n");
             md.Append($"\nShaders non approuvés : {(unapproved.Count == 0 ? "aucun" : string.Join(", ", unapproved))}.\n\n");
             md.Append($"Doublons exacts (mêmes shader et propriétés) : {(duplicates.Count == 0 ? "aucun" : string.Join(" ; ", duplicates.Select(d => string.Join(" = ", d))))}.\n\n");
             return $"{guids.Length} ({unapproved.Count} unapproved, {duplicates.Count} duplicate groups)";
         }
+
+        /// <summary>A TTF or OTF source: its importer makes a legacy font material inside it; only the SDF assets ship.</summary>
+        private static bool IsFontSource(string path) =>
+            path.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".otf", StringComparison.OrdinalIgnoreCase);
 
         private static string MaterialHash(Material mat)
         {
@@ -368,6 +384,20 @@ namespace PocketWilds.Editor.Production
                 return null;
             var blend = Directory.GetFiles(dir, "*.blend").FirstOrDefault();
             return blend == null ? null : blend.Substring(root.Length + 1).Replace('\\', '/');
+        }
+
+        // ---------------- Gate 33 ----------------
+
+        private static string ReleaseContent(StringBuilder md)
+        {
+            var result = PocketWilds.Editor.Build.BuildValidator.Validate(true, true, PocketWilds.Editor.Build.BuildValidator.BuildScenes());
+            md.Append("## Gate 33 — contenu d'un build release\n\n");
+            md.Append($"BuildValidator en mode release sur les scènes du build, les entrées Addressables et les dossiers Resources : " +
+                      $"{result.Errors} erreurs, {result.Warnings} avertissements, {result.Shipped.Count} assets contrôlés.\n\n");
+            foreach (var issue in result.Issues.Take(30))
+                md.Append("- ").Append(issue).Append('\n');
+            md.Append('\n');
+            return $"{result.Errors} errors, {result.Warnings} warnings";
         }
 
         // ---------------- Gate 32 ----------------

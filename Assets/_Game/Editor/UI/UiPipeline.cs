@@ -104,8 +104,10 @@ namespace PocketWilds.Editor.UI
             { FeedbackText.SheetBond, "Bond", "Lien" },
             { "shop.starter_pack.title", "Starter Pack", "Pack de départ" },
             { "entitlement.cosmetic.flower_crown.name", "Flower Crown", "Couronne de fleurs" },
-            // Content names (display keys of biome, species and variant definitions).
+            // Content names (display keys of biome, egg, species and variant definitions).
             { "biome.grassland.name", "Meadow", "Prairie" },
+            { "egg.grassland.basic.name", "Meadow Egg", "Œuf de prairie" },
+            { "egg.grassland.focus.name", "Precious Meadow Egg", "Œuf de prairie précieux" },
             { "species.rabbit.name", "Rabbit", "Lapin" },
             { "variant.rabbit.brown.name", "Brown", "Brun" },
             { "variant.rabbit.white.name", "White", "Blanc" },
