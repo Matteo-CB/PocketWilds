@@ -86,6 +86,10 @@ namespace PocketWilds.Benchmarks
             },
             new PerformanceScenario("R1", "Light rain over the refuge, 20 animals", 20, QualityTier.Medium) { species = 3, rain = true },
             new PerformanceScenario("R1-High", "Light rain over the refuge, 20 animals, High tier", 20, QualityTier.High) { species = 3, rain = true },
+            new PerformanceScenario("Q1", "Adaptive quality: every step from Magnifique down to Fluide and back, 20 animals", 20, QualityTier.High)
+            {
+                species = 3, qualityLadder = true, measureSeconds = 26f,
+            },
         };
 
         private static PerformanceScenario[] Filter(PerformanceScenario[] all, string[] args)
@@ -193,13 +197,31 @@ namespace PocketWilds.Benchmarks
                     burst = StripTravel(entry.CameraRig, 7f);
                 if (scenario.rain)
                     entry.Weather?.Force(1f, 0f);
+                var ladder = scenario.qualityLadder ? new QualityLadderProbe(bootstrap.Context.Quality, scenario.tier) : null;
+                if (ladder != null)
+                    burst = ladder.Run();
+                var work = new float[Mathf.CeilToInt(scenario.measureSeconds * 240f) + 64];
+                int workCount = 0;
+                if (report.warmupSource == null)
+                {
+                    report.warmupSource = ShaderWarmup.LastSource;
+                    report.warmupCount = ShaderWarmup.LastWarmed;
+                    report.warmupMs = (float)ShaderWarmup.LastMilliseconds;
+                    report.warmupLongestFrameMs = ShaderWarmup.LastLongestFrameMs;
+                }
                 // Garbage left by earlier scenarios (one process, many boots) is collected now, not in a sample.
                 GC.Collect();
                 float until = Time.realtimeSinceStartup + scenario.warmupSeconds;
+                // T34: the first frames of the refuge draw everything for the first time (first displays).
+                float entryMax = 0f;
                 while (Time.realtimeSinceStartup < until)
+                {
                     yield return null;
+                    entryMax = Mathf.Max(entryMax, Time.unscaledDeltaTime * 1000f);
+                }
                 float start = Time.realtimeSinceStartup;
                 float animalClearance = float.MaxValue, lifeClearance = float.MaxValue;
+                float maxFrame = 0f, maxFrameAt = 0f;
                 int overlaps = 0, frame = 0;
                 while (Time.realtimeSinceStartup - start < scenario.measureSeconds)
                 {
@@ -208,6 +230,14 @@ namespace PocketWilds.Benchmarks
                     // One frame in 60 (under the 5 % the p95 looks at): the check itself never shows in the timings.
                     if (++frame % 60 == 0)
                         CheckCollisions(entry, ref animalClearance, ref lifeClearance, ref overlaps);
+                    if (workCount < work.Length)
+                        work[workCount++] = bootstrap.Context.Quality.LastWorkMs;
+                    if (sampler.LastCpuMs > maxFrame)
+                    {
+                        maxFrame = sampler.LastCpuMs;
+                        maxFrameAt = Time.realtimeSinceStartup - start;
+                    }
+                    ladder?.AfterSample(sampler.LastCpuMs);
                     sampler.SampleWorld(entry.Scatter != null ? entry.Scatter.LastInstances : 0, entry.Life != null ? entry.Life.LastInstances : 0);
                     probe?.AfterSample(sampler.LastCpuMs);
                     shopProbe?.AfterSample(sampler.LastCpuMs);
@@ -216,6 +246,17 @@ namespace PocketWilds.Benchmarks
                 }
                 var result = sampler.Finish(scenario, entry.Refuge.VisibleAnimals, Time.realtimeSinceStartup - start);
                 sampler.Dispose();
+                result.adaptiveWorkP95Ms = Percentile95(work, workCount);
+                result.entryMaxFrameMs = entryMax;
+                result.maxFrameAtSeconds = maxFrameAt;
+                if (maxFrame > 33.3f)
+                    Debug.Log($"[Benchmark] {scenario.id} longest frame {maxFrame:F1} ms at {maxFrameAt:F2} s into the measure");
+                if (ladder != null)
+                {
+                    result.qualitySwitches = ladder.Switches;
+                    result.maxSwitchFrameMs = ladder.MaxSwitchFrameMs;
+                    Debug.Log($"[Benchmark] {scenario.id} quality ladder: {ladder.Switches} steps, longest frame after a step {ladder.MaxSwitchFrameMs:F2} ms");
+                }
                 result.minAnimalClearanceCm = animalClearance < float.MaxValue ? animalClearance * 100f : 0f;
                 result.minLifeClearanceCm = lifeClearance < float.MaxValue ? lifeClearance * 100f : 0f;
                 result.overlapSamples = overlaps;
@@ -254,6 +295,71 @@ namespace PocketWilds.Benchmarks
         }
 
         /// <summary>T33B: east along the whole strip of chunks, then back to the refuge. No allocation per step.</summary>
+        private static float Percentile95(float[] values, int count)
+        {
+            if (count == 0)
+                return 0f;
+            Array.Sort(values, 0, count);
+            return values[Math.Min(count - 1, Mathf.CeilToInt(count * 0.95f) - 1)];
+        }
+
+        /// <summary>
+        /// T34 Q1: walks every adaptive quality step (life, ground, weather, shadows, resolution, per tier) from the boot
+        /// tier down to Low and back up, one every 1.2 s, and keeps the longest frame among the 10 after each step.
+        /// Adaptive steps of its own are off during the walk. In a traced run it also records every mixed state.
+        /// </summary>
+        private sealed class QualityLadderProbe
+        {
+            private const float StepSeconds = 1.2f;
+            private readonly QualityService _quality;
+            private readonly QualityTier _top;
+            private int _watch;
+
+            public QualityLadderProbe(QualityService quality, QualityTier top)
+            {
+                _quality = quality;
+                _top = top;
+            }
+
+            public int Switches { get; private set; }
+            public float MaxSwitchFrameMs { get; private set; }
+
+            /// <summary>One flat enumerator: the measure loop steps it by hand, nested enumerators would not run.</summary>
+            public IEnumerator Run()
+            {
+                _quality.SetAdaptiveEnabled(false);
+                var state = QualityState.Uniform(_top);
+                bool down = true;
+                while (true)
+                {
+                    bool moved = down ? state.StepDown(out _) : state.StepUp(_top, out _);
+                    if (!moved)
+                    {
+                        if (!down)
+                            break;
+                        down = false;
+                        continue;
+                    }
+                    _quality.ForceState(state);
+                    Switches++;
+                    _watch = 10;
+                    float until = Time.realtimeSinceStartup + StepSeconds;
+                    while (Time.realtimeSinceStartup < until)
+                        yield return null;
+                }
+                _quality.SetAdaptiveEnabled(true);
+            }
+
+            public void AfterSample(float cpuMs)
+            {
+                if (_watch <= 0)
+                    return;
+                _watch--;
+                if (cpuMs > MaxSwitchFrameMs)
+                    MaxSwitchFrameMs = cpuMs;
+            }
+        }
+
         /// <summary>T33C: every animal and every insect or bird against everything it must never enter.</summary>
         private static void CheckCollisions(VerticalSliceEntry entry, ref float animals, ref float life, ref int overlaps)
         {

@@ -94,6 +94,16 @@ namespace PocketWilds.Presentation
             _transform.SetPositionAndRotation(position, rotation);
         }
 
+        public bool BlobShadowVisible => _blobShadow != null && _blobShadow.enabled;
+
+        /// <summary>T34: real shadows turned on or off during play (adaptive quality): the blob shadow follows.</summary>
+        public void RefreshQuality()
+        {
+            EnsureInitialized();
+            if (_blobShadow != null && _blobShadow.enabled != PresentationQuality.BlobShadows)
+                _blobShadow.enabled = PresentationQuality.BlobShadows;
+        }
+
         /// <summary>Animator playback rate (1 normally; a newborn bounding out of its shell plays faster).</summary>
         public void SetPlaybackSpeed(float speed)
         {

@@ -55,9 +55,10 @@ namespace PocketWilds.Editor.Setup
         private static readonly TierSpec[] Tiers =
         {
             // T16: the gameplay camera sits 13.8 m from its focus, so realtime shadows must reach ~24 m to cover the play
-            // area. Low drops the shadow map entirely and grounds animals and eggs with blob shadows (Performance Guide).
-            new TierSpec { Name = "Low", RenderScale = 0.85f, Msaa = 1, ShadowResolution = 512, MainLightShadows = false, ShadowDistance = 0f, Cascades = 1, SoftShadows = false, FastSrgb = true, LodBias = 0.7f, SkinWeights = 2 },
-            new TierSpec { Name = "Medium", RenderScale = 1.0f, Msaa = 2, ShadowResolution = 1024, MainLightShadows = true, ShadowDistance = 24f, Cascades = 1, SoftShadows = true, FastSrgb = false, LodBias = 1.0f, SkinWeights = 4 },
+            // area (doc 07 says 20 m: kept at 24 for that reason). Low drops the shadow map entirely and grounds animals and
+            // eggs with blob shadows (Performance Guide). T34: render scales from the doc 07 table (0.8 / 0.9 / 1.0).
+            new TierSpec { Name = "Low", RenderScale = 0.8f, Msaa = 1, ShadowResolution = 512, MainLightShadows = false, ShadowDistance = 0f, Cascades = 1, SoftShadows = false, FastSrgb = true, LodBias = 0.7f, SkinWeights = 2 },
+            new TierSpec { Name = "Medium", RenderScale = 0.9f, Msaa = 2, ShadowResolution = 1024, MainLightShadows = true, ShadowDistance = 24f, Cascades = 1, SoftShadows = true, FastSrgb = false, LodBias = 1.0f, SkinWeights = 4 },
             new TierSpec { Name = "High", RenderScale = 1.0f, Msaa = 4, ShadowResolution = 2048, MainLightShadows = true, ShadowDistance = 30f, Cascades = 2, SoftShadows = true, FastSrgb = false, LodBias = 1.3f, SkinWeights = 4 },
         };
 

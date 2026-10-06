@@ -72,6 +72,10 @@ namespace PocketWilds.Presentation
         public int LastDrops { get; private set; }
         public int LastDraws { get; private set; }
 
+        /// <summary>Share of the drops drawn (tier: 40 / 70 / 100 %).</summary>
+        public float Intensity => _intensity;
+        public bool SunRays => _sunRays;
+
         public void SetQuality(in WorldQualityProfile.Tier quality)
         {
             _intensity = Mathf.Clamp01(quality.weather);

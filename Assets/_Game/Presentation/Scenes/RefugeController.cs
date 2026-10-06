@@ -58,6 +58,7 @@ namespace PocketWilds.Presentation
         private readonly Transform _root;
 
         private EggView _waitingEgg;
+        private bool _noticeShown;
         private AnimalView _hatchingAnimal;
         private uint _hatchingInstance;
         private ContentId _hatchingSpecies;
@@ -190,9 +191,25 @@ namespace PocketWilds.Presentation
         /// <summary>Collected offline Light is still counting into the HUD.</summary>
         public bool OfflineCollecting => _collectTime >= 0f;
 
+        /// <summary>T34: adaptive quality turned real shadows on or off: visible animals and the egg update their blob shadows.</summary>
+        public void RefreshPresentationQuality()
+        {
+            for (int i = 0; i < _views.Length; i++)
+                _views[i]?.RefreshQuality();
+            _hatchingAnimal?.RefreshQuality();
+            _waitingEgg?.RefreshQuality();
+        }
+
         public void Tick(float time, float deltaTime)
         {
             _time = time;
+            // T34: while heat keeps the picture lighter, the HUD says so in one short line.
+            bool notice = _context.Quality != null && _context.Quality.ThermalNotice;
+            if (notice != _noticeShown)
+            {
+                _noticeShown = notice;
+                _hud?.SetNotice(notice ? _context.Localization.Get(QualityService.ThermalNoticeKey) : null);
+            }
             // A new egg waits until the newborn has walked off its spot (no-collision rule).
             if (_nextEggTime >= 0f && time >= _nextEggTime && _scheduler.IsEggSpotClear())
             {

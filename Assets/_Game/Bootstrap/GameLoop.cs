@@ -37,6 +37,8 @@ namespace PocketWilds.Bootstrap
             {
                 float frame = Time.unscaledDeltaTime;
                 _analytics?.Tick(frame);
+                // T34: frame cost and heat drive the picture's quality (no allocation).
+                _context.Quality?.Tick(frame);
                 float delta = frame;
                 if (delta > MaxFrameDelta)
                     delta = MaxFrameDelta;

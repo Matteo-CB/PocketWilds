@@ -30,11 +30,15 @@ namespace PocketWilds.UI
         public const string ShopRestored = "shop.restore.done";
         public const string ShopNothingToRestore = "shop.restore.none";
 
+        /// <summary>T34: the device is warm, the picture is lighter (key owned by the quality service).</summary>
+        public const string QualityThermalNotice = PocketWilds.Presentation.QualityService.ThermalNoticeKey;
+
         public static readonly string[] All =
         {
             OfflineWelcomeBack, CollectButton, CodexTitle, CodexVariants, CodexNew, CodexUnknown,
             ShopTitle, ShopFeatured, ShopGems, ShopBestValue, ShopOwned, ShopOneTime, ShopContentsGems, ShopRestore, ShopThanks, ShopThanksItem,
             ShopFailed, ShopPending, ShopUnavailable, ShopNotEnoughGems, ShopRestored, ShopNothingToRestore,
+            QualityThermalNotice,
         };
     }
 }

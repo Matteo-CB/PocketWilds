@@ -42,6 +42,8 @@ namespace PocketWilds.Bootstrap
         [SerializeField] private string _targetScene = "SC_VerticalSlice_Grassland";
         [SerializeField] private ContentDatabaseAsset _contentDatabase;
         [SerializeField] private AnimalVisualCatalog _visualCatalog;
+        [Tooltip("T34: graphics states warmed behind the loading screen (first displays never stutter).")]
+        [SerializeField] private ShaderWarmupSet _shaderWarmup;
 
         private BootOptions _options;
         private IGameClock _clock;
@@ -84,6 +86,8 @@ namespace PocketWilds.Bootstrap
             DontDestroyOnLoad(gameObject);
             _options = PendingOptions ?? new BootOptions();
             PendingOptions = null;
+            // A player run with -pw-trace-graphics records every graphics state it draws (T34 warmup data).
+            ShaderWarmup.BeginBootTrace();
         }
 
         private async Awaitable Start()
@@ -120,11 +124,13 @@ namespace PocketWilds.Bootstrap
             sequence.AddBlocking("DeviceSettings", () =>
             {
                 var device = LocalDeviceSettingsStore.Load();
-                _quality = new QualityService();
-                _quality.Apply(_options.QualityOverride ?? device.QualityOverride);
                 _frameRate = new FrameRateService();
                 _frameRate.Apply(device.BatterySaver);
                 _batterySaver = device.BatterySaver;
+                // T34: automatic by default (the device's tier, adaptive steps and heat protection), or the player's
+                // tier; benchmarks and tests boot a fixed tier.
+                _quality = new QualityService();
+                _quality.Initialize(_options.QualityOverride, device.QualityOverride, _frameRate);
             });
 
             sequence.AddBlocking("ContentRegistry", () =>
@@ -202,6 +208,9 @@ namespace PocketWilds.Bootstrap
                 if (OfflineAtBoot.CreditedSeconds > 0.0)
                     GameLog.Info(LogCategory.Save, $"Offline {OfflineAtBoot.CreditedSeconds:F0} s, +{BigValueFormatter.ToDebugString(OfflineAtBoot.Light)} Light");
             });
+
+            // T34: every traced graphics state is built now, behind the loading screen, not at its first display.
+            sequence.AddBlocking("ShaderWarmup", async cancellationToken => await ShaderWarmup.RunAsync(_shaderWarmup, cancellationToken));
 
             sequence.AddBlocking("Presentation", async cancellationToken =>
             {
@@ -311,6 +320,8 @@ namespace PocketWilds.Bootstrap
 
         private void OnDestroy()
         {
+            ShaderWarmup.EndBootTrace();
+            _quality?.Dispose();
             _analytics?.Dispose();
             _analytics = null;
             _store?.Dispose();

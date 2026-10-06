@@ -81,6 +81,8 @@ namespace PocketWilds.Editor.UI
             { UiTextKeys.ShopNotEnoughGems, "Not enough Gems.", "Pas assez de Gemmes." },
             { UiTextKeys.ShopRestored, "Purchases restored", "Achats restaurés" },
             { UiTextKeys.ShopNothingToRestore, "Nothing to restore", "Rien à restaurer" },
+            // T34: heat protection lowered the picture. Calm, no alarm word.
+            { UiTextKeys.QualityThermalNotice, "Phone is warm: lighter visuals to stay smooth", "Téléphone chaud : image allégée pour rester fluide" },
             { "shop.starter_pack.title", "Starter Pack", "Pack de départ" },
             { "entitlement.cosmetic.flower_crown.name", "Flower Crown", "Couronne de fleurs" },
             // Content names (display keys of biome, species and variant definitions).
@@ -360,6 +362,25 @@ namespace PocketWilds.Editor.UI
                 Place(masteryXp.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-26f, 2f), new Vector2(90f, 60f));
                 hud.SetMasteryReferences(masteryRoot, masteryGroup, masteryIcon.rectTransform, masteryLevel, masteryXp,
                     toastBar.rectTransform, toastFill.rectTransform, glowGroup);
+
+                // T34 notice under the Light chip: the device is warm, the picture is lighter. Own canvas, hidden by default.
+                var noticeRoot = Rect("Notice", safe);
+                noticeRoot.gameObject.AddComponent<Canvas>();
+                var noticeGroup = noticeRoot.gameObject.AddComponent<CanvasGroup>();
+                noticeGroup.interactable = false;
+                noticeGroup.blocksRaycasts = false;
+                noticeGroup.alpha = 0f;
+                Place(noticeRoot, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -198f), new Vector2(860f, 112f));
+                var noticeBack = AddImage("Background", noticeRoot, pill, tokens.panelPrimary, Image.Type.Sliced);
+                Stretch(noticeBack.rectTransform);
+                var noticeLabel = AddText("Label", noticeRoot, TextRole.Label, 36f, tokens.textPrimary, "");
+                noticeLabel.alignment = TextAlignmentOptions.Center;
+                noticeLabel.textWrappingMode = TextWrappingModes.Normal;
+                Stretch(noticeLabel.rectTransform);
+                noticeLabel.rectTransform.offsetMin = new Vector2(32f, 8f);
+                noticeLabel.rectTransform.offsetMax = new Vector2(-32f, -8f);
+                noticeRoot.gameObject.SetActive(false);
+                hud.SetNoticeReferences(noticeRoot, noticeGroup, noticeLabel);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(HudPrefabPath));
                 return PrefabUtility.SaveAsPrefabAsset(root, HudPrefabPath).GetComponent<RefugeHud>();

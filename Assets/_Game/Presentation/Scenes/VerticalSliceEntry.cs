@@ -58,6 +58,7 @@ namespace PocketWilds.Presentation
         private WeatherSystem _weather;
         private WorldChunk _startChunk;
         private Action<int, ChunkStreamState> _onChunkState;
+        private Action<QualityState> _onQuality;
 
         public bool HasContext => _context != null;
         public WorldChunkSet ChunkSet => _chunkSet;
@@ -84,11 +85,13 @@ namespace PocketWilds.Presentation
                 return;
             }
             _streamer?.Dispose();
-            _streamer = new WorldStreamer(_chunkSet, new AddressablesChunkSource(), context.Palettes, context.Quality.CurrentTier);
-            var worldQuality = WorldQuality(context.Quality.CurrentTier);
-            _scatter = new ScatterRenderer(context.Palettes, worldQuality.scatterDensity);
-            _scatter.SetDistanceFade(worldQuality.scatterFadeStart, worldQuality.scatterFadeEnd);
-            _life = _ambientLife != null ? new AmbientLife(_ambientLife, context.Palettes, worldQuality.ambientLifeDensity) : null;
+            // T34: each world part follows its own dimension of the adaptive quality state.
+            var quality = context.Quality.State;
+            _streamer = new WorldStreamer(_chunkSet, new AddressablesChunkSource(), context.Palettes, quality.Ground);
+            var ground = WorldQuality(quality.Ground);
+            _scatter = new ScatterRenderer(context.Palettes, ground.scatterDensity);
+            _scatter.SetDistanceFade(ground.scatterFadeStart, ground.scatterFadeEnd);
+            _life = _ambientLife != null ? new AmbientLife(_ambientLife, context.Palettes, WorldQuality(quality.Life).ambientLifeDensity) : null;
             while (!_streamer.PinnedSettled)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -120,17 +123,17 @@ namespace PocketWilds.Presentation
         public void Enter(GameContext context)
         {
             _context = context;
-            var tier = context.Quality.CurrentTier;
+            var quality = context.Quality.State;
             var camera = _cameraRig != null ? _cameraRig.Camera : Camera.main;
             if (_lighting != null)
             {
-                _lighting.Apply(_sun, camera, tier);
-                _atmosphere = new WorldAtmosphere(_morning, _lighting, _evening, _sun, camera, WorldQuality(tier), _night);
+                _lighting.Apply(_sun, camera, quality);
+                _atmosphere = new WorldAtmosphere(_morning, _lighting, _evening, _sun, camera, WorldQuality(quality.Weather), _night);
                 _atmosphere.Tick(Time.unscaledTime);
-                _weather = _weatherKit != null ? new WeatherSystem(_weatherKit, _atmosphere, WorldQuality(tier)) : null;
+                _weather = _weatherKit != null ? new WeatherSystem(_weatherKit, _atmosphere, WorldQuality(quality.Weather)) : null;
             }
             else
-                PresentationQuality.Apply(tier);
+                PresentationQuality.Apply(quality);
             if (_streamer == null)
                 GameLog.Warning(LogCategory.Presentation, "Entered without PrepareAsync: no streamed world.");
             if (_startChunk != null && _cameraRig != null && _startChunk.EggSpawn != null)
@@ -150,11 +153,39 @@ namespace PocketWilds.Presentation
                 // No-collision rule: insects fly around the animals, birds fly off when one comes near.
                 _life?.SetAnimals(_refuge.Scheduler);
             }
+            _onQuality = ApplyQuality;
+            context.Quality.StateChanged += _onQuality;
             GameLog.Info(LogCategory.Presentation, "Vertical slice entered.");
+        }
+
+        /// <summary>
+        /// T34 adaptive quality: one dimension changed. Life, ground details (scatter, fade, secondary props), weather
+        /// (drops, sun rays, clouds, height fog, water), real or blob shadows. The renderer part (quality level, shadow
+        /// distance) is the quality service's. No allocation; colors and moods stay as they are.
+        /// </summary>
+        public void ApplyQuality(QualityState quality)
+        {
+            var ground = WorldQuality(quality.Ground);
+            if (_scatter != null)
+            {
+                _scatter.SetDensity(ground.scatterDensity);
+                _scatter.SetDistanceFade(ground.scatterFadeStart, ground.scatterFadeEnd);
+            }
+            _streamer?.SetQuality(quality.Ground);
+            _life?.SetDensity(WorldQuality(quality.Life).ambientLifeDensity);
+            var weather = WorldQuality(quality.Weather);
+            _weather?.SetQuality(weather);
+            _atmosphere?.SetQuality(weather);
+            var camera = _cameraRig != null ? _cameraRig.Camera : Camera.main;
+            LightingProfile.ApplyQuality(_sun, camera, quality);
+            _refuge?.RefreshPresentationQuality();
         }
 
         public void Exit()
         {
+            if (_context != null && _onQuality != null)
+                _context.Quality.StateChanged -= _onQuality;
+            _onQuality = null;
             _life?.SetAnimals(null);
             _refuge?.Dispose();
             _refuge = null;

@@ -27,6 +27,9 @@ namespace PocketWilds.Presentation
         /// <summary>Shop shortcut and Gems chip, shown once the shop is unlocked (after onboarding).</summary>
         void SetShop(bool unlocked, long gems);
 
+        /// <summary>T34: a short note (the device is warm, the picture is lighter); null hides it.</summary>
+        void SetNotice(string text);
+
         void Tick(float unscaledDeltaTime);
 
         /// <summary>True when a screen point lands on an interactive HUD element (world taps ignore it).</summary>

@@ -48,6 +48,11 @@ namespace PocketWilds.UI
         [SerializeField] private RectTransform _codexRoot;
         [SerializeField] private GameObject _codexBadge;
 
+        [Header("Notice (T34): the device is warm, the picture is lighter")]
+        [SerializeField] private RectTransform _noticeRoot;
+        [SerializeField] private CanvasGroup _noticeGroup;
+        [SerializeField] private TMP_Text _noticeLabel;
+
         [Header("Shop (T28): shown once unlocked")]
         [SerializeField] private Button _shopButton;
         [SerializeField] private RectTransform _shopRoot;
@@ -76,6 +81,8 @@ namespace PocketWilds.UI
         private MasteryGain _mastery;
         private float _masteryTime = -1f;
         private bool _masteryLevelShown;
+        private float _noticeAlpha;
+        private float _noticeTarget;
 
         private const float ToastIn = 0.18f;
         private const float ToastFillStart = 0.15f;
@@ -172,6 +179,24 @@ namespace PocketWilds.UI
             _masteryGlow.alpha = 0f;
         }
 
+        /// <summary>T34: a calm one-line note under the Light chip; null fades it out.</summary>
+        public void SetNotice(string text)
+        {
+            if (_noticeRoot == null)
+                return;
+            if (string.IsNullOrEmpty(text))
+            {
+                _noticeTarget = 0f;
+                return;
+            }
+            _noticeLabel.text = text;
+            _noticeTarget = 1f;
+            _noticeRoot.gameObject.SetActive(true);
+        }
+
+        public bool NoticeVisible => _noticeTarget > 0f;
+        public string NoticeText => _noticeLabel != null ? _noticeLabel.text : string.Empty;
+
         public void SetCodexBadge(bool visible)
         {
             if (_codexBadge == null || visible == _badgeShown)
@@ -207,6 +232,14 @@ namespace PocketWilds.UI
             if (!_bound)
                 return;
             FitSafeArea();
+            if (_noticeRoot != null && _noticeRoot.gameObject.activeSelf)
+            {
+                // Fades in and out over a third of a second; hidden (inactive) once faded out.
+                _noticeAlpha = Mathf.MoveTowards(_noticeAlpha, _noticeTarget, unscaledDeltaTime * 3f);
+                _noticeGroup.alpha = _noticeAlpha;
+                if (_noticeAlpha <= 0f && _noticeTarget <= 0f)
+                    _noticeRoot.gameObject.SetActive(false);
+            }
 
             float scale = 1f;
             if (!ReduceMotion)
@@ -372,6 +405,13 @@ namespace PocketWilds.UI
         private void OnShopPressed() => _actions?.OpenShop();
 
         /// <summary>Prefab builder hook for the shop shortcut and Gems chip (Editor ShopUiPipeline).</summary>
+        public void SetNoticeReferences(RectTransform root, CanvasGroup group, TMP_Text label)
+        {
+            _noticeRoot = root;
+            _noticeGroup = group;
+            _noticeLabel = label;
+        }
+
         public void SetShopReferences(Button shopButton, RectTransform shopRoot, RectTransform gemsChip, TMP_Text gemsLabel)
         {
             _shopButton = shopButton;

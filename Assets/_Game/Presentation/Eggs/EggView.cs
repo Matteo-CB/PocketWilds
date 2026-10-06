@@ -65,6 +65,14 @@ namespace PocketWilds.Presentation
                 _blobShadow.enabled = PresentationQuality.BlobShadows;
         }
 
+        /// <summary>T34: real shadows turned on or off during play (adaptive quality): the blob shadow follows.</summary>
+        public void RefreshQuality()
+        {
+            EnsureInitialized();
+            if (_blobShadow != null)
+                _blobShadow.enabled = ShellVisible && PresentationQuality.BlobShadows;
+        }
+
         public void SetCrackStage(int stage) => ApplyVisualData(EggVisualPacking.WithCrackStage(VisualData, stage));
 
         public void SetGlow(int glow) => ApplyVisualData(EggVisualPacking.WithGlow(VisualData, glow));

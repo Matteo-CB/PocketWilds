@@ -63,7 +63,13 @@ namespace PocketWilds.Presentation
         [Range(0f, 0.2f)] public float flutter = 0.035f;
 
         /// <summary>Applies the profile to the scene, the sun and the camera for a quality tier. Called on scene entry.</summary>
-        public void Apply(Light sun, Camera camera, QualityTier tier)
+        public void Apply(Light sun, Camera camera, QualityTier tier) => Apply(sun, camera, QualityState.Uniform(tier));
+
+        /// <summary>
+        /// Applies the profile for an adaptive quality state (T34): sun shadows follow the shadow tier, post-processing the
+        /// renderer tier, sky and fog globals the weather tier.
+        /// </summary>
+        public void Apply(Light sun, Camera camera, in QualityState quality)
         {
             if (sun != null)
             {
@@ -71,8 +77,6 @@ namespace PocketWilds.Presentation
                 sun.color = sunColor;
                 sun.intensity = sunIntensity;
                 sun.transform.rotation = Quaternion.Euler(sunAngles.x, sunAngles.y, 0f);
-                // Low has no shadow map at all (URP_Low): animals and eggs use blob shadows instead.
-                sun.shadows = tier == QualityTier.Low ? LightShadows.None : LightShadows.Soft;
                 sun.shadowStrength = shadowStrength;
                 RenderSettings.sun = sun;
             }
@@ -95,18 +99,31 @@ namespace PocketWilds.Presentation
             {
                 camera.clearFlags = sky != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
                 camera.backgroundColor = skyHorizon;
-                if (camera.TryGetComponent<UniversalAdditionalCameraData>(out var data))
-                {
-                    // The game must stay attractive without post: Low turns it off completely.
-                    data.renderPostProcessing = tier != QualityTier.Low;
-                    data.renderShadows = tier != QualityTier.Low;
-                }
             }
 
-            PresentationQuality.Apply(tier);
+            ApplyQuality(sun, camera, quality);
             // Sky colors, clouds, height fog and wind globals for this single profile (no mood blending).
             var state = AtmosphereState.From(this);
-            state.ApplyShaderGlobals(WorldQualityProfile.Default(tier));
+            state.ApplyShaderGlobals(WorldQualityProfile.Default(quality.Weather));
+        }
+
+        /// <summary>
+        /// The quality switches only, without touching colors or the sun's angle (adaptive steps during play: the
+        /// mood blending of WorldAtmosphere stays as it is).
+        /// </summary>
+        public static void ApplyQuality(Light sun, Camera camera, in QualityState quality)
+        {
+            // Shadows at Low: no shadow map at all, animals and eggs use blob shadows instead.
+            bool shadows = quality.Shadows != QualityTier.Low;
+            if (sun != null)
+                sun.shadows = shadows ? LightShadows.Soft : LightShadows.None;
+            if (camera != null && camera.TryGetComponent<UniversalAdditionalCameraData>(out var data))
+            {
+                // The game must stay attractive without post: the Low renderer turns it off completely.
+                data.renderPostProcessing = quality.Resolution != QualityTier.Low;
+                data.renderShadows = shadows;
+            }
+            PresentationQuality.Apply(quality);
         }
     }
 
@@ -118,10 +135,13 @@ namespace PocketWilds.Presentation
         /// <summary>Blob shadows replace the shadow map on Low.</summary>
         public static bool BlobShadows { get; private set; }
 
-        public static void Apply(QualityTier tier)
+        public static void Apply(QualityTier tier) => Apply(QualityState.Uniform(tier));
+
+        /// <summary>T34: the renderer tier, and blob shadows whenever real shadows are off.</summary>
+        public static void Apply(in QualityState quality)
         {
-            Tier = tier;
-            BlobShadows = tier == QualityTier.Low;
+            Tier = quality.Resolution;
+            BlobShadows = quality.Shadows == QualityTier.Low;
         }
     }
 }

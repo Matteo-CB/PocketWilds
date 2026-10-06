@@ -21,6 +21,8 @@ namespace PocketWilds.Benchmarks
         public bool stripTravel;
         /// <summary>T33B: a light shower is forced for the whole measure.</summary>
         public bool rain;
+        /// <summary>T34: every adaptive quality step from the boot tier down to Low and back up, one every 1.2 s.</summary>
+        public bool qualityLadder;
         /// <summary>Grassland species cycled through the save: 1 rabbits only, 2 + squirrels (T23), 3 + hedgehogs (T24).</summary>
         public int species = 1;
         public float warmupSeconds = 2f;
@@ -82,6 +84,16 @@ namespace PocketWilds.Benchmarks
         public float minAnimalClearanceCm;
         public float minLifeClearanceCm;
         public int overlapSamples;
+
+        /// <summary>T34: longest frame of the first seconds in the refuge, where everything is displayed for the first time (ms).</summary>
+        public float entryMaxFrameMs;
+        /// <summary>When the measure's longest frame happened (s after the measure started).</summary>
+        public float maxFrameAtSeconds;
+        /// <summary>T34: frame work time as adaptive quality reads it (FrameTimingManager), 95th percentile (ms).</summary>
+        public float adaptiveWorkP95Ms;
+        /// <summary>T34 quality ladder: steps applied and the longest frame among the 3 after each step (ms).</summary>
+        public int qualitySwitches;
+        public float maxSwitchFrameMs;
 
         /// <summary>Managed allocation per frame (bytes).</summary>
         public SampleStats gcBytes;
@@ -163,6 +175,11 @@ namespace PocketWilds.Benchmarks
         public int screenWidth;
         public int screenHeight;
         public string timestampUtc;
+        /// <summary>T34 shader warmup at the first boot: "states" (traced), "variants" (fallback), "none" or "skipped".</summary>
+        public string warmupSource;
+        public int warmupCount;
+        public float warmupMs;
+        public float warmupLongestFrameMs;
         public List<ScenarioResult> scenarios = new List<ScenarioResult>();
     }
 }
