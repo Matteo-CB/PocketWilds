@@ -28,12 +28,15 @@ namespace PocketWilds.Editor.Capture
     {
         public const string Folder = TextureImportRules.UiRoot + "Thumbnails/Animals";
         public const string CatalogPath = "Assets/_Game/Content/Visuals/DEF_CodexVisuals.asset";
-        public const int Size = 256;
-        private const int RenderSize = 768;
-        private const float Margin = 0.07f;
-        private const float FieldOfView = 24f;
-        private const float Azimuth = 28f;
-        private const float Elevation = 12f;
+        // T34C: the framing is data (Capture_AnimalIcon, M-DEF-CAPTURE), never hardcoded here.
+        private static CaptureProfile _profile;
+        private static CaptureProfile Profile => _profile != null ? _profile : _profile = CaptureProfile.Load(CaptureProfile.AnimalIcon);
+        public static int Size => Profile.width;
+        private static int RenderSize => Profile.width * Profile.supersample;
+        private static float Margin => Profile.padding;
+        private static float FieldOfView => Profile.fieldOfView;
+        private static float Azimuth => Profile.azimuth;
+        private static float Elevation => Profile.elevation;
 
         [MenuItem("Pocket Wilds/UI/Render Animal Thumbnails", priority = 210)]
         public static void Menu() => Debug.Log("[Thumbnails] " + RenderAll());

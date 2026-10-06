@@ -23,6 +23,23 @@ namespace PocketWilds.Editor.Build
                 throw new Exception("Android development build failed: " + report.summary.result);
         }
 
+        /// <summary>
+        /// Gate 33: the release APK (bootstrap and refuge only). BuildValidator stops it on any error; the content audit
+        /// (largest assets per category, Addressables bundles) is written next to the gate documents.
+        /// </summary>
+        [MenuItem("Pocket Wilds/Build/Android Release APK and Audit (gate 33)", priority = 301)]
+        public static void BuildAndroidReleaseMenu() => Debug.Log("[Build] " + BuildAndroidReleaseWithAudit(ReleaseAuditPath));
+
+        public const string ReleaseAuditPath = "Docs/Gates/T34C_Build_Audit.md";
+
+        public static string BuildAndroidReleaseWithAudit(string auditPath)
+        {
+            var report = BuildAndroid(development: false);
+            if (report.summary.result != BuildResult.Succeeded)
+                return "Android release build " + report.summary.result + " (" + report.summary.totalErrors + " errors, see the console)";
+            return "Android release: " + BuildAudit.Write(report, "Audit du contenu du build release Android (porte 33)", auditPath);
+        }
+
         public static void BuildAndroidDevelopmentBatch()
         {
             try
@@ -62,7 +79,11 @@ namespace PocketWilds.Editor.Build
             PlayerSettings.enableFrameTimingStats = true;
             var options = new BuildPlayerOptions
             {
-                scenes = new[] { ProjectSetup.BootstrapScenePath, ProjectSetup.VerticalSliceScenePath, ProjectSetup.BenchmarkAnimalsScenePath, ProjectSetup.BenchmarkUIScenePath },
+                scenes = new[]
+                {
+                    ProjectSetup.BootstrapScenePath, ProjectSetup.VerticalSliceScenePath, ProjectSetup.BenchmarkAnimalsScenePath, ProjectSetup.BenchmarkUIScenePath,
+                    BenchmarkScenesPipeline.VfxScenePath,
+                },
                 target = BuildTarget.StandaloneWindows64,
                 targetGroup = BuildTargetGroup.Standalone,
                 locationPathName = WindowsBenchmarkPath,
@@ -105,7 +126,11 @@ namespace PocketWilds.Editor.Build
             EditorUserBuildSettings.buildAppBundle = false;
 
             var scenes = development
-                ? new[] { ProjectSetup.BootstrapScenePath, ProjectSetup.VerticalSliceScenePath, ProjectSetup.BenchmarkAnimalsScenePath, ProjectSetup.BenchmarkUIScenePath }
+                ? new[]
+                {
+                    ProjectSetup.BootstrapScenePath, ProjectSetup.VerticalSliceScenePath, ProjectSetup.BenchmarkAnimalsScenePath, ProjectSetup.BenchmarkUIScenePath,
+                    BenchmarkScenesPipeline.VfxScenePath,
+                }
                 : new[] { ProjectSetup.BootstrapScenePath, ProjectSetup.VerticalSliceScenePath };
 
             var options = new BuildPlayerOptions
@@ -113,7 +138,8 @@ namespace PocketWilds.Editor.Build
                 scenes = scenes,
                 target = BuildTarget.Android,
                 locationPathName = Path.Combine(OutputFolder, "Android", development ? "PocketWilds-dev.apk" : "PocketWilds.apk"),
-                options = development ? BuildOptions.Development | BuildOptions.ConnectWithProfiler : BuildOptions.None,
+                // A release starts from a clean cache: reproducible, and its report lists every packed asset (the audit).
+                options = development ? BuildOptions.Development | BuildOptions.ConnectWithProfiler : BuildOptions.CleanBuildCache,
             };
 
             PrepareAddressables();

@@ -27,6 +27,8 @@ namespace PocketWilds.Benchmarks
         public bool feedbackBurst;
         /// <summary>T34B: every animal keeps asking for its voice, taps are spammed, collects and hatches repeat, 50 reactions at once.</summary>
         public bool audioStorm;
+        /// <summary>T34C: a scene of its own (SC_Benchmark_UI, SC_Benchmark_VFX) instead of the refuge.</summary>
+        public string scene;
         /// <summary>Grassland species cycled through the save: 1 rabbits only, 2 + squirrels (T23), 3 + hedgehogs (T24).</summary>
         public int species = 1;
         public float warmupSeconds = 2f;
@@ -122,12 +124,39 @@ namespace PocketWilds.Benchmarks
         /// T34B audio (every scenario, beds playing, output muted): main-thread audio update (AudioManager.Update, ms per
         /// frame), one-shot voices at once at most, sounds started and requests dropped (cooldowns, caps, off view).
         /// </summary>
+        /// <summary>T34C C1 (gate 13): Codex with 5000 species and a 5000-animal collection: open, fast scroll, reopen cycles.</summary>
+        public UiStressResult ui;
+        /// <summary>T34C V1 (L-SC-008): feedback effects at the pool's maximum concurrency while the tier changes.</summary>
+        public VfxStressResult vfx;
+
         public float audioMainMs;
         public float audioMainMaxMs;
         public int audioVoicesPeak;
         public int audioStarted;
         public int audioDropped;
         public bool audioBedsPlaying;
+    }
+
+    [Serializable]
+    public sealed class UiStressResult
+    {
+        public bool valid;
+        public int species;
+        public int animals;
+        public int rows;
+        public int rowViews;
+        public float firstOpenMs;
+        public float reopenMaxMs;
+        public int openCloseCycles;
+    }
+
+    [Serializable]
+    public sealed class VfxStressResult
+    {
+        public bool valid;
+        public int peakPlaying;
+        public int spawned;
+        public int tierSwitches;
     }
 
     /// <summary>T28: CPU time of the frames that open, buy in, close and reopen the shop.</summary>

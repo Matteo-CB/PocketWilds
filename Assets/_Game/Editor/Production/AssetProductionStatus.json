@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-06T01:07:03Z",
+  "updatedUtc": "2026-10-06T23:30:00Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -277,8 +277,8 @@
     {
       "task": "T34C",
       "title": "Outils et contrôle (BuildValidator, debug LOD et overdraw, captures de référence, benchmark VFX et Codex 5000, groupes Addressables)",
-      "status": "PLANNED",
-      "notes": "Added by the T30 gate."
+      "status": "DONE",
+      "notes": "Added by the T30 gate; done 2026-10-06 in two commits. Addressables groups Bootstrap and CommonAnimals (UI_Common, Audio_Common deferred with reasons). BuildValidator (ED-010, gate 33) runs while the build prepares; Android release APK 46 MB, 0 errors, 0 warnings, performance test run files kept out of releases, content audit Docs/Gates/T34C_Build_Audit.md. Debug views: DBG_LOD materials, overdraw counted per pixel (refuge 1.49 layers), chunk markers. CaptureProfile data (12 profiles); golden references per tier with GoldenVisualTests. SC_Benchmark_UI (C1, Codex 5000) and SC_Benchmark_VFX (V1); Codex fixes: rows recycled without disable and enable, list on its own canvas: UI 3.09 to 1.21 ms per frame. EditMode 413/413, PlayMode 73 + 1 explicit. Owner decisions open: Unity splash (2.7 MB), unused TMP EmojiOne (0.35 MB)."
     },
     {
       "task": "T34D",
@@ -6615,9 +6615,9 @@
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 007. | T19: PF_UI_Codex list: biome headers + 3-card rows in a virtualized ScrollRect (VirtualListLayout, pooled rows, RectMask2D). 5000 species = 1674 rows bound with 7 row views. Completion bar, New badge, undiscovered = silhouette + ???. Font TEMP. | T19: PF_UI_Codex list: biome headers + 3-card rows in a virtualized ScrollRect (VirtualListLayout, pooled rows, RectMask2D). 5000 species = 1674 rows bound with 7 row views. Completion bar, New badge, undiscovered = silhouette + ???. Font TEMP."
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "Local ID for doc 06 SCREEN 007. | T19: PF_UI_Codex list: biome headers + 3-card rows in a virtualized ScrollRect (VirtualListLayout, pooled rows, RectMask2D). 5000 species = 1674 rows bound with 7 row views. Completion bar, New badge, undiscovered = silhouette + ???. Font TEMP. | T19: PF_UI_Codex list: biome headers + 3-card rows in a virtualized ScrollRect (VirtualListLayout, pooled rows, RectMask2D). 5000 species = 1674 rows bound with 7 row views. Completion bar, New badge, undiscovered = silhouette + ???. Font TEMP. | T34C: rows leaving the window are reused in the same pass without a disable and enable (only unused views are hidden), the list has its own canvas (scrolling no longer rebuilds the header) and its raycaster; scenario C1 (5000 species, very fast scroll): UI 3.09 to 1.21 ms per frame, main thread 4.51 to 2.24 ms, 9 row views for 1674 rows, no allocation while scrolling."
     },
     {
       "id": "I-SCR-008",
@@ -8817,15 +8817,15 @@
       "family": "Prefab",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Prefabs/World/PF_WorldSelectionProxy.prefab",
       "validationGates": [
         "G08"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34C: deferred with reason: tap selection is an analytic ray and sphere test per animal and per egg (RefugeController.OnTap): no collider, no physics, as the no-collision rule asks. A selection proxy prefab becomes useful with player decorations (placement and selection of props)."
     },
     {
       "id": "K-PF-POPUP",
@@ -8917,15 +8917,15 @@
       "family": "Scene",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Scenes/SC_ArtCapture_Animals.unity",
       "validationGates": [
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34C: deferred with reason: captures are made from code with CaptureProfile data: AnimalThumbnailPipeline frames each animal in a temporary scene, ReferenceCapture and WorldCapture frame the refuge in the real scene. A dedicated scene adds nothing until the store and marketing art pass (soft launch)."
     },
     {
       "id": "L-SC-005",
@@ -8933,15 +8933,15 @@
       "family": "Scene",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Scenes/SC_ArtCapture_Props.unity",
       "validationGates": [
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34C: deferred with reason: same as L-SC-004 (decor icons use Capture_DecorIcon from code); a props capture scene waits for the store and marketing art pass."
     },
     {
       "id": "L-SC-006",
@@ -8966,14 +8966,17 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "INTEGRATED",
-      "sourcePath": null,
+      "sourcePath": "Assets/_Game/Editor/Build/BenchmarkScenesPipeline.cs",
       "runtimePath": "Assets/_Game/Scenes/Benchmarks/SC_Benchmark_UI.unity",
       "validationGates": [
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-05T18:03:08Z",
-      "notes": "Empty shell until Codex (T19). | T30 audit: SC_Benchmark_UI exists (Codex scroll benchmark); a 5000-entry UI scenario is still R-BENCH-5K."
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "Empty shell until Codex (T19). | T30 audit: SC_Benchmark_UI exists (Codex scroll benchmark); a 5000-entry UI scenario is still R-BENCH-5K. | T34C: driver BenchmarkUiEntry wired by BenchmarkScenesPipeline (Codex 5000 + HUD counter stress), scenario C1 of the benchmark runner. Development builds only (BuildValidator refuses it in a release).",
+      "passedGates": [
+        "G19"
+      ]
     },
     {
       "id": "L-SC-008",
@@ -8981,15 +8984,18 @@
       "family": "Scene",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Build/BenchmarkScenesPipeline.cs",
       "runtimePath": "Assets/_Game/Scenes/Benchmarks/SC_Benchmark_VFX.unity",
       "validationGates": [
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34C: created by BenchmarkScenesPipeline (refuge framing, meadow background, BenchmarkVfxEntry). Scenario V1: every feedback effect at the pool maximum (16 playing), 367 spawned, tier switched every 5 s; max frame 17.4 ms, no allocation per frame. Development builds only.",
+      "passedGates": [
+        "G19"
+      ]
     },
     {
       "id": "L-SC-009",
@@ -8997,15 +9003,15 @@
       "family": "Scene",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Scenes/SC_Sandbox_Art.unity",
       "validationGates": [
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Never in builds."
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "Never in builds. | T34C: deferred with reason: no artist sandbox is needed yet; BuildValidator already refuses any /Sandbox/ content and any non-release scene in a release, so the scene can be added safely when needed."
     },
     {
       "id": "M-DEF-SPECIES",
@@ -9118,16 +9124,16 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Visuals/DEF_VfxCatalog.asset",
       "validationGates": [
         "G16",
         "G18"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34A: DEF_VfxCatalog (effect prefabs, soft and hard pool sizes, warmup, particle scale per tier, 16 effects playing at most). T34C: stressed by V1 at maximum concurrency with tier switching (no allocation per frame, max frame 17.4 ms) and by the overdraw review of every effect at once."
     },
     {
       "id": "M-DEF-OFFER",
@@ -9209,16 +9215,16 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Capture/CaptureProfile.cs",
+      "runtimePath": "Assets/_Game/Editor/Capture/Profiles/",
       "validationGates": [
         "G16",
         "G18"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34C: CaptureProfile ScriptableObject (shot, size, supersample, field of view, padding, framing angles, background, transparency, tier, animals, debug view, MSAA, output name). 12 profiles: icons (animal, egg, decor), store and share frames, golden references per tier, LOD and overdraw reviews. AnimalThumbnailPipeline reads Capture_AnimalIcon; ReferenceCapture reads the others. Editor only."
     },
     {
       "id": "M-DEF-DENSITY",
@@ -9226,16 +9232,16 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": null,
       "validationGates": [
         "G16",
         "G18"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34C: deferred with reason: density is per quality tier today (DEF_WorldQuality: scatter and life density, fade distances) and the only biome uses it as is. A per-biome profile is useful with the second biome (Forest), when two biomes need different densities."
     },
     {
       "id": "M-DEF-LIGHTING",
@@ -10526,15 +10532,18 @@
       "family": "Debug",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/World/ChunkMarkerGizmos.cs",
       "runtimePath": null,
       "validationGates": [
         "G33"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34C: ChunkMarkerGizmos draws each WorldChunk egg spawn, animal spawns, points of interest, wander area and obstacle volumes in the Scene view (DrawGizmo, editor only, never a runtime object).",
+      "passedGates": [
+        "G33"
+      ]
     },
     {
       "id": "R-DBG-LOD",
@@ -10542,15 +10551,18 @@
       "family": "Debug",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Capture/ReferenceCapture.cs",
+      "runtimePath": "Assets/_Game/Art/Debug/",
       "validationGates": [
         "G33"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34C: DBG_LOD_Red/Green/Blue (URP Unlit) painted on every LODGroup by Capture_LOD_Refuge (farthest zoom), restored after the shot. Never shipped (BuildValidator, GoldenVisualTests.DebugMaterials_ExistAndNeverShip). Review image Docs/Captures/Review/Capture_LOD_Refuge.png.",
+      "passedGates": [
+        "G33"
+      ]
     },
     {
       "id": "R-DBG-OVERDRAW",
@@ -10558,15 +10570,18 @@
       "family": "Debug",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Capture/ReferenceCapture.cs",
+      "runtimePath": "Assets/_Game/Editor/Capture/Profiles/",
       "validationGates": [
         "G33"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34C: Capture_Overdraw_Refuge and Capture_Overdraw_Hatch count layers per pixel (additive counting material on every renderer, the instanced scatter and life and every particle, float target) and write a heat map with a legend. The URP rendering debugger could not show the game shaders (no DEBUG_DISPLAY, heat pass only on screen). Refuge: 1.49 layers on covered pixels, 1.9% >= 4, 0.1% >= 6, max 10. Every effect at once over the egg: 1.2% >= 8, max 15. Test GoldenVisualTests.Overdraw_StaysLow (refuge mean < 2, >= 6 under 1%; hatch >= 8 under 3%).",
+      "passedGates": [
+        "G33"
+      ]
     },
     {
       "id": "R-BENCH-5K",
@@ -10574,15 +10589,18 @@
       "family": "Benchmark",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Benchmarks/Runner/BenchmarkUiEntry.cs",
       "runtimePath": null,
       "validationGates": [
         "G20"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Generated at test time."
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "Generated at test time. | T34C: BenchmarkUiEntry generates 5000 species in 6 biomes and a 5001-animal collection at start (no texture per entry) for the real PF_UI_Codex and PF_UI_HUD_Main; scenario C1 (Windows player): 1674 rows with 9 row views, first open 8.4 ms, reopen max 1.5 ms, 30 s of very fast scroll at 60 fps (max frame 17.8 ms), UI 1.21 ms per frame after the T34C Codex fixes (3.09 before).",
+      "passedGates": [
+        "G20"
+      ]
     },
     {
       "id": "R-BENCH-50K",
@@ -10642,16 +10660,16 @@
         "A-SP-001",
         "D-BIO-001"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Capture/ReferenceCapture.cs",
+      "runtimePath": "Docs/Captures/Golden/",
       "validationGates": [
         "G02",
         "G11"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34C: Capture_Golden_Refuge_Low/Medium/High (540x1170, 6 animals, wind held still) in Docs/Captures/Golden. GoldenVisualTests renders them again and compares: mean difference 0.05-0.07 and 0.10-0.15% changed pixels between identical renders; limits mean < 1 and changed < 0.5%; two tiers differ by mean 3.3-8.7 and 5-8% changed, so a real change fails. Machine-specific: regenerate with Pocket Wilds/Capture/Update Golden References after a GPU or driver change."
     },
     {
       "id": "ED-001",
@@ -10777,9 +10795,9 @@
       "validationGates": [
         "G33"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-05T18:03:08Z",
-      "notes": "T30 audit: capture tools exist: WorldCapture, HatchCapture, HudCapture, ShopCapture, AnimalThumbnailPipeline (menus Pocket Wilds/Capture/*)."
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T30 audit: capture tools exist: WorldCapture, HatchCapture, HudCapture, ShopCapture, AnimalThumbnailPipeline (menus Pocket Wilds/Capture/*). | T34C: every capture setup is data (CaptureProfile, M-DEF-CAPTURE); ReferenceCapture adds golden references, LOD and overdraw reviews; CaptureUtility.RenderLinear renders debug counts into a float target."
     },
     {
       "id": "ED-009",
@@ -10793,9 +10811,9 @@
       "validationGates": [
         "G33"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-05T18:03:08Z",
-      "notes": "T30 audit: PerformanceBaselineRunner + Windows benchmark build (-pw-benchmark) cover P0-P5, S, W1, U1."
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T30 audit: PerformanceBaselineRunner + Windows benchmark build (-pw-benchmark) cover P0-P5, S, W1, U1. | T34C: scene scenarios C1 (SC_Benchmark_UI, Codex 5000) and V1 (SC_Benchmark_VFX), RunSceneScenario samples them like the refuge; baseline Docs/Performance/Baselines/T34C_player_windows_tools.json (10 scenarios)."
     },
     {
       "id": "ED-010",
@@ -10803,15 +10821,18 @@
       "family": "EditorTool",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Build/BuildValidator.cs",
       "runtimePath": null,
       "validationGates": [
         "G33"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34C",
+      "lastValidationUtc": "2026-10-06T23:30:00Z",
+      "notes": "T34C: BuildValidator walks what a build ships (build scenes + every Addressables entry through asset references, never scripts) and checks scenes, forbidden content (TEMP, Sandbox, Debug, DBG_, Benchmarks, Tests, Editor, SourceArt), shader families and compile errors, texture caps (measured on the Android import), Read/Write, compression, content ids, Addressables duplicates, development-only assemblies and missing scripts. Runs while the build prepares (BuildPlayerProcessor, real scene list); a release stops on any error. Also walks every project Resources folder; ReleaseResourcesGuard removes the performance testing run files (build machine details, written into Assets/Resources by a com.unity.collections dependency) from release builds. Android release APK (clean cache): 0 errors, 0 warnings on 373 assets; content audit Docs/Gates/T34C_Build_Audit.md (BuildAudit). Tests: BuildValidatorTests (5).",
+      "passedGates": [
+        "G33"
+      ]
     },
     {
       "id": "ED-011",

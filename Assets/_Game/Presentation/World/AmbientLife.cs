@@ -116,6 +116,8 @@ namespace PocketWilds.Presentation
         public int LastInstances { get; private set; }
         /// <summary>Instanced draws submitted by the last <see cref="Render"/>.</summary>
         public int LastDraws { get; private set; }
+        /// <summary>Editor captures only (overdraw review): every individual drawn with this material. Null in the game.</summary>
+        public Material OverrideMaterial { get; set; }
         public int AgentCount
         {
             get
@@ -298,6 +300,13 @@ namespace PocketWilds.Presentation
             LastAirborne = airborne;
         }
 
+        private RenderParams WithOverride(RenderParams source)
+        {
+            if (OverrideMaterial != null)
+                source.material = OverrideMaterial;
+            return source;
+        }
+
         /// <summary>Submits the visible individuals for this frame. No allocation.</summary>
         public void Render(Camera camera, float time)
         {
@@ -338,12 +347,12 @@ namespace PocketWilds.Presentation
                 s.GroundParams.camera = camera;
                 if (flying > 0)
                 {
-                    Graphics.RenderMeshInstanced(s.FlyParams, s.Def.mesh, 0, s.Flying, flying);
+                    Graphics.RenderMeshInstanced(WithOverride(s.FlyParams), s.Def.mesh, 0, s.Flying, flying);
                     LastDraws++;
                 }
                 if (grounded > 0)
                 {
-                    Graphics.RenderMeshInstanced(s.GroundParams, s.Def.mesh, 0, s.Grounded, grounded);
+                    Graphics.RenderMeshInstanced(WithOverride(s.GroundParams), s.Def.mesh, 0, s.Grounded, grounded);
                     LastDraws++;
                 }
                 LastInstances += flying + grounded;

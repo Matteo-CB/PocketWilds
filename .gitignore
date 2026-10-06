@@ -56,3 +56,10 @@ desktop.ini
 
 # Python
 __pycache__/
+
+# Generated during player builds (T34C): the Addressables link.xml of a release content build, and the empty
+# Resources folder the performance testing package (a com.unity.collections dependency) leaves behind.
+/Assets/AddressableAssetsData/link.xml
+/Assets/AddressableAssetsData/link.xml.meta
+/Assets/Resources/
+/Assets/Resources.meta

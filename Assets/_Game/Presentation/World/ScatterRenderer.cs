@@ -51,6 +51,8 @@ namespace PocketWilds.Presentation
         /// <summary>Instanced draws submitted by the last <see cref="Render"/>.</summary>
         public int LastDraws { get; private set; }
         public float Density => _density;
+        /// <summary>Editor captures only (overdraw review): every batch drawn with this material. Null in the game.</summary>
+        public Material OverrideMaterial { get; set; }
 
         /// <summary>Share of every kind group drawn: 0.3 Fluide, 0.65 Équilibrée, 1 Magnifique.</summary>
         public void SetDensity(float density) => _density = Mathf.Clamp01(density);
@@ -107,6 +109,12 @@ namespace PocketWilds.Presentation
             return true;
         }
 
+        private static RenderParams WithMaterial(RenderParams source, Material material)
+        {
+            source.material = material;
+            return source;
+        }
+
         public bool Remove(WorldChunk chunk)
         {
             int index = IndexOf(chunk);
@@ -144,7 +152,10 @@ namespace PocketWilds.Presentation
                         continue;
                     // Bound to this camera: a draw queued for one camera never leaks into another render.
                     batch.Params.camera = camera;
-                    Graphics.RenderMeshInstanced(batch.Params, batch.Mesh, 0, batch.Matrices, count);
+                    if (OverrideMaterial == null)
+                        Graphics.RenderMeshInstanced(batch.Params, batch.Mesh, 0, batch.Matrices, count);
+                    else
+                        Graphics.RenderMeshInstanced(WithMaterial(batch.Params, OverrideMaterial), batch.Mesh, 0, batch.Matrices, count);
                     LastInstances += count;
                     LastDraws++;
                 }

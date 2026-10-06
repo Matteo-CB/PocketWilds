@@ -100,6 +100,14 @@ namespace PocketWilds.Benchmarks
             {
                 species = 3, audioStorm = true, measureSeconds = 16f,
             },
+            new PerformanceScenario("C1", "Codex 5000 species, 5000 animals: open, 30 s fast scroll, 20 reopen cycles, HUD counter stress", 0, QualityTier.Medium)
+            {
+                scene = "SC_Benchmark_UI", warmupSeconds = 1f, measureSeconds = 46f,
+            },
+            new PerformanceScenario("V1", "Feedback effects at maximum concurrency, tier switching every 5 s (Low, Medium, High)", 0, QualityTier.High)
+            {
+                scene = "SC_Benchmark_VFX", warmupSeconds = 1f, measureSeconds = 30f,
+            },
         };
 
         private static PerformanceScenario[] Filter(PerformanceScenario[] all, string[] args)
@@ -179,6 +187,11 @@ namespace PocketWilds.Benchmarks
 
             foreach (var scenario in scenarios)
             {
+                if (!string.IsNullOrEmpty(scenario.scene))
+                {
+                    yield return RunSceneScenario(scenario, report);
+                    continue;
+                }
                 string saveDir = Path.Combine(Application.temporaryCachePath, "pw-benchmark", scenario.id);
                 PrepareSave(saveDir, scenario.rabbits, scenario.species);
                 yield return Boot(saveDir, scenario.tier);
@@ -332,6 +345,76 @@ namespace PocketWilds.Benchmarks
             foreach (var leftover in Object.FindObjectsByType<GameBootstrap>(FindObjectsSortMode.None))
                 Object.Destroy(leftover.gameObject);
             done(report);
+        }
+
+        /// <summary>
+        /// T34C: a benchmark scene of its own (no bootstrap, no refuge): its driver runs for the measure and every frame
+        /// is sampled like the refuge scenarios.
+        /// </summary>
+        private static IEnumerator RunSceneScenario(PerformanceScenario scenario, PerformanceReport report)
+        {
+            foreach (var old in Object.FindObjectsByType<GameBootstrap>(FindObjectsSortMode.None))
+                Object.Destroy(old.gameObject);
+            BenchmarkUiEntry.DrivenByRunner = true;
+            BenchmarkVfxEntry.DrivenByRunner = true;
+            SceneManager.LoadScene(scenario.scene, LoadSceneMode.Single);
+            yield return null;
+            yield return null;
+            var ui = Object.FindAnyObjectByType<BenchmarkUiEntry>();
+            var vfx = Object.FindAnyObjectByType<BenchmarkVfxEntry>();
+            if (ui == null && vfx == null)
+            {
+                Debug.LogError("[Benchmark] " + scenario.id + ": " + scenario.scene + " has no benchmark driver.");
+                yield break;
+            }
+            float ready = Time.realtimeSinceStartup + 10f;
+            while (vfx != null && !vfx.Ready && Time.realtimeSinceStartup < ready)
+                yield return null;
+            var sampler = new FrameSampler(Mathf.CeilToInt(scenario.measureSeconds * 240f) + 64);
+            IEnumerator run = ui != null ? ui.Run(30f, 20) : vfx.Run(scenario.measureSeconds);
+            GC.Collect();
+            float until = Time.realtimeSinceStartup + scenario.warmupSeconds;
+            while (Time.realtimeSinceStartup < until)
+                yield return null;
+            float start = Time.realtimeSinceStartup;
+            float maxFrame = 0f, maxFrameAt = 0f;
+            while (Time.realtimeSinceStartup - start < scenario.measureSeconds)
+            {
+                bool more = run.MoveNext();
+                yield return run.Current;
+                sampler.Sample();
+                if (sampler.LastCpuMs > maxFrame)
+                {
+                    maxFrame = sampler.LastCpuMs;
+                    maxFrameAt = Time.realtimeSinceStartup - start;
+                }
+                if (!more)
+                    break;
+            }
+            var result = sampler.Finish(scenario, 0, Time.realtimeSinceStartup - start);
+            sampler.Dispose();
+            result.maxFrameAtSeconds = maxFrameAt;
+            if (ui != null)
+            {
+                result.ui = new UiStressResult
+                {
+                    valid = true, species = ui.Species, animals = ui.Animals, rows = ui.Rows, rowViews = ui.RowViews,
+                    firstOpenMs = ui.FirstOpenMs, reopenMaxMs = ui.ReopenMaxMs, openCloseCycles = ui.OpenCloseCycles,
+                };
+                Debug.Log($"[Benchmark] {scenario.id} codex: {ui.Species} species, {ui.Animals} animals, {ui.Rows} rows, {ui.RowViews} row views, " +
+                          $"first open {ui.FirstOpenMs:F1} ms, reopen max {ui.ReopenMaxMs:F1} ms, {ui.OpenCloseCycles} cycles");
+            }
+            if (vfx != null)
+            {
+                result.vfx = new VfxStressResult { valid = true, peakPlaying = vfx.PeakPlaying, spawned = vfx.Spawned, tierSwitches = vfx.TierSwitches };
+                Debug.Log($"[Benchmark] {scenario.id} vfx: peak {vfx.PeakPlaying} playing, {vfx.Spawned} spawned, {vfx.TierSwitches} tier switches");
+            }
+            report.scenarios.Add(result);
+            Debug.Log($"[Benchmark] {scenario.id} {scenario.label}: CPU {result.cpuFrameMs.mean:F2} ms (p95 {result.cpuFrameMs.p95:F2}, max {result.cpuFrameMs.max:F1}), " +
+                      $"main {result.mainThreadMs.mean:F2}, GPU {(result.gpuMs.valid ? result.gpuMs.mean.ToString("F2") : "n/a")}, UI {result.uiMs.mean:F3} ms, " +
+                      $"GC {result.gcBytes.mean:F0} B/frame ({result.framesWithGc} frames), batches {result.batches:F0}, memory {result.totalUsedMemoryMb:F0} MB");
+            BenchmarkUiEntry.DrivenByRunner = false;
+            BenchmarkVfxEntry.DrivenByRunner = false;
         }
 
         /// <summary>T33B: east along the whole strip of chunks, then back to the refuge. No allocation per step.</summary>

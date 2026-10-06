@@ -128,6 +128,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 162468536}
+  - component: {fileID: 162468537}
   m_Layer: 0
   m_Name: BenchmarkEntry
   m_TagString: Untagged
@@ -150,6 +151,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &162468537
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 162468535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81953237fe0d20845855be4fd1c4e9f2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Benchmarks.Runner::PocketWilds.Benchmarks.BenchmarkUiEntry
+  _codexPrefab: {fileID: 4529900340440685571, guid: 756b4e8f9ade4f347be9e673d99ace43, type: 3}
+  _hudPrefab: {fileID: 5517067607776060405, guid: c2321457bbb9f724e8ba294067b93ff0, type: 3}
+  _species: 5000
+  _biomes: 6
+  _animalsPerFound: 3
+  _runOnStart: 1
 --- !u!1 &1604340725
 GameObject:
   m_ObjectHideFlags: 0

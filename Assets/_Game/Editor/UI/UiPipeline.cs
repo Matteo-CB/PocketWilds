@@ -597,6 +597,10 @@ namespace PocketWilds.Editor.UI
                 listContent.pivot = new Vector2(0.5f, 1f);
                 listContent.anchoredPosition = Vector2.zero;
                 listContent.sizeDelta = new Vector2(0f, 400f);
+                // Own canvas (T34C, Codex 5000): scrolling moves it without rebuilding the header, and a row that
+                // changes rebuilds only the list. Its raycaster keeps the cards tappable.
+                listContent.gameObject.AddComponent<Canvas>();
+                listContent.gameObject.AddComponent<GraphicRaycaster>();
                 var scroll = viewport.gameObject.AddComponent<ScrollRect>();
                 ConfigureScroll(scroll, viewport, listContent);
 

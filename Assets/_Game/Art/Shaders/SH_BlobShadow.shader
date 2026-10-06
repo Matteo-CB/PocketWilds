@@ -64,7 +64,7 @@ Shader "PocketWilds/BlobShadow"
             {
                 half mask = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).r;
                 // Widen the soft dot: the core sits under the body, the visible part is the falloff.
-                half shade = saturate(pow(mask, 0.55h) * 1.25h) * _Strength;
+                half shade = saturate(pow(max(mask, 0.0h), 0.55h) * 1.25h) * _Strength;
                 return half4(lerp(half3(1, 1, 1), _ShadowColor.rgb, shade), 1);
             }
             ENDHLSL

@@ -47,7 +47,8 @@ namespace PocketWilds.UI
                 _background.color = Color.white;
                 _thumbnail.color = Color.white;
                 _name.color = tokens.textPrimary;
-                _count.gameObject.SetActive(true);
+                if (!_count.gameObject.activeSelf)
+                    _count.gameObject.SetActive(true);
                 _numbers.SetRatio(_count, entry.VariantsFound, entry.VariantsTotal);
             }
             else
@@ -56,7 +57,8 @@ namespace PocketWilds.UI
                 _background.color = tokens.panelSecondary;
                 _thumbnail.color = new Color(tokens.textSecondary.r, tokens.textSecondary.g, tokens.textSecondary.b, 0.55f);
                 _name.color = tokens.textDisabled;
-                _count.gameObject.SetActive(false);
+                if (_count.gameObject.activeSelf)
+                    _count.gameObject.SetActive(false);
             }
             if (_newBadge.activeSelf != entry.IsNew)
                 _newBadge.SetActive(entry.IsNew);

@@ -388,17 +388,20 @@ namespace PocketWilds.UI
             using (GameProfilerMarkers.UICodexBind.Auto())
             {
                 _layout.GetVisibleRange(scroll, viewport, Overscan, out int first, out int last);
-                // Release rows that left the window (or all of them on a forced rebind).
+                // Rows that left the window (or all of them on a forced rebind) go back to the pools still active: the
+                // rows entering in the same pass reuse them without a disable and enable, which would re-register
+                // every graphic and rebuild every text. Only the views nobody took are hidden.
                 for (int r = _boundFirst; r <= _boundLast; r++)
                 {
                     if (force || r < first || r > last)
-                        Release(r);
+                        Release(r, false);
                 }
                 for (int r = first; r <= last; r++)
                 {
                     if (_headerAt[r] == null && _cardRowAt[r] == null)
                         Acquire(r);
                 }
+                HideFreeViews();
                 _boundFirst = first;
                 _boundLast = last;
             }
@@ -440,23 +443,39 @@ namespace PocketWilds.UI
             _cardRowAt[r] = cards;
         }
 
-        private void Release(int r)
+        private void Release(int r, bool hide = true)
         {
             if (r < 0 || r >= _headerAt.Length)
                 return;
             var header = _headerAt[r];
             if (header != null)
             {
-                header.gameObject.SetActive(false);
+                if (hide)
+                    header.gameObject.SetActive(false);
                 _freeHeaders.Push(header);
                 _headerAt[r] = null;
             }
             var cards = _cardRowAt[r];
             if (cards != null)
             {
-                cards.gameObject.SetActive(false);
+                if (hide)
+                    cards.gameObject.SetActive(false);
                 _freeCardRows.Push(cards);
                 _cardRowAt[r] = null;
+            }
+        }
+
+        private void HideFreeViews()
+        {
+            foreach (var header in _freeHeaders)
+            {
+                if (header.gameObject.activeSelf)
+                    header.gameObject.SetActive(false);
+            }
+            foreach (var cards in _freeCardRows)
+            {
+                if (cards.gameObject.activeSelf)
+                    cards.gameObject.SetActive(false);
             }
         }
 
