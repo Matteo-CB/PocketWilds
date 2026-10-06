@@ -44,5 +44,11 @@ namespace PocketWilds.Bootstrap
 
         /// <summary>When false, stays in the bootstrap scene after boot (tests).</summary>
         public bool LoadTargetScene = true;
+
+        /// <summary>T34B: benchmarks and tests run the audio (mixing, voices, decoding) without making a sound.</summary>
+        public bool MuteAudio;
+
+        /// <summary>T34B: tests record the haptic patterns instead of the platform's vibrator.</summary>
+        public PocketWilds.Services.Feedback.IHapticBackend HapticBackendOverride;
     }
 }

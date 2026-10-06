@@ -193,7 +193,7 @@ namespace PocketWilds.Editor.Lighting
                 data.renderShadows = true;
                 data.requiresDepthOption = CameraOverrideOption.Off;
                 data.requiresColorOption = CameraOverrideOption.Off;
-                cameraGo.AddComponent<AudioListener>();
+                // T34B: no AudioListener here; the game's only listener lives on the persistent audio root.
                 rig.SetCamera(camera);
                 Directory.CreateDirectory(Path.GetDirectoryName(CameraRigPath));
                 return PrefabUtility.SaveAsPrefabAsset(root, CameraRigPath).GetComponent<RefugeCameraRig>();

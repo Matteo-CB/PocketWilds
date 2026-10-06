@@ -1,0 +1,120 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 312940156c874f8419101049fbd3894e, type: 3}
+  m_Name: DEF_HapticProfiles
+  m_EditorClassIdentifier: Game.Services::PocketWilds.Services.Feedback.HapticProfileSet
+  profiles:
+  - id: 1
+    steps:
+    - primitive: 1
+      scale: 0.5
+      delayMs: 0
+    timingsMs: 00000000000000000c00000000000000
+    amplitudes: 0000000046000000
+    cooldown: 0.03
+    skipOnBatterySaver: 0
+  - id: 2
+    steps:
+    - primitive: 0
+      scale: 0.6
+      delayMs: 0
+    timingsMs: 00000000000000001200000000000000
+    amplitudes: 0000000082000000
+    cooldown: 0.05
+    skipOnBatterySaver: 0
+  - id: 3
+    steps:
+    - primitive: 0
+      scale: 0.55
+      delayMs: 0
+    - primitive: 1
+      scale: 0.7
+      delayMs: 70
+    timingsMs: 0000000000000000100000000000000046000000000000000e00000000000000
+    amplitudes: 0000000078000000000000005a000000
+    cooldown: 0.2
+    skipOnBatterySaver: 0
+  - id: 4
+    steps:
+    - primitive: 0
+      scale: 0.85
+      delayMs: 0
+    - primitive: 1
+      scale: 0.6
+      delayMs: 90
+    timingsMs: 0000000000000000180000000000000055000000000000000e00000000000000
+    amplitudes: 00000000b4000000000000005a000000
+    cooldown: 0.3
+    skipOnBatterySaver: 0
+  - id: 5
+    steps:
+    - primitive: 0
+      scale: 0.9
+      delayMs: 0
+    - primitive: 0
+      scale: 0.6
+      delayMs: 70
+    - primitive: 1
+      scale: 0.7
+      delayMs: 70
+    timingsMs: 00000000000000001c000000000000003c0000000000000014000000000000003c000000000000000e00000000000000
+    amplitudes: 00000000c8000000000000008c000000000000005a000000
+    cooldown: 0.4
+    skipOnBatterySaver: 0
+  - id: 6
+    steps:
+    - primitive: 4
+      scale: 0.6
+      delayMs: 0
+    - primitive: 0
+      scale: 1
+      delayMs: 20
+    - primitive: 1
+      scale: 0.8
+      delayMs: 80
+    - primitive: 1
+      scale: 0.6
+      delayMs: 60
+    timingsMs: 0000000000000000280000000000000014000000000000001e0000000000000050000000000000000e000000000000003c000000000000000c00000000000000
+    amplitudes: 000000005a00000000000000dc0000000000000078000000000000005a000000
+    cooldown: 0.5
+    skipOnBatterySaver: 0
+  - id: 7
+    steps:
+    - primitive: 2
+      scale: 0.7
+      delayMs: 0
+    timingsMs: 00000000000000002300000000000000
+    amplitudes: 0000000046000000
+    cooldown: 0.3
+    skipOnBatterySaver: 0
+  - id: 8
+    steps:
+    - primitive: 0
+      scale: 0.7
+      delayMs: 0
+    - primitive: 1
+      scale: 0.5
+      delayMs: 80
+    timingsMs: 0000000000000000140000000000000050000000000000000e00000000000000
+    amplitudes: 0000000096000000000000005a000000
+    cooldown: 0.5
+    skipOnBatterySaver: 0
+  - id: 9
+    steps:
+    - primitive: 1
+      scale: 0.3
+      delayMs: 0
+    timingsMs: 00000000000000000800000000000000
+    amplitudes: 000000002d000000
+    cooldown: 0.08
+    skipOnBatterySaver: 1

@@ -46,6 +46,10 @@ namespace PocketWilds.Bootstrap
         [SerializeField] private ShaderWarmupSet _shaderWarmup;
         [Tooltip("T34A boot screen (PF_UI_Splash): shown from the first frame until the refuge is ready.")]
         [SerializeField] private PocketWilds.UI.SplashScreen _splashPrefab;
+        [Tooltip("T34B: every sound, the mixer and the voice pool (DEF_AudioEvents).")]
+        [SerializeField] private AudioCatalog _audioCatalog;
+        [Tooltip("T34B: haptic patterns (DEF_HapticProfiles).")]
+        [SerializeField] private HapticProfileSet _hapticProfiles;
 
         private PocketWilds.UI.SplashScreen _splash;
 
@@ -71,6 +75,9 @@ namespace PocketWilds.Bootstrap
         private GameLoop _loop;
         private PaletteTable _palettes;
         private ISceneEntry _activeEntry;
+        private AudioService _audio;
+        private HapticService _haptics;
+        private IHapticBackend _hapticBackend;
 
         public BootState State { get; private set; } = BootState.NotStarted;
         public GameContext Context { get; private set; }
@@ -80,6 +87,10 @@ namespace PocketWilds.Bootstrap
         public OfflineReport OfflineAtBoot { get; private set; }
 
         public BootSequence Sequence { get; private set; }
+
+        /// <summary>Audio and haptics (T34B). Null before the Audio step.</summary>
+        public AudioService Audio => _audio;
+        public HapticService Haptics => _haptics;
 
         /// <summary>Analytics (T29). Null before the Analytics step.</summary>
         public AnalyticsService Analytics => _analytics;
@@ -241,6 +252,22 @@ namespace PocketWilds.Bootstrap
                     GameLog.Info(LogCategory.Save, $"Offline {OfflineAtBoot.CreditedSeconds:F0} s, +{BigValueFormatter.ToDebugString(OfflineAtBoot.Light)} Light");
             });
 
+            // T34B: the voice pool and beds exist before the refuge; settings decide levels and vibrations.
+            sequence.AddBlocking("Audio", () =>
+            {
+                var settings = _save.State.Settings;
+                _audio = new AudioService(_audioCatalog, transform, listener: true);
+                _audio.ApplySettings(settings.SfxVolume, settings.MusicVolume, _batterySaver);
+                _hapticBackend = CreateHapticBackend();
+                _haptics = new HapticService(_hapticProfiles, _hapticBackend)
+                {
+                    Enabled = settings.HapticsEnabled,
+                    BatterySaver = _batterySaver,
+                };
+                if (_options.MuteAudio)
+                    AudioListener.volume = 0f;
+            });
+
             // T34: every traced graphics state is built now, behind the loading screen, not at its first display.
             sequence.AddBlocking("ShaderWarmup", async cancellationToken => await ShaderWarmup.RunAsync(_shaderWarmup, cancellationToken));
 
@@ -250,10 +277,11 @@ namespace PocketWilds.Bootstrap
                 var visuals = new AnimalVisualResolver(_content, _palettes);
                 var catalog = _options.VisualCatalogOverride != null ? _options.VisualCatalogOverride : _visualCatalog;
                 Context = new GameContext(_clock, _content, _save, _economy, _hatch, _quality, _frameRate, _palettes, visuals, catalog,
-                    NullAudioService.Instance, NullHapticService.Instance, _offline, _localization, _codex, _store, _analytics);
+                    _audio, _haptics, _offline, _localization, _codex, _store, _analytics);
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);
+                _loop.SetFeedback(_audio, _haptics);
                 if (_options.LoadTargetScene)
                 {
                     var scene = Stopwatch.StartNew();
@@ -264,6 +292,18 @@ namespace PocketWilds.Bootstrap
 
             // Cloud save, Remote Config and analytics register here as background steps when they exist.
             return sequence;
+        }
+
+        /// <summary>The device's vibrator on Android; nothing elsewhere (editor, PC), or a test recorder.</summary>
+        private IHapticBackend CreateHapticBackend()
+        {
+            if (_options.HapticBackendOverride != null)
+                return _options.HapticBackendOverride;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            return new AndroidHapticBackend(_hapticProfiles);
+#else
+            return NoHapticBackend.Instance;
+#endif
         }
 
         private static ContentRegistry BuildShippedContent(ContentDatabaseAsset database)
@@ -354,6 +394,12 @@ namespace PocketWilds.Bootstrap
         {
             ShaderWarmup.EndBootTrace();
             _quality?.Dispose();
+            _audio?.Dispose();
+            _audio = null;
+            (_hapticBackend as IDisposable)?.Dispose();
+            _hapticBackend = null;
+            if (_options != null && _options.MuteAudio)
+                AudioListener.volume = 1f;
             _analytics?.Dispose();
             _analytics = null;
             _store?.Dispose();

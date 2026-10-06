@@ -21,6 +21,15 @@ namespace PocketWilds.Presentation
         SocialWait = 10,
     }
 
+    /// <summary>
+    /// T34B: a near animal (tier A) starts a state with a voice: a greeting, a moment of joy, falling asleep. The
+    /// listener decides whether it is heard (the audio service caps and spaces animal voices for the whole refuge).
+    /// </summary>
+    public interface IAnimalVoiceListener
+    {
+        void AnimalVoice(AnimalView view, AnimalBehaviorState state, Vector3 position);
+    }
+
     /// <summary>What an animal does at a point of interest.</summary>
     public enum InterestKind : byte
     {

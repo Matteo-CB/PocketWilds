@@ -7,6 +7,7 @@ using PocketWilds.Content;
 using PocketWilds.Core;
 using PocketWilds.Presentation;
 using PocketWilds.UI;
+using PocketWilds.Services.Feedback;
 using PocketWilds.Services.Save;
 using PocketWilds.Simulation;
 using Unity.Profiling;
@@ -94,6 +95,10 @@ namespace PocketWilds.Benchmarks
             new PerformanceScenario("F1", "Feedback: every effect at once, then one by one, animal sheet, egg odds, toast, 20 animals", 20, QualityTier.High)
             {
                 species = 3, feedbackBurst = true, measureSeconds = 16f,
+            },
+            new PerformanceScenario("A1", "Audio storm: every animal asks for its voice, tap spam, collects, hatches, 50 reactions at once, 20 animals", 20, QualityTier.High)
+            {
+                species = 3, audioStorm = true, measureSeconds = 16f,
             },
         };
 
@@ -207,6 +212,13 @@ namespace PocketWilds.Benchmarks
                     burst = ladder.Run();
                 if (scenario.feedbackBurst)
                     burst = FeedbackBurst(entry.Refuge, bootstrap.Context);
+                if (scenario.audioStorm)
+                    burst = AudioStorm(entry.Refuge, bootstrap.Context);
+                // Default options: every sample of a frame summed, and the one-slot buffer keeps wrapping (latest frame).
+                var audioMain = ProfilerRecorder.StartNew(ProfilerCategory.Audio, "AudioManager.Update", 1);
+                double audioMainSum = 0.0;
+                float audioMainMax = 0f;
+                int audioFrames = 0, audioPeak = 0;
                 var work = new float[Mathf.CeilToInt(scenario.measureSeconds * 240f) + 64];
                 int workCount = 0;
                 if (report.warmupSource == null)
@@ -227,6 +239,7 @@ namespace PocketWilds.Benchmarks
                     entryMax = Mathf.Max(entryMax, Time.unscaledDeltaTime * 1000f);
                 }
                 float start = Time.realtimeSinceStartup;
+                bootstrap.Audio?.ResetStats();
                 float animalClearance = float.MaxValue, lifeClearance = float.MaxValue;
                 float maxFrame = 0f, maxFrameAt = 0f;
                 int overlaps = 0, frame = 0;
@@ -245,6 +258,15 @@ namespace PocketWilds.Benchmarks
                         maxFrameAt = Time.realtimeSinceStartup - start;
                     }
                     ladder?.AfterSample(sampler.LastCpuMs);
+                    if (audioMain.Valid && audioMain.Count > 0)
+                    {
+                        float ms = audioMain.LastValue * 1e-6f;
+                        audioMainSum += ms;
+                        audioMainMax = Mathf.Max(audioMainMax, ms);
+                        audioFrames++;
+                    }
+                    if (bootstrap.Audio != null)
+                        audioPeak = Mathf.Max(audioPeak, bootstrap.Audio.ActiveVoices);
                     sampler.SampleWorld(entry.Scatter != null ? entry.Scatter.LastInstances : 0, entry.Life != null ? entry.Life.LastInstances : 0);
                     probe?.AfterSample(sampler.LastCpuMs);
                     shopProbe?.AfterSample(sampler.LastCpuMs);
@@ -263,6 +285,16 @@ namespace PocketWilds.Benchmarks
                     result.qualitySwitches = ladder.Switches;
                     result.maxSwitchFrameMs = ladder.MaxSwitchFrameMs;
                     Debug.Log($"[Benchmark] {scenario.id} quality ladder: {ladder.Switches} steps, longest frame after a step {ladder.MaxSwitchFrameMs:F2} ms");
+                }
+                audioMain.Dispose();
+                result.audioMainMs = audioFrames > 0 ? (float)(audioMainSum / audioFrames) : 0f;
+                result.audioMainMaxMs = audioMainMax;
+                result.audioVoicesPeak = audioPeak;
+                if (bootstrap.Audio != null)
+                {
+                    result.audioStarted = bootstrap.Audio.Started;
+                    result.audioDropped = bootstrap.Audio.Dropped;
+                    result.audioBedsPlaying = bootstrap.Audio.MusicPlaying;
                 }
                 result.minAnimalClearanceCm = animalClearance < float.MaxValue ? animalClearance * 100f : 0f;
                 result.minLifeClearanceCm = lifeClearance < float.MaxValue ? lifeClearance * 100f : 0f;
@@ -293,7 +325,8 @@ namespace PocketWilds.Benchmarks
                           $"GC {result.gcBytes.mean:F0} B/frame ({result.framesWithGc} frames), batches {result.batches:F0}, " +
                           $"world {result.worldMs.mean:F3} ms (max {result.worldMs.max:F3}), scatter {result.scatterInstances:F0}, life {result.lifeInstances:F0}, " +
                           $"triangles {result.triangles:F0}, clearance animals {result.minAnimalClearanceCm:F1} cm, life {result.minLifeClearanceCm:F1} cm, " +
-                          $"overlaps {result.overlapSamples}");
+                          $"overlaps {result.overlapSamples}, audio {result.audioMainMs:F3} ms (max {result.audioMainMaxMs:F3}), " +
+                          $"voices peak {result.audioVoicesPeak}, started {result.audioStarted}, dropped {result.audioDropped}, beds {result.audioBedsPlaying}");
             }
 
             foreach (var leftover in Object.FindObjectsByType<GameBootstrap>(FindObjectsSortMode.None))
@@ -458,6 +491,8 @@ namespace PocketWilds.Benchmarks
                 SaveDirectory = saveDirectory,
                 QualityOverride = tier,
                 LoadTargetScene = true,
+                // The audio runs (decoding, mixing, voices) without sound coming out of the machine.
+                MuteAudio = true,
             };
             SceneManager.LoadScene(BootstrapScene, LoadSceneMode.Single);
             float timeout = Time.realtimeSinceStartup + 30f;
@@ -469,6 +504,58 @@ namespace PocketWilds.Benchmarks
                     yield break;
                 if (bootstrap != null && bootstrap.State == BootState.Failed)
                     yield break;
+                yield return null;
+            }
+        }
+
+        /// <summary>
+        /// T34B A1 (gate 14 worst case): every frame three visible animals ask for a chatter or a sleep breath, the
+        /// player spams taps every half second, collects every 2 s, hatches every 3 s, and at 5 s fifty animals react at
+        /// once. The service must keep its voice caps; the frame must not notice.
+        /// </summary>
+        private static IEnumerator AudioStorm(RefugeController refuge, GameContext context)
+        {
+            var audio = context.Audio;
+            var scheduler = refuge.Scheduler;
+            var rabbit = ContentId.FromSource("species.rabbit");
+            uint rng = 0x2545F491u;
+            float start = Time.realtimeSinceStartup;
+            float nextTaps = 0f, nextCollect = 1f, nextHatch = 2f;
+            bool reacted = false;
+            while (true)
+            {
+                float t = Time.realtimeSinceStartup - start;
+                int count = scheduler.Count;
+                for (int k = 0; k < 3 && count > 0; k++)
+                {
+                    rng ^= rng << 13;
+                    rng ^= rng >> 17;
+                    rng ^= rng << 5;
+                    var position = scheduler.GetPosition(scheduler.GetActiveHandle((int)(rng % (uint)count)));
+                    audio.Play((rng & 3u) == 0u ? AudioEventId.AnimalSleep : AudioEventId.AnimalChatter, position, rabbit);
+                }
+                if (t >= nextTaps)
+                {
+                    nextTaps += 0.5f;
+                    for (int k = 0; k < 10; k++)
+                        audio.Play(AudioEventId.UiTap, Vector3.zero, default);
+                }
+                if (t >= nextCollect)
+                {
+                    nextCollect += 2f;
+                    audio.Play(AudioEventId.CollectLight, Vector3.zero, default);
+                }
+                if (t >= nextHatch && !refuge.Hatch.IsPlaying && refuge.WaitingEgg != null)
+                {
+                    nextHatch += 3f;
+                    refuge.RequestHatch();
+                }
+                if (!reacted && t >= 5f && count > 0)
+                {
+                    reacted = true;
+                    for (int k = 0; k < 50; k++)
+                        audio.Play(AudioEventId.AnimalHappy, scheduler.GetPosition(scheduler.GetActiveHandle(k % count)), rabbit);
+                }
                 yield return null;
             }
         }

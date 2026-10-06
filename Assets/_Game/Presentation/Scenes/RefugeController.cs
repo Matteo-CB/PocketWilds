@@ -18,7 +18,7 @@ namespace PocketWilds.Presentation
     /// offline return screen; its Light counts up into the HUD when collected (T18).
     /// </summary>
     public sealed class RefugeController : IRefugeActions, IHatchListener, IOfflineReturnActions, ICodexActions, IAnimalSheetActions,
-        IModalActions, IDisposable
+        IModalActions, IAnimalVoiceListener, IDisposable
     {
         private const float NextEggDelay = 0.45f;
         // Room around the egg spot no animal enters: the egg (0.33 m) or a giant newborn squirrel standing on it.
@@ -33,6 +33,8 @@ namespace PocketWilds.Presentation
         private const float RareGlintSeconds = 2.2f;
         // T34A: a second touch on the same animal within this time opens its sheet (doc 05: reaction first, then the sheet).
         private const float SecondTapSeconds = 2.5f;
+        /// <summary>T34B: after a touch, that animal does not add its own chatter (the touch already spoke).</summary>
+        private const float AfterTouchQuietSeconds = 2.5f;
         // T34A: the tutorial hand waits this long on the first egg before showing.
         private const float TapHintDelay = 1.2f;
         private const float NotEnoughToastSeconds = 4f;
@@ -161,6 +163,7 @@ namespace PocketWilds.Presentation
             _vfx = hatchConfig.vfx != null ? new FeedbackVfx(hatchConfig.vfx, root, PresentationQuality.Tier) : null;
             _hatch = new HatchSequencePlayer(hatchConfig, _vfx, context.Audio, context.Haptics);
             _scheduler = new AnimalScheduler(_visibleBudget + 2, settings, chunk.WanderArea);
+            _scheduler.SetVoiceListener(this);
             _scheduler.SetInterests(chunk.GetWorldInterests());
             // T33C no-collision rule: animals stand on the chunk's ground, never enter a prop, the water or the egg spot.
             _scheduler.SetGround(chunk.Ground);
@@ -267,7 +270,12 @@ namespace PocketWilds.Presentation
             }
 
             if (_rig != null)
+            {
                 _scheduler.SetFocus(_rig.Focus);
+                // T34B: animal voices fade with their distance to what the player looks at.
+                if (_rig.Camera != null)
+                    _context.Audio.SetView(_rig.Focus, _rig.Camera.transform.right, _rig.Distance);
+            }
             _scheduler.Tick(time, deltaTime);
             _hatch.Tick(time, deltaTime);
             if (_vfx != null)
@@ -374,6 +382,8 @@ namespace PocketWilds.Presentation
                 _tappedView = bestView;
                 _tappedTime = _time;
                 _scheduler.Poke(_agentByView[bestView], _time);
+                _context.Audio.Play(AudioEventId.AnimalHappy, _scheduler.GetPosition(_agentByView[bestView]) + new Vector3(0f, 0.2f, 0f),
+                    _views[bestView].Species);
                 _context.Haptics.Play(HapticEventId.AnimalTouch);
             }
         }
@@ -426,10 +436,12 @@ namespace PocketWilds.Presentation
                     _vfx?.Play(VfxId.FavoriteHeart, _scheduler.GetPosition(_agentByView[i]) + new Vector3(0f, 0.2f * scale, 0f), _time);
                     break;
                 }
+                _context.Audio.Play(AudioEventId.UiConfirm, Vector3.zero, default);
                 _context.Haptics.Play(HapticEventId.Confirm);
             }
             else
             {
+                _context.Audio.Play(AudioEventId.UiTap, Vector3.zero, default);
                 _context.Haptics.Play(HapticEventId.TapLight);
             }
             if (TryBuildSheet(instanceId, out var data))
@@ -442,12 +454,11 @@ namespace PocketWilds.Presentation
                 return;
             _codexView.OpenSpecies(_context.Codex, _context.Localization, this, species);
             _context.Analytics.ScreenView(ScreenId.Codex);
+            _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
             SetWorldVisible(false);
         }
 
-        public void AnimalSheetClosed()
-        {
-        }
+        public void AnimalSheetClosed() => _context.Audio.Play(AudioEventId.UiBack, Vector3.zero, default);
 
         /// <summary>
         /// T34A egg odds (doc 05 Hatch UX: the info button always shows the chances): rarity odds of this egg and,
@@ -498,8 +509,21 @@ namespace PocketWilds.Presentation
             return false;
         }
 
-        public void ModalClosed(bool confirmed)
+        public void ModalClosed(bool confirmed) =>
+            _context.Audio.Play(confirmed ? AudioEventId.UiConfirm : AudioEventId.UiBack, Vector3.zero, default);
+
+        /// <summary>
+        /// T34B: a near animal greets, rejoices or falls asleep on its own. Quiet and rare (the audio service spaces
+        /// them for the whole refuge); never over a hatch or a screen, never right after the player touched it.
+        /// </summary>
+        void IAnimalVoiceListener.AnimalVoice(AnimalView view, AnimalBehaviorState state, Vector3 position)
         {
+            if (view == null || ModalOpen || _hatch.IsPlaying)
+                return;
+            if (_tappedView >= 0 && _views[_tappedView] == view && _time - _tappedTime < AfterTouchQuietSeconds)
+                return;
+            var id = state == AnimalBehaviorState.Sleep ? AudioEventId.AnimalSleep : AudioEventId.AnimalChatter;
+            _context.Audio.Play(id, position + new Vector3(0f, 0.2f, 0f), view.Species);
         }
 
         public void RequestHatch()
@@ -517,6 +541,7 @@ namespace PocketWilds.Presentation
             {
                 _hatch.Nudge();
                 _hud?.PulseNotEnough();
+                _context.Audio.Play(AudioEventId.ErrorSoft, Vector3.zero, default);
                 _context.Haptics.Play(HapticEventId.ErrorSoft);
                 // One calm line the first time and then at most every few seconds: the shake says the rest.
                 if (_time - _lastNotEnoughToast >= NotEnoughToastSeconds)
@@ -576,7 +601,11 @@ namespace PocketWilds.Presentation
             SetWorldVisible(false);
         }
 
-        public void CodexClosed() => SetWorldVisible(true);
+        public void CodexClosed()
+        {
+            _context.Audio.Play(AudioEventId.UiBack, Vector3.zero, default);
+            SetWorldVisible(true);
+        }
 
         /// <summary>HUD shortcut. Like the Codex, the shop is opaque: the world camera stops while it is open.</summary>
         public void OpenShop()

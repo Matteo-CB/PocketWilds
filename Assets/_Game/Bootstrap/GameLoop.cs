@@ -1,6 +1,7 @@
 using PocketWilds.Core;
 using PocketWilds.Presentation;
 using PocketWilds.Services.Analytics;
+using PocketWilds.Services.Feedback;
 using UnityEngine;
 
 namespace PocketWilds.Bootstrap
@@ -15,6 +16,8 @@ namespace PocketWilds.Bootstrap
 
         private GameContext _context;
         private AnalyticsService _analytics;
+        private AudioService _audio;
+        private HapticService _haptics;
         private double _economyAccumulator;
         private double _economyInterval = 0.1;
 
@@ -28,6 +31,13 @@ namespace PocketWilds.Bootstrap
         /// <summary>Analytics gets the raw frame time (performance summaries), not the clamped simulation delta.</summary>
         public void SetAnalytics(AnalyticsService analytics) => _analytics = analytics;
 
+        /// <summary>T34B: sound bursts, bed fades and haptic cooldowns follow real time.</summary>
+        public void SetFeedback(AudioService audio, HapticService haptics)
+        {
+            _audio = audio;
+            _haptics = haptics;
+        }
+
         private void Update()
         {
             if (_context == null)
@@ -39,6 +49,8 @@ namespace PocketWilds.Bootstrap
                 _analytics?.Tick(frame);
                 // T34: frame cost and heat drive the picture's quality (no allocation).
                 _context.Quality?.Tick(frame);
+                _audio?.Tick(frame);
+                _haptics?.Tick(frame);
                 float delta = frame;
                 if (delta > MaxFrameDelta)
                     delta = MaxFrameDelta;

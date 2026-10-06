@@ -33,6 +33,27 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>A purchase was granted (shop, offer).</summary>
         PurchaseComplete = 13,
+
+        /// <summary>T34B: a calm "not yet" (not enough Light...). Never a buzzer.</summary>
+        ErrorSoft = 14,
+
+        /// <summary>T34B: small interface touches (toggle, tab, card).</summary>
+        UiTap = 15,
+
+        /// <summary>T34B: a choice confirmed (modal OK, favorite on).</summary>
+        UiConfirm = 16,
+
+        /// <summary>T34B: closing, cancelling, going back.</summary>
+        UiBack = 17,
+
+        /// <summary>T34B: an animal falls asleep near the view (soft breath; the species travels as context).</summary>
+        AnimalSleep = 18,
+
+        /// <summary>
+        /// T34B: an animal greets or rejoices on its own near the view (same voice as AnimalHappy, quieter, rare and
+        /// rate-limited for the whole refuge: 20 animals never become a chorus).
+        /// </summary>
+        AnimalChatter = 19,
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>
@@ -54,6 +75,24 @@ namespace PocketWilds.Services.Feedback
     {
         /// <param name="context">Optional content context, for example the species of AnimalHappy.</param>
         void Play(AudioEventId id, Vector3 position, ContentId context);
+
+        /// <summary>
+        /// T34B: where the player looks. World sounds (animals) fade with their distance to the focus point on the
+        /// ground and pan with their side of the screen. cameraDistance: the camera's distance to that point (zoom).
+        /// </summary>
+        void SetView(Vector3 focus, Vector3 right, float cameraDistance)
+        {
+        }
+
+        /// <summary>T34B: the music and ambience of the current place, cross-faded. Null stops that bed.</summary>
+        void SetBeds(AudioClip music, AudioClip ambience, float fadeSeconds)
+        {
+        }
+
+        /// <summary>T34B: the place is leaving and its clips are about to be released: beds stop at once.</summary>
+        void StopBeds()
+        {
+        }
     }
 
     public interface IHapticService
@@ -61,7 +100,7 @@ namespace PocketWilds.Services.Feedback
         void Play(HapticEventId id);
     }
 
-    /// <summary>Used until the audio service and clips land (J-SFX-*). Events are still emitted and testable.</summary>
+    /// <summary>Headless tests and tools: events are emitted and testable, nothing plays.</summary>
     public sealed class NullAudioService : IAudioService
     {
         public static readonly NullAudioService Instance = new NullAudioService();

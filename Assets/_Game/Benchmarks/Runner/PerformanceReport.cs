@@ -25,6 +25,8 @@ namespace PocketWilds.Benchmarks
         public bool qualityLadder;
         /// <summary>T34A: every feedback effect at once (worst case), then one by one, the animal sheet, the egg odds and a toast.</summary>
         public bool feedbackBurst;
+        /// <summary>T34B: every animal keeps asking for its voice, taps are spammed, collects and hatches repeat, 50 reactions at once.</summary>
+        public bool audioStorm;
         /// <summary>Grassland species cycled through the save: 1 rabbits only, 2 + squirrels (T23), 3 + hedgehogs (T24).</summary>
         public int species = 1;
         public float warmupSeconds = 2f;
@@ -115,6 +117,17 @@ namespace PocketWilds.Benchmarks
 
         public StreamingResult streaming;
         public ShopResult shop;
+
+        /// <summary>
+        /// T34B audio (every scenario, beds playing, output muted): main-thread audio update (AudioManager.Update, ms per
+        /// frame), one-shot voices at once at most, sounds started and requests dropped (cooldowns, caps, off view).
+        /// </summary>
+        public float audioMainMs;
+        public float audioMainMaxMs;
+        public int audioVoicesPeak;
+        public int audioStarted;
+        public int audioDropped;
+        public bool audioBedsPlaying;
     }
 
     /// <summary>T28: CPU time of the frames that open, buy in, close and reopen the shop.</summary>

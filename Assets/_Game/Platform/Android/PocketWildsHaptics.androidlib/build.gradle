@@ -1,0 +1,26 @@
+apply plugin: 'com.android.library'
+
+// T34B haptics library. SDK levels come from the properties Unity writes for the Gradle project
+// (gradle.properties: unity.compileSdkVersion, unity.buildToolsVersion, unity.minSdkVersion); Java 17 like unityLibrary.
+// The build tools must be the ones Unity ships (AGP would otherwise ask for its own default version).
+android {
+    namespace "com.pocketwilds.game.haptics"
+    compileSdk getProperty("unity.compileSdkVersion") as int
+    buildToolsVersion getProperty("unity.buildToolsVersion")
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        minSdk getProperty("unity.minSdkVersion") as int
+        consumerProguardFiles 'proguard-rules.pro'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}

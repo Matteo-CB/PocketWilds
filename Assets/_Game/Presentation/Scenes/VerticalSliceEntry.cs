@@ -2,7 +2,10 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using PocketWilds.Core;
+using PocketWilds.Services.Feedback;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace PocketWilds.Presentation
 {
@@ -34,6 +37,8 @@ namespace PocketWilds.Presentation
         [SerializeField] private RefugeCameraRig _cameraRig;
         [Tooltip("Pan limits around the egg spawn (half size, m). Keeps the island edge from filling the screen.")]
         [SerializeField] private Vector2 _panHalfSize = new Vector2(3.5f, 4f);
+        [Tooltip("T34B: music and ambience of the biome (BiomeAudioSet address, group Audio_Grassland). Empty: silent beds.")]
+        [SerializeField] private string _biomeAudioKey = "audio.grassland";
 
         [Header("Refuge loop")]
         [SerializeField] private HatchPresentationConfig _hatchConfig;
@@ -63,6 +68,7 @@ namespace PocketWilds.Presentation
         private WorldChunk _startChunk;
         private Action<int, ChunkStreamState> _onChunkState;
         private Action<QualityState> _onQuality;
+        private AsyncOperationHandle<BiomeAudioSet> _biomeAudio;
 
         public bool HasContext => _context != null;
         public WorldChunkSet ChunkSet => _chunkSet;
@@ -80,6 +86,9 @@ namespace PocketWilds.Presentation
             _worldQuality != null ? _worldQuality.Get(tier) : WorldQualityProfile.Default(tier);
         public RefugeController Refuge => _refuge;
 
+        /// <summary>The biome's beds once loaded (null before PrepareAsync or when the key is empty or failed).</summary>
+        public BiomeAudioSet BiomeAudio => _biomeAudio.IsValid() && _biomeAudio.Status == AsyncOperationStatus.Succeeded ? _biomeAudio.Result : null;
+
         /// <summary>Loads the pinned start chunk (and starts the neighbours' preload) behind the loading screen.</summary>
         public async Task PrepareAsync(GameContext context, CancellationToken cancellationToken)
         {
@@ -89,6 +98,9 @@ namespace PocketWilds.Presentation
                 return;
             }
             _streamer?.Dispose();
+            // T34B: the biome's music and ambience load beside the start chunk (small asset; the clips stream).
+            if (!string.IsNullOrEmpty(_biomeAudioKey) && !_biomeAudio.IsValid())
+                _biomeAudio = Addressables.LoadAssetAsync<BiomeAudioSet>(_biomeAudioKey);
             // T34: each world part follows its own dimension of the adaptive quality state.
             var quality = context.Quality.State;
             _streamer = new WorldStreamer(_chunkSet, new AddressablesChunkSource(), context.Palettes, quality.Ground);
@@ -122,6 +134,13 @@ namespace PocketWilds.Presentation
             }
             _onChunkState = OnChunkState;
             _streamer.StateChanged += _onChunkState;
+            while (_biomeAudio.IsValid() && !_biomeAudio.IsDone)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Task.Yield();
+            }
+            if (_biomeAudio.IsValid() && _biomeAudio.Status != AsyncOperationStatus.Succeeded)
+                GameLog.Warning(LogCategory.Presentation, "Biome audio did not load: " + _biomeAudioKey);
         }
 
         public void Enter(GameContext context)
@@ -161,6 +180,9 @@ namespace PocketWilds.Presentation
             }
             _onQuality = ApplyQuality;
             context.Quality.StateChanged += _onQuality;
+            var beds = BiomeAudio;
+            if (beds != null)
+                context.Audio.SetBeds(beds.music, beds.ambience, beds.fadeSeconds);
             GameLog.Info(LogCategory.Presentation, "Vertical slice entered.");
         }
 
@@ -197,6 +219,11 @@ namespace PocketWilds.Presentation
 
         public void Exit()
         {
+            // T34B: beds stop before their clips are released with the biome.
+            _context?.Audio.StopBeds();
+            if (_biomeAudio.IsValid())
+                Addressables.Release(_biomeAudio);
+            _biomeAudio = default;
             if (_context != null && _onQuality != null)
                 _context.Quality.StateChanged -= _onQuality;
             _onQuality = null;

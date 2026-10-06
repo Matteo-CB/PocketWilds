@@ -265,8 +265,8 @@
     {
       "task": "T34B",
       "title": "Audio et haptique de base (SFX créés pour le projet, ambiance Prairie, thème, profils haptiques Android)",
-      "status": "PLANNED",
-      "notes": "Added by the T30 gate."
+      "status": "DONE",
+      "notes": "Added by the T30 gate. Done 2026-10-06. Every sound synthesized in-house (SourceArt/Audio/Tools, numpy only, deterministic; masters 48 kHz 24-bit): 33 effects (egg, cracks, pop, Rare to Fabulous reveals, collect, mastery, UI, purchase, soft error, rabbit voice, small quadruped family bank), AMB_Grassland_Day (75 s seamless loop, -27 LUFS), MUS_RefugeTheme (64 bars at 80 BPM, F major, 192 s exact loop, -20 LUFS). AudioService: 12 pooled voices, cooldowns, voice caps, priorities, view attenuation and pan for animals, collect burst, beds cross-faded and ducked, settings from the save, the only AudioListener; AM_Game mixer; DEF_AudioEvents (19 sounds, 3 species voices); beds in Addressables group Audio_Grassland. Haptics: DEF_HapticProfiles (9 patterns under 300 ms), HapticService (setting, cooldowns, 45 ms gap, battery saver), Android PwHaptics library (composed primitives, amplitude waveform or on/off; VIBRATE; touch usage on API 33+), APK checked. Tests: AudioAssetTests, HapticTests, AudioServicePlayTests, AudioBootPlayTests; EditMode 398/398, PlayMode 70 + 1 explicit. Windows player: 22 scenarios, longest frame 19.1 ms, 0 over 33 ms, A1 audio storm 7 voices max (4 animals), audio main thread 0.04-0.06 ms. Phone listening and haptic feel pending (no test phone). Report: Docs/Design/T34B_Audio_et_haptique.md."
     },
     {
       "task": "T34C",
@@ -7027,15 +7027,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce. | T34B: SFX_Egg_Tap_01..02: soft ceramic and wood \"tok\" (modal body 470-520 Hz, low thump, felt click), 0.39 s with its room tail; pitch +/-3 %, 2 voices. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-EGG-002",
@@ -7043,15 +7046,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce. | T34B: SFX_Egg_Crack_01..03: runs of 5-8 tiny shell clicks with a flex body and an airy tick, 0.35-0.41 s; Crack1 and Crack2 share the bank. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-EGG-003",
@@ -7059,15 +7065,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce. | T34B: SFX_Hatch_Pop_01: rounded pop (820 to 250 Hz glide), air puff, three tiny glass notes F6 A6 C7. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-EGG-004",
@@ -7075,15 +7084,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce. | T34B: SFX_Reveal_Rare_01: rising tines C5 F5 A5 C6 over a soft F major swell; ducks the music. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-EGG-005",
@@ -7091,15 +7103,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce. | T34B: SFX_Reveal_Epic_01: F major 7 tine run doubled by glass bells, same level as Rare (richer, not louder). Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-EGG-006",
@@ -7107,15 +7122,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce. | T34B: SFX_Reveal_Legendary_01: short rising breath then a warm bell cluster F5 A5 C6 F6 and a low tine; no fanfare. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-EGG-007",
@@ -7123,15 +7141,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce."
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T14: hook emitted through IAudioService (AudioEventId EggTap/Crack1/Crack2/HatchPop/RareReveal/EpicReveal/LegendaryReveal/FabulousReveal), verified by HatchSequenceTests. Clip still to produce. | T34B: SFX_Reveal_Fabulous_01: airy F major 9 swell with a glass arpeggio up to E7 and a soft breath on top. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-CURRENCY-001",
@@ -7139,15 +7160,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: SFX_Collect_Light_01..03: soft crystalline plings at C6; the service plays one bounded run of 5 rising notes (0 2 4 7 9 semitones) as the motes land, never one per mote. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-CURRENCY-002",
@@ -7219,15 +7243,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "BLOCKOUT",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T20: hook AudioEventId.MasteryLevelUp emitted with the species as context (no clip yet); haptic Confirm, Rare on milestones."
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T20: hook AudioEventId.MasteryLevelUp emitted with the species as context (no clip yet); haptic Confirm, Rare on milestones. | T34B: SFX_Reward_MasteryUp_01: cheerful C5 F5 A5 tine motif with a glass echo. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-REWARD-003",
@@ -7267,15 +7294,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: SFX_UI_Tap_01..03: tiny soft wooden clicks, 90 ms, the quietest sounds of the game; 2 voices, 40 ms apart at most. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-UI-002",
@@ -7283,15 +7313,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: SFX_UI_Confirm_01: warm pop with a small rising tine pair (modal OK, favorite on). Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-UI-003",
@@ -7299,15 +7332,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: SFX_UI_Back_01: softer, lower click (close, cancel, back). Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-UI-004",
@@ -7315,15 +7351,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: SFX_UI_PanelOpen_01: short upward whoosh landing on a soft pop (Codex, shop, sheet, odds). Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-UI-005",
@@ -7395,15 +7434,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: SFX_UI_ErrorSoft_01: two muted felt notes stepping down (not enough Light, purchase failed); never a buzzer. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-UI-010",
@@ -7411,15 +7453,18 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: SFX_UI_PurchaseSuccess_01: two warm bells a fifth apart with a glass note; ducks the music. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-UI-011",
@@ -7459,15 +7504,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: SFX_Animal_Small_Chirp_01..04: family bank: pip, little trill, questioning eep, chuff and pip; squirrel at pitch 1.12, hedgehog 0.84. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-AN-SmallQuadruped_Sleep",
@@ -7475,15 +7523,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: SFX_Animal_Small_Sleep_01..02: light inhale, small sigh. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-AN-MediumQuadruped_Cute",
@@ -7571,15 +7622,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: SFX_Animal_Rabbit_Happy_01..03: stylized breathy \"eep\" (formant voice, rising pitch), single, double, after a nose puff: the rabbit signature. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-AN-RabbitSleep",
@@ -7587,15 +7641,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_build.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: SFX_Animal_Rabbit_Sleep_01..02: soft nose inhale with flutter, sleepy exhale with a faint hum. Synthesized from scratch (no sample), master 48 kHz 24-bit, mono, imported by AudioPipeline, defined in DEF_AudioEvents, game trigger covered by tests. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-AN-RabbitEat",
@@ -7907,15 +7964,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_ambience.py",
+      "runtimePath": "Assets/_Game/Art/Audio/Ambience/AMB_Grassland_Day.wav",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: AMB_Grassland_Day: 75 s stereo loop (soft breeze, grass rustle in the gusts, 70 leaf grains, 8 distant birds at irregular times, never closer than 5 s), circular render (seam step 0.27 of a typical step), -27 LUFS. Streamed Vorbis q0.35 at 32 kHz, in Audio_Grassland with the theme. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-AMB-002",
@@ -8163,15 +8223,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_music.py",
+      "runtimePath": "Assets/_Game/Art/Audio/Music/MUS_RefugeTheme.wav",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: MUS_RefugeTheme: 192 s loop (64 bars at 80 BPM, F major; A intro and theme, B tine lead with a music box line, C breathing room, A prime), felt piano, tines, PADsynth pad, round bass without sub, a whisper of shaker; no drums, no vocals. Exact loop (whole samples at 48 and 44.1 kHz), circular render, -20 LUFS, LRA 9.7 LU. Streamed Vorbis q0.5 at 44.1 kHz. Gate 14 listening on a phone speaker and earbuds is pending (no test phone; owner listening pack sent).",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-MUS-002",
@@ -8259,15 +8322,18 @@
       "family": "Haptic",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_HapticProfiles.asset",
       "validationGates": [
         "G15"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: no pattern (HapticEventId.None plays nothing). DEF_HapticProfiles; Android PwHaptics plays composed primitives where supported, else a waveform with amplitudes, else on/off; global setting, cooldowns and a 45 ms gap (HapticTests). Feel on a real phone pending (T66).",
+      "passedGates": [
+        "G15"
+      ]
     },
     {
       "id": "J-HAPTIC-TapLight",
@@ -8275,15 +8341,18 @@
       "family": "Haptic",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_HapticProfiles.asset",
       "validationGates": [
         "G15"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: Tick 0.5 / 12 ms at 70. DEF_HapticProfiles; Android PwHaptics plays composed primitives where supported, else a waveform with amplitudes, else on/off; global setting, cooldowns and a 45 ms gap (HapticTests). Feel on a real phone pending (T66).",
+      "passedGates": [
+        "G15"
+      ]
     },
     {
       "id": "J-HAPTIC-Confirm",
@@ -8291,15 +8360,18 @@
       "family": "Haptic",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_HapticProfiles.asset",
       "validationGates": [
         "G15"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: Click 0.6 / 18 ms at 130. DEF_HapticProfiles; Android PwHaptics plays composed primitives where supported, else a waveform with amplitudes, else on/off; global setting, cooldowns and a 45 ms gap (HapticTests). Feel on a real phone pending (T66).",
+      "passedGates": [
+        "G15"
+      ]
     },
     {
       "id": "J-HAPTIC-HatchCommon",
@@ -8307,15 +8379,18 @@
       "family": "Haptic",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_HapticProfiles.asset",
       "validationGates": [
         "G15"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: Click 0.55 + Tick 0.7 after 70 ms / two light pulses. DEF_HapticProfiles; Android PwHaptics plays composed primitives where supported, else a waveform with amplitudes, else on/off; global setting, cooldowns and a 45 ms gap (HapticTests). Feel on a real phone pending (T66).",
+      "passedGates": [
+        "G15"
+      ]
     },
     {
       "id": "J-HAPTIC-Rare",
@@ -8323,15 +8398,18 @@
       "family": "Haptic",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_HapticProfiles.asset",
       "validationGates": [
         "G15"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: Click 0.85 + Tick 0.6 / medium then light. DEF_HapticProfiles; Android PwHaptics plays composed primitives where supported, else a waveform with amplitudes, else on/off; global setting, cooldowns and a 45 ms gap (HapticTests). Feel on a real phone pending (T66).",
+      "passedGates": [
+        "G15"
+      ]
     },
     {
       "id": "J-HAPTIC-Legendary",
@@ -8339,15 +8417,18 @@
       "family": "Haptic",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_HapticProfiles.asset",
       "validationGates": [
         "G15"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: Click, Click, Tick over 200 ms. DEF_HapticProfiles; Android PwHaptics plays composed primitives where supported, else a waveform with amplitudes, else on/off; global setting, cooldowns and a 45 ms gap (HapticTests). Feel on a real phone pending (T66).",
+      "passedGates": [
+        "G15"
+      ]
     },
     {
       "id": "J-HAPTIC-Fabulous",
@@ -8355,15 +8436,18 @@
       "family": "Haptic",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_HapticProfiles.asset",
       "validationGates": [
         "G15"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: QuickRise, Click 1.0, two Ticks, under 300 ms. DEF_HapticProfiles; Android PwHaptics plays composed primitives where supported, else a waveform with amplitudes, else on/off; global setting, cooldowns and a 45 ms gap (HapticTests). Feel on a real phone pending (T66).",
+      "passedGates": [
+        "G15"
+      ]
     },
     {
       "id": "J-HAPTIC-ErrorSoft",
@@ -8371,15 +8455,18 @@
       "family": "Haptic",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_HapticProfiles.asset",
       "validationGates": [
         "G15"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: LowTick 0.7 (API 31) / one dull 35 ms pulse at 70. DEF_HapticProfiles; Android PwHaptics plays composed primitives where supported, else a waveform with amplitudes, else on/off; global setting, cooldowns and a 45 ms gap (HapticTests). Feel on a real phone pending (T66).",
+      "passedGates": [
+        "G15"
+      ]
     },
     {
       "id": "J-HAPTIC-PurchaseSuccess",
@@ -8387,15 +8474,18 @@
       "family": "Haptic",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_HapticProfiles.asset",
       "validationGates": [
         "G15"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: Click 0.7 + Tick 0.5. DEF_HapticProfiles; Android PwHaptics plays composed primitives where supported, else a waveform with amplitudes, else on/off; global setting, cooldowns and a 45 ms gap (HapticTests). Feel on a real phone pending (T66).",
+      "passedGates": [
+        "G15"
+      ]
     },
     {
       "id": "J-HAPTIC-AnimalTouch",
@@ -8403,15 +8493,18 @@
       "family": "Haptic",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Content/Audio/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_HapticProfiles.asset",
       "validationGates": [
         "G15"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: Tick 0.3 / 8 ms at 45, skipped in battery saver. DEF_HapticProfiles; Android PwHaptics plays composed primitives where supported, else a waveform with amplitudes, else on/off; global setting, cooldowns and a 45 ms gap (HapticTests). Feel on a real phone pending (T66).",
+      "passedGates": [
+        "G15"
+      ]
     },
     {
       "id": "K-PF-UI-Button_Primary",
@@ -8966,16 +9059,19 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_AudioEvents.asset",
       "validationGates": [
         "G16",
         "G18"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T30 audit: events exist as code (AudioEventId enum, IAudioService); no data registry or clips yet."
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T30 audit: events exist as code (AudioEventId enum, IAudioService); no data registry or clips yet. | T34B: DEF_AudioEvents: 19 AudioEventIds (6 appended: ErrorSoft, UiTap, UiConfirm, UiBack, AnimalSleep, AnimalChatter), variants, level and pitch ranges, cooldowns, voice caps, priorities, mixer groups, world flag, battery policy, collect burst; 3 species voices + family fallback. AudioAssetTests.",
+      "passedGates": [
+        "G16"
+      ]
     },
     {
       "id": "M-DEF-VFXEVENT",
@@ -9054,16 +9150,19 @@
       "family": "ContentData",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_HapticProfiles.asset",
       "validationGates": [
         "G16",
         "G18"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T30 audit: events exist as code (HapticEventId, IHapticService null); no data profiles yet."
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T30 audit: events exist as code (HapticEventId, IHapticService null); no data profiles yet. | T34B: DEF_HapticProfiles: one profile per HapticEventId, composed and waveform forms, all under 300 ms. HapticTests.",
+      "passedGates": [
+        "G16"
+      ]
     },
     {
       "id": "M-DEF-CAPTURE",
@@ -9250,15 +9349,15 @@
       "family": "Addressables",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
+      "status": "DEFERRED",
       "sourcePath": null,
       "runtimePath": "Assets/_Game/Addressables/",
       "validationGates": [
         "G17"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: deferred with reason: the effects (33 short clips, about 1.3 MB compressed) are needed from the first frame and ship with SC_Bootstrap through DEF_AudioEvents; a separate group would only add an async load before the first touch. To revisit with the Bootstrap group in T34C."
     },
     {
       "id": "N-GRP-Audio_Grassland",
@@ -9266,15 +9365,18 @@
       "family": "Addressables",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Addressables/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Audio/AudioPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Audio/DEF_BiomeAudio_Grassland.asset",
       "validationGates": [
         "G17"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34B",
+      "lastValidationUtc": "2026-10-06T09:00:00Z",
+      "notes": "T34B: group Audio_Grassland (LZ4, local): DEF_BiomeAudio_Grassland at address audio.grassland with the theme and the ambience; loaded by VerticalSliceEntry.PrepareAsync, beds stopped then released on exit.",
+      "passedGates": [
+        "G17"
+      ]
     },
     {
       "id": "N-GRP-LiveOps_<Event>",

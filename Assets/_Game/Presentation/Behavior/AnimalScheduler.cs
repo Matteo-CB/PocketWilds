@@ -107,6 +107,7 @@ namespace PocketWilds.Presentation
         private WanderArea _area;
         private GroundSurface _ground;
         private Vector3 _focus;
+        private IAnimalVoiceListener _voices;
         private Vector2 _eggSpot;
         private float _eggRadius;
         private float _eggBodyRadius;
@@ -269,6 +270,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>Point the camera looks at. Nearest animals become tier A at the next tier update.</summary>
         public void SetFocus(Vector3 focus) => _focus = focus;
+
+        /// <summary>T34B: told when a near animal greets, rejoices or falls asleep (its voice). Null: silent.</summary>
+        public void SetVoiceListener(IAnimalVoiceListener listener) => _voices = listener;
 
         /// <summary>
         /// Adds a configured view (or null for headless use). Returns a handle, or InvalidHandle when full.
@@ -728,6 +732,10 @@ namespace PocketWilds.Presentation
                     view.PlayState(animatorState, fade);
                 // The bound out of the shell plays the hop faster, so paws keep pace with the ground.
                 view.SetPlaybackSpeed(state == AnimalBehaviorState.Wander && agent.Emerging ? EmergeSpeedScale : 1f);
+                // A greeting is voiced once, by the animal that started it (its partner follows, induced).
+                if (_voices != null && !induced && agent.Tier == SimulationTier.A
+                    && (state == AnimalBehaviorState.Happy || state == AnimalBehaviorState.Social || state == AnimalBehaviorState.Sleep))
+                    _voices.AnimalVoice(view, state, agent.Position);
             }
         }
 

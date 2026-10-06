@@ -162,6 +162,7 @@ namespace PocketWilds.Presentation
                 return;
             _busyOffer = offer;
             _analytics.OfferClick(offer, _catalog.Offers.TryGet(offer, out var definition) ? definition.Placement : default);
+            _audio.Play(AudioEventId.UiTap, Vector3.zero, default);
             _haptics.Play(HapticEventId.TapLight);
             RefreshViews();
             _ = BuyAsync(offer);
@@ -181,6 +182,7 @@ namespace PocketWilds.Presentation
             if (!ShopOpen)
                 return;
             _shopView.Close();
+            _audio.Play(AudioEventId.UiBack, Vector3.zero, default);
             _setWorldVisible(true);
         }
 
@@ -189,7 +191,10 @@ namespace PocketWilds.Presentation
             _modalCloseIn = -1f;
             _modalOffer = ContentId.None;
             if (OfferOpen)
+            {
                 _offerView.Close();
+                _audio.Play(AudioEventId.UiBack, Vector3.zero, default);
+            }
         }
 
         // ---------------- Flow ----------------
@@ -265,6 +270,7 @@ namespace PocketWilds.Presentation
                         _modalCloseIn = ModalCloseDelay;
                     break;
                 case PurchaseFlowStatus.Failed:
+                    _audio.Play(AudioEventId.ErrorSoft, Vector3.zero, default);
                     _haptics.Play(HapticEventId.ErrorSoft);
                     Message(ShopMessage.Failed, 0);
                     break;

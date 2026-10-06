@@ -1,0 +1,404 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9827714496c25164a8c2f32d24242aa0, type: 3}
+  m_Name: DEF_AudioEvents
+  m_EditorClassIdentifier: Game.Services::PocketWilds.Services.Feedback.AudioCatalog
+  mixer: {fileID: 24100000, guid: 0d58408fcb59b7247bbe4eb18b897ece, type: 2}
+  groups:
+  - {fileID: -5681980693893557610, guid: 0d58408fcb59b7247bbe4eb18b897ece, type: 2}
+  - {fileID: 4758589031743212359, guid: 0d58408fcb59b7247bbe4eb18b897ece, type: 2}
+  - {fileID: -5381325984506820020, guid: 0d58408fcb59b7247bbe4eb18b897ece, type: 2}
+  - {fileID: 3187214468474025661, guid: 0d58408fcb59b7247bbe4eb18b897ece, type: 2}
+  - {fileID: -1285524697315648518, guid: 0d58408fcb59b7247bbe4eb18b897ece, type: 2}
+  - {fileID: 8249852325335589632, guid: 0d58408fcb59b7247bbe4eb18b897ece, type: 2}
+  voices: 12
+  events:
+  - id: 1
+    clips:
+    - {fileID: 8300000, guid: e27691ebcd5271c43a8a07b36bb6448c, type: 3}
+    - {fileID: 8300000, guid: e2075296479b14740b112c26afbfdc3e, type: 3}
+    group: 4
+    volume: 1
+    volumeJitter: 0.05
+    pitchJitter: 0.03
+    cooldown: 0.06
+    maxVoices: 2
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 2
+    clips:
+    - {fileID: 8300000, guid: 0121529f834ff5c4ea5512db6ebd52a6, type: 3}
+    - {fileID: 8300000, guid: 8f68d8004f7fed24894c7513edc133d3, type: 3}
+    - {fileID: 8300000, guid: 8ca7b68564c49bd418e7d799f2faf977, type: 3}
+    group: 4
+    volume: 1
+    volumeJitter: 0.05
+    pitchJitter: 0.03
+    cooldown: 0.05
+    maxVoices: 2
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 3
+    clips:
+    - {fileID: 8300000, guid: 0121529f834ff5c4ea5512db6ebd52a6, type: 3}
+    - {fileID: 8300000, guid: 8f68d8004f7fed24894c7513edc133d3, type: 3}
+    - {fileID: 8300000, guid: 8ca7b68564c49bd418e7d799f2faf977, type: 3}
+    group: 4
+    volume: 1
+    volumeJitter: 0.05
+    pitchJitter: 0.03
+    cooldown: 0.05
+    maxVoices: 2
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 4
+    clips:
+    - {fileID: 8300000, guid: 52e893cafa3afbf4093d1bab5fc0bd52, type: 3}
+    group: 4
+    volume: 1
+    volumeJitter: 0.03
+    pitchJitter: 0.02
+    cooldown: 0.1
+    maxVoices: 2
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 5
+    clips:
+    - {fileID: 8300000, guid: 4ecaaeef581c6614dbd50bb7b27bac4f, type: 3}
+    group: 4
+    volume: 1
+    volumeJitter: 0
+    pitchJitter: 0
+    cooldown: 0.3
+    maxVoices: 1
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 1
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 6
+    clips:
+    - {fileID: 8300000, guid: 6cae3e43d3c1ff747be51c2ec44b18ac, type: 3}
+    group: 4
+    volume: 1
+    volumeJitter: 0
+    pitchJitter: 0
+    cooldown: 0.3
+    maxVoices: 1
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 1
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 7
+    clips:
+    - {fileID: 8300000, guid: aa7fbcffd82a5094697cafe5a31e40a1, type: 3}
+    group: 4
+    volume: 1
+    volumeJitter: 0
+    pitchJitter: 0
+    cooldown: 0.3
+    maxVoices: 1
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 1
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 8
+    clips:
+    - {fileID: 8300000, guid: 7586ea305869c7a4cb3f4c2b9408d486, type: 3}
+    group: 4
+    volume: 1
+    volumeJitter: 0
+    pitchJitter: 0
+    cooldown: 0.3
+    maxVoices: 1
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 1
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 9
+    clips:
+    - {fileID: 8300000, guid: 975eb9f09e5081145b4616c6663e0dca, type: 3}
+    - {fileID: 8300000, guid: c767f72e3e4f97f4f8409a115a25650f, type: 3}
+    - {fileID: 8300000, guid: 4d768579280bfae4482e60c4fc403aac, type: 3}
+    - {fileID: 8300000, guid: 3881d6052b0c25448a1e1f39bdac0be0, type: 3}
+    group: 2
+    volume: 0.9
+    volumeJitter: 0.08
+    pitchJitter: 0.05
+    cooldown: 0.12
+    maxVoices: 2
+    priority: 3
+    world: 1
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 10
+    clips:
+    - {fileID: 8300000, guid: d109dee3ba0125d40b8e4bc6b77817d4, type: 3}
+    - {fileID: 8300000, guid: b24912086ecc7c44cb7ebdea3ebb76e1, type: 3}
+    - {fileID: 8300000, guid: a2ecfb59008a9b248a426d7a4d52c1b7, type: 3}
+    group: 4
+    volume: 0.8
+    volumeJitter: 0.05
+    pitchJitter: 0.01
+    cooldown: 0.3
+    maxVoices: 4
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 5
+    burstDelay: 0.62
+    burstInterval: 0.1
+    burstSemitones: 0000000002000000040000000700000009000000
+  - id: 11
+    clips:
+    - {fileID: 8300000, guid: 6d8072d07ecd28f46aa594638ed92033, type: 3}
+    group: 3
+    volume: 1
+    volumeJitter: 0.05
+    pitchJitter: 0.03
+    cooldown: 0.08
+    maxVoices: 1
+    priority: 1
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 12
+    clips:
+    - {fileID: 8300000, guid: 69c5b45ce88c2d94288dfcacd6fa3580, type: 3}
+    group: 4
+    volume: 1
+    volumeJitter: 0
+    pitchJitter: 0
+    cooldown: 0.3
+    maxVoices: 1
+    priority: 2
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 13
+    clips:
+    - {fileID: 8300000, guid: 1892b534fb10f6741a9d6f8566b59a42, type: 3}
+    group: 3
+    volume: 1
+    volumeJitter: 0
+    pitchJitter: 0
+    cooldown: 0.3
+    maxVoices: 1
+    priority: 1
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 1
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 14
+    clips:
+    - {fileID: 8300000, guid: 4c3bef498473d7546a60a9ca43c147a8, type: 3}
+    group: 3
+    volume: 1
+    volumeJitter: 0.05
+    pitchJitter: 0.02
+    cooldown: 0.35
+    maxVoices: 1
+    priority: 1
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 15
+    clips:
+    - {fileID: 8300000, guid: 356c0ac002221a74f8029d187f62f198, type: 3}
+    - {fileID: 8300000, guid: e7d1e359ac7a1e94997c1a3544287216, type: 3}
+    - {fileID: 8300000, guid: 691beb4e47e870840acdedced3a6bf18, type: 3}
+    group: 3
+    volume: 1
+    volumeJitter: 0.08
+    pitchJitter: 0.04
+    cooldown: 0.04
+    maxVoices: 2
+    priority: 1
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 16
+    clips:
+    - {fileID: 8300000, guid: 118668b71a5c8d14194c0eaee4334122, type: 3}
+    group: 3
+    volume: 1
+    volumeJitter: 0.05
+    pitchJitter: 0.02
+    cooldown: 0.06
+    maxVoices: 1
+    priority: 1
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 17
+    clips:
+    - {fileID: 8300000, guid: debb361bebdd10b47a8bb3a635803101, type: 3}
+    group: 3
+    volume: 1
+    volumeJitter: 0.05
+    pitchJitter: 0.02
+    cooldown: 0.06
+    maxVoices: 1
+    priority: 1
+    world: 0
+    skipOnBatterySaver: 0
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 18
+    clips:
+    - {fileID: 8300000, guid: 499957530427e9b47b7d5d824dfd8899, type: 3}
+    - {fileID: 8300000, guid: 10941dcbcd4dd6a4bb5b72ab9d566d42, type: 3}
+    group: 2
+    volume: 0.8
+    volumeJitter: 0.1
+    pitchJitter: 0.04
+    cooldown: 6
+    maxVoices: 1
+    priority: 5
+    world: 1
+    skipOnBatterySaver: 1
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  - id: 19
+    clips:
+    - {fileID: 8300000, guid: 975eb9f09e5081145b4616c6663e0dca, type: 3}
+    - {fileID: 8300000, guid: c767f72e3e4f97f4f8409a115a25650f, type: 3}
+    - {fileID: 8300000, guid: 4d768579280bfae4482e60c4fc403aac, type: 3}
+    - {fileID: 8300000, guid: 3881d6052b0c25448a1e1f39bdac0be0, type: 3}
+    group: 2
+    volume: 0.55
+    volumeJitter: 0.1
+    pitchJitter: 0.06
+    cooldown: 3
+    maxVoices: 1
+    priority: 4
+    world: 1
+    skipOnBatterySaver: 1
+    duckMusic: 0
+    burstCount: 0
+    burstDelay: 0
+    burstInterval: 0.1
+    burstSemitones: 
+  species:
+  - species: species.rabbit
+    happy:
+    - {fileID: 8300000, guid: 3130a368c8e12a345bf67bea0e87515e, type: 3}
+    - {fileID: 8300000, guid: 64a9dd97c600c1e43bbe04126341f420, type: 3}
+    - {fileID: 8300000, guid: fe72dddd9cb84c34c96d58eca0cf4f01, type: 3}
+    sleep:
+    - {fileID: 8300000, guid: 595b0b7a1c1f7c249b984b474e4e6b1f, type: 3}
+    - {fileID: 8300000, guid: 226b71c6a56407740be9ed7fcc208a51, type: 3}
+    pitch: 1
+  - species: species.squirrel
+    happy:
+    - {fileID: 8300000, guid: 975eb9f09e5081145b4616c6663e0dca, type: 3}
+    - {fileID: 8300000, guid: c767f72e3e4f97f4f8409a115a25650f, type: 3}
+    - {fileID: 8300000, guid: 4d768579280bfae4482e60c4fc403aac, type: 3}
+    - {fileID: 8300000, guid: 3881d6052b0c25448a1e1f39bdac0be0, type: 3}
+    sleep:
+    - {fileID: 8300000, guid: 499957530427e9b47b7d5d824dfd8899, type: 3}
+    - {fileID: 8300000, guid: 10941dcbcd4dd6a4bb5b72ab9d566d42, type: 3}
+    pitch: 1.12
+  - species: species.hedgehog
+    happy:
+    - {fileID: 8300000, guid: 975eb9f09e5081145b4616c6663e0dca, type: 3}
+    - {fileID: 8300000, guid: c767f72e3e4f97f4f8409a115a25650f, type: 3}
+    - {fileID: 8300000, guid: 4d768579280bfae4482e60c4fc403aac, type: 3}
+    - {fileID: 8300000, guid: 3881d6052b0c25448a1e1f39bdac0be0, type: 3}
+    sleep:
+    - {fileID: 8300000, guid: 499957530427e9b47b7d5d824dfd8899, type: 3}
+    - {fileID: 8300000, guid: 10941dcbcd4dd6a4bb5b72ab9d566d42, type: 3}
+    pitch: 0.84
+  familyFallback:
+    species: 
+    happy:
+    - {fileID: 8300000, guid: 975eb9f09e5081145b4616c6663e0dca, type: 3}
+    - {fileID: 8300000, guid: c767f72e3e4f97f4f8409a115a25650f, type: 3}
+    - {fileID: 8300000, guid: 4d768579280bfae4482e60c4fc403aac, type: 3}
+    - {fileID: 8300000, guid: 3881d6052b0c25448a1e1f39bdac0be0, type: 3}
+    sleep:
+    - {fileID: 8300000, guid: 499957530427e9b47b7d5d824dfd8899, type: 3}
+    - {fileID: 8300000, guid: 10941dcbcd4dd6a4bb5b72ab9d566d42, type: 3}
+    pitch: 1
