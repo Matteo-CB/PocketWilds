@@ -36,10 +36,7 @@ namespace PocketWilds.Presentation
         private const float ShakeHzMultiplier = 2.2f;
 
         private readonly HatchPresentationConfig _config;
-        private readonly VfxPool _vfx;
-        private readonly int _crackVfx;
-        private readonly int _commonVfx;
-        private readonly int _rareVfx;
+        private readonly FeedbackVfx _vfx;
         private readonly IAudioService _audio;
         private readonly IHapticService _haptics;
 
@@ -48,6 +45,7 @@ namespace PocketWilds.Presentation
         private IHatchListener _listener;
         private ContentId _species;
         private RarityTier _rarity;
+        private HatchNews _news;
         private float _now;
         private float _waiting;
         private float _elapsed;
@@ -58,15 +56,11 @@ namespace PocketWilds.Presentation
         private float _nudge = -1f;
         private bool _crack1Done, _crack2Done, _burstDone, _happyDone;
 
-        /// <param name="rareVfx">-1 when no rare treatment is registered.</param>
-        public HatchSequencePlayer(HatchPresentationConfig config, VfxPool vfx, int crackVfx, int commonVfx, int rareVfx,
-            IAudioService audio, IHapticService haptics)
+        /// <param name="vfx">Null: the staging plays without particles (captures).</param>
+        public HatchSequencePlayer(HatchPresentationConfig config, FeedbackVfx vfx, IAudioService audio, IHapticService haptics)
         {
             _config = config;
             _vfx = vfx;
-            _crackVfx = crackVfx;
-            _commonVfx = commonVfx;
-            _rareVfx = rareVfx;
             _audio = audio ?? NullAudioService.Instance;
             _haptics = haptics ?? NullHapticService.Instance;
         }
@@ -101,8 +95,13 @@ namespace PocketWilds.Presentation
                 _nudge = 0f;
         }
 
+        /// <summary>The news of the current or last hatch (new species, new variant).</summary>
+        public HatchNews News => _news;
+        public RarityTier Rarity => _rarity;
+
         /// <summary>Starts the staging for an already resolved hatch. The animal view must be configured.</summary>
-        public bool Hatch(AnimalView animal, ContentId species, RarityTier rarity, bool repeat, IHatchListener listener)
+        public bool Hatch(AnimalView animal, ContentId species, RarityTier rarity, bool repeat, IHatchListener listener,
+            HatchNews news = HatchNews.None)
         {
             if (Phase != HatchPhase.Waiting || _egg == null || animal == null)
                 return false;
@@ -110,6 +109,7 @@ namespace PocketWilds.Presentation
             _animal = animal;
             _species = species;
             _rarity = rarity;
+            _news = news;
             _listener = listener;
             _speed = repeat ? _config.repeatSpeed : 1f;
             _elapsed = 0f;
@@ -128,6 +128,7 @@ namespace PocketWilds.Presentation
             _animal.SetScale(0.001f);
 
             var position = _egg.VfxPoint.position;
+            _vfx?.Play(VfxId.EggTap, position, _now);
             _audio.Play(AudioEventId.EggTap, position, default);
             _haptics.Play(HapticEventId.TapLight);
             Phase = HatchPhase.Anticipation;
@@ -217,8 +218,7 @@ namespace PocketWilds.Presentation
             _lastCrackTime = stage == 1 ? _tCrack1 : _tCrack2;
             _egg.SetCrackStage(stage);
             var position = _egg.VfxPoint.position;
-            if (_crackVfx >= 0)
-                _vfx.Play(_crackVfx, position, Quaternion.identity, _now);
+            _vfx?.Play(VfxId.Crack, position, _now);
             _audio.Play(stage == 1 ? AudioEventId.Crack1 : AudioEventId.Crack2, position, default);
             _haptics.Play(HapticEventId.TapLight);
             Phase = stage == 1 ? HatchPhase.Cracked1 : HatchPhase.Cracked2;
@@ -262,10 +262,17 @@ namespace PocketWilds.Presentation
             _egg.SetFragmentsVisible(true);
 
             var position = _egg.VfxPoint.position;
-            if (_commonVfx >= 0)
-                _vfx.Play(_commonVfx, position, Quaternion.identity, _now);
-            if (_rareVfx >= 0 && _rarity >= RarityTier.Rare)
-                _vfx.Play(_rareVfx, position, Quaternion.identity, _now);
+            if (_vfx != null)
+            {
+                // Common burst for every hatch; each higher rarity adds its own accent (doc 07, H-VFX-003 to 007).
+                _vfx.Play(VfxId.HatchCommon, position, _now);
+                var accent = RarityVfx(_rarity);
+                if (accent != VfxId.Count)
+                    _vfx.Play(accent, position, _now);
+                // A discovery rings around the newborn's feet (its delay lets the burst land first).
+                if (_news != HatchNews.None)
+                    _vfx.Play(_news == HatchNews.NewSpecies ? VfxId.NewSpecies : VfxId.NewVariant, _egg.RevealPoint.position, _now);
+            }
 
             _audio.Play(AudioEventId.HatchPop, position, default);
             var reveal = RevealAudio(_rarity);
@@ -328,6 +335,19 @@ namespace PocketWilds.Presentation
             var listener = _listener;
             _listener = null;
             listener?.OnHatchFinished();
+        }
+
+        /// <summary>The accent effect a rarity adds on top of the common burst; Count when none (Common, Uncommon).</summary>
+        public static VfxId RarityVfx(RarityTier rarity)
+        {
+            switch (rarity)
+            {
+                case RarityTier.Rare: return VfxId.HatchRare;
+                case RarityTier.Epic: return VfxId.HatchEpic;
+                case RarityTier.Legendary: return VfxId.HatchLegendary;
+                case RarityTier.Fabulous: return VfxId.HatchFabulous;
+                default: return VfxId.Count;
+            }
         }
 
         private static AudioEventId RevealAudio(RarityTier rarity)

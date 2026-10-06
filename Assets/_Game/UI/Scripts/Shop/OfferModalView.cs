@@ -13,7 +13,7 @@ namespace PocketWilds.UI
     /// the card. Content saved inactive; ticked by the refuge while open.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class OfferModalView : MonoBehaviour, IOfferModalView
+    public sealed class OfferModalView : MonoBehaviour, IOfferModalView, IMotionSettings
     {
         private const float ToastSeconds = 2.4f;
 

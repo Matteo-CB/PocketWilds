@@ -15,7 +15,7 @@ namespace PocketWilds.UI
     /// while it is open; closing is instant. Ticked by the refuge, no Update.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class CodexScreen : MonoBehaviour, ICodexView
+    public sealed class CodexScreen : MonoBehaviour, ICodexView, IMotionSettings
     {
         public const float HeaderRowHeight = 112f;
         public const float CardRowHeight = 428f;
@@ -148,6 +148,15 @@ namespace PocketWilds.UI
             _listContent.anchoredPosition = Vector2.zero;
             _scroll.velocity = Vector2.zero;
             UpdateRows(true);
+        }
+
+        /// <summary>T34A: straight to a species page (the animal sheet's Details); the list stays behind it.</summary>
+        public void OpenSpecies(CodexService codex, ILocalization text, ICodexActions actions, ContentId species)
+        {
+            Open(codex, text, actions);
+            int index = codex.IndexOf(species);
+            if (index >= 0)
+                OpenSheet(index);
         }
 
         public void Tick(float unscaledDeltaTime)

@@ -11,6 +11,9 @@ namespace PocketWilds.Presentation
 
         void Open(CodexService codex, ILocalization text, ICodexActions actions);
 
+        /// <summary>T34A: opens on one species page (the animal sheet's Details button).</summary>
+        void OpenSpecies(CodexService codex, ILocalization text, ICodexActions actions, ContentId species);
+
         void Tick(float unscaledDeltaTime);
     }
 

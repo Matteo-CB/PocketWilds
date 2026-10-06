@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40631ddbb5e30b34e830d0aa127ee710, type: 3}
+  m_Name: DEF_VfxCatalog
+  m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.VfxCatalog
+  effects:
+  - id: 0
+    prefab: {fileID: 6568505899500033532, guid: 7d11d0942bd935144b4244801ed4728f, type: 3}
+    softCapacity: 2
+    hardCapacity: 3
+    warmup: 2
+  - id: 1
+    prefab: {fileID: 4439562137847667432, guid: 72e3eea4e01a441419d4d048b1222292, type: 3}
+    softCapacity: 1
+    hardCapacity: 2
+    warmup: 1
+  - id: 2
+    prefab: {fileID: 5416515032618753205, guid: 4bce736394a9a26408857e368a9be306, type: 3}
+    softCapacity: 1
+    hardCapacity: 2
+    warmup: 1
+  - id: 3
+    prefab: {fileID: 3502819054686147043, guid: 1c6aed968b291694b80a8ef7f8faf20c, type: 3}
+    softCapacity: 1
+    hardCapacity: 2
+    warmup: 1
+  - id: 4
+    prefab: {fileID: 1459668089139130672, guid: b0a010a4e3639b24fb7a92de7dd9967f, type: 3}
+    softCapacity: 1
+    hardCapacity: 2
+    warmup: 1
+  - id: 5
+    prefab: {fileID: 5786329178704959901, guid: 5206f085fc944a04fb0db1e47b7ab6f2, type: 3}
+    softCapacity: 1
+    hardCapacity: 2
+    warmup: 1
+  - id: 6
+    prefab: {fileID: 3673218450014383553, guid: 017befcfabc4c0d419796b0c9ff2e391, type: 3}
+    softCapacity: 1
+    hardCapacity: 2
+    warmup: 1
+  - id: 7
+    prefab: {fileID: 2771491862505443950, guid: a8d4c87109fadc34fbaf716d3b904592, type: 3}
+    softCapacity: 1
+    hardCapacity: 2
+    warmup: 1
+  - id: 8
+    prefab: {fileID: 4813391453086335417, guid: 74a9951e6d42a5343944dc934dcf000f, type: 3}
+    softCapacity: 1
+    hardCapacity: 2
+    warmup: 1
+  - id: 9
+    prefab: {fileID: 4831720543756044799, guid: f2dbed4fe4e592549b362982c68bead2, type: 3}
+    softCapacity: 1
+    hardCapacity: 2
+    warmup: 1
+  - id: 10
+    prefab: {fileID: 2215340558740366527, guid: 4b821a4f41a01ff43a349817edf09aba, type: 3}
+    softCapacity: 2
+    hardCapacity: 3
+    warmup: 2
+  - id: 11
+    prefab: {fileID: 7729048066141062962, guid: 22932c130331c744e859dd0a2343c6e9, type: 3}
+    softCapacity: 2
+    hardCapacity: 3
+    warmup: 2
+  lowCountScale: 0.5
+  highCountScale: 1.25
+  maxPlaying: 16

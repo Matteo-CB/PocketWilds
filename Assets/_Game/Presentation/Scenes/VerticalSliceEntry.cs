@@ -48,6 +48,10 @@ namespace PocketWilds.Presentation
         [SerializeField] private MonoBehaviour _shop;
         [Tooltip("Offer modal implementing IOfferModalView (UI assembly).")]
         [SerializeField] private MonoBehaviour _offerModal;
+        [Tooltip("T34A animal quick sheet implementing IAnimalSheetView (UI assembly).")]
+        [SerializeField] private MonoBehaviour _animalSheet;
+        [Tooltip("T34A modal shell implementing IModalView (UI assembly).")]
+        [SerializeField] private MonoBehaviour _modal;
 
         private GameContext _context;
         private RefugeController _refuge;
@@ -145,8 +149,10 @@ namespace PocketWilds.Presentation
 
             if (_startChunk != null && _hatchConfig != null && context.VisualCatalog != null && context.Content.Eggs.TryGet(ContentId.FromSource(_eggId), out _))
             {
+                ApplyReduceMotion(context.State.Settings.ReduceMotion);
                 _refuge = new RefugeController(context, _startChunk, _cameraRig, _hud as IRefugeHud, _hatchConfig, _eggId, transform,
-                    _offlineReturn as IOfflineReturnView, _codex as ICodexView, _shop as IShopView, _offerModal as IOfferModalView);
+                    _offlineReturn as IOfflineReturnView, _codex as ICodexView, _shop as IShopView, _offerModal as IOfferModalView,
+                    _animalSheet as IAnimalSheetView, _modal as IModalView);
                 var input = _cameraRig != null ? _cameraRig.GetComponent<RefugeCameraInput>() : null;
                 if (input != null)
                     input.SetTapHandler(this);
@@ -156,6 +162,14 @@ namespace PocketWilds.Presentation
             _onQuality = ApplyQuality;
             context.Quality.StateChanged += _onQuality;
             GameLog.Info(LogCategory.Presentation, "Vertical slice entered.");
+        }
+
+        /// <summary>T34A: the player's Reduce Motion setting reaches every screen of the scene.</summary>
+        public void ApplyReduceMotion(bool reduce)
+        {
+            foreach (var screen in new[] { _hud, _offlineReturn, _codex, _shop, _offerModal, _animalSheet, _modal })
+                if (screen is IMotionSettings motion)
+                    motion.ReduceMotion = reduce;
         }
 
         /// <summary>

@@ -87,7 +87,7 @@ namespace PocketWilds.Editor.Capture
             try
             {
                 // No pooled VFX here: effects are simulated to the exact moment below.
-                var player = new HatchSequencePlayer(config, null, -1, -1, -1, null, null);
+                var player = new HatchSequencePlayer(config, null, null, null);
                 player.Present(egg);
                 player.Hatch(animal, variant.Species, rarity, false, null);
                 const float step = 1f / 60f;
@@ -114,12 +114,14 @@ namespace PocketWilds.Editor.Capture
                 float age = 0f;
                 if (moment >= burst)
                 {
-                    prefab = rarity >= RarityTier.Rare ? config.hatchRareVfx : config.hatchCommonVfx;
+                    // The rarity accent when there is one (it carries the rarity's colors), else the common burst.
+                    var accent = HatchSequencePlayer.RarityVfx(rarity);
+                    prefab = config.vfx.Prefab(accent != VfxId.Count ? accent : VfxId.HatchCommon);
                     age = moment - burst;
                 }
                 else if (moment >= config.anticipation)
                 {
-                    prefab = config.crackVfx;
+                    prefab = config.vfx.Prefab(VfxId.Crack);
                     age = moment - config.anticipation;
                 }
                 if (prefab != null)

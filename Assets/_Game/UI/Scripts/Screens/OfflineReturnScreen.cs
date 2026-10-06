@@ -12,7 +12,7 @@ namespace PocketWilds.UI
     /// inactive and the canvas disabled. Animations are ticked by the refuge, no Update.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class OfflineReturnScreen : MonoBehaviour, IOfflineReturnView
+    public sealed class OfflineReturnScreen : MonoBehaviour, IOfflineReturnView, IMotionSettings
     {
         private const float OpenSeconds = 0.26f;
         private const float CloseSeconds = 0.18f;

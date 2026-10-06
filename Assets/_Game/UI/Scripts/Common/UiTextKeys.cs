@@ -39,6 +39,16 @@ namespace PocketWilds.UI
             ShopTitle, ShopFeatured, ShopGems, ShopBestValue, ShopOwned, ShopOneTime, ShopContentsGems, ShopRestore, ShopThanks, ShopThanksItem,
             ShopFailed, ShopPending, ShopUnavailable, ShopNotEnoughGems, ShopRestored, ShopNothingToRestore,
             QualityThermalNotice,
+            // T34A: reveal banner, rarity names, egg odds, modal buttons, toasts, animal sheet.
+            PocketWilds.Presentation.FeedbackText.RevealNewSpecies, PocketWilds.Presentation.FeedbackText.RevealNewVariant,
+            PocketWilds.Presentation.FeedbackText.RarityCommon, PocketWilds.Presentation.FeedbackText.RarityUncommon,
+            PocketWilds.Presentation.FeedbackText.RarityRare, PocketWilds.Presentation.FeedbackText.RarityEpic,
+            PocketWilds.Presentation.FeedbackText.RarityLegendary, PocketWilds.Presentation.FeedbackText.RarityFabulous,
+            PocketWilds.Presentation.FeedbackText.EggOddsTitle, PocketWilds.Presentation.FeedbackText.EggOddsLine,
+            PocketWilds.Presentation.FeedbackText.EggOddsGuarantee, PocketWilds.Presentation.FeedbackText.ModalOkButton,
+            PocketWilds.Presentation.FeedbackText.ModalCancelButton, PocketWilds.Presentation.FeedbackText.ToastShopOpen,
+            PocketWilds.Presentation.FeedbackText.ToastNotEnoughLight, PocketWilds.Presentation.FeedbackText.SheetDetailsButton,
+            PocketWilds.Presentation.FeedbackText.SheetBond,
         };
     }
 }

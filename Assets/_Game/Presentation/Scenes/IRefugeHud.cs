@@ -30,6 +30,21 @@ namespace PocketWilds.Presentation
         /// <summary>T34: a short note (the device is warm, the picture is lighter); null hides it.</summary>
         void SetNotice(string text);
 
+        /// <summary>T34A: the reveal banner after a burst (new species, new variant, or a rarity from Rare up).</summary>
+        void ShowReveal(in RevealInfo info);
+
+        /// <summary>T34A: one short toast (bounded queue, one panel reused).</summary>
+        void ShowToast(ToastKind kind, string text);
+
+        /// <summary>T34A tutorial gesture: a hand taps on a screen point (the first egg) until the player does.</summary>
+        void SetTapHint(bool visible, UnityEngine.Vector2 screenPosition);
+
+        /// <summary>T34A collected Light: motes fly from a screen point into the Light chip, which pops as they land.</summary>
+        void PlayCollect(UnityEngine.Vector2 fromScreenPosition);
+
+        /// <summary>T34A: builds the hidden feedback parts once at scene entry (first banner or toast never hitches).</summary>
+        void PrewarmFeedback(string sampleTitle, string sampleText);
+
         void Tick(float unscaledDeltaTime);
 
         /// <summary>True when a screen point lands on an interactive HUD element (world taps ignore it).</summary>
@@ -44,5 +59,8 @@ namespace PocketWilds.Presentation
         void OpenCodex();
 
         void OpenShop();
+
+        /// <summary>T34A: the egg's odds (always available, doc 05 Hatch UX).</summary>
+        void OpenEggInfo();
     }
 }

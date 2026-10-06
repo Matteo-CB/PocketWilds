@@ -55,7 +55,8 @@ Shader "PocketWilds/BlobShadow"
             {
                 Varyings output;
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
-                output.uv = input.uv * float2(0.5, 1.0);
+                // Tile 0 (soft dot) of the 8 x 1 VFX atlas (T34A).
+                output.uv = input.uv * float2(0.125, 1.0);
                 return output;
             }
 

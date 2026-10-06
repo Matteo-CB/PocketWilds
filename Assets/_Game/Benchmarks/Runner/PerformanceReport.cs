@@ -23,6 +23,8 @@ namespace PocketWilds.Benchmarks
         public bool rain;
         /// <summary>T34: every adaptive quality step from the boot tier down to Low and back up, one every 1.2 s.</summary>
         public bool qualityLadder;
+        /// <summary>T34A: every feedback effect at once (worst case), then one by one, the animal sheet, the egg odds and a toast.</summary>
+        public bool feedbackBurst;
         /// <summary>Grassland species cycled through the save: 1 rabbits only, 2 + squirrels (T23), 3 + hedgehogs (T24).</summary>
         public int species = 1;
         public float warmupSeconds = 2f;

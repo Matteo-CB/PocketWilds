@@ -259,8 +259,8 @@
     {
       "task": "T34A",
       "title": "Feedback et écrans de la tranche (VFX de feedback, fiche animal, annonce de découverte, splash, toasts, modales, cadres de rareté)",
-      "status": "PLANNED",
-      "notes": "Added by the T30 gate."
+      "status": "DONE",
+      "notes": "Added by the T30 gate. Done 2026-10-06. Feedback VFX (VfxPipeline: one 8-tile atlas T_VFX_FeedbackAtlas, one material, DEF_VfxCatalog; EggTap 8, Crack 11, HatchCommon 20, Rare 25, Epic 28, Legendary 40, Fabulous 44, NewSpecies 18, NewVariant 7, MasteryLevelUp 14, FavoriteHeart 3, RareGlint 3 particles at Medium; Low 0.5x, High 1.25x; FeedbackVfx pools all at scene entry, 16 at once). SH_RareGlow: rim in SH_AnimalMaster from the renderer user value (Legendary gold 3, Golden 5, Fabulous sky 12) + glints on one rare animal every 2.2 s. Screens: PF_UI_AnimalQuickSheet (second touch; frame, badge, stars, word, traits, bond, favorite saved, Details to the Codex species page), reveal banner, ToastQueue, PF_UI_Modal (egg odds with the new species guarantee), tutorial paw on the first egg, PF_UI_Splash, collect motes into the Light chip; rarity frames and badges (Atlas_Codex, DEF_UiRarity), trait badges, favorite hearts; Reduce Motion reaches every screen; every screen prewarmed at scene entry. Owner rule 2026-10-06: no sparkle (no four-point star anywhere; Light icon, Shiny badge, frame corners, VFX tiles redrawn; NoSparkleRuleTests); the drawn hand became a paw, the padlock was redrawn. Gate 10 and 12 tests (FeedbackVfx*, FeedbackScreenTests, FeedbackPlayTests). Windows player (T34A_player_windows_feedback.json): 21 scenarios, longest frame 17.8 ms, 0 over 33 ms, F1 worst case 17.2 ms, main p95 1.7-2.5 ms, warmup 82 states in 108 ms. Report: Docs/Design/T34A_Feedback_et_ecrans.md."
     },
     {
       "task": "T34B",
@@ -5148,18 +5148,21 @@
       "family": "Shader",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "Assets/_Game/Art/Shaders/SH_RareGlow.shader",
-      "runtimePath": "Assets/_Game/Art/Shaders/SH_RareGlow.shader",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Art/Shaders/Include/SH_RareGlow.hlsl",
+      "runtimePath": "Assets/_Game/Art/Shaders/Include/SH_RareGlow.hlsl",
       "validationGates": [
         "G06",
         "G07",
         "G19",
         "G29"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T30 audit: not produced yet."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T30 audit: not produced yet. | T34A: option 3 rim in SH_AnimalMaster (renderer user value bits 17-20: 1-7 warm gold, 8-15 sky gradient; the fur edge takes the glow color then a soft lift; Legendary 3, Golden 5, Fabulous 12), option 1 pooled glints (VFX_RareGlint, one visible rare animal every 2.2 s, 4.4 s on Low). No keyword, no extra renderer, no light. Capture T34A_rare_glow.png.",
+      "passedGates": [
+        "G06"
+      ]
     },
     {
       "id": "G-SH-007",
@@ -5553,13 +5556,13 @@
       "dependencies": [],
       "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/VFX/Textures/T_VFX_SparkAtlas.png",
+      "runtimePath": "Assets/_Game/Art/VFX/Textures/T_VFX_FeedbackAtlas.png",
       "validationGates": [
         "G07"
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-05T18:04:15Z",
-      "notes": "T30 audit: merged into the single R8 atlas T_VFX_SparkAtlas (soft dot + star tiles, T14): one texture instead of two."
+      "notes": "T30 audit: merged into the single R8 atlas T_VFX_SparkAtlas (soft dot + star tiles, T14): one texture instead of two. | T34A: renamed T_VFX_FeedbackAtlas, 8 tiles (dot, round glint, heart, paw, ring, plump star, petal, soft bubble), no four-point sparkle star (owner rule)."
     },
     {
       "id": "G-TEX-SOFTCIRCLE",
@@ -5569,13 +5572,13 @@
       "dependencies": [],
       "status": "INTEGRATED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/VFX/Textures/T_VFX_SparkAtlas.png",
+      "runtimePath": "Assets/_Game/Art/VFX/Textures/T_VFX_FeedbackAtlas.png",
       "validationGates": [
         "G07"
       ],
       "lastValidationVersion": null,
       "lastValidationUtc": "2026-10-05T18:04:15Z",
-      "notes": "T30 audit: merged into the single R8 atlas T_VFX_SparkAtlas (soft dot + star tiles, T14): one texture instead of two."
+      "notes": "T30 audit: merged into the single R8 atlas T_VFX_SparkAtlas (soft dot + star tiles, T14): one texture instead of two. | T34A: renamed T_VFX_FeedbackAtlas, 8 tiles (dot, round glint, heart, paw, ring, plump star, petal, soft bubble), no four-point sparkle star (owner rule)."
     },
     {
       "id": "G-TEX-PETAL",
@@ -5601,16 +5604,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
       "runtimePath": "Assets/_Game/Art/VFX/VFX_EggTap.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T34A: ring pulse + 7 plump stars, 8 particles Medium, 0.40 s. Built by VfxPipeline (shared atlas and MAT_VFX_AdditiveLite), listed in DEF_VfxCatalog, pooled by FeedbackVfx, warmed at scene entry; Low 0.5x, High 1.25x (Gate 10 tests).",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-002",
@@ -5621,15 +5627,15 @@
         "G-SH-008"
       ],
       "status": "INTEGRATED",
-      "sourcePath": null,
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
       "runtimePath": "Assets/_Game/Art/VFX/VFX_Crack.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-04T22:54:49Z",
-      "notes": "T14: VFX_Crack: puff 7 + glints 4, built by EggPipeline, pooled by VfxPool (no Instantiate after warmup), Low quality scales bursts. | Reviewed in T14 hatch sheets. | Played by HatchSequencePlayer; 10 hatches after warmup: 0 GC, 0 Instantiate.",
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T14: VFX_Crack: puff 7 + glints 4, built by EggPipeline, pooled by VfxPool (no Instantiate after warmup), Low quality scales bursts. | Reviewed in T14 hatch sheets. | Played by HatchSequencePlayer; 10 hatches after warmup: 0 GC, 0 Instantiate. | T34A: rebuilt by VfxPipeline (atlas of 8 tiles, round glint instead of the four-point star).",
       "passedGates": [
         "G10"
       ]
@@ -5643,15 +5649,15 @@
         "G-SH-008"
       ],
       "status": "INTEGRATED",
-      "sourcePath": null,
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
       "runtimePath": "Assets/_Game/Art/VFX/VFX_HatchCommon.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-04T22:54:49Z",
-      "notes": "T14: VFX_HatchCommon: flash 1 + sparkles 16 + motes 12, built by EggPipeline, pooled by VfxPool (no Instantiate after warmup), Low quality scales bursts. | Reviewed in T14 hatch sheets. | Played by HatchSequencePlayer; 10 hatches after warmup: 0 GC, 0 Instantiate.",
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T14: VFX_HatchCommon: flash 1 + sparkles 16 + motes 12, built by EggPipeline, pooled by VfxPool (no Instantiate after warmup), Low quality scales bursts. | Reviewed in T14 hatch sheets. | Played by HatchSequencePlayer; 10 hatches after warmup: 0 GC, 0 Instantiate. | T34A: rebuilt by VfxPipeline: flash 1 + plump stars 12 + motes 7 = 20 (doc 12-20).",
       "passedGates": [
         "G10"
       ]
@@ -5665,15 +5671,15 @@
         "G-SH-008"
       ],
       "status": "INTEGRATED",
-      "sourcePath": null,
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
       "runtimePath": "Assets/_Game/Art/VFX/VFX_HatchRare.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-04T22:54:50Z",
-      "notes": "T14: VFX_HatchRare: gold glow 1 + star ring 18 + rising 16/s for 0.6 s, built by EggPipeline, pooled by VfxPool (no Instantiate after warmup), Low quality scales bursts. | Reviewed in T14 hatch sheets. | Played by HatchSequencePlayer; 10 hatches after warmup: 0 GC, 0 Instantiate.",
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T14: VFX_HatchRare: gold glow 1 + star ring 18 + rising 16/s for 0.6 s, built by EggPipeline, pooled by VfxPool (no Instantiate after warmup), Low quality scales bursts. | Reviewed in T14 hatch sheets. | Played by HatchSequencePlayer; 10 hatches after warmup: 0 GC, 0 Instantiate. | T34A: rebuilt by VfxPipeline in the Rare token blue: glow 1 + glint ring 16 + rising bubbles 8 = 25 (doc 20-28).",
       "passedGates": [
         "G10"
       ]
@@ -5686,16 +5692,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
       "runtimePath": "Assets/_Game/Art/VFX/VFX_HatchEpic.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T34A: lilac glow, one radial ring, 18 stars, 8 bubbles: 28 particles. Built by VfxPipeline (shared atlas and MAT_VFX_AdditiveLite), listed in DEF_VfxCatalog, pooled by FeedbackVfx, warmed at scene entry; Low 0.5x, High 1.25x (Gate 10 tests).",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-006",
@@ -5705,16 +5714,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
       "runtimePath": "Assets/_Game/Art/VFX/VFX_HatchLegendary.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T34A: gold glow and ring, 20 round glints, 10 sky motes, 8 bubbles: 40 particles. Built by VfxPipeline (shared atlas and MAT_VFX_AdditiveLite), listed in DEF_VfxCatalog, pooled by FeedbackVfx, warmed at scene entry; Low 0.5x, High 1.25x (Gate 10 tests).",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-007",
@@ -5724,16 +5736,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
       "runtimePath": "Assets/_Game/Art/VFX/VFX_HatchFabulous.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T34A: pink glow, sky ring, 20 pastel stars, 8 petals, 14 bubbles: 44 particles, 1.6 s. Built by VfxPipeline (shared atlas and MAT_VFX_AdditiveLite), listed in DEF_VfxCatalog, pooled by FeedbackVfx, warmed at scene entry; Low 0.5x, High 1.25x (Gate 10 tests).",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-008",
@@ -5743,16 +5758,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/VFX/VFX_CollectLight.prefab",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/FeedbackUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_HUD_Main.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T34A: deviation with reason: UI motes (12, 8 on Low) on the HUD overlay canvas fly from the offline card into the Light chip, which pops (a particle system cannot draw in an overlay canvas). CollectMotes in PF_UI_HUD_Main, played on Collect.",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-009",
@@ -5762,16 +5780,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "BLOCKOUT",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
       "runtimePath": "Assets/_Game/Art/VFX/VFX_MasteryLevelUp.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T20: level up is shown by the toast glow (UI_Glow_Soft) and icon pop; particle VFX_MasteryLevelUp still to do."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T20: level up is shown by the toast glow (UI_Glow_Soft) and icon pop; particle VFX_MasteryLevelUp still to do. | T34A: ring, 5 golden paws, 8 stars around the newborn on a level up: 14 particles. Built by VfxPipeline (shared atlas and MAT_VFX_AdditiveLite), listed in DEF_VfxCatalog, pooled by FeedbackVfx, warmed at scene entry; Low 0.5x, High 1.25x (Gate 10 tests).",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-010",
@@ -5781,16 +5802,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
       "runtimePath": "Assets/_Game/Art/VFX/VFX_NewSpecies.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T34A: two flat rings on the ground under the newborn, rising bubbles and stars: 18 particles; the banner is the label signal. Built by VfxPipeline (shared atlas and MAT_VFX_AdditiveLite), listed in DEF_VfxCatalog, pooled by FeedbackVfx, warmed at scene entry; Low 0.5x, High 1.25x (Gate 10 tests).",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-011",
@@ -5800,16 +5824,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
       "runtimePath": "Assets/_Game/Art/VFX/VFX_NewVariant.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T34A: one flat ring and 6 bubbles: 7 particles. Built by VfxPipeline (shared atlas and MAT_VFX_AdditiveLite), listed in DEF_VfxCatalog, pooled by FeedbackVfx, warmed at scene entry; Low 0.5x, High 1.25x (Gate 10 tests).",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-012",
@@ -5819,16 +5846,19 @@
       "dependencies": [
         "G-SH-008"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
       "runtimePath": "Assets/_Game/Art/VFX/VFX_FavoriteHeart.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T34A: 3 hearts popping above the animal when it becomes a favorite, 0.69 s. Built by VfxPipeline (shared atlas and MAT_VFX_AdditiveLite), listed in DEF_VfxCatalog, pooled by FeedbackVfx, warmed at scene entry; Low 0.5x, High 1.25x (Gate 10 tests).",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-013",
@@ -6060,7 +6090,7 @@
     },
     {
       "id": "H-VFX-025",
-      "name": "VFX_StarlightSparkle",
+      "name": "VFX_StarlightGlints",
       "family": "VFX",
       "releaseScope": "Future",
       "dependencies": [
@@ -6068,14 +6098,14 @@
       ],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/VFX/VFX_StarlightSparkle.prefab",
+      "runtimePath": "Assets/_Game/Art/VFX/VFX_StarlightGlints.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T34A: renamed from VFX_StarlightSparkle (owner rule 2026-10-06: no four-point sparkle anywhere)."
     },
     {
       "id": "I-APP-001",
@@ -6118,14 +6148,14 @@
       "releaseScope": "VerticalSlice",
       "dependencies": [],
       "status": "INTEGRATED",
-      "sourcePath": "SourceArt/UI/Masters/ICO_Currency_Light@4x.png",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites.py",
       "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_Currency_Light.png",
       "validationGates": [
         "G12"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T30 audit: path corrected to the generated master (pw_ui_sprites.py) and runtime sprite."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T17: ICO_Currency_Light (soft four-point star + orb) from SourceArt/UI/Tools/pw_ui_sprites.py (vector-like SDF source, 4x masters in SourceArt/UI/Masters), 128 px, Atlas_CommonHUD; used by the Light chip and the egg cost. Reviewed in Unity captures at 1080x2340. | T30 audit: path corrected to the generated master (pw_ui_sprites.py) and runtime sprite. | T34A: redrawn as a warm orb in a ring of eight round rays (owner rule 2026-10-06: no four-point sparkle star)."
     },
     {
       "id": "I-HUD-002",
@@ -6261,15 +6291,18 @@
       "family": "UIIcon",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/UI/Masters/ICO_Favorite_Heart@4x.png",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t34a.py",
       "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_Favorite_Heart.png",
       "validationGates": [
         "G12"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T30 audit: path corrected to the generated master (pw_ui_sprites.py) and runtime sprite."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T30 audit: path corrected to the generated master (pw_ui_sprites.py) and runtime sprite. | T34A: ICO_Favorite_Heart (filled, on) and ICO_Favorite_HeartOutline (off): the state reads by shape. On the animal sheet.",
+      "passedGates": [
+        "G12"
+      ]
     },
     {
       "id": "I-KIT",
@@ -6296,15 +6329,18 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "BLOCKOUT",
-      "sourcePath": "SourceArt/UI/",
-      "runtimePath": "Assets/_Game/Art/UI/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t34a.py",
+      "runtimePath": "Assets/_Game/Art/UI/Codex/",
       "validationGates": [
         "G12"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "T19: rarity shown by ICO_Rarity_Star count (1 to 6) + rarity color tokens. Frames UI_Frame_Common..Secret still to do."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T19: rarity shown by ICO_Rarity_Star count (1 to 6) + rarity color tokens. Frames UI_Frame_Common..Secret still to do. | T34A: UI_Frame_Common..Secret and ICO_Rarity_Common..Secret (Atlas_Codex, DEF_UiRarity): each rarity has its own motif (dot, sprout, diamond, three points, crown, cloud, star), plus stars and the word on every screen: never color alone. Trait badges ICO_Trait_Tiny/Giant/Shiny (pearl)/Golden/Albino/Melanistic.",
+      "passedGates": [
+        "G12"
+      ]
     },
     {
       "id": "I-NAV",
@@ -6404,15 +6440,18 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/UI/",
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t34a.py",
       "runtimePath": "Assets/_Game/Art/UI/",
       "validationGates": [
         "G12"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T34A: UI_Gesture_Tap is a plush paw (owner found the drawn hand ugly): it floats above the first egg and taps toward it while a soft ring spreads. Swipe and hold come with the activities.",
+      "passedGates": [
+        "G12"
+      ]
     },
     {
       "id": "I-SOCIAL",
@@ -6440,16 +6479,19 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/FeedbackUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_Splash.prefab",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 001."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "Local ID for doc 06 SCREEN 001. | T34A: PF_UI_Splash: sky-to-meadow gradient, placeholder lockup in Pocket Plush (live text until the final name), three hopping paws, no fake progress bar; shown from the first frame, fades once the refuge is ready. Capture T34A_splash.png.",
+      "passedGates": [
+        "G12"
+      ]
     },
     {
       "id": "I-SCR-002",
@@ -6478,16 +6520,19 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "BLOCKOUT",
+      "sourcePath": "Assets/_Game/Editor/UI/FeedbackUiPipeline.cs",
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 003."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "Local ID for doc 06 SCREEN 003. | T34A: reveal banner in PF_UI_HUD_Main (rarity word from Rare up, New species / New variant, badge motif, stars) and the egg odds button with its modal. Egg type name and multi-hatch come later.",
+      "passedGates": [
+        "G12"
+      ]
     },
     {
       "id": "I-SCR-004",
@@ -6516,16 +6561,19 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/FeedbackUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_AnimalQuickSheet.prefab",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 005."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "Local ID for doc 06 SCREEN 005. | T34A: PF_UI_AnimalQuickSheet: second touch on an animal; portrait in its rarity frame, name, species and variant, rarity badge + stars + word, trait badges, bond, favorite heart, Details (Codex species page). Groom, photo, outfit and rename buttons come with those features. Captures T34A_sheet_*.png and 3 screen shapes.",
+      "passedGates": [
+        "G12"
+      ]
     },
     {
       "id": "I-SCR-006",
@@ -6896,16 +6944,19 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/FeedbackUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_Modal.prefab",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 025."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "Local ID for doc 06 SCREEN 025. | T34A: PF_UI_Modal: one shell for Info, Confirm, Warning (icon, title, body sized to its text, one or two buttons, scrim and Back). Used for the egg odds.",
+      "passedGates": [
+        "G12"
+      ]
     },
     {
       "id": "I-SCR-026",
@@ -6915,16 +6966,19 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/FeedbackUiPipeline.cs",
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 026."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "Local ID for doc 06 SCREEN 026. | T34A: tap gesture on the first egg (TapHint in PF_UI_HUD_Main), gone with the first hatch.",
+      "passedGates": [
+        "G12"
+      ]
     },
     {
       "id": "I-SCR-027",
@@ -6934,16 +6988,19 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/FeedbackUiPipeline.cs",
       "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Local ID for doc 06 SCREEN 027."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "Local ID for doc 06 SCREEN 027. | T34A: ToastQueue in PF_UI_HUD_Main: one reused panel, bounded queue of 4, states Reward, Discovery, Unlock, Visitor, Expedition, Warning; used for the shop opening and the calm \"not enough Light yet\".",
+      "passedGates": [
+        "G12"
+      ]
     },
     {
       "id": "I-SCR-028",
@@ -8535,16 +8592,16 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Prefabs/UI/PF_UI_Toast.prefab",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/FeedbackUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_HUD_Main.prefab",
       "validationGates": [
         "G08",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "T34A: the toast is part of PF_UI_HUD_Main (own canvas, ToastQueue), not a separate prefab: one panel reused."
     },
     {
       "id": "K-PF-UI-Tooltip",
@@ -14662,7 +14719,7 @@
     },
     {
       "id": "H-VFX-041",
-      "name": "VFX_GroomSparkle",
+      "name": "VFX_GroomGlints",
       "family": "VFX",
       "releaseScope": "SoftLaunch",
       "dependencies": [
@@ -14670,14 +14727,14 @@
       ],
       "status": "PLANNED",
       "sourcePath": null,
-      "runtimePath": "Assets/_Game/Art/VFX/VFX_GroomSparkle.prefab",
+      "runtimePath": "Assets/_Game/Art/VFX/VFX_GroomGlints.prefab",
       "validationGates": [
         "G10",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026')."
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). | T34A: renamed from VFX_GroomSparkle (owner rule 2026-10-06: no four-point sparkle anywhere)."
     },
     {
       "id": "H-VFX-042",
@@ -15942,6 +15999,29 @@
       "lastValidationVersion": "T33C",
       "lastValidationUtc": "2026-10-06T01:07:03Z",
       "notes": "Doc 04 chunk list, T33B. | T33B at +98 m, east end of the island; T33C obstacles, ground field."
+    },
+    {
+      "id": "H-VFX-043",
+      "name": "VFX_RareGlint",
+      "family": "VFX",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [
+        "G-SH-008",
+        "G-SH-006"
+      ],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
+      "runtimePath": "Assets/_Game/Art/VFX/VFX_RareGlint.prefab",
+      "validationGates": [
+        "G10",
+        "G19"
+      ],
+      "lastValidationVersion": "T34A",
+      "lastValidationUtc": "2026-10-06T07:00:00Z",
+      "passedGates": [
+        "G10"
+      ],
+      "notes": "T34A: G-SH-006 option 1: three soft bubbles of light colored by the glow kind (white for Epic and Shiny, gold, sky), near one visible rare animal at a time."
     }
   ]
 }

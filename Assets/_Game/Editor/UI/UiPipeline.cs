@@ -83,6 +83,25 @@ namespace PocketWilds.Editor.UI
             { UiTextKeys.ShopNothingToRestore, "Nothing to restore", "Rien à restaurer" },
             // T34: heat protection lowered the picture. Calm, no alarm word.
             { UiTextKeys.QualityThermalNotice, "Phone is warm: lighter visuals to stay smooth", "Téléphone chaud : image allégée pour rester fluide" },
+            // T34A: reveal banner, rarity names (shape and stars too, never color alone), egg odds, toasts, animal sheet.
+            { FeedbackText.RevealNewSpecies, "New species!", "Nouvelle espèce !" },
+            { FeedbackText.RevealNewVariant, "New variant!", "Nouvelle variante !" },
+            { FeedbackText.RarityCommon, "Common", "Commun" },
+            { FeedbackText.RarityUncommon, "Uncommon", "Peu commun" },
+            { FeedbackText.RarityRare, "Rare", "Rare" },
+            { FeedbackText.RarityEpic, "Epic", "Épique" },
+            { FeedbackText.RarityLegendary, "Legendary", "Légendaire" },
+            { FeedbackText.RarityFabulous, "Fabulous", "Fabuleux" },
+            { FeedbackText.EggOddsTitle, "Egg odds", "Chances de l'œuf" },
+            { FeedbackText.EggOddsLine, "{0}: {1}%", "{0} : {1} %" },
+            { FeedbackText.EggOddsGuarantee, "After {0} eggs without a new species, the next one brings one.",
+                "Après {0} œufs sans nouvelle espèce, le suivant en apporte une." },
+            { FeedbackText.ModalOkButton, "OK", "OK" },
+            { FeedbackText.ModalCancelButton, "Cancel", "Annuler" },
+            { FeedbackText.ToastShopOpen, "The shop is open", "La boutique est ouverte" },
+            { FeedbackText.ToastNotEnoughLight, "Not enough Light yet", "Pas encore assez de Lumière" },
+            { FeedbackText.SheetDetailsButton, "Details", "Détails" },
+            { FeedbackText.SheetBond, "Bond", "Lien" },
             { "shop.starter_pack.title", "Starter Pack", "Pack de départ" },
             { "entitlement.cosmetic.flower_crown.name", "Flower Crown", "Couronne de fleurs" },
             // Content names (display keys of biome, species and variant definitions).
@@ -381,6 +400,9 @@ namespace PocketWilds.Editor.UI
                 noticeLabel.rectTransform.offsetMax = new Vector2(-32f, -8f);
                 noticeRoot.gameObject.SetActive(false);
                 hud.SetNoticeReferences(noticeRoot, noticeGroup, noticeLabel);
+
+                // T34A: reveal banner, toasts, tutorial hand, collect motes, egg odds button.
+                FeedbackUiPipeline.AddHudFeedback(root, safe, action, chip, chipIcon.rectTransform, hud, tokens);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(HudPrefabPath));
                 return PrefabUtility.SaveAsPrefabAsset(root, HudPrefabPath).GetComponent<RefugeHud>();

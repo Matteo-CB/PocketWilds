@@ -22,6 +22,7 @@ namespace PocketWilds.Tests.EditMode
             UiPipeline.HudPrefabPath, UiPipeline.OfflineReturnPrefabPath, UiPipeline.CodexPrefabPath,
             ShopUiPipeline.CardPrefabPath, ShopUiPipeline.WideCardPrefabPath, ShopUiPipeline.ShopPrefabPath,
             ShopUiPipeline.OfferModalPrefabPath,
+            FeedbackUiPipeline.SheetPrefabPath, FeedbackUiPipeline.ModalPrefabPath, FeedbackUiPipeline.SplashPrefabPath,
         };
 
         private static HashSet<TMP_FontAsset> ProjectFonts()

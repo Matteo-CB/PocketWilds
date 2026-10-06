@@ -20,9 +20,8 @@ namespace PocketWilds.Presentation
 
         [Header("Prefabs")]
         public EggView eggPrefab;
-        public ParticleSystem crackVfx;
-        public ParticleSystem hatchCommonVfx;
-        public ParticleSystem hatchRareVfx;
+        [Tooltip("Every feedback effect of the refuge (T34A): crack, hatch per rarity, egg tap, discoveries, mastery, hearts, rare sparkles.")]
+        public VfxCatalog vfx;
 
         [Header("Waiting egg")]
         [Min(0f)] public float idlePulseScale = 0.03f;

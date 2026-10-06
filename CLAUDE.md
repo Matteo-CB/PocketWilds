@@ -23,3 +23,12 @@ avant chaque pas.
 - Contrôle automatique : `Assets/_Game/Tests/EditMode/CollisionRuleTests.cs` doit passer avant chaque commit ;
   l'`AssetValidator` signale les chevauchements ; le benchmark relève `overlapSamples` (doit rester à 0).
 - Tout nouveau contenu (espèce, décor, zone, décoration du joueur) passe par ces mesures et ces tests.
+
+## Aucune étincelle ✨ (décision du propriétaire, 6 octobre 2026)
+
+Pas d'étincelle ✨ dans tout le projet : ni l'étoile scintillante à quatre branches, seule ou en groupe, ni le
+caractère. Cela vaut pour les icônes, badges, cadres, particules, textes, code, docs et marketing. À la place :
+étoiles rondes à cinq branches, éclats ronds, bulles douces, cœurs, pattes, perles.
+
+- Règle détaillée : `Docs/Design/No_Sparkle_Rule.md`.
+- Contrôle automatique : `Assets/_Game/Tests/EditMode/NoSparkleRuleTests.cs` doit passer avant chaque commit.

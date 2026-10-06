@@ -52,6 +52,11 @@ namespace PocketWilds.Presentation
             if (carried != PatternChannel.None && AnimalVisualPacking.Pattern(visualData) == PatternChannel.None)
                 visualData = AnimalVisualPacking.Pack(AnimalVisualPacking.PaletteRow(visualData), carried,
                     AnimalGenome.CarriedStrength(animal.TraitBits), AnimalVisualPacking.RareIntensity(visualData));
+            // T34A SH_RareGlow: Legendary, Golden and Fabulous animals carry their rim glow level.
+            int rare = RareGlow.ShaderLevel(animal.Rarity, animal.TraitBits);
+            if (rare != AnimalVisualPacking.RareIntensity(visualData))
+                visualData = AnimalVisualPacking.Pack(AnimalVisualPacking.PaletteRow(visualData), AnimalVisualPacking.Pattern(visualData),
+                    AnimalVisualPacking.PatternStrength(visualData), rare);
             snapshot = new AnimalVisualSnapshot
             {
                 InstanceId = animal.InstanceId,

@@ -17,7 +17,8 @@ namespace PocketWilds.Presentation
     /// pooled views, no per-animal logic, no allocation in steady state. Away time comes back through the
     /// offline return screen; its Light counts up into the HUD when collected (T18).
     /// </summary>
-    public sealed class RefugeController : IRefugeActions, IHatchListener, IOfflineReturnActions, ICodexActions, IDisposable
+    public sealed class RefugeController : IRefugeActions, IHatchListener, IOfflineReturnActions, ICodexActions, IAnimalSheetActions,
+        IModalActions, IDisposable
     {
         private const float NextEggDelay = 0.45f;
         // Room around the egg spot no animal enters: the egg (0.33 m) or a giant newborn squirrel standing on it.
@@ -28,6 +29,16 @@ namespace PocketWilds.Presentation
         private const float EggTapRadius = 0.32f;
         private const float AnimalTapRadius = 0.34f;
         private const float CollectCountSeconds = 0.8f;
+        // T34A rare glints: one visible rare animal at a time, every 2.2 s (twice as long on Low: half the particles).
+        private const float RareGlintSeconds = 2.2f;
+        // T34A: a second touch on the same animal within this time opens its sheet (doc 05: reaction first, then the sheet).
+        private const float SecondTapSeconds = 2.5f;
+        // T34A: the tutorial hand waits this long on the first egg before showing.
+        private const float TapHintDelay = 1.2f;
+        private const float NotEnoughToastSeconds = 4f;
+        // Bond levels on the sheet: the economy's bond range (1000 points) in five steps.
+        private const int BondPointsPerLevel = 200;
+        private const int BondPointsForMax = 1000;
 
         /// <summary>Delay after a hatch before a moment offer may show: the new animal has landed first.</summary>
         private const float MomentOfferDelay = 1.6f;
@@ -38,6 +49,8 @@ namespace PocketWilds.Presentation
         private readonly IRefugeHud _hud;
         private readonly IOfflineReturnView _offlineView;
         private readonly ICodexView _codexView;
+        private readonly IAnimalSheetView _sheetView;
+        private readonly IModalView _modalView;
         private readonly RefugeCameraInput _input;
         private readonly ContentId _eggId;
         private readonly EggDefinition _egg;
@@ -45,7 +58,7 @@ namespace PocketWilds.Presentation
 
         private readonly AnimalViewPool _animals;
         private readonly GameObjectPool<EggView> _eggs;
-        private readonly VfxPool _vfx;
+        private readonly FeedbackVfx _vfx;
         private readonly HatchSequencePlayer _hatch;
         private readonly AnimalScheduler _scheduler;
         // One pool and behavior profile per species with a visual (T23): the visible budget is shared.
@@ -55,6 +68,7 @@ namespace PocketWilds.Presentation
         private readonly int _visibleBudget;
         private readonly AnimalView[] _views;
         private readonly int[] _agentByView;
+        private readonly RareGlowKind[] _rareByView;
         private readonly Transform _root;
 
         private EggView _waitingEgg;
@@ -63,6 +77,17 @@ namespace PocketWilds.Presentation
         private uint _hatchingInstance;
         private ContentId _hatchingSpecies;
         private uint _hatchingSeed;
+        private RareGlowKind _hatchingRare;
+        private int _glintCursor;
+        private float _nextGlintTime;
+        private int _tappedView = -1;
+        private float _tappedTime = -100f;
+        private float _idleOnEgg;
+        private bool _tapHintShown;
+        private float _lastNotEnoughToast = -100f;
+        private int _shopUnlockState = -1;
+        private RevealInfo _pendingReveal;
+        private bool _hasPendingReveal;
         private float _nextEggTime = -1f;
         private float _time;
         private float _lastHatchEnd = -100f;
@@ -81,8 +106,11 @@ namespace PocketWilds.Presentation
 
         public RefugeController(GameContext context, WorldChunk chunk, RefugeCameraRig rig, IRefugeHud hud,
             HatchPresentationConfig hatchConfig, string eggSourceId, Transform root, IOfflineReturnView offlineView = null,
-            ICodexView codexView = null, IShopView shopView = null, IOfferModalView offerView = null)
+            ICodexView codexView = null, IShopView shopView = null, IOfferModalView offerView = null,
+            IAnimalSheetView sheetView = null, IModalView modalView = null)
         {
+            _sheetView = sheetView;
+            _modalView = modalView;
             _context = context;
             _chunk = chunk;
             _rig = rig;
@@ -101,6 +129,7 @@ namespace PocketWilds.Presentation
             _visibleBudget = settings.MaxTierA + (context.Quality.CurrentTier == QualityTier.Low ? 10 : 20);
             _views = new AnimalView[_visibleBudget];
             _agentByView = new int[_visibleBudget];
+            _rareByView = new RareGlowKind[_visibleBudget];
             for (int i = 0; i < _agentByView.Length; i++)
                 _agentByView[i] = AnimalScheduler.InvalidHandle;
 
@@ -128,15 +157,9 @@ namespace PocketWilds.Presentation
             _speciesProfiles = profiles.ToArray();
             _eggs = new GameObjectPool<EggView>(hatchConfig.eggPrefab, root, 2, 2);
             _eggs.Warmup(2);
-            float burst = context.Quality.CurrentTier == QualityTier.Low ? 0.5f : 1f;
-            _vfx = new VfxPool(root, 12, burst);
-            int crack = _vfx.Register(hatchConfig.crackVfx, 2, 3);
-            int common = _vfx.Register(hatchConfig.hatchCommonVfx, 1, 2);
-            int rare = _vfx.Register(hatchConfig.hatchRareVfx, 1, 2);
-            _vfx.Warmup(crack, 2);
-            _vfx.Warmup(common, 1);
-            _vfx.Warmup(rare, 1);
-            _hatch = new HatchSequencePlayer(hatchConfig, _vfx, crack, common, rare, context.Audio, context.Haptics);
+            // T34A: every feedback effect warmed here, counts by the device tier (Gate 10: nothing instantiates in play).
+            _vfx = hatchConfig.vfx != null ? new FeedbackVfx(hatchConfig.vfx, root, PresentationQuality.Tier) : null;
+            _hatch = new HatchSequencePlayer(hatchConfig, _vfx, context.Audio, context.Haptics);
             _scheduler = new AnimalScheduler(_visibleBudget + 2, settings, chunk.WanderArea);
             _scheduler.SetInterests(chunk.GetWorldInterests());
             // T33C no-collision rule: animals stand on the chunk's ground, never enter a prop, the water or the egg spot.
@@ -157,10 +180,16 @@ namespace PocketWilds.Presentation
             PresentEgg();
             _hud?.Bind(this);
             RefreshEggCost();
+            // T34A: the sheet, the modal and the HUD's hidden parts are built once now (T28 lesson: first opens never hitch).
+            var loc = context.Localization;
+            _sheetView?.Prewarm(loc);
+            _modalView?.Prewarm(loc);
+            _hud?.PrewarmFeedback(loc.Get(FeedbackText.RevealNewSpecies), loc.Get(FeedbackText.ToastNotEnoughLight));
         }
 
         public int VisibleAnimals { get; private set; }
         public HatchSequencePlayer Hatch => _hatch;
+        public FeedbackVfx Vfx => _vfx;
         public AnimalScheduler Scheduler => _scheduler;
 
         /// <summary>Time of the last Tick, the clock the scheduler runs on.</summary>
@@ -184,9 +213,14 @@ namespace PocketWilds.Presentation
         public bool CodexOpen => _codexView != null && _codexView.IsOpen;
         public bool ShopOpen => _shop != null && (_shop.ShopOpen || _shop.OfferOpen);
         public ShopPresenter Shop => _shop;
+        public bool SheetOpen => _sheetView != null && _sheetView.IsOpen;
+        public bool DialogOpen => _modalView != null && _modalView.IsOpen;
 
         /// <summary>A screen covers the refuge: world touches and hatching wait.</summary>
-        public bool ModalOpen => OfflineScreenOpen || CodexOpen || ShopOpen;
+        public bool ModalOpen => OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen;
+
+        /// <summary>The tutorial hand shows on the first egg (tests).</summary>
+        public bool TapHintShown => _tapHintShown;
 
         /// <summary>Collected offline Light is still counting into the HUD.</summary>
         public bool OfflineCollecting => _collectTime >= 0f;
@@ -198,6 +232,7 @@ namespace PocketWilds.Presentation
                 _views[i]?.RefreshQuality();
             _hatchingAnimal?.RefreshQuality();
             _waitingEgg?.RefreshQuality();
+            _vfx?.SetTier(PresentationQuality.Tier);
         }
 
         public void Tick(float time, float deltaTime)
@@ -219,6 +254,8 @@ namespace PocketWilds.Presentation
 
             UpdateOfflineReturn(deltaTime);
             _codexView?.Tick(deltaTime);
+            _sheetView?.Tick(deltaTime);
+            _modalView?.Tick(deltaTime);
             if (_shop != null)
             {
                 _shop.Tick(deltaTime);
@@ -233,7 +270,11 @@ namespace PocketWilds.Presentation
                 _scheduler.SetFocus(_rig.Focus);
             _scheduler.Tick(time, deltaTime);
             _hatch.Tick(time, deltaTime);
-            _vfx.Tick(time);
+            if (_vfx != null)
+            {
+                TickRareGlints();
+                _vfx.Tick(time);
+            }
 
             if (_hud != null)
             {
@@ -250,8 +291,37 @@ namespace PocketWilds.Presentation
                     _hud.SetShop(unlocked, _context.State.Wallet.Gems);
                     if (unlocked)
                         _context.Analytics.Milestone(FunnelMilestone.FirstShopExposure);
+                    // T34A unlock toast: only when the shop opens during play, never for a shop already open at entry.
+                    int state = unlocked ? 1 : 0;
+                    if (_shopUnlockState == 0 && state == 1)
+                        _hud.ShowToast(ToastKind.Unlock, _context.Localization.Get(FeedbackText.ToastShopOpen));
+                    _shopUnlockState = state;
                 }
+                UpdateTapHint(deltaTime);
                 _hud.Tick(deltaTime);
+            }
+        }
+
+        /// <summary>
+        /// T34A tutorial gesture: on the very first egg (no animal yet), after a short pause, a hand taps on it. It
+        /// follows the egg on screen and leaves for good with the first hatch. No text: the animation explains.
+        /// </summary>
+        private void UpdateTapHint(float deltaTime)
+        {
+            bool wanted = _context.State.Collection.Count == 0 && _waitingEgg != null && !_hatch.IsPlaying && !ModalOpen;
+            _idleOnEgg = wanted ? _idleOnEgg + deltaTime : 0f;
+            bool show = wanted && _idleOnEgg >= TapHintDelay;
+            var camera = _rig != null ? _rig.Camera : Camera.main;
+            if (show && camera != null)
+            {
+                var screen = camera.WorldToScreenPoint(_waitingEgg.VfxPoint.position + new Vector3(0f, 0.12f, 0f));
+                _hud.SetTapHint(true, new Vector2(screen.x, screen.y));
+                _tapHintShown = true;
+            }
+            else if (_tapHintShown)
+            {
+                _hud.SetTapHint(false, default);
+                _tapHintShown = false;
             }
         }
 
@@ -294,9 +364,142 @@ namespace PocketWilds.Presentation
             }
             if (bestView >= 0)
             {
+                // Doc 05: a touch first brings a reaction; touching the same animal again opens its sheet.
+                if (bestView == _tappedView && _time - _tappedTime <= SecondTapSeconds && _sheetView != null)
+                {
+                    _tappedView = -1;
+                    OpenSheet(_views[bestView]);
+                    return;
+                }
+                _tappedView = bestView;
+                _tappedTime = _time;
                 _scheduler.Poke(_agentByView[bestView], _time);
                 _context.Haptics.Play(HapticEventId.AnimalTouch);
             }
+        }
+
+        private void OpenSheet(AnimalView view)
+        {
+            if (view == null || ModalOpen || !TryBuildSheet(view.OwnerInstanceId, out var data))
+                return;
+            _sheetView.Open(data, _context.Localization, this);
+            _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
+            _context.Haptics.Play(HapticEventId.TapLight);
+        }
+
+        /// <summary>Sheet data of a saved animal: names localized once here, never per frame.</summary>
+        public bool TryBuildSheet(uint instanceId, out AnimalSheetData data)
+        {
+            data = default;
+            var collection = _context.State.Collection;
+            if (!collection.TryGet(instanceId, out var animal))
+                return false;
+            var loc = _context.Localization;
+            string species = _context.Content.Species.TryGet(animal.Species, out var speciesDef) ? loc.Get(speciesDef.DisplayKey) : string.Empty;
+            string variant = _context.Content.Variants.TryGet(animal.Variant, out var variantDef) ? loc.Get(variantDef.DisplayKey) : string.Empty;
+            string name = collection.CustomNames.TryGetValue(instanceId, out var custom) && !string.IsNullOrEmpty(custom) ? custom : species;
+            int bond = Math.Min((int)animal.BondPoints, BondPointsForMax);
+            float inLevel = bond >= BondPointsForMax ? 1f : (bond % BondPointsPerLevel) / (float)BondPointsPerLevel;
+            // The second line names the variant (and the species when the animal has its own name).
+            data = new AnimalSheetData(instanceId, name, name == species ? variant : species, name == species ? null : variant,
+                animal.Species, animal.Variant, animal.Rarity, animal.IsFavorite, inLevel, bond / BondPointsPerLevel, animal.TraitBits);
+            return true;
+        }
+
+        /// <summary>T34A: the heart on the sheet. Saved soon (normal urgency), shown at once with a few hearts.</summary>
+        public void ToggleFavorite(uint instanceId)
+        {
+            var collection = _context.State.Collection;
+            if (!collection.TryGet(instanceId, out var animal))
+                return;
+            bool favorite = !animal.IsFavorite;
+            animal.Flags = favorite ? animal.Flags | AnimalFlags.Favorite : animal.Flags & ~AnimalFlags.Favorite;
+            collection.Update(animal);
+            _context.Save?.RequestSave(SaveUrgency.Normal);
+            if (favorite)
+            {
+                for (int i = 0; i < _views.Length; i++)
+                {
+                    if (_views[i] == null || _views[i].OwnerInstanceId != instanceId || _agentByView[i] == AnimalScheduler.InvalidHandle)
+                        continue;
+                    float scale = _views[i].transform.localScale.x;
+                    _vfx?.Play(VfxId.FavoriteHeart, _scheduler.GetPosition(_agentByView[i]) + new Vector3(0f, 0.2f * scale, 0f), _time);
+                    break;
+                }
+                _context.Haptics.Play(HapticEventId.Confirm);
+            }
+            else
+            {
+                _context.Haptics.Play(HapticEventId.TapLight);
+            }
+            if (TryBuildSheet(instanceId, out var data))
+                _sheetView?.Refresh(data);
+        }
+
+        public void OpenSpeciesDetails(ContentId species)
+        {
+            if (_codexView == null || _context.Codex == null || ModalOpen || _hatch.IsPlaying)
+                return;
+            _codexView.OpenSpecies(_context.Codex, _context.Localization, this, species);
+            _context.Analytics.ScreenView(ScreenId.Codex);
+            SetWorldVisible(false);
+        }
+
+        public void AnimalSheetClosed()
+        {
+        }
+
+        /// <summary>
+        /// T34A egg odds (doc 05 Hatch UX: the info button always shows the chances): rarity odds of this egg and,
+        /// while species are left to find, the new species guarantee.
+        /// </summary>
+        public void OpenEggInfo()
+        {
+            if (_modalView == null || ModalOpen || _hatch.IsPlaying)
+                return;
+            var loc = _context.Localization;
+            string body = EggOddsText(_egg, loc, HasSpeciesToFind());
+            _modalView.Show(ModalKind.Info, loc.Get(FeedbackText.EggOddsTitle), body, loc.Get(FeedbackText.ModalOkButton), null, this);
+            _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
+        }
+
+        /// <summary>
+        /// The odds text: one line per rarity (percent of the egg's rarity weights, French decimals in fr), then the new
+        /// species guarantee while species are left to find. Built when the info opens, never per frame.
+        /// </summary>
+        public static string EggOddsText(EggDefinition egg, ILocalization loc, bool speciesLeft)
+        {
+            var weights = egg.RarityWeights;
+            double total = 0.0;
+            for (int i = 0; i < weights.Length; i++)
+                total += weights[i];
+            var culture = loc.Language == "fr" ? System.Globalization.CultureInfo.GetCultureInfo("fr-FR") : System.Globalization.CultureInfo.InvariantCulture;
+            var body = new System.Text.StringBuilder(256);
+            string line = loc.Get(FeedbackText.EggOddsLine);
+            for (int i = 0; i < weights.Length && total > 0.0; i++)
+            {
+                if (i > 0)
+                    body.Append('\n');
+                double percent = weights[i] / total * 100.0;
+                string number = percent.ToString(percent >= 10.0 ? "0.#" : percent >= 1.0 ? "0.##" : "0.###", culture);
+                body.Append(string.Format(line, loc.Get(FeedbackText.RarityKey((RarityTier)i)), number));
+            }
+            if (speciesLeft)
+                body.Append("\n\n").Append(string.Format(loc.Get(FeedbackText.EggOddsGuarantee), egg.PityHardLimit));
+            return body.ToString();
+        }
+
+        private bool HasSpeciesToFind()
+        {
+            var discovered = _context.State.Collection.DiscoveredSpecies;
+            foreach (var entry in _egg.Pool)
+                if (!discovered.Contains(entry.Species))
+                    return true;
+            return false;
+        }
+
+        public void ModalClosed(bool confirmed)
+        {
         }
 
         public void RequestHatch()
@@ -315,6 +518,12 @@ namespace PocketWilds.Presentation
                 _hatch.Nudge();
                 _hud?.PulseNotEnough();
                 _context.Haptics.Play(HapticEventId.ErrorSoft);
+                // One calm line the first time and then at most every few seconds: the shake says the rest.
+                if (_time - _lastNotEnoughToast >= NotEnoughToastSeconds)
+                {
+                    _lastNotEnoughToast = _time;
+                    _hud?.ShowToast(ToastKind.Warning, _context.Localization.Get(FeedbackText.ToastNotEnoughLight));
+                }
                 return;
             }
 
@@ -336,9 +545,12 @@ namespace PocketWilds.Presentation
             _hatchingInstance = result.Animal.InstanceId;
             _hatchingSpecies = result.Animal.Species;
             _hatchingSeed = result.Animal.Seed;
+            _hatchingRare = RareGlow.KindOf(result.Animal.Rarity, result.Animal.TraitBits);
+            var news = result.NewSpecies ? HatchNews.NewSpecies : result.NewVariant ? HatchNews.NewVariant : HatchNews.None;
+            PrepareReveal(result.Animal, news);
 
             bool repeat = _time - _lastHatchEnd < RepeatWindowSeconds;
-            if (_hatchingAnimal != null && _hatch.Hatch(_hatchingAnimal, result.Animal.Species, result.Animal.Rarity, repeat, this))
+            if (_hatchingAnimal != null && _hatch.Hatch(_hatchingAnimal, result.Animal.Species, result.Animal.Rarity, repeat, this, news))
             {
                 _rig?.FocusOn(_waitingEgg.VfxPoint.position, RefugeCameraState.HatchReveal);
                 _hud?.SetHatching(true);
@@ -391,9 +603,50 @@ namespace PocketWilds.Presentation
             _context.Analytics.Milestone(FunnelMilestone.FirstCollect);
             _context.Audio.Play(AudioEventId.CollectLight, Vector3.zero, default);
             _context.Haptics.Play(HapticEventId.Confirm);
+            // T34A: the Light flies from the card (screen center) into the chip.
+            _hud?.PlayCollect(new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
         }
 
-        void IHatchListener.OnHatchRevealed() => ShowMastery();
+        void IHatchListener.OnHatchRevealed()
+        {
+            ShowMastery();
+            if (_hasPendingReveal)
+            {
+                _hasPendingReveal = false;
+                _hud?.ShowReveal(_pendingReveal);
+            }
+        }
+
+        /// <summary>
+        /// T34A reveal banner: a new species or variant says so; otherwise a rarity from Rare up says its name. Common
+        /// duplicates show nothing (the mastery toast already moves). Texts resolved once per hatch.
+        /// </summary>
+        private void PrepareReveal(in AnimalInstance animal, HatchNews news)
+        {
+            _hasPendingReveal = false;
+            if (news == HatchNews.None && animal.Rarity < RarityTier.Rare)
+                return;
+            var loc = _context.Localization;
+            string species = _context.Content.Species.TryGet(animal.Species, out var speciesDef) ? loc.Get(speciesDef.DisplayKey) : string.Empty;
+            string title;
+            string name = species;
+            if (news == HatchNews.NewSpecies)
+            {
+                title = loc.Get(FeedbackText.RevealNewSpecies);
+            }
+            else if (news == HatchNews.NewVariant)
+            {
+                title = loc.Get(FeedbackText.RevealNewVariant);
+                if (_context.Content.Variants.TryGet(animal.Variant, out var variantDef))
+                    name = species + " \u00B7 " + loc.Get(variantDef.DisplayKey);
+            }
+            else
+            {
+                title = loc.Get(FeedbackText.RarityKey(animal.Rarity));
+            }
+            _pendingReveal = new RevealInfo(title, name, animal.Rarity, news);
+            _hasPendingReveal = true;
+        }
 
         /// <summary>Species progress right after the reveal: every hatch moves something forward.</summary>
         private void ShowMastery()
@@ -406,6 +659,9 @@ namespace PocketWilds.Presentation
             _hud?.ShowMastery(_pendingMastery);
             if (_pendingMastery.LeveledUp)
             {
+                // H-VFX-009: a short star and paw burst around the newborn.
+                if (_hatchingAnimal != null)
+                    _vfx?.Play(VfxId.MasteryLevelUp, _hatchingAnimal.transform.position + new Vector3(0f, 0.18f, 0f), _time);
                 _context.Audio.Play(AudioEventId.MasteryLevelUp, Vector3.zero, _pendingMastery.Species);
                 _context.Haptics.Play(_pendingMastery.Milestone > 0 ? HapticEventId.Rare : HapticEventId.Confirm);
             }
@@ -422,7 +678,7 @@ namespace PocketWilds.Presentation
             }
             if (_hatchingAnimal != null)
             {
-                AddToMeadow(_hatchingAnimal, _hatchingSpecies, _hatchingInstance, _hatchingSeed, emerging: true);
+                AddToMeadow(_hatchingAnimal, _hatchingSpecies, _hatchingInstance, _hatchingSeed, _hatchingRare, emerging: true);
                 _hatchingAnimal = null;
             }
             _rig?.ReturnToWorld();
@@ -499,7 +755,7 @@ namespace PocketWilds.Presentation
             _lifetime.Cancel();
             _lifetime.Dispose();
             _hatch.Clear();
-            _vfx.Dispose();
+            _vfx?.Dispose();
             _animals.Dispose();
             _eggs.Clear();
         }
@@ -580,13 +836,13 @@ namespace PocketWilds.Presentation
                         continue;
                     if (!TryAcquire(snapshot, out var view))
                         continue;
-                    AddToMeadow(view, animal.Species, animal.InstanceId, animal.Seed, emerging: false);
+                    AddToMeadow(view, animal.Species, animal.InstanceId, animal.Seed, RareGlow.KindOf(animal.Rarity, animal.TraitBits), emerging: false);
                 }
             }
         }
 
         /// <summary>emerging: the newborn stands on the egg spot and first walks out of it.</summary>
-        private void AddToMeadow(AnimalView view, ContentId species, uint instanceId, uint seed, bool emerging)
+        private void AddToMeadow(AnimalView view, ContentId species, uint instanceId, uint seed, RareGlowKind rare, bool emerging)
         {
             int slot = Array.IndexOf(_views, null);
             if (slot < 0)
@@ -597,13 +853,41 @@ namespace PocketWilds.Presentation
                 VisibleAnimals--;
                 Array.Copy(_views, 1, _views, 0, _views.Length - 1);
                 Array.Copy(_agentByView, 1, _agentByView, 0, _agentByView.Length - 1);
+                Array.Copy(_rareByView, 1, _rareByView, 0, _rareByView.Length - 1);
                 slot = _views.Length - 1;
             }
             var transform = view.transform;
             _views[slot] = view;
+            _rareByView[slot] = rare;
             _agentByView[slot] = _scheduler.Register(view, instanceId, seed, transform.position, transform.eulerAngles.y, ProfileOf(species), _time,
                 transform.localScale.x, emerging);
             VisibleAnimals++;
+        }
+
+        /// <summary>
+        /// T34A rare glints: the next visible rare animal (round robin) gets a few soft glints in its glow color. One
+        /// effect at a time, never one per animal per frame; nothing while a screen covers the world.
+        /// </summary>
+        private void TickRareGlints()
+        {
+            if (_time < _nextGlintTime)
+                return;
+            _nextGlintTime = _time + RareGlintSeconds * (PresentationQuality.Tier == QualityTier.Low ? 2f : 1f);
+            if (ModalOpen || _hatch.IsPlaying)
+                return;
+            int count = _views.Length;
+            for (int n = 0; n < count; n++)
+            {
+                int i = (_glintCursor + n) % count;
+                if (_views[i] == null || _rareByView[i] == RareGlowKind.None || _agentByView[i] == AnimalScheduler.InvalidHandle)
+                    continue;
+                _glintCursor = i + 1;
+                float scale = _views[i].transform.localScale.x;
+                float pick = Mathf.Repeat(_time * 0.37f, 1f);
+                var position = _scheduler.GetPosition(_agentByView[i]) + new Vector3((pick - 0.5f) * 0.2f, 0.32f * scale, 0f);
+                _vfx.Play(VfxId.RareGlint, position, _time, RareGlow.GlintColor(_rareByView[i], pick));
+                return;
+            }
         }
 
         private static bool HitsSphere(Ray ray, Vector3 center, float radius)

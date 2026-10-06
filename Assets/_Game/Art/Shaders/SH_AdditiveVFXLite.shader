@@ -1,5 +1,5 @@
-// G-SH-008 Additive VFX lite. One shared material for hatch sparkles, flashes and motes.
-// Texture: single-channel atlas, 2 tiles side by side (0 soft dot, 1 star sparkle); particle systems
+// G-SH-008 Additive VFX lite. One shared material for every feedback effect (glints, flashes, motes, hearts).
+// Texture: single-channel atlas, 8 tiles in a row (VfxPipeline: dot, glint, heart, paw, ring, star, petal, bubble); particle systems
 // pick the tile with Texture Sheet Animation, so every effect shares one material and one texture.
 // Additive, unlit, no depth write, no soft-particle depth sampling (cheap on mobile).
 Shader "PocketWilds/AdditiveVFXLite"

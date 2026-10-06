@@ -13,7 +13,7 @@ namespace PocketWilds.UI
     /// States use color tokens and scale, not extra sprites. No Update: ticked by the scene controller.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class RefugeHud : MonoBehaviour, IRefugeHud
+    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IMotionSettings
     {
         private const float PulseSeconds = 0.4f;
 
@@ -59,6 +59,14 @@ namespace PocketWilds.UI
         [SerializeField] private RectTransform _gemsChip;
         [SerializeField] private TMP_Text _gemsLabel;
 
+        [Header("Feedback (T34A)")]
+        [SerializeField] private RevealBanner _reveal;
+        [SerializeField] private ToastQueue _toasts;
+        [SerializeField] private TapHint _tapHint;
+        [SerializeField] private CollectMotes _collect;
+        [SerializeField] private Button _infoButton;
+        [SerializeField] private RectTransform _infoRoot;
+
         private IRefugeActions _actions;
         private BigValueText _light;
         private BigValueText _rate;
@@ -90,8 +98,26 @@ namespace PocketWilds.UI
         private const float ToastHold = 1.9f;
         private const float ToastOut = 0.25f;
 
-        /// <summary>Reduce Motion: no breathing or shaking, states stay readable through color.</summary>
-        public bool ReduceMotion { get; set; }
+        private bool _reduceMotion;
+
+        /// <summary>Reduce Motion: no breathing or shaking, states stay readable through color. Passed to every part.</summary>
+        public bool ReduceMotion
+        {
+            get => _reduceMotion;
+            set
+            {
+                _reduceMotion = value;
+                if (_reveal != null) _reveal.ReduceMotion = value;
+                if (_toasts != null) _toasts.ReduceMotion = value;
+                if (_tapHint != null) _tapHint.ReduceMotion = value;
+                if (_collect != null) _collect.ReduceMotion = value;
+            }
+        }
+
+        public RevealBanner Reveal => _reveal;
+        public ToastQueue Toasts => _toasts;
+        public TapHint TapHint => _tapHint;
+        public CollectMotes Collect => _collect;
 
         public bool IsBound => _bound;
         public bool CostVisible => _costRow != null && _costRow.activeSelf;
@@ -111,6 +137,8 @@ namespace PocketWilds.UI
             _hatchButton.onClick.AddListener(OnHatchPressed);
             if (_codexButton != null)
                 _codexButton.onClick.AddListener(OnCodexPressed);
+            if (_infoButton != null)
+                _infoButton.onClick.AddListener(OnInfoPressed);
             if (_shopButton != null)
             {
                 _shopButton.onClick.AddListener(OnShopPressed);
@@ -120,6 +148,9 @@ namespace PocketWilds.UI
             _badgeShown = _codexBadge != null && _codexBadge.activeSelf;
             if (_masteryRoot != null)
                 _masteryRoot.gameObject.SetActive(false);
+            _reveal?.Hide();
+            _toasts?.Clear();
+            ReduceMotion = _reduceMotion;
             FitSafeArea();
         }
 
@@ -195,6 +226,31 @@ namespace PocketWilds.UI
         }
 
         public bool NoticeVisible => _noticeTarget > 0f;
+
+        public void ShowReveal(in RevealInfo info) => _reveal?.Show(info);
+
+        public void ShowToast(ToastKind kind, string text) => _toasts?.Enqueue(kind, text);
+
+        public void SetTapHint(bool visible, Vector2 screenPosition) => _tapHint?.Set(visible, screenPosition);
+
+        public void PlayCollect(Vector2 fromScreenPosition) => _collect?.Play(fromScreenPosition);
+
+        public void PrewarmFeedback(string sampleTitle, string sampleText)
+        {
+            if (_reveal != null)
+            {
+                _reveal.Show(new RevealInfo(sampleTitle, sampleText, Content.RarityTier.Fabulous, HatchNews.NewSpecies));
+                Canvas.ForceUpdateCanvases();
+                _reveal.Hide();
+            }
+            if (_toasts != null)
+            {
+                _toasts.Enqueue(ToastKind.Warning, sampleText);
+                _toasts.Tick(0f);
+                Canvas.ForceUpdateCanvases();
+                _toasts.Clear();
+            }
+        }
         public string NoticeText => _noticeLabel != null ? _noticeLabel.text : string.Empty;
 
         public void SetCodexBadge(bool visible)
@@ -267,6 +323,18 @@ namespace PocketWilds.UI
             if (current.x != scale)
                 _hatchRoot.localScale = new Vector3(scale, scale, 1f);
             TickMastery(unscaledDeltaTime);
+            if (_reveal != null)
+                _reveal.Tick(unscaledDeltaTime);
+            if (_toasts != null)
+            {
+                // Toasts share the slot under the chip with the heat notice: they wait while it shows.
+                _toasts.Paused = _noticeRoot != null && _noticeRoot.gameObject.activeSelf;
+                _toasts.Tick(unscaledDeltaTime);
+            }
+            if (_tapHint != null)
+                _tapHint.Tick(unscaledDeltaTime);
+            if (_collect != null)
+                _collect.Tick(unscaledDeltaTime);
         }
 
         /// <summary>
@@ -337,6 +405,7 @@ namespace PocketWilds.UI
             RectTransformUtility.RectangleContainsScreenPoint(_hatchRoot, screenPosition, null)
             || RectTransformUtility.RectangleContainsScreenPoint(_lightChip, screenPosition, null)
             || (_codexRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_codexRoot, screenPosition, null))
+            || (_infoRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_infoRoot, screenPosition, null))
             || (_shopShown && (RectTransformUtility.RectangleContainsScreenPoint(_shopRoot, screenPosition, null)
                                || RectTransformUtility.RectangleContainsScreenPoint(_gemsChip, screenPosition, null)));
 
@@ -404,6 +473,20 @@ namespace PocketWilds.UI
 
         private void OnShopPressed() => _actions?.OpenShop();
 
+        private void OnInfoPressed() => _actions?.OpenEggInfo();
+
+        /// <summary>Prefab builder hook for the T34A feedback parts (Editor FeedbackUiPipeline).</summary>
+        public void SetFeedbackReferences(RevealBanner reveal, ToastQueue toasts, TapHint tapHint, CollectMotes collect,
+            Button infoButton, RectTransform infoRoot)
+        {
+            _reveal = reveal;
+            _toasts = toasts;
+            _tapHint = tapHint;
+            _collect = collect;
+            _infoButton = infoButton;
+            _infoRoot = infoRoot;
+        }
+
         /// <summary>Prefab builder hook for the shop shortcut and Gems chip (Editor ShopUiPipeline).</summary>
         public void SetNoticeReferences(RectTransform root, CanvasGroup group, TMP_Text label)
         {
@@ -428,6 +511,8 @@ namespace PocketWilds.UI
                 _codexButton.onClick.RemoveListener(OnCodexPressed);
             if (_shopButton != null)
                 _shopButton.onClick.RemoveListener(OnShopPressed);
+            if (_infoButton != null)
+                _infoButton.onClick.RemoveListener(OnInfoPressed);
         }
     }
 }

@@ -267,26 +267,29 @@ def kit_glow():
 # ---------------------------------------------------------------- icons (own colors)
 
 def icon_light():
-    """ICO_Currency_Light: small four-point soft star with a glowing orb core."""
+    """ICO_Currency_Light: a warm light orb in a ring of eight round rays (a small plush sun).
+    Owner rule 2026-10-06: no four-point sparkle star anywhere."""
     size = 128
-    c = Canvas(size, size, cy=62.0)
-    # Concave four-point star, tips rounded by an exact 6 px offset, fused with a round orb.
-    points = sd_polygon(c, superellipse_points(44.0, 0.7, oy=2.0)) - 6.0
-    orb = sd_circle(c, 23.0, oy=2.0)
-    star = smooth_min(points, orb, 8.0)
-    outline = star - 5.0
+    c = Canvas(size, size, cy=63.0)
+    rays = None
+    for k in range(8):
+        a = math.tau * k / 8.0 + math.pi / 8.0
+        d = sd_ellipse(c, 7.5, 11.0, ox=math.cos(a) * 41.0, oy=math.sin(a) * 41.0, angle_deg=math.degrees(a) + 90.0)
+        rays = d if rays is None else np.minimum(rays, d)
+    orb = sd_circle(c, 30.0)
+    shape = np.minimum(orb, rays)
+    outline = shape - 4.5
     shadow = blur(shift(fill(outline), 0, 4), 3.0)
     c.over((92, 58, 18), shadow * 0.28)
     c.over(hexrgb("E0892C"), fill(outline))
-    t = np.clip((52.0 - c.y) / 104.0, 0, 1)
-    body = lerp(hexrgb("FFF4B8"), hexrgb("FFC23A"), t)
-    c.over(body, fill(star))
-    lower = soft(-star - 6.0, 6.0) * np.clip(-c.y / 40.0, 0, 1)
-    c.over(hexrgb("F5A532"), lower * fill(star) * 0.9)
-    core = sd_circle(c, 13.0, oy=4.0)
-    c.over(hexrgb("FFFDF0"), soft(core, 11.0) * fill(star) * 0.85)
-    gloss = sd_ellipse(c, 6.0, 3.6, ox=-9.0, oy=15.0, angle_deg=35.0)
-    c.over((255, 255, 255), fill(gloss) * 0.75)
+    c.over(lerp(hexrgb("FFE48A"), hexrgb("F7B23B"), np.clip((50.0 - c.y) / 100.0, 0, 1)), fill(rays))
+    t = np.clip((30.0 - c.y) / 60.0, 0, 1)
+    c.over(lerp(hexrgb("FFF6C8"), hexrgb("FFC23A"), t), fill(orb))
+    c.over(hexrgb("F5A532"), soft(-orb - 6.0, 6.0) * np.clip(-c.y / 30.0, 0, 1) * fill(orb) * 0.8)
+    core = sd_circle(c, 14.0, oy=4.0)
+    c.over(hexrgb("FFFDF0"), soft(core, 10.0) * fill(orb) * 0.85)
+    gloss = sd_ellipse(c, 7.0, 4.2, ox=-10.0, oy=14.0, angle_deg=35.0)
+    c.over((255, 255, 255), fill(gloss) * 0.8)
     return "ICO_Currency_Light", c, RUNTIME_ICONS
 
 
@@ -556,9 +559,11 @@ SPRITES = (kit_pill, kit_icon_circle, kit_panel_primary, kit_button_primary, kit
 
 
 def main():
-    for folder in (RUNTIME_KIT, RUNTIME_ICONS, RUNTIME_SHOP, MASTERS):
+    # T34A sprites live in their own file (frames, badges, traits, hearts, gesture, splash); same method.
+    from pw_ui_sprites_t34a import RUNTIME_CODEX, T34A_SPRITES
+    for folder in (RUNTIME_KIT, RUNTIME_ICONS, RUNTIME_SHOP, RUNTIME_CODEX, MASTERS):
         os.makedirs(folder, exist_ok=True)
-    for build in SPRITES:
+    for build in SPRITES + T34A_SPRITES:
         name, canvas, folder = build()
         canvas.image(True).save(os.path.join(folder, name + ".png"), optimize=True)
         canvas.image(False).save(os.path.join(MASTERS, name + "@4x.png"), optimize=True)

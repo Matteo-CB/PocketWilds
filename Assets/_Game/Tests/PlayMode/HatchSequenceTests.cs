@@ -59,7 +59,7 @@ namespace PocketWilds.Tests.PlayMode
         private GameObjectPool<EggView> _eggs;
         private AnimalViewPool _animals;
         private int _rabbitHandle;
-        private VfxPool _vfx;
+        private FeedbackVfx _vfx;
         private HatchSequencePlayer _player;
         private Recorder _recorder;
         private uint _eggVisual;
@@ -105,16 +105,11 @@ namespace PocketWilds.Tests.PlayMode
             Assert.IsTrue(catalog.TryGet("PF_Animal_Rabbit", out var rabbit));
             _rabbitHandle = _animals.Register(rabbit.visualKey, rabbit.prefab, 4, 4);
             _animals.Warmup(_rabbitHandle, 4);
-            _vfx = new VfxPool(_root.transform, 16);
-            int crack = _vfx.Register(_config.crackVfx, 3, 3);
-            int common = _vfx.Register(_config.hatchCommonVfx, 2, 2);
-            int rare = _vfx.Register(_config.hatchRareVfx, 2, 2);
-            _vfx.Warmup(crack, 3);
-            _vfx.Warmup(common, 2);
-            _vfx.Warmup(rare, 2);
+            Assert.IsNotNull(_config.vfx, "DEF_HatchPresentation lists the feedback effects.");
+            _vfx = new FeedbackVfx(_config.vfx, _root.transform, QualityTier.Medium);
 
             _recorder = new Recorder();
-            _player = new HatchSequencePlayer(_config, _vfx, crack, common, rare, _recorder, _recorder);
+            _player = new HatchSequencePlayer(_config, _vfx, _recorder, _recorder);
             _time = 0f;
             yield return null;
 #else
@@ -160,12 +155,12 @@ namespace PocketWilds.Tests.PlayMode
         }
 
         /// <summary>One full hatch with pooled egg and animal; returns the number of ticks.</summary>
-        private int RunOneHatch(RarityTier rarity, bool repeat)
+        private int RunOneHatch(RarityTier rarity, bool repeat, HatchNews news = HatchNews.None)
         {
             var egg = PresentEgg();
             for (int i = 0; i < 10; i++) Step();
             var rabbit = NewRabbit();
-            if (egg == null || rabbit == null || !_player.Hatch(rabbit, ContentId.FromSource("species.rabbit"), rarity, repeat, _recorder))
+            if (egg == null || rabbit == null || !_player.Hatch(rabbit, ContentId.FromSource("species.rabbit"), rarity, repeat, _recorder, news))
             {
                 _failures++;
                 return 0;
@@ -275,21 +270,23 @@ namespace PocketWilds.Tests.PlayMode
             RunOneHatch(RarityTier.Rare, false); // warmup: every pool and code path used once
             int eggs = _eggs.InstantiateCount;
             int animals = _animals.GetPool(_rabbitHandle).InstantiateCount;
-            int crack = _vfx.GetPool(0).InstantiateCount, common = _vfx.GetPool(1).InstantiateCount, rare = _vfx.GetPool(2).InstantiateCount;
+            var effects = new int[(int)VfxId.Count];
+            for (int i = 0; i < effects.Length; i++)
+                effects[i] = _vfx.GetPool((VfxId)i)?.InstantiateCount ?? -1;
             _recorder.Reset();
 
+            // Every rarity accent and both discovery rings play inside the measured loop (T34A, Gate 10 and 22).
             Assert.That(() =>
             {
                 for (int h = 0; h < 10; h++)
-                    RunOneHatch(h % 3 == 0 ? RarityTier.Rare : RarityTier.Common, h > 0);
+                    RunOneHatch((RarityTier)(h % 6), h > 0, (HatchNews)(h % 3));
             }, Is.Not.AllocatingGCMemory());
 
             Assert.AreEqual(0, _failures);
             Assert.AreEqual(eggs, _eggs.InstantiateCount);
             Assert.AreEqual(animals, _animals.GetPool(_rabbitHandle).InstantiateCount);
-            Assert.AreEqual(crack, _vfx.GetPool(0).InstantiateCount);
-            Assert.AreEqual(common, _vfx.GetPool(1).InstantiateCount);
-            Assert.AreEqual(rare, _vfx.GetPool(2).InstantiateCount);
+            for (int i = 0; i < effects.Length; i++)
+                Assert.AreEqual(effects[i], _vfx.GetPool((VfxId)i)?.InstantiateCount ?? -1, "No effect instantiates after warmup: " + (VfxId)i);
             Assert.AreEqual(10, _recorder.Finished);
             Assert.AreEqual(10, _recorder.Count(AudioEventId.HatchPop));
 

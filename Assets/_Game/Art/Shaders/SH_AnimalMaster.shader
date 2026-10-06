@@ -4,7 +4,7 @@
 //   bits 0-9   palette row
 //   bits 10-12 pattern mask (0 none, 1 A = uv0.x, 2 B = uv0.y, 3 C = uv1.x, 4 D = uv1.y)
 //   bits 13-16 pattern strength (0-15)
-//   bits 17-20 rare effect intensity (0-15), reserved for the RareGlow module
+//   bits 17-20 rare glow level (Include/SH_RareGlow.hlsl): 0 off, 1-7 warm gold, 8-15 sky gradient
 // Regions come from vertex colors: R secondary, G belly, B detail (nose, paws), A eyes.
 // Albedo is resolved per vertex: cheap and soft, which suits the plush style.
 Shader "PocketWilds/AnimalMaster"
@@ -53,6 +53,7 @@ Shader "PocketWilds/AnimalMaster"
             #pragma multi_compile _ FOG_LINEAR
 
             #include "Include/PW_Stylized.hlsl"
+            #include "Include/SH_RareGlow.hlsl"
 
             struct Attributes
             {
@@ -72,6 +73,7 @@ Shader "PocketWilds/AnimalMaster"
                 half eye : TEXCOORD3;
                 half3 ambient : TEXCOORD4;
                 half fogFactor : TEXCOORD5;
+                half2 rareGlow : TEXCOORD6;
             };
 
             Varyings Vert(Attributes input)
@@ -119,6 +121,7 @@ Shader "PocketWilds/AnimalMaster"
                 output.albedo = color;
                 output.eye = input.color.a;
                 output.ambient = SampleSH(output.normalWS);
+                output.rareGlow = PW_RareGlowLevels(data);
                 return output;
             }
 
@@ -130,6 +133,7 @@ Shader "PocketWilds/AnimalMaster"
 
                 half spec = PW_Specular(normalWS, viewWS, lighting.mainLight, 64.0h) * input.eye * _EyeGloss;
                 half3 color = lighting.color + spec * lighting.mainLight.color;
+                color = PW_ApplyRareGlow(color, input.rareGlow, normalWS, viewWS, input.positionWS);
                 return half4(MixFog(color, input.fogFactor), 1);
             }
             ENDHLSL

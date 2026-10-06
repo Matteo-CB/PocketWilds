@@ -6,6 +6,7 @@ using PocketWilds.Bootstrap;
 using PocketWilds.Content;
 using PocketWilds.Core;
 using PocketWilds.Presentation;
+using PocketWilds.UI;
 using PocketWilds.Services.Save;
 using PocketWilds.Simulation;
 using Unity.Profiling;
@@ -89,6 +90,10 @@ namespace PocketWilds.Benchmarks
             new PerformanceScenario("Q1", "Adaptive quality: every step from Magnifique down to Fluide and back, 20 animals", 20, QualityTier.High)
             {
                 species = 3, qualityLadder = true, measureSeconds = 26f,
+            },
+            new PerformanceScenario("F1", "Feedback: every effect at once, then one by one, animal sheet, egg odds, toast, 20 animals", 20, QualityTier.High)
+            {
+                species = 3, feedbackBurst = true, measureSeconds = 16f,
             },
         };
 
@@ -200,6 +205,8 @@ namespace PocketWilds.Benchmarks
                 var ladder = scenario.qualityLadder ? new QualityLadderProbe(bootstrap.Context.Quality, scenario.tier) : null;
                 if (ladder != null)
                     burst = ladder.Run();
+                if (scenario.feedbackBurst)
+                    burst = FeedbackBurst(entry.Refuge, bootstrap.Context);
                 var work = new float[Mathf.CeilToInt(scenario.measureSeconds * 240f) + 64];
                 int workCount = 0;
                 if (report.warmupSource == null)
@@ -464,6 +471,57 @@ namespace PocketWilds.Benchmarks
                     yield break;
                 yield return null;
             }
+        }
+
+        /// <summary>
+        /// T34A F1 (Gate 10 worst case on this PC): every feedback effect at once near the egg, then each alone every
+        /// 0.4 s, then the animal sheet of a visible animal, the egg odds and a toast, each opened and closed. In a traced
+        /// run it also records every graphics state of the effects and the new screens.
+        /// </summary>
+        private static IEnumerator FeedbackBurst(RefugeController refuge, GameContext context)
+        {
+            var vfx = refuge.Vfx;
+            var egg = refuge.WaitingEgg != null ? refuge.WaitingEgg.VfxPoint.position : Vector3.zero;
+            if (vfx != null)
+            {
+                for (int i = 0; i < (int)VfxId.Count; i++)
+                    vfx.Play((VfxId)i, egg + new Vector3((i % 4 - 1.5f) * 0.3f, 0f, (i / 4) * 0.3f), refuge.SimulationTime, Color.white);
+            }
+            float wait = Time.realtimeSinceStartup + 2f;
+            while (Time.realtimeSinceStartup < wait)
+                yield return null;
+            for (int i = 0; vfx != null && i < (int)VfxId.Count; i++)
+            {
+                vfx.Play((VfxId)i, egg, refuge.SimulationTime);
+                wait = Time.realtimeSinceStartup + 0.4f;
+                while (Time.realtimeSinceStartup < wait)
+                    yield return null;
+            }
+            var sheet = Object.FindAnyObjectByType<AnimalSheetScreen>();
+            AnimalView view = null;
+            foreach (var candidate in Object.FindObjectsByType<AnimalView>(FindObjectsSortMode.None))
+                if (candidate.gameObject.activeInHierarchy && candidate.OwnerInstanceId != 0)
+                    view = candidate;
+            if (sheet != null && view != null && refuge.TryBuildSheet(view.OwnerInstanceId, out var data))
+            {
+                sheet.Open(data, context.Localization, refuge);
+                wait = Time.realtimeSinceStartup + 1.5f;
+                while (Time.realtimeSinceStartup < wait)
+                    yield return null;
+                sheet.Close();
+                wait = Time.realtimeSinceStartup + 0.5f;
+                while (Time.realtimeSinceStartup < wait)
+                    yield return null;
+            }
+            refuge.OpenEggInfo();
+            wait = Time.realtimeSinceStartup + 1.5f;
+            while (Time.realtimeSinceStartup < wait)
+                yield return null;
+            var modal = Object.FindAnyObjectByType<ModalScreen>();
+            modal?.Close();
+            var hud = Object.FindAnyObjectByType<RefugeHud>();
+            hud?.ShowToast(ToastKind.Warning, context.Localization.Get(FeedbackText.ToastNotEnoughLight));
+            hud?.PlayCollect(new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
         }
 
         /// <summary>P5: ten hatches as fast as a player can tap (hatch, tap to speed up, next egg).</summary>

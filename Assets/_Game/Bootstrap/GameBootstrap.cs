@@ -44,6 +44,10 @@ namespace PocketWilds.Bootstrap
         [SerializeField] private AnimalVisualCatalog _visualCatalog;
         [Tooltip("T34: graphics states warmed behind the loading screen (first displays never stutter).")]
         [SerializeField] private ShaderWarmupSet _shaderWarmup;
+        [Tooltip("T34A boot screen (PF_UI_Splash): shown from the first frame until the refuge is ready.")]
+        [SerializeField] private PocketWilds.UI.SplashScreen _splashPrefab;
+
+        private PocketWilds.UI.SplashScreen _splash;
 
         private BootOptions _options;
         private IGameClock _clock;
@@ -88,7 +92,28 @@ namespace PocketWilds.Bootstrap
             PendingOptions = null;
             // A player run with -pw-trace-graphics records every graphics state it draws (T34 warmup data).
             ShaderWarmup.BeginBootTrace();
+            if (_splashPrefab != null)
+                _splash = Instantiate(_splashPrefab);
         }
+
+        /// <summary>One rendered frame of the refuge behind it, then the boot screen fades away.</summary>
+        private async Awaitable DismissSplashAsync()
+        {
+            if (_splash == null)
+                return;
+            try
+            {
+                await Awaitable.NextFrameAsync(destroyCancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            if (_splash != null)
+                _splash.Dismiss();
+        }
+
+        /// <summary>The boot screen in front while booting (tests, captures).</summary>
+        public PocketWilds.UI.SplashScreen Splash => _splash;
 
         private async Awaitable Start()
         {
@@ -99,6 +124,7 @@ namespace PocketWilds.Bootstrap
                 await Sequence.RunAsync(destroyCancellationToken);
                 State = BootState.Ready;
                 GameLog.Info(LogCategory.Boot, "Boot complete.");
+                _ = DismissSplashAsync();
             }
             catch (OperationCanceledException)
             {
@@ -109,6 +135,12 @@ namespace PocketWilds.Bootstrap
                 State = BootState.Failed;
                 GameLog.Error(LogCategory.Boot, "Boot failed: " + ex.Message);
                 Debug.LogException(ex);
+            }
+            finally
+            {
+                // Never leave the boot screen up over a failed or cancelled boot.
+                if (_splash != null && State != BootState.Ready)
+                    _splash.Dismiss();
             }
         }
 
