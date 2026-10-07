@@ -1,3 +1,4 @@
+using PocketWilds.Content;
 using PocketWilds.Core;
 using UnityEngine;
 
@@ -70,5 +71,38 @@ namespace PocketWilds.Presentation
         void StepEgg(int direction);
 
         void CycleHatchQuantity();
+    }
+
+    /// <summary>One newborn of a multi hatch on the summary card (screen 028).</summary>
+    public struct SummaryEntry
+    {
+        public ContentId Species;
+        public ContentId Variant;
+        public RarityTier Rarity;
+
+        /// <summary>Species name (localized, cached by the table: no allocation).</summary>
+        public string Name;
+
+        /// <summary>The rarity's word, shown with its stars and the frame's motif (never color alone).</summary>
+        public string RarityWord;
+
+        /// <summary>A new species or a new color: the « Nouveau » badge.</summary>
+        public bool New;
+    }
+
+    /// <summary>Player intents of the summary card.</summary>
+    public interface IRewardSummaryActions
+    {
+        void CloseSummary();
+    }
+
+    /// <summary>PF_UI_RewardSummary (screen 028): the grid of a × 3 or × 10 hatch's newborns.</summary>
+    public interface IRewardSummaryView
+    {
+        bool IsOpen { get; }
+        void Open(SummaryEntry[] entries, int count, ILocalization text, IRewardSummaryActions actions);
+        void Close();
+        void Tick(float unscaledDeltaTime);
+        void Prewarm(ILocalization text);
     }
 }

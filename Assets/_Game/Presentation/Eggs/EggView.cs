@@ -30,6 +30,9 @@ namespace PocketWilds.Presentation
         public uint VisualData { get; private set; }
         public Transform VfxPoint => _vfxPoint != null ? _vfxPoint : transform;
         public Transform RevealPoint => _revealPoint != null ? _revealPoint : transform;
+
+        /// <summary>The shell's pivot (its pose is the staging's: pop, wobble, swell); tests read its scale.</summary>
+        public Transform Shell => _shell != null ? _shell : transform;
         public bool ShellVisible { get; private set; } = true;
         public bool FragmentsVisible { get; private set; }
 

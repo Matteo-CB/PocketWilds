@@ -65,6 +65,8 @@ namespace PocketWilds.Presentation
         [SerializeField] private MonoBehaviour _zoneOpen;
         [SerializeField] private MonoBehaviour _refugeLevel;
         [SerializeField] private MonoBehaviour _levelReward;
+        /// <summary>T35B: PF_UI_RewardSummary (screen 028), the card at the end of a multi hatch.</summary>
+        [SerializeField] private MonoBehaviour _rewardSummary;
         [SerializeField] private MonoBehaviour _biomeGate;
 
         private GameContext _context;
@@ -209,6 +211,7 @@ namespace PocketWilds.Presentation
                 _refuge = new RefugeController(context, _startChunk, _cameraRig, _hud as IRefugeHud, hatchConfig, _eggId, transform,
                     _offlineReturn as IOfflineReturnView, _codex as ICodexView, _shop as IShopView, _offerModal as IOfferModalView,
                     _animalSheet as IAnimalSheetView, _modal as IModalView, null, allowance);
+                _refuge.SetSummaryView(_rewardSummary as IRewardSummaryView);
                 var input = _cameraRig != null ? _cameraRig.GetComponent<RefugeCameraInput>() : null;
                 if (input != null)
                     input.SetTapHandler(this);
@@ -247,7 +250,7 @@ namespace PocketWilds.Presentation
         public void ApplyReduceMotion(bool reduce)
         {
             foreach (var screen in new[] { _hud, _offlineReturn, _codex, _shop, _offerModal, _animalSheet, _modal, _upgrades, _zoneOpen,
-                         _refugeLevel, _levelReward, _biomeGate })
+                         _refugeLevel, _levelReward, _biomeGate, _rewardSummary })
                 if (screen is IMotionSettings motion)
                     motion.ReduceMotion = reduce;
         }

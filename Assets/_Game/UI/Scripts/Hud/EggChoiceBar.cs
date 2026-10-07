@@ -40,6 +40,8 @@ namespace PocketWilds.UI
         [SerializeField] private Image _buttonEgg;
         [SerializeField] private Image _buttonShell;
         [SerializeField] private Image _buttonSpots;
+        /// <summary>A species still to find shows its silhouette in the Codex's soft tint.</summary>
+        [SerializeField] private Color _silhouetteTint = new Color(0.47f, 0.4f, 0.33f, 0.5f);
 
         private IEggChoiceActions _actions;
         private int _count = -1;
@@ -222,6 +224,7 @@ namespace PocketWilds.UI
                 if (!known)
                     _catalog.TryGetSilhouette(portraits[i].Species, out sprite);
                 _portraits[i].sprite = sprite;
+                _portraits[i].color = known ? Color.white : _silhouetteTint;
                 _portraits[i].enabled = sprite != null;
             }
         }
@@ -269,8 +272,9 @@ namespace PocketWilds.UI
         public void SetReferences(RectTransform pillsRoot, float pillPitch, Button[] pills, Image[] shells, Image[] spots, Image[] rings, TMP_Text[] counts,
             RectTransform nameRoot, CanvasGroup nameGroup, TMP_Text nameLabel, RectTransform quantityRoot, Button quantityButton,
             TMP_Text quantityLabel, RectTransform targetsRoot, Image[] portraits, CodexVisualCatalog catalog, Image buttonEgg,
-            Image buttonShell, Image buttonSpots)
+            Image buttonShell, Image buttonSpots, Color silhouetteTint)
         {
+            _silhouetteTint = silhouetteTint;
             _pillsRoot = pillsRoot;
             _pillPitch = pillPitch;
             _pills = pills;

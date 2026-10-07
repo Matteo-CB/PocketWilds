@@ -374,7 +374,7 @@ namespace PocketWilds.Editor.UI
         // ---------------- Windows ----------------
 
         /// <summary>Overlay canvas, dim scrim (a button unless <paramref name="scrimCloses"/> is false), cream card.</summary>
-        private static RectTransform Window(GameObject root, int order, UiColorTokens tokens, Vector2 cardSize, float cardY, bool scrimCloses,
+        internal static RectTransform Window(GameObject root, int order, UiColorTokens tokens, Vector2 cardSize, float cardY, bool scrimCloses,
             out Canvas canvas, out GameObject content, out CanvasGroup group, out Button scrim)
         {
             canvas = root.AddComponent<Canvas>();
@@ -420,7 +420,7 @@ namespace PocketWilds.Editor.UI
             return button;
         }
 
-        private static Button PrimaryButton(RectTransform parent, UiColorTokens tokens, string name, Vector2 position, Vector2 size, out Image back,
+        internal static Button PrimaryButton(RectTransform parent, UiColorTokens tokens, string name, Vector2 position, Vector2 size, out Image back,
             out TMP_Text label)
         {
             back = UiPipeline.AddImage(name, parent, Load(UiPipeline.ButtonPrimaryPath), tokens.accentPrimary, Image.Type.Sliced);

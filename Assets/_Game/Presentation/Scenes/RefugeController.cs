@@ -42,7 +42,7 @@ namespace PocketWilds.Presentation
     /// offline return screen; its Light counts up into the HUD when collected (T18).
     /// </summary>
     public sealed class RefugeController : IRefugeActions, IHatchListener, IOfflineReturnActions, ICodexActions, IAnimalSheetActions,
-        IModalActions, IAnimalVoiceListener, IEggChoiceActions, IMultiHatchListener, IDisposable
+        IModalActions, IAnimalVoiceListener, IEggChoiceActions, IMultiHatchListener, IRewardSummaryActions, IDisposable
     {
         private const float NextEggDelay = 0.45f;
         // Room around the egg spot no animal enters: the egg (0.33 m) or a giant newborn squirrel standing on it.
@@ -134,20 +134,36 @@ namespace PocketWilds.Presentation
 
         // T35B egg choice and multi hatch (doc 02 Œufs, sections 3 to 6).
         private const float ChoiceCheckSeconds = 0.25f;
-        private const float MultiEggRadius = 0.16f;
         private const float MultiEggHeight = 0.4f;
         private const float MultiEggSpacing = 0.42f;
-        /// <summary>Ten eggs: a wider pitch and two rows far enough apart that the back row shows above the front one.</summary>
+        /// <summary>Ten eggs: a wider pitch than three, so the back row shows between the front one's eggs.</summary>
         private const float MultiTenSpacing = 0.46f;
-        private const float MultiTenFrontZ = -0.22f;
-        private const float MultiTenBackZ = 0.42f;
+        /// <summary>Free space kept between two newborns of a group, at their largest (the reveal's overshoot).</summary>
+        private const float MultiBodyGap = 0.05f;
+
         /// <summary>
-        /// How long the group waits for its regular formation: no animal settles in front of the egg (the apron), so the
-        /// last group's newborns walk off within a moment. After that, blocked eggs take the free points of the rings.
+        /// The group's layout from the species' measured bodies (rule « aucune collision »): newborns face the camera, so
+        /// a row's bodies reach <see cref="_multiRowGap"/> in depth (the longest nose plus the longest tail, at the reveal's
+        /// overshoot) and <see cref="_multiPitch"/> across. The two rows of ten stand that far apart, the eggs that far
+        /// apart in a row, and each spot is checked for a whole body, not only for the egg.
         /// </summary>
-        private const float MultiWaitSeconds = 1.2f;
-        /// <summary>The walk out of a multi hatch: places beyond the apron, a few directions around the way out.</summary>
-        private static readonly float[] ExitDistances = { 1.75f, 2.05f, 2.4f };
+        private readonly float _multiPitch;
+        private readonly float _multiRowGap;
+        private readonly float _multiFrontZ;
+        private readonly float _multiBackZ;
+        private readonly float _multiBodyRadius;
+        private readonly float _multiBodyOffset;
+        /// <summary>
+        /// How long a group waits for its whole circle (formation and bodies) to be free of animals, resting or walking: no
+        /// animal settles in front of the egg (the apron), so the last group's newborns and passers-by are gone within a
+        /// moment. After that, the spots are checked one by one and blocked eggs take the free points of the rings.
+        /// </summary>
+        private const float MultiWaitSeconds = 4f;
+        /// <summary>
+        /// The walk out of a multi hatch: places beyond the group's bodies by this much and more (a newborn resting there
+        /// leaves the next group's formation free), a few directions around the way out.
+        /// </summary>
+        private static readonly float[] ExitMargins = { 0.6f, 0.95f, 1.3f };
         private static readonly float[] ExitAngles = { 0f, 20f, -20f, 40f, -40f, 60f, -60f, 80f, -80f };
         private const float ExitSpacing = 0.5f;
         private const float ExitLaneRadius = 0.2f;
@@ -173,6 +189,10 @@ namespace PocketWilds.Presentation
         private int _multiCount;
         private int _multiPending;
         private float _multiRequestTime;
+        private IRewardSummaryView _summaryView;
+        private readonly Vector3[] _multiExits = new Vector3[MultiHatchPlayer.MaxEggs];
+        private readonly float[] _multiDelays = new float[MultiHatchPlayer.MaxEggs];
+        private readonly SummaryEntry[] _summary = new SummaryEntry[MultiHatchPlayer.MaxEggs];
         private Vector3 _eggCenter;
         // A hatch ended: the moment offer may come once the next egg is ready and the player pauses (T33C: the egg
         // now waits for the newborn to bound off its spot, so the pause is counted from the egg, not the hatch).
@@ -234,6 +254,22 @@ namespace PocketWilds.Presentation
                 throw new InvalidOperationException("Visual catalog has no species prefab.");
             _speciesHandles = handles.ToArray();
             _speciesProfiles = profiles.ToArray();
+            float front = 0f, back = 0f, half = 0f;
+            for (int i = 0; i < _speciesProfiles.Length; i++)
+            {
+                var body = _speciesProfiles[i].body;
+                front = Mathf.Max(front, body.front);
+                back = Mathf.Max(back, -body.back);
+                half = Mathf.Max(half, body.halfWidth);
+            }
+            float grow = Mathf.Max(1f, hatchConfig.revealOvershoot);
+            _multiPitch = 2f * half * grow + MultiBodyGap;
+            _multiRowGap = (front + back) * grow + MultiBodyGap;
+            _multiFrontZ = -0.4f * _multiRowGap;
+            _multiBackZ = 0.6f * _multiRowGap;
+            // Facing the camera, a body runs from its nose (toward the camera, -z) to its tail (+z).
+            _multiBodyRadius = 0.5f * (front + back) * grow;
+            _multiBodyOffset = 0.5f * (back - front) * grow;
             // The waiting egg plus a full × 10 (doc 02 Œufs, section 5: pools sized for ten eggs).
             _eggs = new GameObjectPool<EggView>(hatchConfig.eggPrefab, root, MultiHatchPlayer.MaxEggs + 1, MultiHatchPlayer.MaxEggs + 1);
             _eggs.Warmup(MultiHatchPlayer.MaxEggs + 1);
@@ -322,7 +358,10 @@ namespace PocketWilds.Presentation
         public bool ProgressionOpen => Progression != null && Progression.IsOpen;
 
         /// <summary>A screen covers the refuge: world touches and hatching wait.</summary>
-        public bool ModalOpen => OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen || ProgressionOpen;
+        public bool ModalOpen => OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen || ProgressionOpen || SummaryOpen;
+
+        /// <summary>T35B: the summary card of a multi hatch (screen 028) is up.</summary>
+        public bool SummaryOpen => _summaryView != null && _summaryView.IsOpen;
 
         /// <summary>T35A: Cozy Nests lowers the egg's price at once (the cost is cached, never evaluated per frame).</summary>
         public void OnUpgradePurchased(in UpgradePurchase purchase)
@@ -368,6 +407,7 @@ namespace PocketWilds.Presentation
             _codexView?.Tick(deltaTime);
             _sheetView?.Tick(deltaTime);
             _modalView?.Tick(deltaTime);
+            _summaryView?.Tick(deltaTime);
             if (_shop != null)
             {
                 _shop.Tick(deltaTime);
@@ -743,9 +783,12 @@ namespace PocketWilds.Presentation
 
             if (count > 1)
             {
-                // × 3 or × 10: the spots around the pedestal must be clear first (no-collision rule).
+                // × 3 or × 10: the spots around the pedestal must be clear first (no-collision rule). The apron grows to
+                // the group's size and the animals resting there move on.
                 _multiPending = count;
                 _multiRequestTime = _time;
+                _scheduler.SetEggSpot(_eggCenter, EggSpotRadius, EggBodyRadius, Mathf.Max(EggApronRadius, MultiCircle(count)));
+                _scheduler.ClearEggApron(_time);
                 TryStartMulti();
                 return;
             }
@@ -1116,8 +1159,9 @@ namespace PocketWilds.Presentation
                 bool placed = false;
                 for (int ring = 0; ring < 2 && !placed; ring++)
                 {
-                    float radius = ring == 0 ? 0.7f : 1.05f;
-                    int steps = ring == 0 ? 10 : 14;
+                    // Beyond the regular formation, a whole body apart from each other.
+                    float radius = ring == 0 ? 1.3f : 1.8f;
+                    int steps = ring == 0 ? 12 : 16;
                     for (int k = 0; k < steps && !placed; k++)
                     {
                         float angle = Mathf.PI * 2f * k / steps;
@@ -1135,27 +1179,41 @@ namespace PocketWilds.Presentation
             return true;
         }
 
-        private static Vector3 PreferredSpot(int i, int count)
+        private Vector3 PreferredSpot(int i, int count)
         {
+            float pitch = Mathf.Max(count <= 3 ? MultiEggSpacing : MultiTenSpacing, _multiPitch);
             if (count <= 3)
             {
                 // The pedestal egg in the middle, one on each side a little behind.
-                return i == 0 ? Vector3.zero : new Vector3(i == 1 ? -MultiEggSpacing : MultiEggSpacing, 0f, 0.1f);
+                return i == 0 ? Vector3.zero : new Vector3(i == 1 ? -pitch : pitch, 0f, 0.1f);
             }
             int row = i / 5, column = i % 5;
-            return new Vector3((column - 2) * MultiTenSpacing, 0f, row == 0 ? MultiTenFrontZ : MultiTenBackZ);
+            return new Vector3((column - 2) * pitch, 0f, row == 0 ? _multiFrontZ : _multiBackZ);
         }
 
+        /// <summary>The disc a group's eggs and newborns cover around the pedestal (its regular formation).</summary>
+        private float MultiCircle(int count)
+        {
+            float reach = 0f;
+            for (int i = 0; i < count; i++)
+                reach = Mathf.Max(reach, PreferredSpot(i, count).magnitude);
+            return reach + _multiBodyRadius + Mathf.Abs(_multiBodyOffset) + 0.1f;
+        }
+
+        /// <summary>
+        /// A spot is free when the newborn's whole body fits there: no other newborn of the group closer than a body
+        /// across and a body in depth, and no prop, water or animal in the disc around the body (nose to tail).
+        /// </summary>
         private bool TryTakeSpot(Vector3 point, int taken)
         {
             for (int j = 0; j < taken; j++)
             {
                 var d = _multiSpots[j] - point;
-                d.y = 0f;
-                if (d.sqrMagnitude < (2f * MultiEggRadius + 0.06f) * (2f * MultiEggRadius + 0.06f))
+                if (Mathf.Abs(d.x) < _multiPitch - 1e-3f && Mathf.Abs(d.z) < _multiRowGap - 1e-3f)
                     return false;
             }
-            return _scheduler.IsDiskClear(Ground(point), MultiEggRadius, MultiEggHeight, withAnimals: true);
+            var body = Ground(point + new Vector3(0f, 0f, _multiBodyOffset));
+            return _scheduler.IsDiskClear(body, _multiBodyRadius, MultiEggHeight, withAnimals: true);
         }
 
         private Vector3 Ground(Vector3 point) => new Vector3(point.x, _scheduler.GroundHeight(point), point.z);
@@ -1164,11 +1222,19 @@ namespace PocketWilds.Presentation
         private void TryStartMulti()
         {
             int count = _multiPending;
-            if (ModalOpen || _waitingEgg == null || !FindMultiSpots(count, _time - _multiRequestTime >= MultiWaitSeconds))
+            if (ModalOpen || _waitingEgg == null)
+                return;
+            bool waited = _time - _multiRequestTime >= MultiWaitSeconds;
+            if (!waited && _scheduler.AnyAnimalWithin(_eggCenter, MultiCircle(count)))
+                return;
+            if (!FindMultiSpots(count, waited))
                 return;
             _multiPending = 0;
             if (!_context.Hatch.CanHatch(_eggId, count))
+            {
+                _scheduler.SetEggSpot(_eggCenter, EggSpotRadius, EggBodyRadius, EggApronRadius);
                 return;
+            }
             bool paid = _egg.Tier != EggTier.Discovery;
             int done = _context.Hatch.Hatch(_eggId, count, _multiResults);
             if (done == 0)
@@ -1208,13 +1274,17 @@ namespace PocketWilds.Presentation
             }
             _waitingEgg = null;
             // The eggs' spot covers them all while they stand: animals walk around, never through (no-collision rule).
-            _scheduler.SetEggSpot(_eggCenter, reach + MultiEggRadius + 0.1f, EggBodyRadius, Mathf.Max(EggApronRadius, reach + 0.6f));
+            _scheduler.SetEggSpot(_eggCenter, reach + _multiBodyRadius + Mathf.Abs(_multiBodyOffset) + 0.1f, EggBodyRadius,
+                Mathf.Max(EggApronRadius, reach + 0.6f));
+            _scheduler.EvictFromEggSpot(_time);
+            _multi.ReduceMotion = _context.State.Settings.ReduceMotion;
             _multi.Play(_multiEggs, _multiAnimals, _multiSpecies, _multiRarity, _multiNews, _multiCount, this);
             // Three eggs: the hatch framing. Ten: a wider view on the middle of the two rows, so the whole group shows.
-            if (_rig != null)
+            // Reduced motion: no camera coming closer (doc 05 Sensations, section 30).
+            if (_rig != null && (count > 3 || !_multi.ReduceMotion))
             {
                 if (count > 3)
-                    _rig.FocusOn(_eggCenter + new Vector3(0f, 0f, (MultiTenFrontZ + MultiTenBackZ) * 0.5f), RefugeCameraState.HatchReveal,
+                    _rig.FocusOn(_eggCenter + new Vector3(0f, 0f, (_multiFrontZ + _multiBackZ) * 0.5f), RefugeCameraState.HatchReveal,
                         _rig.DefaultDistance * 0.85f);
                 else
                     _rig.FocusOn(_eggCenter, RefugeCameraState.HatchReveal);
@@ -1233,7 +1303,8 @@ namespace PocketWilds.Presentation
             var view = _multiAnimals[index];
             if (view == null)
                 return;
-            _rig?.FocusOn(view.transform.position + new Vector3(0f, 0.2f, 0f), RefugeCameraState.HatchReveal);
+            if (!_multi.ReduceMotion)
+                _rig?.FocusOn(view.transform.position + new Vector3(0f, 0.2f, 0f), RefugeCameraState.HatchReveal);
             PrepareReveal(_multiResults[index].Animal, _multiNews[index]);
             if (_hasPendingReveal)
             {
@@ -1243,17 +1314,26 @@ namespace PocketWilds.Presentation
         }
 
         /// <summary>
-        /// Doc 02 Œufs, section 5: each newborn walks out to a free place before it joins the meadow. The front row leaves
-        /// first, the back row a moment later; each place lies outside the egg's apron (no animal settles there, so the next
-        /// group finds its formation clear), on a lane that meets no prop, no water, no animal and no other newborn's lane or
-        /// starting point. A newborn with no such place stays and walks out through the meadow like a single hatch's.
+        /// Doc 02 Œufs, section 5: each newborn walks out to a free place. The places lie beyond the group's bodies (none
+        /// rests where the next group's formation stands), on lanes that meet no prop, no water, no animal and never cross
+        /// another newborn's lane or starting point (the front row before the back row). The walk itself is the meadow's:
+        /// the scheduler checks every step against every animal. A newborn with no such place keeps its own (none).
         /// </summary>
-        public bool OnMultiExits(Vector3[] exits, float[] delays)
+        private void PlanExits(Vector3[] exits, float[] delays)
         {
             int count = _multiCount;
             bool rows = count > 3;
             for (int i = 0; i < count; i++)
                 delays[i] = (rows && i >= 5 ? ExitBackRowDelay : 0f) + (rows ? i % 5 : i) * ExitStagger;
+            // How far the group's bodies reach from the pedestal, nose to tail, wherever the eggs stood.
+            float reach = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                var offset = _multiSpots[i] - _eggCenter;
+                offset.y = 0f;
+                reach = Mathf.Max(reach, offset.magnitude);
+            }
+            reach += _multiBodyRadius + Mathf.Abs(_multiBodyOffset);
             for (int i = 0; i < count; i++)
             {
                 var view = _multiAnimals[i];
@@ -1267,12 +1347,12 @@ namespace PocketWilds.Presentation
                     outward = new Vector3(0f, 0f, -1f);
                 outward.Normalize();
                 bool found = false;
-                for (int d = 0; d < ExitDistances.Length && !found; d++)
+                for (int d = 0; d < ExitMargins.Length && !found; d++)
                 {
                     for (int a = 0; a < ExitAngles.Length && !found; a++)
                     {
                         var direction = Quaternion.Euler(0f, ExitAngles[a], 0f) * outward;
-                        var candidate = Ground(_eggCenter + direction * ExitDistances[d]);
+                        var candidate = Ground(_eggCenter + direction * (reach + ExitMargins[d]));
                         if (!ExitFits(i, start, candidate, exits, delays))
                             continue;
                         exits[i] = candidate;
@@ -1280,7 +1360,6 @@ namespace PocketWilds.Presentation
                     }
                 }
             }
-            return true;
         }
 
         private bool ExitFits(int i, Vector3 start, Vector3 candidate, Vector3[] exits, float[] delays)
@@ -1314,6 +1393,9 @@ namespace PocketWilds.Presentation
 
         public void OnMultiFinished()
         {
+            // The places are planned while the group still owns its spot, then the spot shrinks back and each newborn
+            // joins the meadow and walks to its place.
+            PlanExits(_multiExits, _multiDelays);
             _scheduler.SetEggSpot(_eggCenter, EggSpotRadius, EggBodyRadius, EggApronRadius);
             for (int i = 0; i < _multiCount; i++)
             {
@@ -1323,7 +1405,12 @@ namespace PocketWilds.Presentation
                 if (view != null)
                 {
                     var animal = _multiResults[i].Animal;
+                    var start = view.transform.position;
                     AddToMeadow(view, animal.Species, animal.InstanceId, animal.Seed, _multiRare[i], emerging: true);
+                    var exit = _multiExits[i] - start;
+                    exit.y = 0f;
+                    if (exit.sqrMagnitude > 1e-4f && VisibleAnimals > 0 && _views[VisibleAnimals - 1] == view)
+                        _scheduler.SendTo(_agentByView[VisibleAnimals - 1], _multiExits[i], _time);
                 }
                 _multiAnimals[i] = null;
             }
@@ -1338,9 +1425,80 @@ namespace PocketWilds.Presentation
             PushChoice(false);
         }
 
-        /// <summary>The summary card (screen 028) of the last multi hatch; step 3 builds it.</summary>
+        /// <summary>T35B: the summary card of the scene (screen 028), set by the scene entry; prewarmed once.</summary>
+        public void SetSummaryView(IRewardSummaryView view)
+        {
+            _summaryView = view;
+            _summaryView?.Prewarm(_context.Localization);
+        }
+
+        /// <summary>
+        /// The summary card (screen 028) of the last multi hatch: each newborn with its rarity (stars, word, frame motif)
+        /// and the « Nouveau » badge for a new species or color. Names and words are the table's cached strings.
+        /// </summary>
         private void ShowMultiSummary()
         {
+            if (_summaryView == null || _multiCount <= 0)
+                return;
+            var loc = _context.Localization;
+            for (int i = 0; i < _multiCount; i++)
+            {
+                var animal = _multiResults[i].Animal;
+                _summary[i] = new SummaryEntry
+                {
+                    Species = animal.Species,
+                    Variant = animal.Variant,
+                    Rarity = animal.Rarity,
+                    Name = _context.Content.Species.TryGet(animal.Species, out var species) ? loc.Get(species.DisplayKey) : string.Empty,
+                    RarityWord = loc.Get(FeedbackText.RarityKey(animal.Rarity)),
+                    New = _multiNews[i] != HatchNews.None,
+                };
+            }
+            _summaryView.Open(_summary, _multiCount, loc, this);
+            _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
+        }
+
+        public void CloseSummary()
+        {
+            if (!SummaryOpen)
+                return;
+            _summaryView.Close();
+            _context.Audio.Play(AudioEventId.UiBack, Vector3.zero, default);
+        }
+
+        /// <summary>
+        /// Tests: the smallest free space (m) between the newborns of the multi hatch playing, and between each of them and
+        /// the props, the water and the meadow's animals; <see cref="AnimalScheduler.ClearanceHorizon"/> when none is out.
+        /// Negative: an overlap (rule « aucune collision »).
+        /// </summary>
+        public float MultiClearance()
+        {
+            float best = AnimalScheduler.ClearanceHorizon;
+            if (!_multi.IsPlaying)
+                return best;
+            for (int i = 0; i < _multiCount; i++)
+            {
+                var view = _multiAnimals[i];
+                if (view == null || view.transform.localScale.x < 0.5f)
+                    continue;
+                var body = ProfileOf(_multiSpecies[i]).body;
+                float scale = view.transform.localScale.x;
+                var position = view.transform.position;
+                body.Segment(position, view.transform.eulerAngles.y, scale, out var a0, out var a1);
+                float radius = body.halfWidth * scale;
+                best = Mathf.Min(best, _scheduler.BodyClearance(a0, a1, radius, position.y, body.height * scale));
+                for (int j = i + 1; j < _multiCount; j++)
+                {
+                    var other = _multiAnimals[j];
+                    if (other == null || other.transform.localScale.x < 0.5f)
+                        continue;
+                    var otherBody = ProfileOf(_multiSpecies[j]).body;
+                    float otherScale = other.transform.localScale.x;
+                    otherBody.Segment(other.transform.position, other.transform.eulerAngles.y, otherScale, out var b0, out var b1);
+                    best = Mathf.Min(best, CollisionMath.Gap(a0, a1, radius, b0, b1, otherBody.halfWidth * otherScale));
+                }
+            }
+            return best;
         }
 
         public void Dispose()

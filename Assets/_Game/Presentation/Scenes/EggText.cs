@@ -1,7 +1,7 @@
 namespace PocketWilds.Presentation
 {
     /// <summary>
-    /// T35B localization keys of the egg choice and the odds window (doc 02 Œufs, sections 3 and 6). Values live in
+    /// T35B localization keys of the egg choice, the odds window and the summary card (doc 02 Œufs, sections 3, 5 and 6). Values live in
     /// LOC_en / LOC_fr (UiPipeline.Texts); UiTextKeys lists them for the tests.
     /// </summary>
     public static class EggText
@@ -24,6 +24,18 @@ namespace PocketWilds.Presentation
         /// <summary>Format: {0} Discovery eggs in stock.</summary>
         public const string OddsStock = "egg.odds.stock";
 
-        public static readonly string[] All = { Free, OddsDiscovery, OddsTargets, OddsNewSpecies, OddsNewColor, OddsStock };
+        /// <summary>The summary card's title (screen 028).</summary>
+        public const string SummaryTitle = "summary.title";
+
+        /// <summary>The badge of a new species or color on the summary card.</summary>
+        public const string SummaryNew = "summary.new";
+
+        /// <summary>The summary card's button.</summary>
+        public const string SummaryContinue = "summary.continue";
+
+        public static readonly string[] All =
+        {
+            Free, OddsDiscovery, OddsTargets, OddsNewSpecies, OddsNewColor, OddsStock, SummaryTitle, SummaryNew, SummaryContinue,
+        };
     }
 }

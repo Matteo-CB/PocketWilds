@@ -14,22 +14,19 @@ namespace PocketWilds.Presentation
         /// <summary>A Rare or better result, or a new species or color, gets its short moment (index in the hatch).</summary>
         void OnMultiMoment(int index);
 
-        /// <summary>
-        /// Before the newborns join the meadow: a free place for each (<paramref name="exits"/>, the animal's own position
-        /// when none) and when it sets off (<paramref name="delays"/>, seconds). False: they stay where they are.
-        /// </summary>
-        bool OnMultiExits(Vector3[] exits, float[] delays);
-
         void OnMultiFinished();
     }
 
     /// <summary>
-    /// T35B, doc 02 Œufs, section 5: the staging of a × 3 or × 10 hatch, results already decided by the simulation. The eggs
-    /// pop onto measured spots around the pedestal, wobble and crack together (1.5 s), burst at once (at most three full
-    /// hatch effects, the others a small shell puff), the newborns pop out, then each Rare or better result and each new
-    /// species or color has a 0.8 s moment of its own (the camera comes closer; a touch passes it), and each newborn walks
-    /// out to a free place its listener found (no animal ever stands in another, rule « aucune collision »). Evaluated from
-    /// elapsed time like <see cref="HatchSequencePlayer"/>: no coroutine, no physics, no allocation after construction.
+    /// T35B, doc 02 Œufs section 5 and doc 05 Sensations section 30: the staging of a × 3 or × 10 hatch, results already
+    /// decided by the simulation. The eggs pop onto measured spots (400 ms each, 40 ms apart), wobble and crack together
+    /// (1.5 s, one crack sound for all), then burst in a wave from left to right (60 ms apart): at most three full hatch
+    /// effects (the best results), a small shell puff for the others, at most five pop sounds, then the sound of the
+    /// rarest result. Each Rare or better result and each new species or color has a 0.8 s moment of its own (the camera
+    /// comes closer; a touch passes it; the rarest one's vibration plays at its moment). Then the listener hands the
+    /// newborns to the meadow, where each walks out to a free place (rule « aucune collision »). Reduced motion: no pop,
+    /// no wobble, no flying shell.
+    /// Evaluated from elapsed time like <see cref="HatchSequencePlayer"/>: no coroutine, no physics, no allocation.
     /// </summary>
     public sealed class MultiHatchPlayer
     {
@@ -37,17 +34,15 @@ namespace PocketWilds.Presentation
         public const int FullEffects = 3;
         public const float CrackTogetherSeconds = 1.5f;
         public const float MomentSeconds = 0.8f;
+        public const float AppearSeconds = 0.4f;
+        public const float AppearStagger = 0.04f;
+        public const float BurstWaveStep = 0.06f;
+        public const int MaxPops = 5;
 
-        private const float AppearStagger = 0.035f;
-        private const float AppearSeconds = 0.25f;
-        private const float WobbleStart = 0.35f;
-        private const float Crack1At = 0.85f;
-        private const float Crack2At = 1.4f;
+        private const float WobbleStart = 0.4f;
+        private const float Crack1At = 0.9f;
+        private const float Crack2At = 1.45f;
         private const float BurstAt = WobbleStart + CrackTogetherSeconds;
-        private const float RevealStagger = 0.03f;
-        /// <summary>The walk out: a newborn's lively pace (m/s), and the longest a group may take.</summary>
-        private const float ExitSpeed = 1.6f;
-        private const float ExitMaxSeconds = 1.6f;
 
         private readonly HatchPresentationConfig _config;
         private readonly FeedbackVfx _vfx;
@@ -61,23 +56,23 @@ namespace PocketWilds.Presentation
         private readonly HatchNews[] _news = new HatchNews[MaxEggs];
         private readonly bool[] _full = new bool[MaxEggs];
         private readonly int[] _moments = new int[MaxEggs];
-        private readonly Vector3[] _exits = new Vector3[MaxEggs];
-        private readonly Vector3[] _exitFrom = new Vector3[MaxEggs];
-        private readonly float[] _exitDelay = new float[MaxEggs];
-        private readonly float[] _exitDuration = new float[MaxEggs];
-        private readonly bool[] _exitArrived = new bool[MaxEggs];
-        private readonly bool[] _exitWalking = new bool[MaxEggs];
-        private bool _exiting;
-        private float _exitStart;
-        private float _exitEnd;
+        private readonly int[] _wave = new int[MaxEggs];
+        private readonly float[] _burstAt = new float[MaxEggs];
+        private readonly bool[] _burst = new bool[MaxEggs];
         private int _count;
+        private int _burstCount;
+        private int _popsPlayed;
+        private int _popStep;
         private int _momentCount;
         private int _moment;
+        private int _bestMoment;
         private float _momentStart;
         private IMultiHatchListener _listener;
         private float _now;
         private float _elapsed;
+        private float _lastBurst;
         private float _revealEnd;
+        private RarityTier _best;
         private bool _crack1Done, _crack2Done, _burstDone, _happyDone, _momentsDone;
 
         public MultiHatchPlayer(HatchPresentationConfig config, FeedbackVfx vfx, IAudioService audio, IHapticService haptics)
@@ -92,13 +87,21 @@ namespace PocketWilds.Presentation
         public int Count => _count;
         public float Elapsed => _elapsed;
 
+        /// <summary>Player setting: eggs and newborns appear without pop, no wobble, no flying shell.</summary>
+        public bool ReduceMotion { get; set; }
+
         /// <summary>The moment playing (index in the hatch), or -1.</summary>
         public int CurrentMoment => _moment >= 0 && _moment < _momentCount ? _moments[_moment] : -1;
 
         public int MomentCount => _momentCount;
         public bool Burst => _burstDone;
+        public int BurstCount => _burstCount;
+        public int PopsPlayed => _popsPlayed;
         public EggView Egg(int index) => _eggs[index];
         public AnimalView Animal(int index) => _animals[index];
+
+        /// <summary>Seconds after the start at which this egg bursts (its place in the left to right wave).</summary>
+        public float BurstTime(int index) => _burstAt[index];
 
         /// <summary>How many eggs play a full hatch effect (the best results first).</summary>
         public int FullEffectCount
@@ -126,7 +129,11 @@ namespace PocketWilds.Presentation
             _listener = listener;
             _elapsed = 0f;
             _moment = -1;
-            _exiting = false;
+            _bestMoment = -1;
+            _burstCount = 0;
+            _popsPlayed = 0;
+            _popStep = (count + MaxPops - 1) / MaxPops;
+            _best = RarityTier.Common;
             _crack1Done = _crack2Done = _burstDone = _happyDone = _momentsDone = false;
             _momentCount = 0;
             for (int i = 0; i < count; i++)
@@ -137,6 +144,9 @@ namespace PocketWilds.Presentation
                 _rarity[i] = rarity[i];
                 _news[i] = news[i];
                 _full[i] = false;
+                _burst[i] = false;
+                if (rarity[i] > _best)
+                    _best = rarity[i];
                 _eggs[i].SetShellPose(Vector3.zero, Quaternion.identity, Vector3.zero);
                 if (_animals[i] != null)
                 {
@@ -157,7 +167,40 @@ namespace PocketWilds.Presentation
                         best = i;
                 _full[best] = true;
             }
-            _revealEnd = BurstAt + _config.reveal + RevealStagger * count;
+
+            // The burst wave runs from left to right as the camera sees it (its yaw is fixed: world x).
+            for (int i = 0; i < count; i++)
+                _wave[i] = i;
+            for (int i = 1; i < count; i++)
+            {
+                int item = _wave[i];
+                float x = _eggs[item].transform.position.x;
+                int j = i - 1;
+                while (j >= 0 && _eggs[_wave[j]].transform.position.x > x)
+                {
+                    _wave[j + 1] = _wave[j];
+                    j--;
+                }
+                _wave[j + 1] = item;
+            }
+            for (int rank = 0; rank < count; rank++)
+                _burstAt[_wave[rank]] = BurstAt + rank * BurstWaveStep;
+            _lastBurst = BurstAt + (count - 1) * BurstWaveStep;
+            _revealEnd = _lastBurst + _config.reveal;
+
+            // The rarest result's vibration waits for its own moment.
+            if (_best >= RarityTier.Rare)
+            {
+                for (int m = 0; m < _momentCount; m++)
+                {
+                    if (_rarity[_moments[m]] == _best)
+                    {
+                        _bestMoment = m;
+                        break;
+                    }
+                }
+            }
+
             _audio.Play(AudioEventId.EggTap, _eggs[0].VfxPoint.position, default);
             _haptics.Play(HapticEventId.TapLight);
             IsPlaying = true;
@@ -166,50 +209,29 @@ namespace PocketWilds.Presentation
 
         private int Score(int i) => (_news[i] == HatchNews.NewSpecies ? 100 : 0) + (int)_rarity[i] * 10 + (_news[i] == HatchNews.NewVariant ? 5 : 0);
 
-        public bool Exiting => _exiting;
-
-        /// <summary>
-        /// Before the burst: everything bursts now. During the moments: the next moment (the touch passes it). During the walk
-        /// out: every newborn is at its place.
-        /// </summary>
+        /// <summary>Before the bursts: every egg bursts now. During the moments: the next moment (the touch passes it).</summary>
         public void Skip()
         {
             if (!IsPlaying)
                 return;
-            if (_exiting)
-            {
-                EvaluateExits(float.MaxValue);
-                Finish();
-                return;
-            }
-            if (!_burstDone)
+            if (!_burstDone || _elapsed < _revealEnd)
             {
                 if (!_crack1Done)
                     CrackAll(1);
                 if (!_crack2Done)
                     CrackAll(2);
-                BurstAll();
-                _elapsed = Mathf.Max(_elapsed, BurstAt);
                 for (int i = 0; i < _count; i++)
                 {
+                    if (!_burst[i])
+                        BurstEgg(i);
                     _eggs[i].SetFragmentsVisible(false);
                     _animals[i]?.SetScale(1f);
                 }
+                if (!_burstDone)
+                    EndWave();
                 if (!_happyDone)
                     PlayHappy();
-                _elapsed = _revealEnd;
-                return;
-            }
-            if (_elapsed < _revealEnd)
-            {
-                for (int i = 0; i < _count; i++)
-                {
-                    _eggs[i].SetFragmentsVisible(false);
-                    _animals[i]?.SetScale(1f);
-                }
-                if (!_happyDone)
-                    PlayHappy();
-                _elapsed = _revealEnd;
+                _elapsed = Mathf.Max(_elapsed, _revealEnd);
                 return;
             }
             NextMoment();
@@ -242,17 +264,23 @@ namespace PocketWilds.Presentation
                     CrackAll(1);
                 if (!_crack2Done && t >= Crack2At)
                     CrackAll(2);
-                if (t >= BurstAt)
-                    BurstAll();
-                else
-                    EvaluateShells(t);
+                for (int i = 0; i < _count; i++)
+                {
+                    if (_burst[i])
+                        continue;
+                    if (t >= _burstAt[i])
+                        BurstEgg(i);
+                    else
+                        EvaluateShell(i, t);
+                }
+                if (_burstCount == _count)
+                    EndWave();
             }
-            if (_burstDone && t < _revealEnd + 0.01f)
+            if (_burstCount > 0 && t < _revealEnd + 0.01f)
             {
-                float since = t - BurstAt;
-                EvaluateFragments(since);
-                EvaluateReveals(since);
-                if (!_happyDone && since >= _config.happyDelay)
+                EvaluateFragments(t);
+                EvaluateReveals(t);
+                if (!_happyDone && t >= _lastBurst + _config.happyDelay)
                     PlayHappy();
             }
             if (_burstDone && t >= _revealEnd && !_momentsDone)
@@ -262,102 +290,30 @@ namespace PocketWilds.Presentation
                 else if (_moment < _momentCount && _now - _momentStart >= MomentSeconds)
                     NextMoment();
             }
-            if (_exiting)
-            {
-                float since = _now - _exitStart;
-                EvaluateExits(since);
-                if (since >= _exitEnd)
-                    Finish();
-            }
         }
 
-        private void StartExits()
+        private void EvaluateShell(int i, float t)
         {
-            for (int i = 0; i < _count; i++)
+            float appear = Mathf.Clamp01((t - i * AppearStagger) / AppearSeconds);
+            // Pop in past full size, then settle (reduced motion: a plain grow, no overshoot).
+            float scale = ReduceMotion ? Mathf.SmoothStep(0f, 1f, appear)
+                : appear < 0.7f ? Mathf.Lerp(0f, 1.12f, Mathf.SmoothStep(0f, 1f, appear / 0.7f))
+                : Mathf.Lerp(1.12f, 1f, Mathf.SmoothStep(0f, 1f, (appear - 0.7f) / 0.3f));
+            if (ReduceMotion)
             {
-                _exits[i] = _animals[i] != null ? _animals[i].transform.position : Vector3.zero;
-                _exitDelay[i] = 0f;
-            }
-            if (_listener == null || !_listener.OnMultiExits(_exits, _exitDelay))
-            {
-                Finish();
+                _eggs[i].SetShellPose(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, scale));
                 return;
             }
-            _exitEnd = 0f;
-            for (int i = 0; i < _count; i++)
-            {
-                _exitArrived[i] = true;
-                _exitWalking[i] = false;
-                _exitDuration[i] = 0f;
-                if (_animals[i] == null)
-                    continue;
-                var from = _animals[i].transform.position;
-                _exitFrom[i] = from;
-                var flat = _exits[i] - from;
-                flat.y = 0f;
-                float distance = flat.magnitude;
-                if (distance < 0.02f)
-                    continue;
-                _exitArrived[i] = false;
-                _exitDuration[i] = Mathf.Min(distance / ExitSpeed, ExitMaxSeconds);
-                _exitEnd = Mathf.Max(_exitEnd, _exitDelay[i] + _exitDuration[i]);
-            }
-            _exiting = true;
-            _exitStart = _now;
-            if (_exitEnd <= 0f)
-                Finish();
-        }
-
-        /// <summary>Each newborn turns toward its place and walks there with its own gait, then settles.</summary>
-        private void EvaluateExits(float since)
-        {
-            for (int i = 0; i < _count; i++)
-            {
-                if (_exitArrived[i] || _animals[i] == null)
-                    continue;
-                float local = since - _exitDelay[i];
-                if (local < 0f)
-                    continue;
-                var view = _animals[i];
-                var from = _exitFrom[i];
-                var to = _exits[i];
-                float yaw = Mathf.Atan2(to.x - from.x, to.z - from.z) * Mathf.Rad2Deg;
-                if (!_exitWalking[i])
-                {
-                    _exitWalking[i] = true;
-                    view.PlayState(AnimalStateHashes.Move, 0.1f);
-                }
-                float k = Mathf.Clamp01(local / _exitDuration[i]);
-                // Eased at both ends: a lively start, a soft stop.
-                float s = Mathf.SmoothStep(0f, 1f, k);
-                view.SetPose(Vector3.Lerp(from, to, s), yaw);
-                if (k >= 1f)
-                {
-                    _exitArrived[i] = true;
-                    view.PlayState(AnimalStateHashes.Idle, 0.15f);
-                }
-            }
-        }
-
-        private void EvaluateShells(float t)
-        {
-            for (int i = 0; i < _count; i++)
-            {
-                float appear = Mathf.Clamp01((t - i * AppearStagger) / AppearSeconds);
-                // Pop in past full size, then settle.
-                float scale = appear < 0.7f ? Mathf.Lerp(0f, 1.12f, Mathf.SmoothStep(0f, 1f, appear / 0.7f))
-                    : Mathf.Lerp(1.12f, 1f, Mathf.SmoothStep(0f, 1f, (appear - 0.7f) / 0.3f));
-                float wobble = t < WobbleStart ? 0f
-                    : t < Crack1At ? _config.wobbleDegrees1 * Mathf.SmoothStep(0f, 1f, (t - WobbleStart) / (Crack1At - WobbleStart))
-                    : t < Crack2At ? _config.wobbleDegrees1 : _config.wobbleDegrees2;
-                // Each egg keeps its own phase: together, never in lockstep.
-                float phase = (t * _config.wobbleHz + i * 0.37f) * Mathf.PI * 2f;
-                float swell = Mathf.Clamp01((t - (BurstAt - _config.swellSeconds)) / _config.swellSeconds);
-                float grow = 1f + _config.swellBeforeBurst * swell * swell;
-                var rotation = Quaternion.Euler(wobble * 0.35f * Mathf.Sin(phase * 0.7f + 1.3f), 0f, wobble * Mathf.Sin(phase));
-                _eggs[i].SetShellPose(Vector3.zero, rotation, new Vector3(scale * grow, scale * grow, scale * grow));
-                _eggs[i].SetGlow(Mathf.RoundToInt(swell * 15f));
-            }
+            float wobble = t < WobbleStart ? 0f
+                : t < Crack1At ? _config.wobbleDegrees1 * Mathf.SmoothStep(0f, 1f, (t - WobbleStart) / (Crack1At - WobbleStart))
+                : t < Crack2At ? _config.wobbleDegrees1 : _config.wobbleDegrees2;
+            // Each egg keeps its own phase: together, never in lockstep.
+            float phase = (t * _config.wobbleHz + i * 0.37f) * Mathf.PI * 2f;
+            float swell = Mathf.Clamp01((t - (_burstAt[i] - _config.swellSeconds)) / _config.swellSeconds);
+            float grow = 1f + _config.swellBeforeBurst * swell * swell;
+            var rotation = Quaternion.Euler(wobble * 0.35f * Mathf.Sin(phase * 0.7f + 1.3f), 0f, wobble * Mathf.Sin(phase));
+            _eggs[i].SetShellPose(Vector3.zero, rotation, new Vector3(scale * grow, scale * grow, scale * grow));
+            _eggs[i].SetGlow(Mathf.RoundToInt(swell * 15f));
         }
 
         private void CrackAll(int stage)
@@ -375,23 +331,20 @@ namespace PocketWilds.Presentation
             _haptics.Play(HapticEventId.TapLight);
         }
 
-        private void BurstAll()
+        /// <summary>One egg of the wave opens: its effect, and a pop sound for one egg in <see cref="_popStep"/>.</summary>
+        private void BurstEgg(int i)
         {
-            _burstDone = true;
-            var best = RarityTier.Common;
-            for (int i = 0; i < _count; i++)
+            int rank = _burstCount++;
+            _burst[i] = true;
+            var egg = _eggs[i];
+            egg.SetGlow(0);
+            egg.SetShellPose(Vector3.zero, Quaternion.identity, Vector3.one);
+            egg.SetShellVisible(false);
+            // Shell pieces fly only from the full hatches; the other eggs open with a small shell puff (H-VFX-002).
+            egg.SetFragmentsVisible(_full[i] && !ReduceMotion);
+            var position = egg.VfxPoint.position;
+            if (_vfx != null)
             {
-                var egg = _eggs[i];
-                egg.SetGlow(0);
-                egg.SetShellPose(Vector3.zero, Quaternion.identity, Vector3.one);
-                egg.SetShellVisible(false);
-                // Shell pieces fly only from the full hatches; the other eggs open with a small shell puff (H-VFX-002).
-                egg.SetFragmentsVisible(_full[i]);
-                if (_rarity[i] > best)
-                    best = _rarity[i];
-                if (_vfx == null)
-                    continue;
-                var position = egg.VfxPoint.position;
                 if (_full[i])
                 {
                     _vfx.Play(VfxId.HatchCommon, position, _now);
@@ -406,31 +359,42 @@ namespace PocketWilds.Presentation
                     _vfx.Play(VfxId.Crack, position, _now);
                 }
             }
-            var center = _eggs[0].VfxPoint.position;
-            _audio.Play(AudioEventId.HatchPop, center, default);
-            var reveal = RevealAudio(best);
+            if (rank % _popStep == 0 && _popsPlayed < MaxPops)
+            {
+                _popsPlayed++;
+                _audio.Play(AudioEventId.HatchPop, position, default);
+            }
+            if (rank == 0)
+                _haptics.Play(HapticEventId.HatchCommon);
+        }
+
+        /// <summary>The last egg of the wave is open: the rarest result's sound, then the listener.</summary>
+        private void EndWave()
+        {
+            _burstDone = true;
+            var reveal = RevealAudio(_best);
             if (reveal != AudioEventId.None)
-                _audio.Play(reveal, center, default);
-            _haptics.Play(best >= RarityTier.Legendary ? HapticEventId.Legendary : best >= RarityTier.Rare ? HapticEventId.Rare : HapticEventId.HatchCommon);
+                _audio.Play(reveal, _eggs[_wave[_count - 1]].VfxPoint.position, default);
             _listener?.OnMultiRevealed();
         }
 
-        private void EvaluateFragments(float since)
+        private void EvaluateFragments(float t)
         {
             float flight = _config.fragmentFlightSeconds;
             float shrinkStart = flight - _config.fragmentShrinkSeconds;
-            float scale = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((since - shrinkStart) / _config.fragmentShrinkSeconds));
             var flights = _config.fragments;
             for (int e = 0; e < _count; e++)
             {
                 var egg = _eggs[e];
-                if (!egg.FragmentsVisible)
+                if (!_burst[e] || !egg.FragmentsVisible)
                     continue;
+                float since = t - _burstAt[e];
                 if (since >= flight)
                 {
                     egg.SetFragmentsVisible(false);
                     continue;
                 }
+                float scale = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((since - shrinkStart) / _config.fragmentShrinkSeconds));
                 for (int i = 0; i < EggView.FragmentCount && i < flights.Length; i++)
                 {
                     var rest = egg.FragmentRestPosition(i);
@@ -445,14 +409,14 @@ namespace PocketWilds.Presentation
             }
         }
 
-        private void EvaluateReveals(float since)
+        private void EvaluateReveals(float t)
         {
             for (int i = 0; i < _count; i++)
             {
-                if (_animals[i] == null)
+                if (_animals[i] == null || !_burst[i])
                     continue;
-                float k = Mathf.Clamp01((since - i * RevealStagger) / _config.reveal);
-                float overshoot = _config.revealOvershoot;
+                float k = Mathf.Clamp01((t - _burstAt[i]) / _config.reveal);
+                float overshoot = ReduceMotion ? 1f : _config.revealOvershoot;
                 float scale = k < 0.6f
                     ? Mathf.Lerp(0.001f, overshoot, Mathf.SmoothStep(0f, 1f, k / 0.6f))
                     : Mathf.Lerp(overshoot, 1f, Mathf.SmoothStep(0f, 1f, (k - 0.6f) / 0.4f));
@@ -480,11 +444,13 @@ namespace PocketWilds.Presentation
             _momentStart = _now;
             if (_moment < _momentCount)
             {
+                if (_moment == _bestMoment)
+                    _haptics.Play(_best >= RarityTier.Legendary ? HapticEventId.Legendary : HapticEventId.Rare);
                 _listener?.OnMultiMoment(_moments[_moment]);
                 return;
             }
             _momentsDone = true;
-            StartExits();
+            Finish();
         }
 
         private void Finish()
@@ -496,7 +462,6 @@ namespace PocketWilds.Presentation
                     _eggs[i].SetFragmentsVisible(false);
             }
             IsPlaying = false;
-            _exiting = false;
             var listener = _listener;
             _listener = null;
             listener?.OnMultiFinished();

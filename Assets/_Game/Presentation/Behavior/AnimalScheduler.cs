@@ -703,6 +703,94 @@ namespace PocketWilds.Presentation
         }
 
         /// <summary>A newborn cannot get out: every animal resting in front of the egg walks away now.</summary>
+        /// <summary>
+        /// T35B: a multi hatch needs room in front of the egg: every animal resting in the apron moves on (its next stop
+        /// is outside, like any choice).
+        /// </summary>
+        public void ClearEggApron(float time) => ClearApron(-1, time);
+
+        /// <summary>T35B: some animal's body (resting or walking) reaches into this disc (props do not count).</summary>
+        public bool AnyAnimalWithin(Vector3 center, float radius)
+        {
+            var c = new Vector2(center.x, center.z);
+            for (int i = 0; i < _activeCount; i++)
+            {
+                ref var a = ref _agents[_active[i]];
+                float min = radius + a.Radius;
+                if (CollisionMath.PointSegmentDistanceSq(c, a.SegA, a.SegB) < min * min)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// T35B: a multi hatch's newborn, just registered, walks to the place its group planned for it (lanes that never
+        /// cross). Like any newborn it may cross the egg's spot; every step is checked like any walk, then it looks
+        /// around and goes exploring.
+        /// </summary>
+        public void SendTo(int handle, Vector3 target, float time)
+        {
+            if (!IsValid(handle))
+                return;
+            ref var agent = ref _agents[handle];
+            var profile = _profiles[handle];
+            EndActivity(handle, ref agent, time);
+            agent.Newborn = true;
+            agent.Emerging = true;
+            var place = Grounded(_area.Clamp(target));
+            StartApproach(handle, ref agent, profile, place, place + (place - agent.Position), AnimalBehaviorState.Idle, time, false, place, false);
+        }
+
+        /// <summary>
+        /// T35B: the egg spot grew around a multi hatch's group. An animal already standing in it walks straight out, away
+        /// from the egg, to a free place just beyond the spot (as a newborn would, the spot does not hold it back). The
+        /// group's spots were checked for whole bodies, so no animal stands between two eggs: the way out passes none.
+        /// </summary>
+        public void EvictFromEggSpot(float time)
+        {
+            if (!_hasEggSpot)
+                return;
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int slot = _active[i];
+                ref var agent = ref _agents[slot];
+                if (agent.Emerging || !OverlapsEggSpot(ref agent))
+                    continue;
+                var outward = new Vector2(agent.Position.x - _eggSpot.x, agent.Position.z - _eggSpot.y);
+                if (outward.sqrMagnitude < 1e-6f)
+                    outward = new Vector2(0f, -1f);
+                float baseAngle = Mathf.Atan2(outward.y, outward.x);
+                var profile = _profiles[slot];
+                EndActivity(slot, ref agent, time);
+                var exit = agent.Position;
+                bool found = false;
+                for (int ring = 0; ring < 3 && !found; ring++)
+                {
+                    float distance = _eggRadius + agent.Reach + 0.1f + ring * 0.4f;
+                    for (int k = 0; k < 7 && !found; k++)
+                    {
+                        int step = (k & 1) == 0 ? k / 2 : -(k + 1) / 2;
+                        float angle = baseAngle + step * 0.35f;
+                        var candidate = Grounded(_area.Clamp(new Vector3(_eggSpot.x + Mathf.Cos(angle) * distance, 0f,
+                            _eggSpot.y + Mathf.Sin(angle) * distance)));
+                        if (Fits(slot, ref agent, candidate, YawTo(agent.Position, candidate), true))
+                        {
+                            exit = candidate;
+                            found = true;
+                        }
+                    }
+                }
+                if (!found)
+                {
+                    // No room straight out: the way out of any newborn (it keeps trying until the spot is behind it).
+                    StartExit(slot, ref agent, profile, time);
+                    continue;
+                }
+                agent.Emerging = true;
+                StartApproach(slot, ref agent, profile, exit, exit + (exit - agent.Position), AnimalBehaviorState.Idle, time, false, exit, false);
+            }
+        }
+
         private void ClearApron(int newborn, float time)
         {
             for (int i = 0; i < _activeCount; i++)
@@ -1440,6 +1528,28 @@ namespace PocketWilds.Presentation
                     return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// T35B tests: the smallest free space (m) between a body not registered here (a multi hatch's newborn, its capsule
+        /// axis <paramref name="a0"/> to <paramref name="a1"/>) and the props, the water and every animal; at most
+        /// <see cref="ClearanceHorizon"/>, negative when it overlaps.
+        /// </summary>
+        public float BodyClearance(Vector2 a0, Vector2 a1, float radius, float groundY, float height)
+        {
+            float best = ClearanceHorizon;
+            for (int i = 0; i < _obstacleCount; i++)
+            {
+                ref var o = ref _obstacles[i];
+                if (o.BlocksWalker(groundY, height))
+                    best = Mathf.Min(best, CollisionMath.Gap(a0, a1, radius, o));
+            }
+            for (int i = 0; i < _activeCount; i++)
+            {
+                ref var a = ref _agents[_active[i]];
+                best = Mathf.Min(best, CollisionMath.Gap(a0, a1, radius, a.SegA, a.SegB, a.Radius));
+            }
+            return best;
         }
 
         public bool IsDiskClear(Vector3 point, float radius, float height, bool withAnimals)

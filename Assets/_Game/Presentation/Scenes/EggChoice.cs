@@ -22,6 +22,7 @@ namespace PocketWilds.Presentation
         private readonly ContentId[] _offered = new ContentId[MaxSlots];
         private ContentId _remembered;
         private int _wanted;
+        private int _maxShown = -1;
 
         public EggChoice(GameContext context, ContentId fallback)
         {
@@ -123,7 +124,14 @@ namespace PocketWilds.Presentation
                 changed = true;
             }
 
-            int quantity = Mathf.Min(_wanted, MaxQuantity);
+            // × 3 or × 10 unlocking redraws the pill even when the quantity stays the same.
+            int max = MaxQuantity;
+            if (max != _maxShown)
+            {
+                _maxShown = max;
+                changed = true;
+            }
+            int quantity = Mathf.Min(_wanted, max);
             quantity = quantity >= 10 ? 10 : quantity >= 3 ? 3 : 1;
             if (quantity != Quantity)
             {
