@@ -1014,7 +1014,7 @@ namespace PocketWilds.Presentation
             count = Math.Min(count, lanes.Length - taken);
             int sent = 0;
             // First the animals with a free straight lane (no prop to go around, no animal standing in it), then lanes free
-            // of props only, then any.
+            // of props only, then any (they plan around the prop).
             for (int pass = 0; pass < 3 && sent < count; pass++)
             {
                 int tries = 0;

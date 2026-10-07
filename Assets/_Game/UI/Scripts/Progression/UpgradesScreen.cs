@@ -111,7 +111,6 @@ namespace PocketWilds.UI
             _qtyLabel[1].text = text.Get(ProgressionText.QtyTen);
             _qtyLabel[2].text = text.Get(ProgressionText.QtyMax);
             _seeLabel.text = text.Get(ProgressionText.UpgradesSee);
-            _zoneLabel.text = text.Get(ProgressionText.UpgradesNextZone);
             foreach (var card in _cards)
                 card.SetTexts(text);
             _rateTime = -1f;
@@ -157,6 +156,7 @@ namespace PocketWilds.UI
             _zoneBlock.SetActive(footer.HasZone);
             if (footer.HasZone)
             {
+                _zoneLabel.text = footer.ZoneLabel;
                 _zoneTitle.text = footer.ZoneTitle;
                 bool condition = !string.IsNullOrEmpty(footer.ZoneCondition);
                 _zoneCondition.gameObject.SetActive(condition);

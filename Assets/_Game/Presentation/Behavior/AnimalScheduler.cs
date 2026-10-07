@@ -45,6 +45,9 @@ namespace PocketWilds.Presentation
         private const float DetourMargin = 0.08f;
         private const float LookAhead = 0.55f;
         private const float BlockedGiveUp = 0.8f;
+        // A walk toward a far goal (an animal walking into a newly opened zone) waits longer for the way to clear
+        // before it plans again: the animal in the path usually moves on.
+        private const float BlockedGiveUpGoal = 2.5f;
         // A blocked approach this close to its goal counts as arrived (the partner's nose, the rock's side).
         private const float NearEnough = 0.3f;
         private const float MaxTiltDegrees = 14f;
@@ -413,9 +416,12 @@ namespace PocketWilds.Presentation
         public Temperament GetTemperament(int handle) => _agents[handle].Temperament;
         public Vector3 GetPosition(int handle) => _agents[handle].Position;
 
-        /// <summary>T35A: the straight walk from where the animal stands to a point meets no prop and no egg spot.</summary>
-        public bool IsStraightPathClear(int handle, Vector3 target) =>
-            IsValid(handle) && PathClear(ref _agents[handle], _agents[handle].Position, target, out _);
+        /// <summary>
+        /// T35A: the straight walk from where the animal stands to a point meets no prop and no egg spot, with
+        /// <paramref name="extraMargin"/> more room on each side (a walker turns its nose and tail on the way).
+        /// </summary>
+        public bool IsStraightPathClear(int handle, Vector3 target, float extraMargin = 0f) =>
+            IsValid(handle) && PathClear(ref _agents[handle], _agents[handle].Position, target, out _, extraMargin);
 
         /// <summary>T35A: no other animal stands within a body's reach of the straight walk to a point.</summary>
         public bool IsLaneFreeOfAnimals(int handle, Vector3 target)
@@ -1321,7 +1327,7 @@ namespace PocketWilds.Presentation
                     agent.Emerging = false;
             }
 
-            if (agent.Blocked > BlockedGiveUp)
+            if (agent.Blocked > (agent.GoalLegs > 0 ? BlockedGiveUpGoal : BlockedGiveUp))
             {
                 // The way stays blocked: an approach close to its goal counts as arrived, anything else settles here.
                 BlockedWalks++;
@@ -1456,7 +1462,7 @@ namespace PocketWilds.Presentation
         /// The straight walk from <paramref name="from"/> to <paramref name="to"/>, body along the way, meets no
         /// obstacle and no egg spot. <paramref name="blocker"/>: the first one in the way (-2: the egg spot).
         /// </summary>
-        private bool PathClear(ref Agent agent, Vector3 from, Vector3 to, out int blocker)
+        private bool PathClear(ref Agent agent, Vector3 from, Vector3 to, out int blocker, float extraMargin = 0f)
         {
             blocker = -1;
             var f = new Vector2(from.x, from.z);
@@ -1469,7 +1475,7 @@ namespace PocketWilds.Presentation
             // The body sweeps from its tail at the start to its nose at the end.
             var p0 = f + dir * (agent.Body.back * agent.Scale + agent.Radius);
             var p1 = t + dir * (agent.Body.front * agent.Scale - agent.Radius);
-            float radius = agent.Radius + PathMargin;
+            float radius = agent.Radius + PathMargin + extraMargin;
             float groundY = (from.y + to.y) * 0.5f;
             float nearest = float.MaxValue;
             for (int i = 0; i < _obstacleCount; i++)

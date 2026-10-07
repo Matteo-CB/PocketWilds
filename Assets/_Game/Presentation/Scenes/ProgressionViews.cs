@@ -56,6 +56,9 @@ namespace PocketWilds.Presentation
 
         public bool HasZone;
 
+        /// <summary>"Next zone", or "Next biome" once every zone is open.</summary>
+        public string ZoneLabel;
+
         /// <summary>The zone's name, capitalized ("La Prairie fleurie"), under a "Next zone" label.</summary>
         public string ZoneTitle;
         public BigValue ZonePrice;

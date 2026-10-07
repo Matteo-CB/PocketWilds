@@ -183,6 +183,7 @@ Shader "PocketWilds/WaterLite"
                 half glint = pow(saturate(dot(normalWS, h)), 180.0h) * _Sparkle * lit;
                 color += sparkleColor * glint;
 
+                color = PW_ClosedSoften(color, input.positionWS);
                 return half4(MixFog(color, input.fogFactor), 1);
             }
             ENDHLSL

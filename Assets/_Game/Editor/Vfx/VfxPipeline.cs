@@ -65,6 +65,7 @@ namespace PocketWilds.Editor.Vfx
                 Effect(VfxId.MasteryLevelUp, Build("VFX_MasteryLevelUp", material, ConfigureMasteryLevelUp), 1, 2, 1),
                 Effect(VfxId.FavoriteHeart, Build("VFX_FavoriteHeart", material, ConfigureFavoriteHeart), 2, 3, 2),
                 Effect(VfxId.RareGlint, Build("VFX_RareGlint", material, ConfigureRareGlint), 2, 3, 2),
+                Effect(VfxId.ZoneOpen, Build("VFX_ZoneOpen", material, ConfigureZoneOpen), 1, 2, 1),
             };
             catalog.effects = effects.ToArray();
             catalog.lowCountScale = 0.5f;
@@ -742,6 +743,35 @@ namespace PocketWilds.Editor.Vfx
             Bursts(glints, (0f, 1), (0.15f, 1), (0.3f, 1));
             Tile(glints, TileBubble);
             Fade(glints, Color.white, 0.5f, 1.05f, 0.5f);
+        }
+
+        /// <summary>
+        /// H-VFX-102 (T35A): a zone opens. As the hedge sinks, petals and pale leaves lift off along it and drift up,
+        /// a few soft motes of light rise with them (24, under 1.5 s). Played at the middle of the hedge; the box runs
+        /// 7 m along it (world z).
+        /// </summary>
+        private static void ConfigureZoneOpen(GameObject root, Material material)
+        {
+            var petals = AddSystem(root, "Petals", material, true);
+            Life(petals, 1.0f, 1.4f, 0.45f, 0.9f, 0.1f, 0.15f);
+            Colors(petals, new Color(1f, 0.84f, 0.9f, 1f), new Color(0.84f, 0.96f, 0.72f, 1f));
+            Spin(petals, 160f);
+            Gravity(petals, -0.04f);
+            var petalShape = Shape(petals, ParticleSystemShapeType.Box, 0.1f, up: true);
+            petalShape.scale = new Vector3(0.5f, 7f, 0.3f);
+            Bursts(petals, (0f, 8), (0.15f, 6), (0.3f, 4));
+            Tile(petals, TilePetal);
+            Fade(petals, Color.white, 1f, 0.7f);
+
+            var motes = AddSystem(root, "Motes", material, false);
+            Life(motes, 0.8f, 1.2f, 0.2f, 0.45f, 0.06f, 0.09f);
+            Colors(motes, new Color(1f, 0.9f, 0.6f, 1f), Color.white);
+            Gravity(motes, -0.08f);
+            var moteShape = Shape(motes, ParticleSystemShapeType.Box, 0.1f, up: true);
+            moteShape.scale = new Vector3(0.4f, 6f, 0.2f);
+            Bursts(motes, (0.05f, 6));
+            Tile(motes, TileDot);
+            Fade(motes, Color.white, 1f, 0.6f);
         }
 
         // ---------------- Helpers ----------------

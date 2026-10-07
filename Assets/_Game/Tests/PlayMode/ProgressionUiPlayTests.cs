@@ -207,6 +207,67 @@ namespace PocketWilds.Tests.PlayMode
 #endif
         }
 
+        [UnityTest]
+        public IEnumerator EveryZoneOpen_TheForestGateStands_ItsTouchShowsTheGate()
+        {
+#if UNITY_EDITOR
+            GameBootstrap bootstrap = null;
+            yield return Boot(b => bootstrap = b);
+            var context = bootstrap.Context;
+            var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
+            var refuge = entry.Refuge;
+            var presenter = entry.ProgressionScreens;
+            var zones = entry.Zones;
+            Assert.IsNotNull(entry.ZoneKit.gateMesh, "The zone kit carries the Forest's gate.");
+
+            // Every zone to buy, in order (mastery and Light given): the next one is the passage toward the Forest.
+            context.Economy.Grant(CurrencyId.Light, BigValue.FromDouble(1e8), EconomyReason.Debug);
+            context.Progression.Mastery.AddXp(Grassland, 1_000_000);
+            int opened = 0;
+            while (context.Progression.Zones.TryGetNext(Grassland, out var zone))
+            {
+                Assert.IsTrue(context.Progression.Zones.TryOpen(zone.Id, out _), "Zone " + zone.SourceId + " opens.");
+                opened++;
+            }
+            Assert.AreEqual(6, opened, "The Prairie has six zones to open.");
+            Assert.IsTrue(zones.NextIsPassage);
+
+            // The hedge moves on to the passage's seam, the gate standing in it instead of the sign.
+            yield return WaitFor(() => zones.Boundary.IsPlaced && zones.Boundary.HasGate && !zones.Boundary.IsMoving, 40f,
+                "The gate stands at the start of the Forest Edge (the strip's chunks loaded).");
+            Assert.AreEqual(91f, zones.SeamX, 1e-3f, "Seam between the Pond Edge and the Forest Edge.");
+            Assert.IsFalse(zones.Boundary.HasSign, "No price sign before a passage.");
+            Assert.GreaterOrEqual(zones.Boundary.BushCount, 2, "The hedge runs on either side of the gate.");
+            var streamer = entry.Streamer;
+            foreach (var address in new[] { "chunk.grassland.pondedge", "chunk.grassland.forestedge" })
+            {
+                var chunk = streamer.GetChunk(streamer.IndexOf(address));
+                Assert.IsNotNull(chunk, address);
+                foreach (var piece in zones.Boundary.Obstacles)
+                    foreach (var o in chunk.GetWorldObstacles())
+                    {
+                        if (!o.BlocksWalker(piece.baseY, 1.5f))
+                            continue;
+                        float gap = CollisionMath.Gap(piece.a, piece.b, piece.radius, in o);
+                        Assert.GreaterOrEqual(gap, -0.002f, $"The gate or the hedge at {piece.Center} enters a {o.kind} of {address}.");
+                    }
+            }
+
+            // The Upgrades screen points at the next biome; a touch on the gate shows it.
+            yield return WaitFor(() => presenter.Footer.HasZone && presenter.Footer.ZoneLabel == context.Localization.Get("upgrades.biome.next"), 2f,
+                "The block under the cards names the next biome.");
+            var gatePosition = zones.Boundary.GatePosition + new Vector3(0f, 1.2f, 0f);
+            var eye = gatePosition + new Vector3(0f, 6f, -7f);
+            Assert.IsTrue(zones.TryTap(new Ray(eye, (gatePosition - eye).normalized)), "The gate takes the touch.");
+            var gate = Object.FindAnyObjectByType<BiomeGateScreen>();
+            Assert.IsTrue(gate.IsOpen, "The touch shows the Forest's gate.");
+            Assert.IsTrue(gate.SoonShown, "No Forest content yet: Coming soon.");
+#else
+            Assert.Ignore("Editor only.");
+            yield break;
+#endif
+        }
+
         private IEnumerator Boot(Action<GameBootstrap> ready)
         {
 #if UNITY_EDITOR

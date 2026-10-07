@@ -169,8 +169,10 @@ namespace PocketWilds.Editor.UI
             { ProgressionText.UpgradesTotal, "Total: {effect}", "Total : {effect}" },
             { ProgressionText.UpgradesRateAfter, "→ {rate}/s", "→ {rate}/s" },
             { ProgressionText.UpgradesNextZone, "Next zone", "Prochaine zone" },
+            { ProgressionText.UpgradesNextBiome, "Next biome", "Prochain biome" },
             { ProgressionText.UpgradesSee, "See", "Voir" },
             { ProgressionText.UpgradesMasteryNext, "Level {n}: {reward}", "Niveau {n} : {reward}" },
+            { ProgressionText.BiomeMasteryToast, "{mastery}: level {level}", "{mastery} : niveau {level}" },
             // T35A refuge level and its reward card. The score by source, in plain words.
             { ProgressionText.RefugeLevelTitle, "Refuge level", "Niveau du refuge" },
             { ProgressionText.RefugeLevelUp, "Level {n}", "Niveau {n}" },

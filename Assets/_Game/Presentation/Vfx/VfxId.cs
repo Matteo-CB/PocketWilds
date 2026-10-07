@@ -18,7 +18,10 @@ namespace PocketWilds.Presentation
         MasteryLevelUp = 9,
         FavoriteHeart = 10,
         RareGlint = 11,
-        Count = 12,
+
+        /// <summary>T35A H-VFX-102: a zone opens: petals and pale leaves lift off along the sinking hedge.</summary>
+        ZoneOpen = 12,
+        Count = 13,
     }
 
     /// <summary>What a hatch brings that the player did not have: shown by its own effect and the reveal banner.</summary>

@@ -37,8 +37,10 @@ namespace PocketWilds.Presentation
         public const string UpgradesTotal = "upgrades.total";
         public const string UpgradesRateAfter = "upgrades.rate_after";
         public const string UpgradesNextZone = "upgrades.zone.next";
+        public const string UpgradesNextBiome = "upgrades.biome.next";
         public const string UpgradesSee = "upgrades.zone.see";
         public const string UpgradesMasteryNext = "upgrades.mastery.next";
+        public const string BiomeMasteryToast = "biome.mastery.up";
 
         // Refuge level (I-SCR-041) and its reward card.
         public const string RefugeLevelTitle = "refuge.level.title";

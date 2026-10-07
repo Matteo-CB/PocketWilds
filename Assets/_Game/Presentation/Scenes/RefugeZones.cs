@@ -30,13 +30,21 @@ namespace PocketWilds.Presentation
         public const float CameraPastSeam = 2.2f;
 
         private const float GlideSeconds = 1.3f;
+
+        /// <summary>Closed zones read 35 % softer (doc 02, section 4.6), from a little past the hedge, over a soft blend.</summary>
+        public const float ClosedAmount = 0.35f;
+        private const float ClosedOffset = 0.8f;
+        private const float ClosedBlend = 1.6f;
+        private const float ColorWaveSeconds = 1.6f;
+        private const float ColorWaveReducedSeconds = 0.4f;
+        private static readonly int ClosedZoneId = Shader.PropertyToID("_PW_ClosedZone");
         private const int AnimalsWalkingIn = 3;
 
         /// <summary>
         /// After an opening, the walk-in is watched this long: a walker stopped on its way (another animal in the path)
         /// is replaced, so two or three animals really enter the new zone (doc 02, section 4.6).
         /// </summary>
-        private const float WalkInSeconds = 20f;
+        private const float WalkInSeconds = 28f;
         private const float WalkInCheck = 1.5f;
 
         /// <summary>At most this many walkers per opening (the first ones and their replacements).</summary>
@@ -66,6 +74,12 @@ namespace PocketWilds.Presentation
         private int _walkInZone = -1;
         private float _walkInEnd = -1f;
         private float _walkInNext;
+        // The softened band's start (world x) and its sweep when a zone opens: the color comes back in a wave.
+        private float _closedX = float.NaN;
+        private float _waveFrom;
+        private float _waveTo;
+        private float _waveStart = -1f;
+        private float _waveSeconds = ColorWaveSeconds;
         private int _walkInSent;
         private float _time;
 
@@ -116,6 +130,19 @@ namespace PocketWilds.Presentation
             }
         }
 
+        /// <summary>
+        /// Every zone to buy is open: the next one is the passage toward the next biome, closed by the biome's gate
+        /// (doc 02, section 5.2) until that biome opens.
+        /// </summary>
+        public bool NextIsPassage
+        {
+            get
+            {
+                int open = OpenZones;
+                return open < _zones.Length && _zones[open].Role == ZoneRole.Passage;
+            }
+        }
+
         /// <summary>Zones the animals walk on now (open and loaded).</summary>
         public int WalkZones => Math.Max(0, _walkZones);
 
@@ -162,6 +189,17 @@ namespace PocketWilds.Presentation
             }
             if (_walkInEnd >= 0f && time >= _walkInNext)
                 WatchWalkIn(time);
+            if (_waveStart >= 0f)
+            {
+                float t = Mathf.Clamp01((time - _waveStart) / _waveSeconds);
+                float eased = t * t * (3f - 2f * t);
+                SetClosed(Mathf.Lerp(_waveFrom, _waveTo, eased), true);
+                if (t >= 1f)
+                {
+                    _waveStart = -1f;
+                    UpdateClosed();
+                }
+            }
         }
 
         /// <summary>A world tap: on the hedge or the sign it asks for the zone's window.</summary>
@@ -173,15 +211,15 @@ namespace PocketWilds.Presentation
             return true;
         }
 
-        /// <summary>The hedge or the sign of the next zone was touched.</summary>
+        /// <summary>The hedge, the sign or the biome's gate was touched.</summary>
         public event Action SignTapped;
 
-        /// <summary>Where the next zone's sign stands (false while no hedge is placed).</summary>
+        /// <summary>Where the next zone's sign (or the biome's gate) stands (false while no hedge is placed).</summary>
         public bool TryGetSignPosition(out Vector3 position)
         {
-            if (_boundary != null && _boundary.IsPlaced && _boundary.HasSign)
+            if (_boundary != null && _boundary.IsPlaced && (_boundary.HasSign || _boundary.HasGate))
             {
-                position = _boundary.SignPosition;
+                position = _boundary.HasGate ? _boundary.GatePosition : _boundary.SignPosition;
                 return true;
             }
             position = default;
@@ -249,7 +287,7 @@ namespace PocketWilds.Presentation
                     var both = new List<Obstacle>(avoid);
                     both.AddRange(next.GetWorldObstacles());
                     var origin = ZoneOrigin(0);
-                    _boundary.Place(SeamX, origin.z - HalfDepth, origin.z + HalfDepth, ground, both);
+                    _boundary.Place(SeamX, origin.z - HalfDepth, origin.z + HalfDepth, ground, both, NextIsPassage);
                 }
                 else if (!boundaryReady && !_boundary.IsMoving)
                 {
@@ -283,6 +321,8 @@ namespace PocketWilds.Presentation
             _walkZones = loaded;
             _boundaryZone = boundaryZone;
             LoadCapture(boundaryZone);
+            if (_waveStart < 0f)
+                UpdateClosed();
             CameraRangeChanged?.Invoke();
         }
 
@@ -297,8 +337,23 @@ namespace PocketWilds.Presentation
             return WanderArea.Rectangle(west, origin.z - HalfDepth, origin.x + _half - SeamMargin, origin.z + HalfDepth, origin.y);
         }
 
+        /// <summary>The softened band starts a little past the next zone's hedge; nothing is softened once every zone is open.</summary>
+        private void UpdateClosed()
+        {
+            bool closed = OpenZones < _zones.Length;
+            SetClosed(SeamX + ClosedOffset, closed);
+        }
+
+        private void SetClosed(float x, bool on)
+        {
+            _closedX = x;
+            Shader.SetGlobalVector(ClosedZoneId, new Vector4(x, ClosedBlend, on ? ClosedAmount : 0f, 0f));
+        }
+
         public void Dispose()
         {
+            // Other scenes (and captures) never inherit the softened band.
+            Shader.SetGlobalVector(ClosedZoneId, Vector4.zero);
             _progression.Zones.Opened -= _onOpened;
             _boundary?.Dispose();
             if (_capture.IsValid())
@@ -314,9 +369,19 @@ namespace PocketWilds.Presentation
                 return;
             bool reduce = _context.State.Settings.ReduceMotion;
             var at = _boundary != null && _boundary.HasSign ? _boundary.SignPosition : new Vector3(SeamX, 0f, ZoneOrigin(0).z);
-            _context.Audio.Play(AudioEventId.Claim, at, default);
+            // The color comes back over the new zone in a wave from the old hedge to the next one.
+            if (!float.IsNaN(_closedX))
+            {
+                _waveFrom = _closedX;
+                _waveTo = SeamX + ClosedOffset;
+                _waveSeconds = reduce ? ColorWaveReducedSeconds : ColorWaveSeconds;
+                _waveStart = _time;
+            }
+            _context.Audio.Play(AudioEventId.ZoneOpen, at, default);
             _context.Haptics.Play(HapticEventId.Rare);
-            _refuge?.Vfx?.Play(VfxId.MasteryLevelUp, at + new Vector3(0f, 0.4f, 0f), _time);
+            // Petals and leaves lift off along the hedge as it sinks (H-VFX-102), from the middle of the old seam.
+            float hedgeX = _boundary != null && _boundary.IsPlaced ? _boundary.SeamX : at.x;
+            _refuge?.Vfx?.Play(VfxId.ZoneOpen, new Vector3(hedgeX, at.y + 0.3f, ZoneOrigin(0).z), _time);
             _pendingAnimals = AnimalsWalkingIn;
             if (_boundary != null && _boundary.IsPlaced)
             {

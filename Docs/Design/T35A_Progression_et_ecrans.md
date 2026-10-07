@@ -78,7 +78,23 @@ Panneau du bas sur les deux tiers de l'écran : le refuge reste visible au-dessu
   en mots (« Demain », « Dans 2 jours »), jamais en compte à rebours. Puis six silhouettes rondes, le prix et
   « Ouvrir ».
 - **Biome sans contenu.** Il affiche « Bientôt », sans prix ni bouton. C'est le cas de la Forêt dans cette version.
-- **Accès.** La fenêtre sera ouverte par la porte au bout de la Lisière (prefab monde à venir).
+- **Accès.** Toucher la porte de la Forêt dans le monde ouvre la fenêtre (voir plus bas). Quand toutes les zones
+  sont ouvertes, le bas de l'écran Améliorer annonce « Prochain biome : la Forêt », et « Voir » y fait glisser la
+  caméra.
+
+## Porte de la Forêt dans le monde
+
+- **Modèle.** `GL_BiomeGate_Forest`, 1 459 triangles. Deux vieux troncs de part et d'autre du chemin se courbent et
+  se croisent en une arche feuillue. Des branches tressées, avec quelques feuilles, ferment le passage. Bois et
+  feuillage sont ceux des arbres de la Prairie (même matériau, même palette).
+- **Place.** Quand les six zones à acheter sont ouvertes, la frontière suivante est la couture vers la Lisière
+  (x = 91). La porte s'y dresse à la place du panneau, et la haie continue de part et d'autre.
+- **Orientation.** La caméra du jeu regarde le long de la couture. La porte est donc tournée de 15° seulement par
+  rapport à l'écran : son arche se lit de face, ses deux troncs enjambent la couture.
+- **Volumes.** Les deux pieds et le tressage ont des volumes mesurés : rien n'y entre, et la haie s'arrête à ses
+  troncs.
+- **Ouverture.** Quand le contenu de la Forêt arrivera, la porte s'enfoncera comme la haie. La séquence de 2,5 s de
+  la section 5.2 viendra avec elle.
 
 ## Entrée des animaux dans une zone ouverte
 
@@ -88,9 +104,39 @@ Panneau du bas sur les deux tiers de l'écran : le refuge reste visible au-dessu
   - Chaque marcheur va tout droit à sa propre profondeur. Les couloirs sont espacés de 0,9 m, en tenant compte des
     animaux déjà en route.
   - Les animaux dont la ligne droite ne touche aucun décor passent d'abord.
-  - Une marche vers un but replanifie depuis là où elle s'est arrêtée, jusqu'à 6 essais.
-  - Pendant 20 s, toutes les 1,5 s, si moins de trois animaux sont dans la zone ou en route, un autre part (6 au
+  - Une marche vers un but patiente 2,5 s quand un animal lui barre la route (0,8 s pour une marche ordinaire), puis
+    replanifie depuis là où elle s'est arrêtée, jusqu'à 6 essais.
+  - Pendant 28 s, toutes les 1,5 s, si moins de trois animaux sont dans la zone ou en route, un autre part (6 au
     plus par ouverture).
+  - Le test d'ouverture vérifie qu'un animal entre dans la minute : en flânant, les animaux préfèrent les endroits
+    vides et finissent de toute façon par investir la nouvelle zone. Il a réussi 15 fois de suite.
+
+## Zone fermée plus douce
+
+- **Réglage.** La zone fermée est 35 % plus douce (section 4.6) : moins saturée, un peu plus claire, comme une brume
+  de ce qui reste à découvrir. C'est un seul paramètre global, `_PW_ClosedZone` dans `PW_World.hlsl` : où commence
+  la douceur, la largeur du fondu, l'intensité.
+- **Shaders concernés.** Décors, feuillage et herbe, sol : calcul par sommet sur la couleur de base, sans
+  interpolation en plus ni coût par pixel. Eau : par pixel.
+- **Position.** La douceur commence 0,8 m après la haie et se fond sur 1,6 m : la haie et le panneau gardent leurs
+  couleurs.
+- **Ouverture.** À l'ouverture d'une zone, le début de la douceur glisse en 1,6 s jusqu'à la haie suivante (0,4 s
+  avec Réduire les animations) : la couleur revient en vague.
+- **Valeur par défaut.** À zéro, rien ne change. La scène le remet à zéro en sortant, et les captures aussi.
+
+## Sons et effet dédiés
+
+- **Sons.** Synthétisés comme ceux de la tranche, en fa majeur avec tine, cloche de verre et maillet, dans
+  `SourceArt/Audio/Tools/pw_audio_sfx.py` :
+  - J-SFX-UPGRADE-001 `SFX_Upgrade_Buy` : petit pincement qui monte, 3 variantes un ton plus haut chacune ;
+  - J-SFX-UPGRADE-002 `SFX_Upgrade_Milestone` : accord doux de deux notes ;
+  - J-SFX-REWARD-005 `SFX_Reward_ZoneOpen` : feuilles et arpège montant ;
+  - J-SFX-REWARD-006 `SFX_Reward_RefugeLevel` : fanfare douce de quatre notes ;
+  - J-SFX-REWARD-007 `SFX_Reward_BiomeMastery` : deux notes de bois et un bruissement.
+- **Durées.** De 0,6 à 1,4 s, réverbération comprise.
+- **Maîtrise de biome.** Elle joue son son et affiche une ligne calme : « Maîtrise de la Prairie : niveau 2 ».
+- **Effet.** H-VFX-102 `VFX_ZoneOpen` : pétales et feuilles claires qui s'envolent le long de la haie qui s'enfonce,
+  et quelques éclats ronds de lumière. 24 particules, matériau partagé, comptes selon le palier.
 
 ## Fichiers
 
@@ -113,10 +159,7 @@ Panneau du bas sur les deux tiers de l'écran : le refuge reste visible au-dessu
 
 - **Épicerie de friandises.** Elle attend que les friandises servent à quelque chose (souhaits, lien) : vendre un
   objet sans usage serait trompeur.
-- **Porte de la Forêt dans le monde.** `PF_World_BiomeGate_Forest`, une arche de branches de moins de 1 500
-  triangles, au bout de la Lisière. Elle ouvre la fenêtre de porte.
-- **Effets et sons dédiés.**
-  - Effets H-VFX-100 à 105.
-  - Sons J-SFX-UPGRADE-001, J-SFX-UPGRADE-002 et J-SFX-REWARD-005 à 007.
-  - D'ici là, les événements sonores existants sont réutilisés : dépense de Lumière, maîtrise, récompense.
-- **Zone fermée désaturée.** Elle doit être 35 % plus douce, réglée par un paramètre global du matériau.
+- **Effets restants.** H-VFX-100 (achat) et H-VFX-101 (palier) sont faits dans l'interface (éclats ronds, anneau doré
+  et étoiles rondes de la carte). H-VFX-104 (niveau) est fait dans le HUD (anneau de pattes). H-VFX-103 (ouverture de
+  biome) viendra avec le contenu de la Forêt. H-VFX-105 (maîtrise de biome) passe pour l'instant par le son et la
+  ligne du HUD.

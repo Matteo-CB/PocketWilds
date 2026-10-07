@@ -106,7 +106,7 @@ Shader "PocketWilds/GroundMaster"
                 color = lerp(color, c4, input.color.a);
                 color = lerp(color, c5, saturate(input.uv.x));
 
-                output.albedo = color;
+                output.albedo = PW_ClosedSoften(color, position.positionWS);
                 output.ambient = SampleSH(output.normalWS);
                 return output;
             }

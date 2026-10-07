@@ -9,8 +9,10 @@ namespace PocketWilds.Presentation
     /// T35A: the entrance of the next zone to open (doc 02 Améliorations, section 4.6). A low hedge of round bushes
     /// across the seam and a wooden sign on the open side. Pooled renderers made once; placing them never allocates
     /// except the obstacle array (when the next zone changes). The hedge sinks into the ground in 0.5 s when the zone
-    /// opens, and the next one rises at the next seam. Nothing enters anything: each bush and the sign skip any prop,
-    /// water or steep ground, and give their own volumes to the animals, the plants and the birds.
+    /// opens, and the next one rises at the next seam. Before the passage toward the next biome, the biome's gate stands
+    /// in the hedge instead of the sign (doc 02, section 5.2), turned 15 degrees off the camera so its arch reads in
+    /// the game's side view. Nothing enters anything: each bush, the sign and the gate skip any prop, water or steep
+    /// ground, and give their own volumes to the animals, the plants and the birds.
     /// </summary>
     public sealed class ZoneBoundary : IDisposable
     {
@@ -19,15 +21,27 @@ namespace PocketWilds.Presentation
         private const float ReduceMotionSeconds = 0.3f;
         private const float SignSetback = 0.85f;
 
+        /// <summary>The gate's span turns this far from the screen's horizontal (its arch faces the camera, its feet straddle the seam).</summary>
+        public const float GateAngle = 15f;
+
+        /// <summary>Radius of the branches woven between the gate's trunks (they close the way).</summary>
+        private const float WeaveRadius = 0.14f;
+        private const float WeaveHeight = 1.35f;
+
         private readonly ZoneKit _kit;
         private readonly Transform _root;
         private readonly MeshRenderer[] _bushes = new MeshRenderer[MaxBushes];
         private readonly Vector3[] _bushRest = new Vector3[MaxBushes];
+        // Half the capsule segment of each placed piece (its tap spheres spread along it).
+        private readonly float[] _bushReach = new float[MaxBushes];
         // Per hedge piece: half its length (laid along the hedge) and half its depth (its capsule's radius).
         private readonly float[] _halfLength;
         private readonly float[] _halfDepth;
         private readonly MeshRenderer _sign;
+        private readonly MeshRenderer _gate;
         private Vector3 _signRest;
+        private Vector3 _gateRest;
+        private bool _hasGate;
         private int _count;
         private bool _hasSign;
         private Obstacle[] _obstacles = Array.Empty<Obstacle>();
@@ -50,6 +64,9 @@ namespace PocketWilds.Presentation
                 _bushes[i] = MakeRenderer("Hedge_" + i, kit.bushes[i % kinds], kit.material, bushData);
             if (kit.signMesh != null)
                 _sign = MakeRenderer("ZoneSign", kit.signMesh, kit.material, Pack(palettes, kit.signPaletteId, kit.signBrightness));
+            if (kit.gateMesh != null)
+                _gate = MakeRenderer("BiomeGate", kit.gateMesh, kit.gateMaterial != null ? kit.gateMaterial : kit.material,
+                    Pack(palettes, kit.gatePaletteId, kit.gateBrightness));
             Hide();
         }
 
@@ -63,6 +80,10 @@ namespace PocketWilds.Presentation
         public bool HasSign => _hasSign;
         public Vector3 SignPosition => _signRest;
 
+        /// <summary>The biome's gate stands in the hedge (the next zone is the passage toward the next biome).</summary>
+        public bool HasGate => _hasGate;
+        public Vector3 GatePosition => _gateRest;
+
         /// <summary>Volumes of the hedge and the sign (world space). Replaced, not edited, when the hedge moves.</summary>
         public Obstacle[] Obstacles => _obstacles;
 
@@ -71,14 +92,28 @@ namespace PocketWilds.Presentation
         /// <summary>
         /// Stands the hedge across x = <paramref name="seamX"/> from <paramref name="zMin"/> to <paramref name="zMax"/>, on the
         /// ground, clear of every volume in <paramref name="avoid"/> (props and water of both zones). The sign stands on
-        /// the open side near z = 0.
+        /// the open side near z = 0; with <paramref name="gate"/>, the biome's gate stands in the hedge instead.
         /// </summary>
-        public void Place(float seamX, float zMin, float zMax, GroundSurface ground, IReadOnlyList<Obstacle> avoid)
+        public void Place(float seamX, float zMin, float zMax, GroundSurface ground, IReadOnlyList<Obstacle> avoid, bool gate = false)
         {
             SeamX = seamX;
             IsPlaced = true;
             _count = 0;
-            var volumes = new List<Obstacle>(MaxBushes + 1);
+            var volumes = new List<Obstacle>(MaxBushes + 4);
+            _hasGate = false;
+            if (gate && _gate != null)
+            {
+                PlaceGate(seamX, zMin, zMax, ground, avoid, volumes);
+                if (_hasGate)
+                {
+                    // The hedge runs up to the gate's trunks and stops at its woven branches.
+                    var withGate = new List<Obstacle>(avoid);
+                    withGate.AddRange(volumes);
+                    avoid = withGate;
+                }
+            }
+            if (!_hasGate && _gate != null)
+                _gate.gameObject.SetActive(false);
             int kinds = _kit.bushes != null ? _kit.bushes.Length : 0;
             if (kinds > 0)
             {
@@ -109,6 +144,7 @@ namespace PocketWilds.Presentation
                         bush.transform.SetPositionAndRotation(p, Quaternion.Euler(0f, yaw, 0f));
                         bush.gameObject.SetActive(true);
                         _bushRest[_count] = p;
+                        _bushReach[_count] = reach;
                         volumes.Add(new Obstacle(a, b, depth, p.y, 0f, _kit.bushHeight, ObstacleKind.Solid));
                         _count++;
                         kind++;
@@ -125,7 +161,7 @@ namespace PocketWilds.Presentation
                     _bushes[i].gameObject.SetActive(false);
 
             _hasSign = false;
-            if (_sign != null)
+            if (_sign != null && !_hasGate)
             {
                 // Near the middle of the entrance, on the open side, wherever it stands clear.
                 for (int k = 0; k < 9 && !_hasSign; k++)
@@ -149,17 +185,51 @@ namespace PocketWilds.Presentation
             _moveStart = -1f;
         }
 
+        /// <summary>
+        /// The gate across the seam, as near the middle of the entrance as it stands clear: its two trunks on either side
+        /// of the seam, the woven branches between them closing the way.
+        /// </summary>
+        private void PlaceGate(float seamX, float zMin, float zMax, GroundSurface ground, IReadOnlyList<Obstacle> avoid, List<Obstacle> volumes)
+        {
+            float angle = GateAngle * Mathf.Deg2Rad;
+            var span = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * _kit.gateHalfSpan;
+            for (int k = 0; k < 13 && !_hasGate; k++)
+            {
+                float z = (k & 1) == 0 ? k * 0.3f : -(k + 1) * 0.3f;
+                z = Mathf.Clamp(z, zMin + span.y + 0.6f, zMax - span.y - 0.6f);
+                var center = new Vector2(seamX, z);
+                var west = center - span;
+                var east = center + span;
+                float groundY = ground.HeightAt(center.x, center.y);
+                if (!Clear(west, west, _kit.gateTrunkRadius, avoid, groundY) || !Clear(east, east, _kit.gateTrunkRadius, avoid, groundY)
+                    || !Clear(west, east, WeaveRadius, avoid, groundY))
+                    continue;
+                var p = new Vector3(center.x, groundY, center.y);
+                // The mesh spans its x: turn that toward +z by the gate's angle (a negative yaw turns +x toward +z).
+                _gate.transform.SetPositionAndRotation(p, Quaternion.Euler(0f, -GateAngle, 0f));
+                _gate.gameObject.SetActive(true);
+                _gateRest = p;
+                _hasGate = true;
+                volumes.Add(new Obstacle(west, west, _kit.gateTrunkRadius, ground.HeightAt(west.x, west.y), 0f, _kit.gateHeight, ObstacleKind.Solid));
+                volumes.Add(new Obstacle(east, east, _kit.gateTrunkRadius, ground.HeightAt(east.x, east.y), 0f, _kit.gateHeight, ObstacleKind.Solid));
+                volumes.Add(new Obstacle(west, east, WeaveRadius, groundY, 0f, WeaveHeight, ObstacleKind.Solid));
+            }
+        }
+
         public void Hide()
         {
             IsPlaced = false;
             _count = 0;
             _hasSign = false;
+            _hasGate = false;
             _obstacles = Array.Empty<Obstacle>();
             for (int i = 0; i < MaxBushes; i++)
                 if (_bushes[i] != null)
                     _bushes[i].gameObject.SetActive(false);
             if (_sign != null)
                 _sign.gameObject.SetActive(false);
+            if (_gate != null)
+                _gate.gameObject.SetActive(false);
             _moveStart = -1f;
         }
 
@@ -200,11 +270,19 @@ namespace PocketWilds.Presentation
                 return false;
             if (_hasSign && HitsSphere(ray, _signRest + new Vector3(0f, _kit.signHeight * 0.6f, 0f), 0.45f))
                 return true;
+            if (_hasGate)
+            {
+                // The arch: its middle, its two trunks and its top.
+                var dir = Quaternion.Euler(0f, -GateAngle, 0f) * Vector3.right * _kit.gateHalfSpan;
+                if (HitsSphere(ray, _gateRest + new Vector3(0f, 1.1f, 0f), 1.2f) || HitsSphere(ray, _gateRest - dir + Vector3.up * 1.4f, 0.6f)
+                    || HitsSphere(ray, _gateRest + dir + Vector3.up * 1.4f, 0.6f) || HitsSphere(ray, _gateRest + new Vector3(0f, 3f, 0f), 1f))
+                    return true;
+            }
             // Each piece: three spheres along its length (pieces are laid along z).
             for (int i = 0; i < _count; i++)
             {
                 var mid = _bushRest[i] + new Vector3(0f, _kit.bushHeight * 0.5f, 0f);
-                float half = Mathf.Max(0f, _obstacles.Length > i ? (_obstacles[i].b - _obstacles[i].a).magnitude * 0.5f : 0f);
+                float half = _bushReach[i];
                 for (int k = -1; k <= 1; k++)
                     if (HitsSphere(ray, mid + new Vector3(0f, 0f, k * half), 0.5f))
                         return true;
@@ -227,6 +305,8 @@ namespace PocketWilds.Presentation
                 _bushes[i].transform.position = _bushRest[i] - new Vector3(0f, drop, 0f);
             if (_hasSign)
                 _sign.transform.position = _signRest - new Vector3(0f, (1f - eased) * (_kit.signHeight + 0.1f), 0f);
+            if (_hasGate)
+                _gate.transform.position = _gateRest - new Vector3(0f, (1f - eased) * (_kit.gateHeight + 0.2f), 0f);
         }
 
         private static bool Clear(Vector2 a, Vector2 b, float radius, IReadOnlyList<Obstacle> avoid, float groundY)

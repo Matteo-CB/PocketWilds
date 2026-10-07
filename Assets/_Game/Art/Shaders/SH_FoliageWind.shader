@@ -127,7 +127,7 @@ Shader "PocketWilds/FoliageWind"
                 color = lerp(color, c6, half(h1) * _TintJitter * (0.35h + 0.65h * tip));
                 color = lerp(color, c5, saturate(input.uv.x) * _OcclusionStrength);
 
-                output.albedo = color * brightness;
+                output.albedo = PW_ClosedSoften(color * brightness, positionWS);
                 output.ambient = SampleSH(output.normalWS);
                 return output;
             }

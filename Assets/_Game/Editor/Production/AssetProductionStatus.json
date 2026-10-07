@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-07T12:00:00Z",
+  "updatedUtc": "2026-10-07T17:00:00Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -296,7 +296,7 @@
       "task": "T35A",
       "title": "Améliorations, zones, niveau du refuge, portes de biome, maîtrise de biome",
       "status": "IN_PROGRESS",
-      "notes": "Replaces part of T35. Step 1 done 2026-10-07: simulation (UpgradeService, ZoneService, BiomeMasteryService, RefugeLevelService, BiomeGateService, DecorationShopService, TreatStandService, ProgressionConfig with Remote Config bounds), economy and hatch modifiers, save schema 7 (World 2 + Progression section, golden save v7), analytics events 21-29, ProgressionTests. Step 2 done 2026-10-07: open zones in the world (walk area across open zones, next zone kept loaded, hedge GL_ZoneHedge and sign GL_ZoneSign modeled in Blender, camera bounds, opening sequence, animals walk in on parallel lanes with a watch that replaces stopped walkers). Step 3 done 2026-10-07: HUD Upgrades button with its dot and tutorial paw, refuge level badge with level-up ring of paws, touchable Light chip, screens 039 Upgrades, 040 ZoneOpen (real zone captures), 041 RefugeLevel, 042 BiomeGate, level reward card waiting for a calm moment, ProgressionUiPlayTests; design note Docs/Design/T35A_Progression_et_ecrans.md. Open: treat stand UI (waits for a use of treats), Forest gate prop in the world, dedicated VFX H-VFX-100..105 and sounds J-SFX-UPGRADE-001/002, J-SFX-REWARD-005..007, closed zone desaturation."
+      "notes": "Replaces part of T35. Step 1 done 2026-10-07: simulation (UpgradeService, ZoneService, BiomeMasteryService, RefugeLevelService, BiomeGateService, DecorationShopService, TreatStandService, ProgressionConfig with Remote Config bounds), economy and hatch modifiers, save schema 7 (World 2 + Progression section, golden save v7), analytics events 21-29, ProgressionTests. Step 2 done 2026-10-07: open zones in the world (walk area across open zones, next zone kept loaded, hedge GL_ZoneHedge and sign GL_ZoneSign modeled in Blender, camera bounds, opening sequence, animals walk in on parallel lanes with a watch that replaces stopped walkers). Step 3 done 2026-10-07: HUD Upgrades button with its dot and tutorial paw, refuge level badge with level-up ring of paws, touchable Light chip, screens 039 Upgrades, 040 ZoneOpen (real zone captures), 041 RefugeLevel, 042 BiomeGate, level reward card waiting for a calm moment, ProgressionUiPlayTests; design note Docs/Design/T35A_Progression_et_ecrans.md. Forest gate GL_BiomeGate_Forest in the world (2026-10-07). Closed zones 35 % softer (_PW_ClosedZone, per vertex), sounds J-SFX-UPGRADE-001/002 and J-SFX-REWARD-005..007, VFX_ZoneOpen, biome mastery line (2026-10-07). Open: treat stand UI (waits for a use of treats), H-VFX-103 with the Forest content, H-VFX-105."
     },
     {
       "task": "T35B",
@@ -16604,21 +16604,21 @@
     },
     {
       "id": "PF_World_BiomeGate_Forest",
-      "name": "Forest gate (arch of branches)",
+      "name": "GL_BiomeGate_Forest",
       "family": "EnvironmentProp",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Tools/pw_grassland_t35a_props.py",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/Baked/Kit/GL_BiomeGate_Forest.asset",
       "validationGates": [
         "G01",
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 02 Améliorations 5.2 and 12: at the end of the Forest Edge passage, under 1,500 triangles; opens PF_UI_BiomeGate."
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T14:00:00Z",
+      "notes": "Doc 02 Améliorations 5.2 and 12. T35A: two old trunks on either side of the path bending into one leafy arch, branches woven between them with leaves (closed until the Forest opens); 1,459 triangles, the Prairie trees' wood and leaves (MAT_Environment_Common, tree palette). In DEF_ZoneKit_Grassland; ZoneBoundary stands it in the hedge at the passage seam (x = 91) turned 15 degrees off the camera, with measured trunk and weave volumes; a touch shows PF_UI_BiomeGate."
     },
     {
       "id": "H-VFX-100",
@@ -16626,15 +16626,18 @@
       "family": "VFX",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/UI/Scripts/Progression/UpgradeCardView.cs",
+      "runtimePath": "Assets/_Game/UI/Scripts/Progression/UpgradeCardView.cs",
       "validationGates": [
         "G10"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 02 Améliorations 11.6. T35A uses the card motes in the UI meanwhile."
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T17:00:00Z",
+      "notes": "Doc 02 Améliorations 11.6. T35A: in the UI, the card squashes and bounces to 1.06 while six round motes rise.",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-101",
@@ -16642,15 +16645,18 @@
       "family": "VFX",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/UI/Scripts/Progression/UpgradeCardView.cs",
+      "runtimePath": "Assets/_Game/UI/Scripts/Progression/UpgradeCardView.cs",
       "validationGates": [
         "G10"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 02 Améliorations 11.6. T35A: golden ring and round stars on the card meanwhile."
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T17:00:00Z",
+      "notes": "Doc 02 Améliorations 11.6. T35A: in the UI, a golden ring widens around the card with round five-point stars.",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-102",
@@ -16658,15 +16664,18 @@
       "family": "VFX",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
+      "runtimePath": "Assets/_Game/Art/VFX/VFX_ZoneOpen.prefab",
       "validationGates": [
         "G10"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 02 Améliorations 11.6. T35A reuses the mastery level-up effect at the sign meanwhile."
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T17:00:00Z",
+      "notes": "Doc 02 Améliorations 11.6. T35A: VFX_ZoneOpen, petals and pale leaves lift off along the sinking hedge, round motes of light (24 particles, shared additive material, tier counts); the color comes back over the zone in a wave (_PW_ClosedZone sweep).",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-103",
@@ -16690,15 +16699,18 @@
       "family": "VFX",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/UI/Scripts/Hud/RefugeHud.cs",
+      "runtimePath": "Assets/_Game/UI/Scripts/Hud/RefugeHud.cs",
       "validationGates": [
         "G10"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 02 Améliorations 11.6. T35A: the HUD badge grows with a ring of paws meanwhile."
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T17:00:00Z",
+      "notes": "Doc 02 Améliorations 11.6. T35A: in the HUD, the level badge grows and a ring and six paws spread from it (1.2 s).",
+      "passedGates": [
+        "G10"
+      ]
     },
     {
       "id": "H-VFX-105",
@@ -16722,15 +16734,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/SFX_Upgrade_Buy_01.wav",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 02 Améliorations 11.6. T35A plays SpendLight meanwhile."
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T17:00:00Z",
+      "notes": "T35A: a small rising pluck (tine pulled up a third, glass grace note), 3 variants a step apart; 0.15 s cooldown.",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-UPGRADE-002",
@@ -16738,15 +16753,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/SFX_Upgrade_Milestone_01.wav",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 02 Améliorations 11.6. T35A plays MasteryLevelUp meanwhile."
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T17:00:00Z",
+      "notes": "T35A: a soft two-note chord (warm bell F under a tine A, C and F grace notes), about 1 s.",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-REWARD-005",
@@ -16754,15 +16772,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/SFX_Reward_ZoneOpen_01.wav",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 02 Améliorations 11.6. T35A plays Claim meanwhile."
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T17:00:00Z",
+      "notes": "T35A: leaves rustle up as an F major arpeggio rises, about 1.2 s.",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-REWARD-006",
@@ -16770,15 +16791,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/SFX_Reward_RefugeLevel_01.wav",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 02 Améliorations 11.6. T35A plays Claim meanwhile."
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T17:00:00Z",
+      "notes": "T35A: a warm four-note fanfare on tines and bells, F to F, about 1.2 s.",
+      "passedGates": [
+        "G14"
+      ]
     },
     {
       "id": "J-SFX-REWARD-007",
@@ -16786,15 +16810,18 @@
       "family": "Audio",
       "releaseScope": "VerticalSlice",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": null,
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/SFX_Reward_BiomeMastery_01.wav",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Doc 02 Améliorations 11.6."
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T17:00:00Z",
+      "notes": "T35A: two soft wooden notes and a leafy rustle, about 0.8 s; with a calm HUD line \"Meadow mastery: level 2\".",
+      "passedGates": [
+        "G14"
+      ]
     }
   ]
 }

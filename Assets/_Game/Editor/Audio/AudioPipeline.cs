@@ -244,6 +244,12 @@ namespace PocketWilds.Editor.Audio
                 Def(AudioEventId.PurchasePending, "SFX_UI_PurchasePending", AudioGroup.UI, 1, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
                 Def(AudioEventId.SpendLight, "SFX_Currency_SpendLight", AudioGroup.Rewards, 2, 0.1f, 1, 0.9f, pitchJitter: 0.02f),
                 Def(AudioEventId.Claim, "SFX_Reward_Claim", AudioGroup.Rewards, 2, 0.5f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                // T35A: upgrades (a run of purchases plays at most one sound every 0.15 s), zones, refuge level, biome mastery.
+                Def(AudioEventId.UpgradeBuy, "SFX_Upgrade_Buy", AudioGroup.Rewards, 2, 0.15f, 1, pitchJitter: 0.01f),
+                Def(AudioEventId.UpgradeMilestone, "SFX_Upgrade_Milestone", AudioGroup.Rewards, 2, 0.4f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                Def(AudioEventId.ZoneOpen, "SFX_Reward_ZoneOpen", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                Def(AudioEventId.RefugeLevelUp, "SFX_Reward_RefugeLevel", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                Def(AudioEventId.BiomeMasteryUp, "SFX_Reward_BiomeMastery", AudioGroup.Rewards, 2, 0.5f, 1, volumeJitter: 0f, pitchJitter: 0f),
             };
             foreach (var (id, prefix) in new[]
                      {

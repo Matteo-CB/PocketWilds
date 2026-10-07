@@ -40,6 +40,8 @@ namespace PocketWilds.Editor.Capture
             if (active.path != ScenePath && !string.IsNullOrEmpty(active.path) && active.isDirty)
                 return "refused: save or discard changes in " + active.path;
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            // A zone's own picture: never softened like a closed zone (a play session may have left the global set).
+            Shader.SetGlobalVector("_PW_ClosedZone", Vector4.zero);
             var registry = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath).CreateBuilder().Build();
             var lifeKit = AssetDatabase.LoadAssetAtPath<AmbientLifeKit>(GrasslandPipeline.LifeKitPath);
             int level0 = QualitySettings.GetQualityLevel();

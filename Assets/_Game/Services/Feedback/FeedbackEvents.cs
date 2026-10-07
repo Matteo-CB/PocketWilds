@@ -81,6 +81,21 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>T34B2: a small bird flies off near the view (wing beats).</summary>
         BirdTakeOff = 28,
+
+        /// <summary>T35A J-SFX-UPGRADE-001: an upgrade bought (a small rising pluck, three steps).</summary>
+        UpgradeBuy = 29,
+
+        /// <summary>T35A J-SFX-UPGRADE-002: a x2 milestone of Production reached (a soft two-note chord).</summary>
+        UpgradeMilestone = 30,
+
+        /// <summary>T35A J-SFX-REWARD-005: a zone opens (leaves and a rising arpeggio).</summary>
+        ZoneOpen = 31,
+
+        /// <summary>T35A J-SFX-REWARD-006: the refuge levels up (a warm four-note fanfare).</summary>
+        RefugeLevelUp = 32,
+
+        /// <summary>T35A J-SFX-REWARD-007: a biome's mastery levels up (two wooden notes and leaves).</summary>
+        BiomeMasteryUp = 33,
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>

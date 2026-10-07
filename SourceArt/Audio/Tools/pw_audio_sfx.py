@@ -504,6 +504,77 @@ def bird_takeoff(v):
     return wet(x, ROOM, 0.12)
 
 
+# ---------------------------------------------------------------- T35A: upgrades, zones, refuge level, biome mastery
+
+def upgrade_buy(v):
+    """J-SFX-UPGRADE-001: a small pluck that rises (a tine pulled up a third, a glass grace note above it). Three
+    variants a step apart, so a run of purchases climbs instead of repeating one sound."""
+    rng = np.random.default_rng(1100 + v)
+    root = hz(('F5', 'G5', 'A5')[v])
+    t = t_axis(0.5)
+    f = glide(t, root * 0.84, root, 0.025)
+    x = np.sin(phase_of(f)) * env_ad(t, 0.002, 0.11)
+    x += 0.12 * np.sin(phase_of(f * 5.95)) * env_ad(t, 0.0015, 0.02)
+    x += band_noise(len(t), 2500.0, 6000.0, rng) * env_ad(t, 0.0004, 0.003) * 0.03
+    out = np.zeros(samples(0.6))
+    place(out, x * 0.6, 0.0)
+    place(out, glass(root * 2.0, 0.4, 0.35) * 0.12, 0.045)
+    y = fft_filter(out, chain(lowpass(9500.0, 2), highpass(220.0, 2)))
+    return wet(y, ROOM, 0.12)
+
+
+def upgrade_milestone():
+    """J-SFX-UPGRADE-002: a soft chord of two notes (F and A, a warm bell under a tine), the x2 milestone."""
+    rng = np.random.default_rng(1110)
+    out = np.zeros(samples(1.1))
+    place(out, warm_bell(hz('F5'), 0.8, 0.6) * 0.32, 0.0)
+    place(out, tine(hz('A5'), 0.75, 0.75, rng) * 0.42, 0.0)
+    place(out, tine(hz('C6'), 0.65, 0.6, rng) * 0.3, 0.07)
+    place(out, glass(hz('F6'), 0.6, 0.35) * 0.08, 0.12)
+    y = fft_filter(out, chain(lowpass(9000.0, 2), highpass(130.0, 2)))
+    return wet(y, ROOM, 0.2)
+
+
+def zone_open():
+    """J-SFX-REWARD-005: a new zone opens: leaves rustle up as an F major arpeggio rises (about 1.2 s)."""
+    rng = np.random.default_rng(1120)
+    out = np.zeros(samples(1.4))
+    rustle = air(0.75, 900.0, 5200.0, 0.2, 0.45, rng) * 0.09
+    place(out, fft_filter(rustle, chain(lowpass(6000.0, 2), highpass(700.0, 2))), 0.0, release=0.25)
+    for i, note in enumerate(('F4', 'A4', 'C5', 'F5', 'A5')):
+        place(out, tine(hz(note), 0.7, 0.55 + 0.07 * i, rng) * 0.36, 0.08 + 0.09 * i)
+    place(out, warm_bell(hz('C6'), 0.7, 0.5) * 0.14, 0.5)
+    place(out, swell([hz('F4'), hz('C5'), hz('A5')], 0.8, 0.25, 0.4, 0.12), 0.2, release=0.3)
+    y = fft_filter(out, chain(lowpass(9000.0, 2), highpass(110.0, 2)))
+    return wet(y, ROOM, 0.22)
+
+
+def refuge_level_up():
+    """J-SFX-REWARD-006: the refuge levels up: a warm four-note fanfare on bells and tines, F to F (about 1.2 s)."""
+    rng = np.random.default_rng(1130)
+    out = np.zeros(samples(1.3))
+    for i, (note, at) in enumerate((('C5', 0.0), ('F5', 0.09), ('A5', 0.18), ('F6', 0.3))):
+        place(out, tine(hz(note), 0.75, 0.6 + 0.08 * i, rng) * 0.38, at)
+        place(out, warm_bell(hz(note), 0.7, 0.45) * 0.12, at + 0.01)
+    place(out, swell([hz('F4'), hz('A4'), hz('C5')], 0.75, 0.15, 0.4, 0.1), 0.25, release=0.3)
+    place(out, glass(hz('C7'), 0.5, 0.3) * 0.06, 0.35)
+    y = fft_filter(out, chain(lowpass(9000.0, 2), highpass(120.0, 2), peak(3000.0, -2.0, 1.0)))
+    return wet(y, ROOM, 0.22)
+
+
+def biome_mastery_up():
+    """J-SFX-REWARD-007: the biome's mastery grows: two soft wooden notes and a leafy rustle (about 0.8 s)."""
+    rng = np.random.default_rng(1140)
+    out = np.zeros(samples(1.2))
+    place(out, mallet(hz('F5'), 0.7, 0.7) * 0.45, 0.0)
+    place(out, mallet(hz('C6'), 0.7, 0.75) * 0.45, 0.11)
+    place(out, tine(hz('A6'), 0.6, 0.45, rng) * 0.16, 0.16)
+    rustle = air(0.5, 1200.0, 6000.0, 0.08, 0.3, rng) * 0.06
+    place(out, fft_filter(rustle, chain(lowpass(7000.0, 2), highpass(900.0, 2))), 0.05, release=0.2)
+    y = fft_filter(out, chain(lowpass(9000.0, 2), highpass(150.0, 2)))
+    return wet(y, ROOM, 0.16)
+
+
 # ---------------------------------------------------------------- catalog
 
 # name: (recipe, variants, loudness target (loudest 200 ms, K-weighted, LUFS scale), group)
@@ -538,4 +609,10 @@ SFX = {
     'SFX_Animal_Rabbit_Eat': (rabbit_eat, 2, -25.0, 'Animals'),
     'SFX_Animal_Small_Eat': (small_eat, 3, -25.0, 'Animals'),
     'SFX_World_BirdTakeOff': (bird_takeoff, 3, -26.0, 'World'),
+    # T35A
+    'SFX_Upgrade_Buy': (upgrade_buy, 3, -21.0, 'Rewards'),
+    'SFX_Upgrade_Milestone': (lambda v: upgrade_milestone(), 1, -16.0, 'Rewards'),
+    'SFX_Reward_ZoneOpen': (lambda v: zone_open(), 1, -16.0, 'Rewards'),
+    'SFX_Reward_RefugeLevel': (lambda v: refuge_level_up(), 1, -16.0, 'Rewards'),
+    'SFX_Reward_BiomeMastery': (lambda v: biome_mastery_up(), 1, -18.0, 'Rewards'),
 }

@@ -13,6 +13,9 @@ float4 _PW_WindWaves;
 float4 _PW_HeightFog;
 // x: distance over which height fog reaches full strength (m).
 float4 _PW_HeightFogRange;
+// T35A closed zones (doc 02 Améliorations, section 4.6): what lies past the next zone's hedge reads softer.
+// x: world x where the softening starts. y: width of the blend (m). z: amount (0.35 = 35 % softer; 0 = off).
+float4 _PW_ClosedZone;
 
 float PW_Hash21(float2 p)
 {
@@ -35,6 +38,16 @@ float3 PW_WindOffset(float3 originWS, float heightM, float tip)
     float flutter = sin(_Time.y * 8.3 + h * 40.0) * _PW_WindWaves.w;
     float bend = (lean + flutter) * heightM * tip * tip;
     return float3(dir.x * bend, -abs(bend) * 0.3 * tip, dir.y * bend);
+}
+
+// A closed zone's colors, 35 % softer: less saturated and a touch lighter, like the haze of what is still to come.
+// Evaluated per vertex on albedo (per pixel only for water). Zero amount (the default) changes nothing.
+half3 PW_ClosedSoften(half3 color, float3 positionWS)
+{
+    half closed = half(saturate((positionWS.x - _PW_ClosedZone.x) / max(_PW_ClosedZone.y, 0.01)) * _PW_ClosedZone.z);
+    half luma = dot(color, half3(0.299h, 0.587h, 0.114h));
+    half3 soft = lerp(half3(luma, luma, luma), half3(0.93h, 0.95h, 0.91h), 0.18h);
+    return lerp(color, soft, closed);
 }
 
 // Fog factor (1 = clear) combining the scene's linear distance fog and a height fog that pools in the

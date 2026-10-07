@@ -51,6 +51,7 @@ namespace PocketWilds.Presentation
         private readonly StringBuilder _builder = new StringBuilder(96);
         private readonly Action<UpgradePurchase> _onPurchase;
         private readonly Action<RefugeLevelUp> _onLevelUp;
+        private readonly Action<BiomeMasteryGain> _onBiomeMastery;
         private readonly Action _onSignTapped;
 
         private PurchaseQty _qty;
@@ -93,9 +94,11 @@ namespace PocketWilds.Presentation
             _qty = (PurchaseQty)Mathf.Clamp(PlayerPrefs.GetInt(QtyPreference, 0), 0, 2);
             _onPurchase = OnPurchased;
             _onLevelUp = OnLevelUp;
-            _onSignTapped = ShowZoneWindow;
+            _onBiomeMastery = OnBiomeMasteryUp;
+            _onSignTapped = OnBoundaryTapped;
             _progression.Upgrades.Purchased += _onPurchase;
             _progression.Refuge.LeveledUp += _onLevelUp;
+            _progression.Mastery.LeveledUp += _onBiomeMastery;
             if (_zones != null)
                 _zones.SignTapped += _onSignTapped;
 
@@ -333,11 +336,24 @@ namespace PocketWilds.Presentation
             if (_progression.Zones.TryGetNext(_biome, out var zone))
             {
                 footer.HasZone = true;
+                footer.ZoneLabel = Text(ProgressionText.UpgradesNextZone);
                 footer.ZoneTitle = Capitalized(Text(zone.DisplayKey));
                 footer.ZonePrice = _progression.Zones.Price(zone);
                 var state = _progression.Zones.GetState(zone);
                 footer.ZoneAffordable = state == ZoneState.Available;
                 footer.ZoneCondition = state == ZoneState.NeedsMastery ? MasteryLine(_progression.Zones.RequiredMastery(zone)) : string.Empty;
+            }
+            else if (_progression.Gates.TryGetNextLocked(out var biome))
+            {
+                // Every zone is open: the block shows the next biome and its gate (See glides to it).
+                var gate = BuildGateData(biome);
+                string source = _progression.Config.Biomes[Math.Max(0, _progression.Config.BiomeOrder(biome))].SourceId;
+                footer.HasZone = true;
+                footer.ZoneLabel = Text(ProgressionText.UpgradesNextBiome);
+                footer.ZoneTitle = Capitalized(BiomeWithArticle(source));
+                footer.ZonePrice = gate.Price;
+                footer.ZoneAffordable = gate.CanOpen;
+                footer.ZoneCondition = gate.Soon ? Text(ProgressionText.BiomeGateSoon) : FirstUnmet(gate);
             }
             return footer;
         }
@@ -492,7 +508,7 @@ namespace PocketWilds.Presentation
 
         private void OnPurchased(UpgradePurchase purchase)
         {
-            _context.Audio.Play(purchase.MilestoneCrossed ? AudioEventId.MasteryLevelUp : AudioEventId.SpendLight, Vector3.zero, default);
+            _context.Audio.Play(purchase.MilestoneCrossed ? AudioEventId.UpgradeMilestone : AudioEventId.UpgradeBuy, Vector3.zero, default);
             _context.Haptics.Play(purchase.MilestoneCrossed ? HapticEventId.Rare : HapticEventId.TapLight);
             _context.Save?.RequestSave(SaveUrgency.Normal);
             _refuge?.OnUpgradePurchased(purchase);
@@ -524,6 +540,15 @@ namespace PocketWilds.Presentation
         }
 
         // ---------------- Zone window ----------------
+
+        /// <summary>The hedge, the sign or the gate was touched: the next zone's window, or the next biome's gate.</summary>
+        private void OnBoundaryTapped()
+        {
+            if (_zones != null && _zones.NextIsPassage && _progression.Gates.TryGetNextLocked(out var biome))
+                ShowBiomeGate(biome);
+            else
+                ShowZoneWindow();
+        }
 
         /// <summary>The next zone's window (a touch on its hedge or sign).</summary>
         public void ShowZoneWindow()
@@ -680,11 +705,24 @@ namespace PocketWilds.Presentation
         private void OnLevelUp(RefugeLevelUp up)
         {
             _hud?.PlayRefugeLevelUp();
-            _context.Audio.Play(AudioEventId.Claim, Vector3.zero, default);
+            _context.Audio.Play(AudioEventId.RefugeLevelUp, Vector3.zero, default);
             _context.Haptics.Play(HapticEventId.Confirm);
             // The card waits for a calm moment after the badge's celebration (the dot on the badge says it is there).
             _rewardPending = true;
             _lastBusy = _time;
+        }
+
+        /// <summary>
+        /// A biome's mastery grew (section 11.6): two wooden notes and leaves, and one calm line saying the new level
+        /// (the Upgrades screen shows the rest).
+        /// </summary>
+        private void OnBiomeMasteryUp(BiomeMasteryGain gain)
+        {
+            _context.Audio.Play(AudioEventId.BiomeMasteryUp, Vector3.zero, default);
+            _context.Haptics.Play(HapticEventId.TapLight);
+            string source = _progression.Config.Biomes[Math.Max(0, _progression.Config.BiomeOrder(gain.Biome))].SourceId;
+            _refugeHud?.ShowToast(ToastKind.Unlock, Format(Format(Text(ProgressionText.BiomeMasteryToast), "{mastery}",
+                Text(ProgressionText.BiomeMastery(source))), "{level}", gain.LevelAfter.ToString()));
         }
 
         /// <summary>Nothing else on screen and no hatch playing: a card may come.</summary>
@@ -779,6 +817,15 @@ namespace PocketWilds.Presentation
             return data;
         }
 
+        /// <summary>The first condition of a gate still to meet (empty when all are met).</summary>
+        private static string FirstUnmet(in BiomeGateData gate)
+        {
+            for (int i = 0; i < gate.ConditionCount; i++)
+                if (!gate.Conditions[i].Met)
+                    return gate.Conditions[i].Text;
+            return string.Empty;
+        }
+
         private static void AddCondition(ref BiomeGateData data, string text, bool met)
         {
             data.Conditions[data.ConditionCount++] = new GateConditionLine { Text = text, Met = met };
@@ -825,6 +872,7 @@ namespace PocketWilds.Presentation
         {
             _progression.Upgrades.Purchased -= _onPurchase;
             _progression.Refuge.LeveledUp -= _onLevelUp;
+            _progression.Mastery.LeveledUp -= _onBiomeMastery;
             if (_zones != null)
                 _zones.SignTapped -= _onSignTapped;
         }

@@ -34,7 +34,7 @@ namespace PocketWilds.Editor.Environment
             if (start == null)
                 throw new InvalidOperationException("Start chunk missing: " + GrasslandPipeline.ChunkPath);
             // The Prairie's low round bushes as the start chunk draws them: mesh, material, palette, brightness.
-            WorldChunk.PaletteBinding bushA = default, bushB = default;
+            WorldChunk.PaletteBinding bushA = default, bushB = default, tree = default;
             for (int i = 0; i < start.BindingCount; i++)
             {
                 var binding = start.GetBinding(i);
@@ -45,6 +45,8 @@ namespace PocketWilds.Editor.Environment
                     bushA = binding;
                 else if (bushB.renderer == null && name.Contains("Bush_B"))
                     bushB = binding;
+                else if (tree.renderer == null && name.StartsWith("GL_Tree_A", StringComparison.Ordinal))
+                    tree = binding;
             }
             if (bushA.renderer == null || bushB.renderer == null)
                 throw new InvalidOperationException("The start chunk has no Bush_A and Bush_B renderers to copy.");
@@ -66,8 +68,10 @@ namespace PocketWilds.Editor.Environment
             var models = AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<Mesh>().ToArray();
             var hedgeSource = models.FirstOrDefault(m => m.name == "GL_ZoneHedge");
             var signSource = models.FirstOrDefault(m => m.name == "GL_ZoneSign");
+            var gateSource = models.FirstOrDefault(m => m.name == "GL_BiomeGate_Forest");
             var hedge = hedgeSource != null ? GrasslandPipeline.KitMesh(hedgeSource) : null;
             var sign = signSource != null ? GrasslandPipeline.KitMesh(signSource) : null;
+            var gate = gateSource != null ? GrasslandPipeline.KitMesh(gateSource) : null;
 
             var kit = AssetDatabase.LoadAssetAtPath<ZoneKit>(KitPath);
             if (kit == null)
@@ -92,6 +96,18 @@ namespace PocketWilds.Editor.Environment
                 kit.signPaletteId = fence.renderer != null ? fence.paletteId : bushA.paletteId;
                 kit.signBrightness = fence.renderer != null ? fence.brightness : (byte)WorldChunk.NeutralBrightness;
             }
+            // The Forest's gate: the Prairie trees' wood and leaves (their material and palette).
+            kit.gateMesh = gate;
+            if (gate != null)
+            {
+                var treeBinding = tree.renderer != null ? tree : bushA;
+                kit.gateMaterial = treeBinding.renderer.sharedMaterial;
+                kit.gatePaletteId = treeBinding.paletteId;
+                kit.gateBrightness = treeBinding.brightness;
+                kit.gateHalfSpan = 1.25f;
+                kit.gateTrunkRadius = 0.3f;
+                kit.gateHeight = gate.bounds.max.y;
+            }
             EditorUtility.SetDirty(kit);
             var settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
             var group = settings.FindGroup(Group) ?? settings.CreateGroup(Group, false, false, true, null,
@@ -111,7 +127,8 @@ namespace PocketWilds.Editor.Environment
 
             return $"{KitPath}: hedge {string.Join(", ", kit.bushes.Select(m => m.name))} (half length {kit.bushRadius:F2} m, " +
                    $"height {kit.bushHeight:F2} m, {kit.bushes[0].GetIndexCount(0) / 3} triangles), palette {kit.paletteId}, " +
-                   $"sign {(sign != null ? $"{sign.name} ({sign.GetIndexCount(0) / 3} triangles, palette {kit.signPaletteId})" : "not modeled yet")}.";
+                   $"sign {(sign != null ? $"{sign.name} ({sign.GetIndexCount(0) / 3} triangles, palette {kit.signPaletteId})" : "not modeled yet")}, " +
+                   $"gate {(gate != null ? $"{gate.name} ({gate.GetIndexCount(0) / 3} triangles, {kit.gateHeight:F2} m, palette {kit.gatePaletteId})" : "not modeled yet")}.";
         }
 
         private static float Radius(Mesh mesh)

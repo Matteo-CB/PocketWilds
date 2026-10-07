@@ -109,6 +109,9 @@ namespace PocketWilds.Tests.PlayMode
                     covered += (piece.b - piece.a).magnitude + 2f * piece.radius;
             Assert.Greater(covered, 0.7f * 2f * RefugeZones.HalfDepth, $"A hedge across the entrance ({zones.Boundary.BushCount} pieces, {covered:F1} m).");
             Assert.IsTrue(zones.Boundary.HasSign, "The sign stands by the hedge.");
+            var closed = Shader.GetGlobalVector("_PW_ClosedZone");
+            Assert.AreEqual(RefugeZones.ClosedAmount, closed.z, 1e-4f, "The closed zone reads 35 % softer.");
+            Assert.Greater(closed.x, 7f, "The softening starts past the hedge, never on it.");
             AssertHedgeClear(entry, zones);
             Assert.LessOrEqual(refuge.WalkArea.Center.x + refuge.WalkArea.HalfSize.x, 7f - RefugeZones.SeamMargin + 1e-3f,
                 "Animals stop before the hedge.");
@@ -120,9 +123,11 @@ namespace PocketWilds.Tests.PlayMode
             bool entered = false;
             float farthest = float.MinValue;
             string farthestState = null;
-            float end = Time.realtimeSinceStartup + 25f;
+            // Within a minute of play: the first walkers set off at once; one stopped by others plans again or is replaced
+            // (RefugeZones' walk-in watch), and wandering animals prefer the new zone's empty spots anyway.
+            float end = Time.realtimeSinceStartup + 80f;
             float runTime = 0f;
-            while (Time.realtimeSinceStartup < end && runTime < 20f)
+            while (Time.realtimeSinceStartup < end && runTime < 60f)
             {
                 runTime += Time.deltaTime;
                 for (int i = 0; i < scheduler.Count; i++)
@@ -149,6 +154,7 @@ namespace PocketWilds.Tests.PlayMode
             Assert.IsTrue(entered, $"Animals walked into the new zone (farthest: {farthestState}, area {refuge.WalkArea.Center} {refuge.WalkArea.HalfSize}; " +
                 $"agents: {Agents(scheduler)}; obstacles near the seam: {SeamObstacles(scheduler)}).");
             Assert.AreEqual(RefugeController.ArrivalVisibleAnimals + 3, refuge.VisibleAllowance, "Three more animals may be seen.");
+            Assert.Greater(Shader.GetGlobalVector("_PW_ClosedZone").x, 21f, "The color came back over the meadow: the softening moved to the next hedge.");
             entry.Zones.GetCameraRange(out _, out float maxX);
             Assert.Greater(maxX, 21f, "The camera reaches the next hedge.");
 

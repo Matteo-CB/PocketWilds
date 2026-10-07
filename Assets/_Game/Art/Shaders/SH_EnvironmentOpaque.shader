@@ -118,7 +118,7 @@ Shader "PocketWilds/EnvironmentOpaque"
                 color = lerp(color, c4, input.color.a);
                 color = lerp(color, c5, saturate(input.uv.x) * _OcclusionStrength);
 
-                output.albedo = color * brightness;
+                output.albedo = PW_ClosedSoften(color * brightness, position.positionWS);
                 output.ambient = SampleSH(output.normalWS);
                 return output;
             }
