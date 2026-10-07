@@ -20,6 +20,7 @@ namespace PocketWilds.Services.Save
         Pity = 11,
         Shop = 12,
         Analytics = 13,
+        Progression = 14,
     }
 
     public sealed class SaveSection

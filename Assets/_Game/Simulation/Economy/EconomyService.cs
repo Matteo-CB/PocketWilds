@@ -6,8 +6,18 @@ using PocketWilds.Core;
 namespace PocketWilds.Simulation
 {
     /// <summary>
+    /// Multipliers a biome's animals share (doc 02 Améliorations, section 10): Light upgrade x zones x biome mastery.
+    /// Read only when the rate is recomputed, never per frame.
+    /// </summary>
+    public interface IProductionModifiers
+    {
+        double BiomeProductionMultiplier(ContentId biome);
+    }
+
+    /// <summary>
     /// Only gameplay writer of Light and Essence. Production comes from species aggregates:
-    /// rate = sum over species of BaseProduction x (sum of Rarity x Bond) x Mastery x Global.
+    /// rate = sum over species of BaseProduction x (sum of Rarity x Bond) x Mastery x Biome x Global, where Biome is
+    /// the biome's shared multipliers (<see cref="IProductionModifiers"/>).
     /// Advance is O(1) and deterministic for a given state, delta and config.
     /// </summary>
     public sealed class EconomyService
@@ -20,6 +30,7 @@ namespace PocketWilds.Simulation
 
         private BigValue _lightPerSecond;
         private BigValue _globalMultiplier = BigValue.One;
+        private IProductionModifiers? _modifiers;
         private bool _rateDirty = true;
 
         public EconomyService(
@@ -57,6 +68,13 @@ namespace PocketWilds.Simulation
         public void SetGlobalMultiplier(BigValue multiplier)
         {
             _globalMultiplier = multiplier;
+            _rateDirty = true;
+        }
+
+        /// <summary>Biome multipliers (upgrades, zones, biome mastery). Null: none.</summary>
+        public void SetModifiers(IProductionModifiers? modifiers)
+        {
+            _modifiers = modifiers;
             _rateDirty = true;
         }
 
@@ -203,7 +221,8 @@ namespace PocketWilds.Simulation
                 var definition = species[i];
                 int masteryLevel = _state.Mastery.GetLevel(definition.Id);
                 double masteryMultiplier = 1.0 + _config.MasteryPerLevel * masteryLevel;
-                total = BigValue.Add(total, BigValue.FromDouble(definition.BaseProduction * sum * masteryMultiplier));
+                double biomeMultiplier = _modifiers != null ? _modifiers.BiomeProductionMultiplier(definition.Biome) : 1.0;
+                total = BigValue.Add(total, BigValue.FromDouble(definition.BaseProduction * sum * masteryMultiplier * biomeMultiplier));
             }
 
             _lightPerSecond = BigValue.Multiply(total, _globalMultiplier);

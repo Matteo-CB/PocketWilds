@@ -26,6 +26,9 @@ namespace PocketWilds.Simulation
         Event = 9,
         Migration = 10,
         Debug = 11,
+        Decoration = 12,
+        Treat = 13,
+        BiomeGate = 14,
     }
 
     public readonly struct EconomyChange

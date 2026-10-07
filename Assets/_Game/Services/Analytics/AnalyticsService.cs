@@ -493,6 +493,141 @@ namespace PocketWilds.Services.Analytics
             _count++;
         }
 
+        // ---------------- Progression (T35A) ----------------
+
+        private ProgressionServices? _progression;
+        private Action<UpgradePurchase>? _onUpgrade;
+        private Action<ZoneOpening>? _onZone;
+        private Action<BiomeOpening>? _onBiome;
+        private Action<RefugeLevelUp>? _onRefugeLevel;
+        private Action<BiomeMasteryGain>? _onBiomeMastery;
+        private Action<DecorationPurchase>? _onDecoration;
+        private Action<TreatPurchase>? _onTreat;
+
+        /// <summary>Upgrades, zones, biome gates, refuge level, biome mastery, Light decorations, treats (doc 02, section 14).</summary>
+        public void AttachProgression(ProgressionServices? progression)
+        {
+            DetachProgression();
+            _progression = progression;
+            if (progression == null)
+                return;
+            _onUpgrade ??= OnUpgrade;
+            _onZone ??= OnZoneOpened;
+            _onBiome ??= OnBiomeOpened;
+            _onRefugeLevel ??= OnRefugeLevelUp;
+            _onBiomeMastery ??= OnBiomeMasteryUp;
+            _onDecoration ??= OnDecorationBought;
+            _onTreat ??= OnTreatBought;
+            progression.Upgrades.Purchased += _onUpgrade;
+            progression.Zones.Opened += _onZone;
+            progression.Gates.Opened += _onBiome;
+            progression.Refuge.LeveledUp += _onRefugeLevel;
+            progression.Mastery.LeveledUp += _onBiomeMastery;
+            progression.Decorations.Purchased += _onDecoration;
+            progression.Treats.Purchased += _onTreat;
+        }
+
+        /// <summary>The first time the player sees a biome gate, with the conditions it shows met.</summary>
+        public void BiomeGateSeen(ContentId biome, GateConditions met)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.BiomeGateSeen) { U0 = biome.Value, I0 = (int)met };
+            Record(ref e);
+        }
+
+        private void DetachProgression()
+        {
+            var p = _progression;
+            if (p == null)
+                return;
+            p.Upgrades.Purchased -= _onUpgrade;
+            p.Zones.Opened -= _onZone;
+            p.Gates.Opened -= _onBiome;
+            p.Refuge.LeveledUp -= _onRefugeLevel;
+            p.Mastery.LeveledUp -= _onBiomeMastery;
+            p.Decorations.Purchased -= _onDecoration;
+            p.Treats.Purchased -= _onTreat;
+            _progression = null;
+        }
+
+        private static double CostLog10(BigValue cost) => cost.IsZero ? 0.0 : BigValue.Log10(cost);
+
+        private int DaysSinceInstall => Math.Max(0, (int)(_clock.UtcNow - _state.Meta.CreatedUtc).TotalDays);
+
+        private void OnUpgrade(UpgradePurchase purchase)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.UpgradeBuy)
+            {
+                U0 = purchase.Biome.Value,
+                I0 = (int)purchase.Kind,
+                I1 = purchase.LevelFrom,
+                I2 = purchase.LevelTo,
+                D0 = CostLog10(purchase.Cost),
+                I3 = (int)purchase.Qty,
+            };
+            Record(ref e);
+            if (purchase.MilestoneCrossed)
+            {
+                var m = new AnalyticsEvent(AnalyticsEventId.UpgradeMilestone)
+                {
+                    U0 = purchase.Biome.Value, I0 = (int)purchase.Kind, I1 = purchase.LevelTo,
+                };
+                Record(ref m);
+            }
+        }
+
+        private void OnZoneOpened(ZoneOpening opening)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.ZoneOpen)
+            {
+                U0 = opening.Zone.Id.Value,
+                U1 = opening.Zone.Biome.Value,
+                I0 = opening.Zone.ExpansionIndex,
+                D0 = CostLog10(opening.Cost),
+                D1 = Math.Max(0.0, (_clock.UtcNow - _state.Meta.CreatedUtc).TotalMinutes),
+            };
+            Record(ref e);
+        }
+
+        private void OnBiomeOpened(BiomeOpening opening)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.BiomeUnlock)
+            {
+                U0 = opening.Biome.Value,
+                I0 = _state.Progression.Refuge.Level,
+                I1 = DaysSinceInstall,
+                D0 = _state.Meta.TotalPlaySeconds / 60.0,
+            };
+            Record(ref e);
+            Milestone(FunnelMilestone.BiomeUnlock);
+        }
+
+        private void OnRefugeLevelUp(RefugeLevelUp levelUp)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.RefugeLevelUp) { I0 = levelUp.To, D0 = levelUp.Score, I1 = DaysSinceInstall };
+            Record(ref e);
+        }
+
+        private void OnBiomeMasteryUp(BiomeMasteryGain gain)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.BiomeMasteryUp) { U0 = gain.Biome.Value, I0 = gain.LevelAfter };
+            Record(ref e);
+        }
+
+        private void OnDecorationBought(DecorationPurchase purchase)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.DecorationBuyLight)
+            {
+                U0 = purchase.Decoration.Value, I0 = purchase.Copy, D0 = CostLog10(purchase.Cost),
+            };
+            Record(ref e);
+        }
+
+        private void OnTreatBought(TreatPurchase purchase)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.TreatBuy) { U0 = purchase.Treat.Value, D0 = CostLog10(purchase.Cost) };
+            Record(ref e);
+        }
+
         private void Detach()
         {
             if (_economy != null)
@@ -511,6 +646,7 @@ namespace PocketWilds.Services.Analytics
 
         public void Dispose()
         {
+            DetachProgression();
             Detach();
             _sink?.Dispose();
         }

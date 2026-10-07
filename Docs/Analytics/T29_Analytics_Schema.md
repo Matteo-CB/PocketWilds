@@ -55,6 +55,15 @@ s'ajoute à la fin d'un événement.
 | 3 | LoadTime | boot (ms depuis le lancement), chargement de scène (ms) |
 | 10 | Milestone | étape du funnel, secondes depuis l'installation |
 | 20 | Hatch | œuf, espèce, variante, rareté, drapeaux (1 nouvelle espèce, 2 nouvelle variante, 4 gratuit, 8 pitié), coût (mantisse, exposant), niveau de maîtrise |
+| 21 | UpgradeBuy | biome, sorte (0 Production, 1 Nids douillets, 2 Regard curieux), niveau de départ, niveau d'arrivée, log10 du coût, quantité (0 × 1, 1 × 10, 2 Max). T35A |
+| 22 | UpgradeMilestone | biome, sorte, niveau (palier × 2 franchi). T35A |
+| 23 | ZoneOpen | zone, biome, rang de l'agrandissement, log10 du coût, minutes depuis l'installation. T35A |
+| 24 | BiomeUnlock | biome, niveau du refuge, jours depuis l'installation, minutes de jeu. T35A |
+| 25 | BiomeGateSeen | biome, conditions remplies (bits : 1 niveau, 2 espèces, 4 maîtrise, 8 jour, 16 Lumière). T35A |
+| 26 | RefugeLevelUp | niveau, score, jours depuis l'installation. T35A |
+| 27 | BiomeMasteryUp | biome, niveau. T35A |
+| 28 | DecorationBuyLight | décoration, exemplaire, log10 du coût. T35A |
+| 29 | TreatBuy | friandise, log10 du coût. T35A |
 | 30 | Economy | monnaie, raison, variation (mantisse, exposant), solde (mantisse, exposant). Gemmes seulement |
 | 31 | EconomySnapshot | Lumière (mantisse, exposant), production/s (mantisse, exposant), Gemmes, animaux, espèces. Fin de session |
 | 32 | EconomyFlow | monnaie, raison, nombre de changements, somme (mantisse, exposant). Fin de session |

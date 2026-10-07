@@ -33,8 +33,10 @@ namespace PocketWilds.Presentation
             ILocalization localization = null,
             CodexService codex = null,
             StoreService store = null,
-            IAnalytics analytics = null)
+            IAnalytics analytics = null,
+            ProgressionServices progression = null)
         {
+            Progression = progression;
             Clock = clock;
             Content = content;
             Save = save;
@@ -86,6 +88,12 @@ namespace PocketWilds.Presentation
 
         /// <summary>Screens, offers and funnel steps seen by presentation (T29). Never null.</summary>
         public IAnalytics Analytics { get; }
+
+        /// <summary>
+        /// Light upgrades, zones, biome mastery, refuge level, biome gates, Light decorations, treat stand (T35A).
+        /// Null in headless tests that do not need it.
+        /// </summary>
+        public ProgressionServices Progression { get; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

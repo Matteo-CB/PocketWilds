@@ -32,6 +32,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Pity_v4", BuildPity());
             created += WriteIfMissing("GoldenSave_Shop_v5", BuildShop());
             created += WriteIfMissing("GoldenSave_Analytics_v6", BuildAnalytics());
+            created += WriteIfMissing("GoldenSave_Progression_v7", BuildProgression());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -77,7 +78,34 @@ namespace PocketWilds.Editor.Saves
             return state;
         }
 
-        /// <summary>Schema 4: pity counters for an egg and a species.</summary>
+        /// <summary>
+        /// Schema 7 (T35A): two Prairie zones opened, Prairie mastery 4, Light upgrades, refuge level 5 with rewards
+        /// claimed up to 3, two Cute Benches bought, a treat stand filled with one treat bought.
+        /// </summary>
+        private static PlayerState BuildProgression()
+        {
+            var state = BuildAnalytics();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-000000000051");
+            state.Meta.Revision = 210;
+            state.World.Biomes.Clear();
+            state.World.Biomes.Add(new BiomeProgress
+            {
+                Biome = ContentId.FromSource("biome.grassland"), Unlocked = true, Expansions = 2, ZonesOpened = 0b111u,
+                MasteryXp = 600, MasteryLevel = 4, ProductionLevel = 12, NestsLevel = 3, CuriosityLevel = 0,
+            });
+            state.Progression.Refuge.Score = 150;
+            state.Progression.Refuge.Level = 5;
+            state.Progression.Refuge.LastRewardedLevel = 3;
+            state.Progression.DecorationCopies[ContentId.FromSource("decor.bench_cute")] = 2;
+            state.Progression.TreatStand.DayKey = 20261012;
+            state.Progression.TreatStand.Slot0 = ContentId.FromSource("treat.clover_crunch");
+            state.Progression.TreatStand.Slot1 = ContentId.FromSource("treat.clover_crunch");
+            state.Progression.TreatStand.Slot2 = ContentId.FromSource("treat.clover_crunch");
+            state.Progression.TreatStand.BoughtMask = 0b001;
+            state.Progression.Treats[ContentId.FromSource("treat.clover_crunch")] = 1;
+            return state;
+        }
+
         /// <summary>Schema 6: funnel milestones reached and 9 sessions played.</summary>
         private static PlayerState BuildAnalytics()
         {

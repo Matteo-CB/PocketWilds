@@ -14,6 +14,15 @@ namespace PocketWilds.Services.Analytics
         LoadTime = 3,
         Milestone = 10,
         Hatch = 20,
+        UpgradeBuy = 21,
+        UpgradeMilestone = 22,
+        ZoneOpen = 23,
+        BiomeUnlock = 24,
+        BiomeGateSeen = 25,
+        RefugeLevelUp = 26,
+        BiomeMasteryUp = 27,
+        DecorationBuyLight = 28,
+        TreatBuy = 29,
         Economy = 30,
         EconomySnapshot = 31,
         EconomyFlow = 32,
@@ -92,6 +101,25 @@ namespace PocketWilds.Services.Analytics
             AnalyticsEventId.Milestone => new[] { Field.I(0), Field.D(0, 0) },
             // egg, species, variant, rarity, flags, cost mantissa, cost exponent, mastery level
             AnalyticsEventId.Hatch => new[] { Field.U(0), Field.U(1), Field.U(2), Field.I(0), Field.I(1), Field.D(0, 3), Field.I(2), Field.I(3) },
+            // T35A (doc 02 Améliorations, section 14). Costs travel as their log10 (no personal data, any size).
+            // biome, kind, level from, level to, cost log10, quantity mode
+            AnalyticsEventId.UpgradeBuy => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2), Field.D(0, 2), Field.I(3) },
+            // biome, kind, level
+            AnalyticsEventId.UpgradeMilestone => new[] { Field.U(0), Field.I(0), Field.I(1) },
+            // zone, biome, index, cost log10, minutes since install
+            AnalyticsEventId.ZoneOpen => new[] { Field.U(0), Field.U(1), Field.I(0), Field.D(0, 2), Field.D(1, 0) },
+            // biome, refuge level, days since install, play minutes
+            AnalyticsEventId.BiomeUnlock => new[] { Field.U(0), Field.I(0), Field.I(1), Field.D(0, 0) },
+            // biome, conditions met (bits: level, species, mastery, floor, light)
+            AnalyticsEventId.BiomeGateSeen => new[] { Field.U(0), Field.I(0) },
+            // level, score, days since install
+            AnalyticsEventId.RefugeLevelUp => new[] { Field.I(0), Field.D(0, 0), Field.I(1) },
+            // biome, level
+            AnalyticsEventId.BiomeMasteryUp => new[] { Field.U(0), Field.I(0) },
+            // decoration, copy, cost log10
+            AnalyticsEventId.DecorationBuyLight => new[] { Field.U(0), Field.I(0), Field.D(0, 2) },
+            // treat, cost log10
+            AnalyticsEventId.TreatBuy => new[] { Field.U(0), Field.D(0, 2) },
             // currency, reason, delta mantissa, delta exponent, balance mantissa, balance exponent
             AnalyticsEventId.Economy => new[] { Field.I(0), Field.I(1), Field.D(0, 3), Field.I(2), Field.D(1, 3), Field.I(3) },
             // light mantissa, light exponent, rate mantissa, rate exponent, gems, animals, species

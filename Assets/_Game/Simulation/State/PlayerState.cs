@@ -21,6 +21,7 @@ namespace PocketWilds.Simulation
         public PityState Pity { get; } = new PityState();
         public ShopState Shop { get; } = new ShopState();
         public AnalyticsState Analytics { get; } = new AnalyticsState();
+        public ProgressionState Progression { get; } = new ProgressionState();
 
         public static PlayerState CreateNew(DateTimeOffset utcNow)
         {
@@ -100,11 +101,29 @@ namespace PocketWilds.Simulation
         public long Gems;
     }
 
+    /// <summary>
+    /// One biome's progression (doc 02 Améliorations, section 13.2). Zones are bits in their order: bit 0 the
+    /// arrival zone, bits 1 to n the zones to open, the last bit the passage toward the next biome.
+    /// </summary>
     public struct BiomeProgress
     {
         public ContentId Biome;
         public bool Unlocked;
+
+        /// <summary>Zones opened by purchase (the arrival and the passage never count).</summary>
         public int Expansions;
+
+        public uint ZonesOpened;
+
+        /// <summary>Biome mastery XP gathered in total (never reset) and the level it gives.</summary>
+        public long MasteryXp;
+        public int MasteryLevel;
+
+        public int ProductionLevel;
+        public int NestsLevel;
+        public int CuriosityLevel;
+
+        public bool IsZoneOpen(int zoneIndex) => zoneIndex >= 0 && zoneIndex < 32 && (ZonesOpened & (1u << zoneIndex)) != 0;
     }
 
     public sealed class WorldProgressState

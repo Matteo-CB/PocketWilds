@@ -29,6 +29,16 @@ namespace PocketWilds.Simulation
         VariantBonus = 3,
     }
 
+    /// <summary>
+    /// What the Light upgrades change in a hatch (doc 02 Améliorations, sections 3.3 and 3.4): Cozy Nests lowers the
+    /// egg prices of a biome, Curious Eye adds undiscovered variant chance. Never the rarity odds.
+    /// </summary>
+    public interface IHatchModifiers
+    {
+        double EggPriceMultiplier(ContentId biome);
+        double VariantChanceBonus(ContentId biome);
+    }
+
     /// <summary>Immutable outcome handed to presentation. The animal is already saved in the collection.</summary>
     public readonly struct HatchResult
     {
@@ -101,6 +111,7 @@ namespace PocketWilds.Simulation
         private readonly ISaveScheduler? _save;
         private readonly MasteryService? _mastery;
         private readonly uint _profileSeed;
+        private IHatchModifiers? _modifiers;
 
         /// <summary>Variant dense indices per species and rarity tier, built once.</summary>
         private readonly Dictionary<ContentId, int[][]> _variantsBySpeciesTier;
@@ -145,12 +156,25 @@ namespace PocketWilds.Simulation
         /// <summary>The first animal of a profile comes from the tutorial egg, without a cost.</summary>
         public bool IsNextHatchFree => _state.Collection.Count == 0;
 
+        /// <summary>Light upgrades (Cozy Nests, Curious Eye). Null: none.</summary>
+        public void SetModifiers(IHatchModifiers? modifiers) => _modifiers = modifiers;
+
         public BigValue GetCost(ContentId eggId)
         {
             if (!_content.Eggs.TryGet(eggId, out var egg))
                 return BigValue.Zero;
             _state.World.EggPurchasesInCycle.TryGetValue(eggId, out int bought);
-            return Cost(egg, bought);
+            var cost = Cost(egg, bought);
+            if (_modifiers == null)
+                return cost;
+            double multiplier = _modifiers.EggPriceMultiplier(egg.Biome);
+            if (multiplier >= 1.0)
+                return cost;
+            var reduced = BigValue.Multiply(cost, multiplier);
+            // Whole Light while that matters, never below 1.
+            return reduced.Exponent10 < 15
+                ? BigValue.FromDouble(Math.Max(1.0, Math.Round(reduced.ToDoubleClamped(), MidpointRounding.AwayFromZero)))
+                : reduced;
         }
 
         public static BigValue Cost(EggDefinition egg, int bought)
@@ -333,7 +357,9 @@ namespace PocketWilds.Simulation
                 if (missing > 0)
                 {
                     _state.Pity.VariantMisses.TryGetValue(species, out int variantMisses);
-                    if (rng.NextDouble() < VariantBonus(species, variantMisses))
+                    // Curious Eye adds its points on top of the protection (at most 30 % + 10 points).
+                    double curiosity = _modifiers != null ? _modifiers.VariantChanceBonus(egg.Biome) : 0.0;
+                    if (rng.NextDouble() < VariantBonus(species, variantMisses) + curiosity)
                     {
                         int pick = rng.Next(missing);
                         for (int i = 0; i < candidates.Length; i++)

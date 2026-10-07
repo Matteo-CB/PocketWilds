@@ -12,6 +12,7 @@ namespace PocketWilds.Services.Save
             new Migration0003AddPity(),
             new Migration0004AddShop(),
             new Migration0005AddAnalytics(),
+            new Migration0006AddProgression(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -81,6 +82,21 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 5;
         public int ToVersion => 6;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 6 to 7: zones, biome mastery and Light upgrades per biome (World section 2), and the Progression section
+    /// (refuge level, Light decorations, treat stand). Nothing to convert: a World 1 section reads its zone count as
+    /// the arrival zone plus that many zones opened, and the refuge level is computed from the profile on load.
+    /// </summary>
+    public sealed class Migration0006AddProgression : ISaveMigration
+    {
+        public int FromVersion => 6;
+        public int ToVersion => 7;
 
         public void Apply(SaveDocument document)
         {

@@ -47,7 +47,21 @@ namespace PocketWilds.Tests.EditMode
             state.Wallet.LifetimeLight = BigValue.FromMantissaExponent(9.9, 130);
             state.Wallet.Essence = 77;
             state.Wallet.Gems = 1234;
-            state.World.Biomes.Add(new BiomeProgress { Biome = ContentId.FromSource("biome.grassland"), Unlocked = true, Expansions = 4 });
+            state.World.Biomes.Add(new BiomeProgress
+            {
+                Biome = ContentId.FromSource("biome.grassland"), Unlocked = true, Expansions = 4, ZonesOpened = 0b11111u,
+                MasteryXp = 4_321, MasteryLevel = 10, ProductionLevel = 27, NestsLevel = 9, CuriosityLevel = 3,
+            });
+            state.Progression.Refuge.Score = 512;
+            state.Progression.Refuge.Level = 11;
+            state.Progression.Refuge.LastRewardedLevel = 9;
+            state.Progression.Refuge.PendingEssenceFromLevels = 5;
+            state.Progression.DecorationCopies[ContentId.FromSource("decor.bench_cute")] = 3;
+            state.Progression.TreatStand.DayKey = 20261007;
+            state.Progression.TreatStand.Slot0 = ContentId.FromSource("treat.clover_crunch");
+            state.Progression.TreatStand.Slot2 = ContentId.FromSource("treat.toasted_hazelnut");
+            state.Progression.TreatStand.BoughtMask = 0b101;
+            state.Progression.Treats[ContentId.FromSource("treat.clover_crunch")] = 4;
             state.World.EggPurchasesInCycle[ContentId.FromSource("egg.grassland.basic")] = 19;
             state.World.RenewalCount = 2;
             for (int i = 0; i < 10; i++)
@@ -98,7 +112,26 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual(original.Wallet.LifetimeLight, loaded.Wallet.LifetimeLight);
             Assert.AreEqual(77, loaded.Wallet.Essence);
             Assert.AreEqual(1234, loaded.Wallet.Gems);
-            Assert.AreEqual(4, loaded.World.Biomes[0].Expansions);
+            var grassland = loaded.World.Biomes[0];
+            Assert.AreEqual(4, grassland.Expansions);
+            Assert.AreEqual(0b11111u, grassland.ZonesOpened);
+            Assert.AreEqual(4_321, grassland.MasteryXp);
+            Assert.AreEqual(10, grassland.MasteryLevel);
+            Assert.AreEqual(27, grassland.ProductionLevel);
+            Assert.AreEqual(9, grassland.NestsLevel);
+            Assert.AreEqual(3, grassland.CuriosityLevel);
+            var progression = loaded.Progression;
+            Assert.AreEqual(512, progression.Refuge.Score);
+            Assert.AreEqual(11, progression.Refuge.Level);
+            Assert.AreEqual(9, progression.Refuge.LastRewardedLevel);
+            Assert.AreEqual(5, progression.Refuge.PendingEssenceFromLevels);
+            Assert.AreEqual(3, progression.DecorationCopies[ContentId.FromSource("decor.bench_cute")]);
+            Assert.AreEqual(20261007, progression.TreatStand.DayKey);
+            Assert.AreEqual(ContentId.FromSource("treat.clover_crunch"), progression.TreatStand.Slot0);
+            Assert.AreEqual(ContentId.None, progression.TreatStand.Slot1);
+            Assert.AreEqual(ContentId.FromSource("treat.toasted_hazelnut"), progression.TreatStand.Slot2);
+            Assert.AreEqual(0b101, progression.TreatStand.BoughtMask);
+            Assert.AreEqual(4, progression.Treats[ContentId.FromSource("treat.clover_crunch")]);
             Assert.AreEqual(19, loaded.World.EggPurchasesInCycle[ContentId.FromSource("egg.grassland.basic")]);
             Assert.AreEqual(2, loaded.World.RenewalCount);
 
@@ -364,6 +397,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Pity_v4")]
         [TestCase("GoldenSave_Shop_v5")]
         [TestCase("GoldenSave_Analytics_v6")]
+        [TestCase("GoldenSave_Progression_v7")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -374,22 +408,23 @@ namespace PocketWilds.Tests.EditMode
             var result = service.LoadOrCreate();
             Assert.AreEqual(SaveLoadOutcome.Loaded, result.Outcome, string.Join("; ", result.Problems));
             var state = service.State;
+            int version = int.Parse(name.Substring(name.LastIndexOf("_v", StringComparison.Ordinal) + 2));
             if (name.EndsWith("_v1"))
             {
                 Assert.AreEqual(1, result.FromSchemaVersion);
                 Assert.AreEqual(SaveSchema.CurrentVersion - 1, result.MigrationsApplied);
                 Assert.IsFalse(state.Offline.HasRate, "Schema 1 has no exit snapshot: the rate is rebuilt.");
             }
-            if (!name.EndsWith("_v4") && !name.EndsWith("_v5") && !name.EndsWith("_v6"))
+            if (version < 4)
                 Assert.AreEqual(0, state.Pity.NewSpeciesMisses.Count + state.Pity.VariantMisses.Count, "Older saves start without pity.");
-            if (!name.EndsWith("_v5") && !name.EndsWith("_v6"))
+            if (version < 5)
                 Assert.AreEqual(0, state.Shop.Offers.Count + state.Shop.PaidPurchases, "Older saves start without shop history.");
-            if (!name.EndsWith("_v6"))
+            if (version < 6)
             {
                 Assert.AreEqual(0, state.Analytics.Sessions, "Older saves start counting sessions now.");
                 Assert.AreEqual(state.Collection.Count > 0, state.Analytics.Has(FunnelMilestone.FirstHatch), "Veterans never send a first hatch.");
             }
-            if (!name.EndsWith("_v3") && !name.EndsWith("_v4") && !name.EndsWith("_v5") && !name.EndsWith("_v6"))
+            if (version < 3)
             {
                 Assert.IsTrue(state.Codex.SeenSpecies.SetEquals(state.Collection.DiscoveredSpecies), "Older saves: everything found counts as seen.");
                 Assert.IsTrue(state.Codex.SeenVariants.SetEquals(state.Collection.DiscoveredVariants));
@@ -421,6 +456,30 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(37, state.World.EggPurchasesInCycle[ContentId.FromSource("egg.grassland.basic")]);
                     Assert.AreEqual("fr", state.Settings.LanguageCode);
                     Assert.IsTrue(state.Settings.ReduceMotion);
+                    // World 1 counted zones bought: the arrival zone plus three opened, nothing else.
+                    var day7Grassland = state.World.Biomes.Find(b => b.Biome == ContentId.FromSource("biome.grassland"));
+                    Assert.AreEqual(3, day7Grassland.Expansions);
+                    Assert.AreEqual(0b1111u, day7Grassland.ZonesOpened);
+                    Assert.AreEqual(0, day7Grassland.ProductionLevel);
+                    Assert.AreEqual(1, state.Progression.Refuge.Level, "Computed by the game on load, not stored by schema 1.");
+                    break;
+
+                case "GoldenSave_Progression_v7":
+                    Assert.AreEqual(210, state.Meta.Revision);
+                    var grassland = state.World.Biomes.Find(b => b.Biome == ContentId.FromSource("biome.grassland"));
+                    Assert.AreEqual(0b111u, grassland.ZonesOpened);
+                    Assert.AreEqual(2, grassland.Expansions);
+                    Assert.AreEqual(600, grassland.MasteryXp);
+                    Assert.AreEqual(4, grassland.MasteryLevel);
+                    Assert.AreEqual(12, grassland.ProductionLevel);
+                    Assert.AreEqual(3, grassland.NestsLevel);
+                    Assert.AreEqual(150, state.Progression.Refuge.Score);
+                    Assert.AreEqual(5, state.Progression.Refuge.Level);
+                    Assert.AreEqual(3, state.Progression.Refuge.LastRewardedLevel);
+                    Assert.AreEqual(2, state.Progression.DecorationCopies[ContentId.FromSource("decor.bench_cute")]);
+                    Assert.AreEqual(0b001, state.Progression.TreatStand.BoughtMask);
+                    Assert.AreEqual(1, state.Progression.Treats[ContentId.FromSource("treat.clover_crunch")]);
+                    Assert.AreEqual(9, state.Analytics.Sessions);
                     break;
 
                 case "GoldenSave_Offline_v2":

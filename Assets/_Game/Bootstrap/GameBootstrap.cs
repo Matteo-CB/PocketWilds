@@ -68,6 +68,7 @@ namespace PocketWilds.Bootstrap
         private MasteryService _mastery;
         private OfflineService _offline;
         private CodexService _codex;
+        private ProgressionServices _progression;
         private GrantService _grants;
         private OfferService _offers;
         private StoreService _store;
@@ -216,6 +217,8 @@ namespace PocketWilds.Bootstrap
                 _hatch = new HatchService(_save.State, _content, _economy, _clock, _save, _mastery);
                 _offline = new OfflineService(_save.State, _economy, _clock);
                 _codex = new CodexService(_save.State, _content, _save, _mastery);
+                // T35A: upgrades, zones, biome mastery, refuge level, gates; plugs its multipliers into economy and hatch.
+                _progression = new ProgressionServices(_save.State, _content, _economy, _hatch, _clock, _save);
                 _save.BeforeSerialize += _offline.CaptureSnapshot;
                 _grants = new GrantService(_content, _save.State, _save);
                 _offers = new OfferService(_content, _save.State, _grants, _save);
@@ -244,6 +247,7 @@ namespace PocketWilds.Bootstrap
                 _analyticsOutbox = new AnalyticsOutbox(directory, CreateAnalyticsTransport());
                 _analytics = new AnalyticsService(_save.State, _content, _clock, _save, device, _analyticsOutbox, consent);
                 _analytics.Attach(_economy, _hatch, _store);
+                _analytics.AttachProgression(_progression);
                 _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
             });
 
@@ -310,7 +314,7 @@ namespace PocketWilds.Bootstrap
                 var catalog = _options.VisualCatalogOverride != null ? _options.VisualCatalogOverride
                     : _animalCatalog.IsValid() && _animalCatalog.Status == AsyncOperationStatus.Succeeded ? _animalCatalog.Result : null;
                 Context = new GameContext(_clock, _content, _save, _economy, _hatch, _quality, _frameRate, _palettes, visuals, catalog,
-                    _audio, _haptics, _offline, _localization, _codex, _store, _analytics);
+                    _audio, _haptics, _offline, _localization, _codex, _store, _analytics, _progression);
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);

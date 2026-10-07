@@ -4,6 +4,15 @@ event,2,00000002,SessionEnd
 event,3,00000003,LoadTime
 event,10,0000000a,Milestone
 event,20,00000014,Hatch
+event,21,00000015,UpgradeBuy
+event,22,00000016,UpgradeMilestone
+event,23,00000017,ZoneOpen
+event,24,00000018,BiomeUnlock
+event,25,00000019,BiomeGateSeen
+event,26,0000001a,RefugeLevelUp
+event,27,0000001b,BiomeMasteryUp
+event,28,0000001c,DecorationBuyLight
+event,29,0000001d,TreatBuy
 event,30,0000001e,Economy
 event,31,0000001f,EconomySnapshot
 event,32,00000020,EconomyFlow
@@ -48,6 +57,9 @@ economy_reason,8,00000008,Renewal
 economy_reason,9,00000009,Event
 economy_reason,10,0000000a,Migration
 economy_reason,11,0000000b,Debug
+economy_reason,12,0000000c,Decoration
+economy_reason,13,0000000d,Treat
+economy_reason,14,0000000e,BiomeGate
 rarity,0,00000000,Common
 rarity,1,00000001,Uncommon
 rarity,2,00000002,Rare

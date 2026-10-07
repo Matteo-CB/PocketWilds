@@ -31,8 +31,11 @@ namespace PocketWilds.Services.Save
     public static class SaveSchema
     {
         /// <summary>Bump on any persisted data change, with a migration and updated golden saves.</summary>
-        /// <summary>2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids). 4: Pity counters.</summary>
-        public const int CurrentVersion = 6;
+        /// <summary>
+        /// 2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids). 4: Pity counters.
+        /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
+        /// </summary>
+        public const int CurrentVersion = 7;
     }
 
     /// <summary>
@@ -43,7 +46,8 @@ namespace PocketWilds.Services.Save
     {
         private const ushort MetaVersion = 1;
         private const ushort WalletVersion = 1;
-        private const ushort WorldVersion = 1;
+        // 2: per biome, zones opened, mastery XP and level, upgrade levels.
+        private const ushort WorldVersion = 2;
         private const ushort CollectionVersion = 1;
         private const ushort NamesVersion = 1;
         private const ushort MasteryVersion = 1;
@@ -54,6 +58,7 @@ namespace PocketWilds.Services.Save
         private const ushort PityVersion = 1;
         private const ushort ShopVersion = 1;
         private const ushort AnalyticsVersion = 1;
+        private const ushort ProgressionVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -156,6 +161,10 @@ namespace PocketWilds.Services.Save
             output.WriteInt32(state.Analytics.Sessions);
             EndSection(output, mark);
 
+            mark = BeginSection(output, SaveSectionId.Progression, ProgressionVersion);
+            WriteProgression(output, state.Progression);
+            EndSection(output, mark);
+
             SaveFileFormat.FinishPayload(output);
         }
 
@@ -191,6 +200,12 @@ namespace PocketWilds.Services.Save
                 output.WriteContentId(biome.Biome);
                 output.WriteBool(biome.Unlocked);
                 output.WriteInt32(biome.Expansions);
+                output.WriteUInt32(biome.ZonesOpened);
+                output.WriteInt64(biome.MasteryXp);
+                output.WriteInt32(biome.MasteryLevel);
+                output.WriteInt32(biome.ProductionLevel);
+                output.WriteInt32(biome.NestsLevel);
+                output.WriteInt32(biome.CuriosityLevel);
             }
 
             output.WriteInt32(world.EggPurchasesInCycle.Count);
@@ -309,6 +324,9 @@ namespace PocketWilds.Services.Save
                     // Saves older than schema 6: milestones already reached never fire again as "first".
                     AnalyticsState.InferFrom(state);
                 }
+                // Saves older than schema 7 have no Progression section: the refuge level is computed on load.
+                if (document.TryGetSection(SaveSectionId.Progression, out var progression))
+                    ReadProgression(progression, state.Progression);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -345,6 +363,52 @@ namespace PocketWilds.Services.Save
             meta.Revision = r.ReadInt64();
             meta.AppVersion = r.ReadString() ?? string.Empty;
             meta.TotalPlaySeconds = r.ReadDouble();
+        }
+
+        private static void WriteProgression(ByteBufferWriter output, ProgressionState progression)
+        {
+            var refuge = progression.Refuge;
+            output.WriteInt64(refuge.Score);
+            output.WriteInt32(refuge.Level);
+            output.WriteInt32(refuge.LastRewardedLevel);
+            output.WriteInt32(refuge.PendingEssenceFromLevels);
+            WriteCounters(output, progression.DecorationCopies);
+            var stand = progression.TreatStand;
+            output.WriteInt32(stand.DayKey);
+            output.WriteContentId(stand.Slot0);
+            output.WriteContentId(stand.Slot1);
+            output.WriteContentId(stand.Slot2);
+            output.WriteInt32(stand.BoughtMask);
+            WriteCounters(output, progression.Treats);
+        }
+
+        private static void ReadProgression(SaveSection section, ProgressionState progression)
+        {
+            RequireVersion(section, ProgressionVersion);
+            var r = section.CreateReader();
+            var refuge = progression.Refuge;
+            refuge.Score = r.ReadInt64();
+            refuge.Level = Math.Max(1, r.ReadInt32());
+            refuge.LastRewardedLevel = Math.Max(1, r.ReadInt32());
+            refuge.PendingEssenceFromLevels = r.ReadInt32();
+            ReadCounters(ref r, progression.DecorationCopies);
+            var stand = progression.TreatStand;
+            stand.DayKey = r.ReadInt32();
+            stand.Slot0 = r.ReadContentId();
+            stand.Slot1 = r.ReadContentId();
+            stand.Slot2 = r.ReadContentId();
+            stand.BoughtMask = r.ReadInt32();
+            ReadCounters(ref r, progression.Treats);
+        }
+
+        private static void ReadCounters(ref ByteBufferReader r, System.Collections.Generic.Dictionary<ContentId, int> counters)
+        {
+            int count = ReadCount(ref r);
+            for (int i = 0; i < count; i++)
+            {
+                var id = r.ReadContentId();
+                counters[id] = r.ReadInt32();
+            }
         }
 
         private static void WriteCounters(ByteBufferWriter output, System.Collections.Generic.Dictionary<ContentId, int> counters)
@@ -426,12 +490,28 @@ namespace PocketWilds.Services.Save
             int biomeCount = ReadCount(ref r);
             for (int i = 0; i < biomeCount; i++)
             {
-                world.Biomes.Add(new BiomeProgress
+                var biome = new BiomeProgress
                 {
                     Biome = r.ReadContentId(),
                     Unlocked = r.ReadBool(),
                     Expansions = r.ReadInt32(),
-                });
+                };
+                if (section.Version >= 2)
+                {
+                    biome.ZonesOpened = r.ReadUInt32();
+                    biome.MasteryXp = r.ReadInt64();
+                    biome.MasteryLevel = r.ReadInt32();
+                    biome.ProductionLevel = r.ReadInt32();
+                    biome.NestsLevel = r.ReadInt32();
+                    biome.CuriosityLevel = r.ReadInt32();
+                }
+                else
+                {
+                    // World 1 only counted zones bought: the arrival zone (open with the biome) and the first ones.
+                    biome.Expansions = Math.Max(0, Math.Min(biome.Expansions, 30));
+                    biome.ZonesOpened = biome.Unlocked ? (2u << biome.Expansions) - 1u : 0u;
+                }
+                world.Biomes.Add(biome);
             }
 
             int eggCount = ReadCount(ref r);
