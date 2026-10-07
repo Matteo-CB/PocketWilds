@@ -514,6 +514,21 @@ namespace PocketWilds.Presentation
                     if (flat.sqrMagnitude > 1e-4f)
                         a.Forward = Vector3.Slerp(a.Forward, flat.normalized, Mathf.Clamp01(dt * 5f));
                     a.Pitch = Mathf.Clamp(-tangent.y * 6f, -25f, 25f);
+                    // Coming down, an animal walks under the way or onto the landing spot: the bird pulls up and lands
+                    // elsewhere; with no way out, it holds above the animal until it has passed.
+                    if (t > 0.5f && t < 1f && (AnimalInTheWay(a.Position, s.Radius + 0.12f, out var below, out float top) || !GroundFree(ref a, s, index, a.Target)))
+                    {
+                        var away = a.Position - (below == default ? a.Target : below);
+                        away.y = 0f;
+                        if (TryTakeOff(ref a, s, index, away.sqrMagnitude > 1e-4f ? away.normalized : a.Forward))
+                            break;
+                        if (top > float.MinValue)
+                        {
+                            a.Timer -= dt;
+                            a.Position.y = Mathf.Max(a.Position.y, top + s.Radius + 0.02f);
+                            break;
+                        }
+                    }
                     if (t >= 1f)
                     {
                         a.Position = a.Target;
@@ -583,21 +598,26 @@ namespace PocketWilds.Presentation
         private bool TryTakeOff(ref Agent a, SpeciesState s, int index, Vector3 away)
         {
             float clearance = s.Radius + 0.1f;
+            // An animal already over the bird (both placed there at scene start): the flight starts above its back.
+            var from = a.Position;
+            if (AnimalInTheWay(from, s.Radius, out _, out float animalTop) && from.y < animalTop + s.Radius)
+                from.y = animalTop + s.Radius + 0.02f;
             for (int lift = 0; lift < 2; lift++)
             {
                 float height = lift == 0 ? 3.4f : 5.6f;
                 foreach (float angle in FlightAngles)
                 {
                     var dir = Quaternion.Euler(0f, angle, 0f) * away;
-                    var apex = a.Position + dir * 2.2f + Vector3.up * height;
+                    var apex = from + dir * 2.2f + Vector3.up * height;
                     var disc = RandomDisc(ref a.Random) * 0.6f;
                     var target = new Vector3(a.Home.x + dir.x * 0.9f + disc.x, 0f, a.Home.z + dir.z * 0.9f + disc.y);
                     target.y = a.Ground.HeightAt(target.x, target.z);
-                    if (!GroundFree(ref a, s, index, target) || !FlightClear(ref a, a.Position, apex, target, clearance))
+                    if (!GroundFree(ref a, s, index, target) || !FlightClear(ref a, from, apex, target, clearance))
                         continue;
                     a.State = Fly;
                     a.Timer = 0f;
-                    a.From = a.Position;
+                    a.Position = from;
+                    a.From = from;
                     a.Apex = apex;
                     a.Target = target;
                     a.Forward = dir;
@@ -835,6 +855,34 @@ namespace PocketWilds.Presentation
                     return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// An animal body as high as this point and within <paramref name="distance"/> of it (seen from above): its
+        /// root position and the top of its body (float.MinValue when none).
+        /// </summary>
+        private bool AnimalInTheWay(Vector3 p, float distance, out Vector3 root, out float top)
+        {
+            root = default;
+            top = float.MinValue;
+            if (_animals == null)
+                return false;
+            var c = new Vector2(p.x, p.z);
+            for (int i = 0; i < _animals.Count; i++)
+            {
+                int handle = _animals.GetActiveHandle(i);
+                _animals.GetBody(handle, out var s0, out var s1, out float radius, out float groundY, out float height);
+                if (p.y - distance > groundY + height)
+                    continue;
+                float min = radius + distance;
+                if (CollisionMath.PointSegmentDistanceSq(c, s0, s1) < min * min)
+                {
+                    root = _animals.GetPosition(handle);
+                    top = groundY + height;
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>An animal body within <paramref name="distance"/> of the point (seen from above); its root position.</summary>

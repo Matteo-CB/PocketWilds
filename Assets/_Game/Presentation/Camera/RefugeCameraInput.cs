@@ -11,8 +11,8 @@ namespace PocketWilds.Presentation
     }
 
     /// <summary>
-    /// Touch and mouse input for the refuge camera: one-finger drag pans, pinch or wheel zooms, a short
-    /// touch without movement is a tap (egg, animal). Polls devices directly: no callbacks, no allocation.
+    /// Touch and mouse input for the refuge camera: one-finger drag pans (and flings on release), pinch or wheel
+    /// zooms, a short touch without movement is a tap (egg, animal). Polls devices directly: no callbacks, no allocation.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(RefugeCameraRig))]
@@ -21,6 +21,8 @@ namespace PocketWilds.Presentation
         [SerializeField, Min(1f)] private float _tapMaxPixels = 14f;
         [SerializeField, Min(0.05f)] private float _tapMaxSeconds = 0.3f;
         [SerializeField, Min(0.0001f)] private float _wheelZoomPerUnit = 0.0012f;
+        // The drag speed is averaged over about this time; a finger held still this long before release does not fling.
+        [SerializeField, Range(0.02f, 0.3f)] private float _flingWindow = 0.08f;
 
         private RefugeCameraRig _rig;
         private IRefugeTapHandler _tapHandler;
@@ -30,6 +32,8 @@ namespace PocketWilds.Presentation
         private float _pressTime;
         private Vector2 _pressPosition;
         private Vector2 _lastPosition;
+        private Vector2 _dragVelocity;
+        private float _lastMoveTime;
         private float _lastPinchDistance;
         private bool _blocked;
 
@@ -47,6 +51,8 @@ namespace PocketWilds.Presentation
                     _pressing = false;
                     _dragging = false;
                     _lastPinchDistance = 0f;
+                    if (_rig != null)
+                        _rig.StopFling();
                 }
             }
         }
@@ -87,6 +93,8 @@ namespace PocketWilds.Presentation
                     _rig.Zoom(_lastPinchDistance / distance);
                 _lastPinchDistance = distance;
                 _dragging = true; // a pinch is never a tap
+                _dragVelocity = Vector2.zero; // nor a fling
+                _rig.StopFling();
                 return true;
             }
             _lastPinchDistance = 0f;
@@ -116,28 +124,44 @@ namespace PocketWilds.Presentation
 
         private void Pointer(bool pressed, Vector2 position)
         {
+            float now = Time.unscaledTime;
             if (pressed && !_pressing)
             {
                 _pressing = true;
                 _dragging = false;
-                _pressTime = Time.unscaledTime;
+                _pressTime = _lastMoveTime = now;
                 _pressPosition = _lastPosition = position;
+                _dragVelocity = Vector2.zero;
+                // Touching a gliding view catches it.
+                _rig.StopFling();
                 return;
             }
             if (pressed)
             {
                 if (!_dragging && (position - _pressPosition).sqrMagnitude > _tapMaxPixels * _tapMaxPixels)
                     _dragging = true;
+                var delta = position - _lastPosition;
                 if (_dragging)
-                    _rig.PanPixels(position - _lastPosition);
+                    _rig.PanPixels(delta);
+                float dt = Time.unscaledDeltaTime;
+                if (dt > 0f)
+                {
+                    // Smoothed finger speed: the last few frames count, an old fast stroke fades out.
+                    float k = 1f - Mathf.Exp(-dt / _flingWindow);
+                    _dragVelocity = Vector2.Lerp(_dragVelocity, delta / dt, k);
+                }
+                if (delta.sqrMagnitude > 0.25f)
+                    _lastMoveTime = now;
                 _lastPosition = position;
                 return;
             }
             if (_pressing)
             {
                 _pressing = false;
-                if (!_dragging && Time.unscaledTime - _pressTime <= _tapMaxSeconds)
+                if (!_dragging && now - _pressTime <= _tapMaxSeconds)
                     _tapHandler?.OnTap(_pressPosition);
+                else if (_dragging && now - _lastMoveTime <= _flingWindow)
+                    _rig.Fling(_dragVelocity);
             }
         }
     }

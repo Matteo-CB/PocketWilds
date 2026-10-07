@@ -35,6 +35,12 @@ namespace PocketWilds.Editor.Environment
         /// joined (pw_grassland.build_ground joins): square, flat, the same contour vertices, so they meet exactly.
         /// </summary>
         public static readonly Vector3 MeadowOffset = new Vector3(14f, 0f, 0f);
+
+        /// <summary>
+        /// Where the start chunk's animals live: the whole arrival zone inside its ground edge (doc 02 Améliorations,
+        /// section 4), not a small ring around the egg. The other zones join it as they open (T35A).
+        /// </summary>
+        public static WanderArea StartWalkArea => new WanderArea(Vector3.zero, 5.6f);
         public const string BakedFolder = "Assets/_Game/Art/Environment/Grassland/Baked";
         public const string PalettesPath = "Assets/_Game/Content/Palettes/DEF_Palettes_Grassland.asset";
 

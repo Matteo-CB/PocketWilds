@@ -25,6 +25,9 @@ namespace PocketWilds.Presentation
         public const float EggSpotRadius = 0.55f;
         // The egg's own footprint: the next egg appears once no body is within it (the newborn is bounding off).
         public const float EggBodyRadius = 0.36f;
+        // Animals cross the space in front of the egg but never settle in it: the newborn always has a way out, the
+        // next egg never waits and the egg stays in sight however full the refuge is.
+        public const float EggApronRadius = 1.3f;
         private const float RepeatWindowSeconds = 15f;
         private const float EggTapRadius = 0.32f;
         private const float AnimalTapRadius = 0.34f;
@@ -169,7 +172,7 @@ namespace PocketWilds.Presentation
             _scheduler.SetGround(chunk.Ground);
             _scheduler.SetObstacles(chunk.GetWorldObstacles());
             if (chunk.EggSpawn != null)
-                _scheduler.SetEggSpot(chunk.EggSpawn.position, EggSpotRadius, EggBodyRadius);
+                _scheduler.SetEggSpot(chunk.EggSpawn.position, EggSpotRadius, EggBodyRadius, EggApronRadius);
 
             if (context.Store != null && (shopView != null || offerView != null))
             {

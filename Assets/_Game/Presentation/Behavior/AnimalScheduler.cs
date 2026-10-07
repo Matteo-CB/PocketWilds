@@ -51,6 +51,10 @@ namespace PocketWilds.Presentation
         private const float NoseContact = 0.01f;
         private static readonly float[] SlideAngles = { 0f, 35f, -35f, 70f, -70f };
         private static readonly float[] DetourWidening = { 1f, 1.4f, 1.9f };
+        private const int WanderCandidates = 6;
+        // Neighbours counted around a wander target: walks lean toward the emptier side, so the herd spreads over the
+        // whole area instead of piling up where animals are born. One neighbour more or less does not count.
+        private const float SpreadRadius = 1.2f;
         /// <summary>A newborn bounds out of its shell: faster than a stroll, its hop clip sped up to match.</summary>
         public const float EmergeSpeedScale = 2.5f;
 
@@ -102,6 +106,8 @@ namespace PocketWilds.Presentation
         private readonly Obstacle[] _obstacles = new Obstacle[MaxObstacles];
         private readonly Vector2[] _obstacleCenter = new Vector2[MaxObstacles];
         private readonly float[] _obstacleReach = new float[MaxObstacles];
+        private readonly Vector3[] _candidates = new Vector3[WanderCandidates];
+        private readonly int[] _candidateCrowd = new int[WanderCandidates];
 
         private SchedulerSettings _settings;
         private WanderArea _area;
@@ -111,6 +117,7 @@ namespace PocketWilds.Presentation
         private Vector2 _eggSpot;
         private float _eggRadius;
         private float _eggBodyRadius;
+        private float _eggApron;
         private bool _hasEggSpot;
         private int _obstacleCount;
         private int _activeCount;
@@ -225,14 +232,30 @@ namespace PocketWilds.Presentation
 
         /// <summary>
         /// The egg spot: no animal walks into <paramref name="radius"/>; a newborn registered as emerging bounds out of
-        /// it. A new egg may appear once no body is within <paramref name="eggRadius"/> (the egg itself).
+        /// it. A new egg may appear once no body is within <paramref name="eggRadius"/> (the egg itself). No animal
+        /// chooses to stop within <paramref name="apronRadius"/> of it (walking across is fine): however full the
+        /// refuge, the newborn always has a way out and the next egg never waits.
         /// </summary>
-        public void SetEggSpot(Vector3 center, float radius, float eggRadius)
+        public void SetEggSpot(Vector3 center, float radius, float eggRadius, float apronRadius = 0f)
         {
             _eggSpot = new Vector2(center.x, center.z);
             _eggRadius = radius;
             _eggBodyRadius = Mathf.Min(eggRadius, radius);
+            _eggApron = Mathf.Max(apronRadius, radius);
             _hasEggSpot = radius > 0f;
+        }
+
+        /// <summary>The spot lies in front of the egg, where animals pass but never settle.</summary>
+        public bool InEggApron(Vector3 point) => InApron(point, 0f);
+
+        /// <summary>A body of this reach standing here would have some part in front of the egg.</summary>
+        private bool InApron(Vector3 point, float reach)
+        {
+            if (!_hasEggSpot)
+                return false;
+            float dx = point.x - _eggSpot.x, dz = point.z - _eggSpot.y;
+            float limit = _eggApron + reach;
+            return dx * dx + dz * dz < limit * limit;
         }
 
         public void ClearEggSpot() => _hasEggSpot = false;
@@ -314,17 +337,17 @@ namespace PocketWilds.Presentation
             agent.StateEnd = time + Range(ref agent.Rng, 0.2f, p.idleSeconds.y);
 
             bool walkOut = false;
-            if (!Fits(slot, ref agent, agent.Position, agent.Yaw, true))
+            if (emerging)
             {
-                if (emerging)
+                if (!Fits(slot, ref agent, agent.Position, agent.Yaw, true))
                 {
                     agent.Emerging = true;
                     walkOut = true;
                 }
-                else
-                {
-                    agent.Position = FindFreeSpot(slot, ref agent, agent.Position, agent.Yaw);
-                }
+            }
+            else if (!Fits(slot, ref agent, agent.Position, agent.Yaw, true) || InApron(agent.Position, agent.Reach))
+            {
+                agent.Position = FindFreeSpot(slot, ref agent, agent.Position, agent.Yaw);
             }
             UpdateSegment(ref agent);
 
@@ -351,7 +374,9 @@ namespace PocketWilds.Presentation
             agent.Emerging = true;
             if (Flat(exit - agent.Position).sqrMagnitude < 1e-4f)
             {
-                // Nowhere to go yet (crowded): it waits and tries again at its next decision.
+                // Nowhere to go yet (crowded): the animals resting in front of the egg move on, and it tries again
+                // at its next decision.
+                ClearApron(slot, time);
                 Play(slot, ref agent, profile, AnimalBehaviorState.Idle, time, false);
                 return;
             }
@@ -563,8 +588,25 @@ namespace PocketWilds.Presentation
                     break;
                 default:
                     EndActivity(slot, ref agent, time);
-                    Enter(slot, ref agent, profile, Choose(ref agent, profile), time);
+                    // Standing in front of the egg (an old save, a walk cut short): it moves on before anything else.
+                    Enter(slot, ref agent, profile, InApron(agent.Position, agent.Reach) ? AnimalBehaviorState.Wander : Choose(ref agent, profile), time);
                     break;
+            }
+        }
+
+        /// <summary>A newborn cannot get out: every animal resting in front of the egg walks away now.</summary>
+        private void ClearApron(int newborn, float time)
+        {
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int other = _active[i];
+                if (other == newborn)
+                    continue;
+                ref var o = ref _agents[other];
+                if (o.Emerging || o.State == AnimalBehaviorState.Wander || !InApron(o.Position, o.Reach))
+                    continue;
+                EndActivity(other, ref o, time);
+                Enter(other, ref o, _profiles[other], AnimalBehaviorState.Wander, time);
             }
         }
 
@@ -703,6 +745,9 @@ namespace PocketWilds.Presentation
                     state = AnimalBehaviorState.Idle;
                     animatorState = AnimalStateHashes.Idle;
                     duration = Range(ref agent.Rng, profile.idleSeconds.x, profile.idleSeconds.y) * scale;
+                    // A walk that ended in front of the egg (blocked, timed out): only a short pause before moving on.
+                    if (InApron(agent.Position, agent.Reach))
+                        duration = Mathf.Min(duration, 0.6f);
                     break;
             }
 
@@ -806,6 +851,8 @@ namespace PocketWilds.Presentation
             var anchorB = Grounded(_area.Clamp(middle + dir * (gap * 0.5f)));
             if (Flat(anchorB - anchorA).magnitude < gap - 0.005f)
                 return false; // squeezed by the area edge: noses would overlap
+            if (InApron(anchorA, agent.Reach) || InApron(anchorB, p.Reach))
+                return false; // never a greeting in front of the egg
             if (!Fits(slot, ref agent, anchorA, YawTo(anchorA, anchorB), false) || !Fits(partner, ref p, anchorB, YawTo(anchorB, anchorA), false))
                 return false;
             if (!TryPlan(slot, ref agent, anchorA, out var waypointA, out bool detourA)
@@ -865,8 +912,8 @@ namespace PocketWilds.Presentation
                     return false;
                 stand = Grounded(_area.Clamp(stand - dir * 0.04f));
             }
-            // Someone already stands there: inspect or eat where it is instead.
-            if (Crowded(slot, stand, profile.personalSpace * profile.personalSpace))
+            // Someone already stands there, or it is in front of the egg: inspect or eat where it is instead.
+            if (InApron(stand, agent.Reach) || Crowded(slot, stand, profile.personalSpace * profile.personalSpace))
                 return false;
             if (!TryPlan(slot, ref agent, stand, out var waypoint, out bool detour))
                 return false;
@@ -920,7 +967,8 @@ namespace PocketWilds.Presentation
                 agent.Arrive = AnimalBehaviorState.Idle;
                 agent.HasWaypoint = false;
                 Play(slot, ref agent, profile, AnimalBehaviorState.Idle, time, induced);
-                agent.StateEnd = time + Range(ref agent.Rng, 0.3f, 1f);
+                // Still in front of the egg: a quick look only, the next newborn needs the way.
+                agent.StateEnd = time + (InApron(agent.Position, agent.Reach) ? Range(ref agent.Rng, 0.15f, 0.4f) : Range(ref agent.Rng, 0.3f, 1f));
                 agent.LastChoice = AnimalBehaviorState.Idle;
                 return;
             }
@@ -995,15 +1043,38 @@ namespace PocketWilds.Presentation
         {
             float scale = agent.Tier == SimulationTier.B ? profile.tierBWanderScale : 1f;
             float minSpace = profile.personalSpace * profile.personalSpace;
-            for (int attempt = 0; attempt < 6; attempt++)
+            // In front of the egg: it heads away from the egg, far enough to leave the apron in one walk.
+            bool leaving = InApron(agent.Position, agent.Reach);
+            var away = new Vector2(agent.Position.x - _eggSpot.x, agent.Position.z - _eggSpot.y);
+            float fromEgg = away.magnitude;
+            float awayAngle = fromEgg > 1e-3f ? Mathf.Atan2(away.x, away.y) : Mathf.PI;
+            // A few random directions, the emptier ones tried first (equal crowds keep their random order).
+            int count = 0;
+            for (int attempt = 0; attempt < WanderCandidates; attempt++)
             {
-                float angle = Next01(ref agent.Rng) * Mathf.PI * 2f;
+                float angle = leaving ? awayAngle + (Next01(ref agent.Rng) - 0.5f) * 2.1f : Next01(ref agent.Rng) * Mathf.PI * 2f;
                 float distance = Range(ref agent.Rng, profile.wanderDistance.x, profile.wanderDistance.y) * Mathf.Max(scale, 0.35f);
+                if (leaving)
+                    distance = Mathf.Max(distance, (_eggApron + agent.Reach + 0.3f - fromEgg) * 2f); // out even 60 degrees off
                 var candidate = Grounded(_area.Clamp(agent.Position + new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle)) * distance));
                 if (Flat(candidate - agent.Position).sqrMagnitude < 0.04f)
                     continue;
-                if (Crowded(slot, candidate, minSpace))
+                if (InApron(candidate, agent.Reach) || Crowded(slot, candidate, minSpace))
                     continue;
+                int crowd = Mathf.Max(0, Neighbours(slot, candidate, SpreadRadius * SpreadRadius) - 1);
+                int at = count++;
+                while (at > 0 && _candidateCrowd[at - 1] > crowd)
+                {
+                    _candidates[at] = _candidates[at - 1];
+                    _candidateCrowd[at] = _candidateCrowd[at - 1];
+                    at--;
+                }
+                _candidates[at] = candidate;
+                _candidateCrowd[at] = crowd;
+            }
+            for (int i = 0; i < count; i++)
+            {
+                var candidate = _candidates[i];
                 // The body must fit where it stops (facing the way it came) and the way there must be walkable.
                 if (!Fits(slot, ref agent, candidate, YawTo(agent.Position, candidate), false))
                     continue;
@@ -1018,6 +1089,23 @@ namespace PocketWilds.Presentation
                 return true;
             }
             return false;
+        }
+
+        /// <summary>Animals standing (or heading) within the given squared distance of this spot.</summary>
+        private int Neighbours(int slot, Vector3 spot, float radiusSquared)
+        {
+            int n = 0;
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int other = _active[i];
+                if (other == slot)
+                    continue;
+                ref var o = ref _agents[other];
+                var taken = o.State == AnimalBehaviorState.Wander ? o.Target : o.Position;
+                if (Flat(taken - spot).sqrMagnitude < radiusSquared)
+                    n++;
+            }
+            return n;
         }
 
         /// <summary>Another animal stands (or is heading) within the given squared distance of this spot.</summary>
@@ -1361,7 +1449,7 @@ namespace PocketWilds.Presentation
         /// </summary>
         private Vector3 FindFreeSpot(int slot, ref Agent agent, Vector3 position, float yaw, bool faceTravel = false)
         {
-            if (!faceTravel && Fits(slot, ref agent, position, yaw, true))
+            if (!faceTravel && Fits(slot, ref agent, position, yaw, true) && !InApron(position, agent.Reach))
                 return position;
             // A walk out starts with the heading it has (ahead, then a little left and right); a spawn anywhere.
             float phase = faceTravel ? Mathf.PI * 0.5f - yaw * Mathf.Deg2Rad : Next01(ref agent.Rng) * Mathf.PI * 2f;
@@ -1374,6 +1462,9 @@ namespace PocketWilds.Presentation
                     int step = faceTravel ? ((k & 1) == 0 ? k / 2 : -(k + 1) / 2) : k;
                     float angle = phase + step * Mathf.PI * 2f / steps;
                     var candidate = Grounded(_area.Clamp(position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius));
+                    // A spawn never lands in front of the egg; a newborn's way out starts there.
+                    if (!faceTravel && InApron(candidate, agent.Reach))
+                        continue;
                     if (Fits(slot, ref agent, candidate, faceTravel ? YawTo(position, candidate) : yaw, true))
                         return candidate;
                 }

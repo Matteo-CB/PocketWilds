@@ -408,7 +408,7 @@ namespace PocketWilds.Editor.Environment
             var egg = ClearingCenter(groundMesh);
             var layout = StartLayoutT33();
             var moves = SettleProps("Start", Vector3.zero, layout, prefabs);
-            var area = new WanderArea(egg + new Vector3(0f, 0f, 0.6f), 3.2f);
+            var area = StartWalkArea;
             var rules = new ScatterRules
             {
                 // The east side is joined to the meadow chunk (square, flat): scatter runs up to the seam there.

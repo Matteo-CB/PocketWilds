@@ -34,7 +34,7 @@ namespace PocketWilds.Editor.Capture
         /// them), then the gameplay frame ("refuge") or a close view on the rock nearest the egg ("rock_close"). The
         /// result line gives the smallest clearance seen during the whole run (never below zero).
         /// </summary>
-        public static string CaptureCollision(string prefix, string shot, int animals = 20, float seconds = 60f)
+        public static string CaptureCollision(string prefix, string shot, int animals = 20, float seconds = 60f, bool hatchAtEgg = false)
         {
             var active = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             if (active.path != ScenePath && !string.IsNullOrEmpty(active.path) && active.isDirty)
@@ -74,20 +74,32 @@ namespace PocketWilds.Editor.Capture
                     scheduler.SetGround(chunk.Ground);
                     scheduler.SetObstacles(chunk.GetWorldObstacles());
                     scheduler.SetInterests(chunk.GetWorldInterests());
-                    scheduler.SetEggSpot(chunk.EggSpawn.position, RefugeController.EggSpotRadius, RefugeController.EggBodyRadius);
+                    scheduler.SetEggSpot(chunk.EggSpawn.position, RefugeController.EggSpotRadius, RefugeController.EggBodyRadius,
+                        RefugeController.EggApronRadius);
                     var resolver = new AnimalVisualResolver(registry, palettes);
                     var area = chunk.WanderArea;
                     var views = new List<AnimalView>();
+                    const float Dt = 1f / 30f;
+                    float time = 0f, worstAnimals = float.MaxValue, worstLife = float.MaxValue;
                     for (int i = 0; i < animals; i++)
                     {
                         string kind = CollisionMix[i % CollisionMix.Length];
                         float angle = i * 2.39996f;
                         var position = area.Center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * (area.Radius * 0.9f * Mathf.Sqrt((i + 0.5f) / animals));
-                        var view = Spawn(registry, resolver, kind, (uint)(i + 1), (uint)(i * 7919 + 11), position, i * 47f, 0.3f * i);
+                        float yaw = i * 47f;
+                        if (hatchAtEgg)
+                        {
+                            // Like the game: each animal is born on the egg spot once it is clear, two seconds apart.
+                            for (int f = 0; f < 60 || (f < 240 && !scheduler.IsEggSpotClear()); f++)
+                                scheduler.Tick(time += Dt, Dt);
+                            position = chunk.EggSpawn.position;
+                            yaw = 180f;
+                        }
+                        var view = Spawn(registry, resolver, kind, (uint)(i + 1), (uint)(i * 7919 + 11), position, yaw, 0.3f * i);
                         var species = registry.Species.Get(ContentId.FromSource("species." + kind.Substring(0, kind.IndexOf('.'))));
                         catalog.TryGet(species.VisualKey, out var visual);
-                        scheduler.Register(view, (uint)(i + 1), (uint)(i * 7919 + 11), view.transform.position, i * 47f, visual.behavior, 0f,
-                            view.transform.localScale.x);
+                        scheduler.Register(view, (uint)(i + 1), (uint)(i * 7919 + 11), view.transform.position, yaw, visual.behavior, time,
+                            view.transform.localScale.x, hatchAtEgg);
                         views.Add(view);
                         temp.Add(view.gameObject);
                     }
@@ -95,8 +107,6 @@ namespace PocketWilds.Editor.Capture
                     life?.Add(chunk);
                     life?.SetAnimals(scheduler);
 
-                    const float Dt = 1f / 30f;
-                    float time = 0f, worstAnimals = float.MaxValue, worstLife = float.MaxValue;
                     int frames = Mathf.RoundToInt(seconds / Dt);
                     for (int f = 0; f < frames; f++)
                     {
@@ -135,6 +145,17 @@ namespace PocketWilds.Editor.Capture
                         camera.transform.LookAt(rock + new Vector3(0f, 0.15f, 0f));
                         w = 1400;
                         h = 900;
+                    }
+                    else if (shot == "top")
+                    {
+                        // The whole arrival zone from high above: where the herd actually lives.
+                        var center = area.Center;
+                        camera.farClipPlane = 80f;
+                        camera.fieldOfView = 45f;
+                        camera.transform.position = center + new Vector3(0f, 15f, -5.5f);
+                        camera.transform.LookAt(center);
+                        w = 1200;
+                        h = 1200;
                     }
                     string path = $"{CaptureUtility.DefaultFolder}/{prefix}_{shot}.png";
                     string result = CaptureUtility.RenderWithFreshCamera(camera, w, h, path, cam =>

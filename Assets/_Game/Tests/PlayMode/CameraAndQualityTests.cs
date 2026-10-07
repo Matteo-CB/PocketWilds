@@ -86,6 +86,45 @@ namespace PocketWilds.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Fling_GlidesOnAfterRelease_SlowsDown_AndStopsAtTheEdge()
+        {
+            var rig = SpawnRig();
+            // A long strip, like the eight Prairie zones side by side.
+            rig.SetBounds(new Vector3(0f, 0f, 0.65f), new Vector2(40f, 4f));
+            rig.SnapTo(new Vector3(0f, 0f, 0.65f));
+            yield return null;
+
+            // A quick swipe to the left: the view glides to the right on its own.
+            rig.Fling(new Vector2(-3000f, 0f));
+            Assert.Greater(rig.FlingVelocity.x, 0f);
+            float start = rig.Focus.x;
+            float t = 0f;
+            while (rig.FlingVelocity != Vector3.zero && t < 8f)
+            {
+                t += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            for (int i = 0; i < 30; i++) yield return null;
+            Assert.AreEqual(Vector3.zero, rig.FlingVelocity, "The glide slows down and stops by itself.");
+            Assert.Greater(rig.Focus.x - start, 2f, "One swipe carries the view several meters.");
+
+            // Thrown hard against the end of the strip: it stops at the edge.
+            rig.Fling(new Vector2(-1e6f, 0f));
+            for (int i = 0; i < 600 && rig.FlingVelocity != Vector3.zero; i++) yield return null;
+            Assert.LessOrEqual(rig.Focus.x, 40f + 1e-3f);
+
+            // A new touch catches a gliding view; a focus state ends it too.
+            rig.Fling(new Vector2(3000f, 0f));
+            rig.StopFling();
+            Assert.AreEqual(Vector3.zero, rig.FlingVelocity);
+            rig.Fling(new Vector2(3000f, 0f));
+            rig.FocusOn(new Vector3(1f, 0f, 1f), RefugeCameraState.HatchReveal);
+            Assert.AreEqual(Vector3.zero, rig.FlingVelocity);
+            rig.Fling(new Vector2(3000f, 0f));
+            Assert.AreEqual(Vector3.zero, rig.FlingVelocity, "No fling while the camera frames a hatch.");
+        }
+
+        [UnityTest]
         public IEnumerator CameraControls_DoNotAllocate()
         {
             var rig = SpawnRig();
@@ -96,6 +135,8 @@ namespace PocketWilds.Tests.PlayMode
                 {
                     rig.PanPixels(new Vector2(3f, -2f));
                     rig.Zoom(1.001f);
+                    rig.Fling(new Vector2(300f, -200f));
+                    rig.StopFling();
                 }
             }, Is.Not.AllocatingGCMemory());
         }

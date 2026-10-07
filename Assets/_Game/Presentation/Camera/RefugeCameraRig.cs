@@ -11,8 +11,8 @@ namespace PocketWilds.Presentation
 
     /// <summary>
     /// PF_CameraRig_Refuge. Portrait diorama view: fixed pitch, yaw and FOV (no dynamic FOV, no rotation),
-    /// pan clamped to the refuge bounds, pinch zoom between strict limits, short smoothed transitions
-    /// between states. One LateUpdate for the whole camera; no per-frame allocation.
+    /// pan clamped to the refuge bounds with a fling that glides on after release, pinch zoom between strict
+    /// limits, short smoothed transitions between states. One LateUpdate for the whole camera; no per-frame allocation.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class RefugeCameraRig : MonoBehaviour
@@ -39,6 +39,11 @@ namespace PocketWilds.Presentation
         [SerializeField, Range(0.02f, 0.5f)] private float _smoothTime = 0.1f;
         [SerializeField, Range(0.1f, 0.8f)] private float _transitionTime = 0.35f;
 
+        [Header("Fling (the view keeps the finger's speed after release, then slows down)")]
+        [SerializeField, Range(0.1f, 1.5f)] private float _flingTimeConstant = 0.6f;
+        [SerializeField, Min(1f)] private float _maxFlingSpeed = 45f;
+        [SerializeField, Min(0.01f)] private float _flingStopSpeed = 0.08f;
+
         private Vector3 _focus;
         private Vector3 _targetFocus;
         private Vector3 _focusVelocity;
@@ -47,6 +52,7 @@ namespace PocketWilds.Presentation
         private float _distanceVelocity;
         private float _worldDistance;
         private Vector3 _worldFocus;
+        private Vector3 _flingVelocity;
         private float _currentSmooth;
         private bool _initialized;
 
@@ -56,6 +62,9 @@ namespace PocketWilds.Presentation
         public float Distance => _distance;
         public float MinDistance => _minDistance;
         public float MaxDistance => _maxDistance;
+
+        /// <summary>The view still glides after a fling (m/s on the ground; zero once stopped).</summary>
+        public Vector3 FlingVelocity => _flingVelocity;
 
         /// <summary>Editor/prefab builder hook.</summary>
         public void SetCamera(Camera camera) => _camera = camera;
@@ -76,6 +85,7 @@ namespace PocketWilds.Presentation
             _distance = _targetDistance = Mathf.Clamp(distance > 0f ? distance : _defaultDistance, _minDistance, _maxDistance);
             _focusVelocity = Vector3.zero;
             _distanceVelocity = 0f;
+            _flingVelocity = Vector3.zero;
             ApplyTransform();
         }
 
@@ -84,13 +94,35 @@ namespace PocketWilds.Presentation
         {
             if (State != RefugeCameraState.DefaultWorld || _camera == null)
                 return;
+            _targetFocus = Clamp(_targetFocus + PixelsToGround(pixelDelta));
+            _currentSmooth = _smoothTime;
+        }
+
+        /// <summary>
+        /// The finger left the screen while moving (pixels per second): the view keeps that speed and slows down
+        /// smoothly, so a quick swipe crosses the refuge without dragging all the way.
+        /// </summary>
+        public void Fling(Vector2 pixelsPerSecond)
+        {
+            if (State != RefugeCameraState.DefaultWorld || _camera == null)
+                return;
+            _flingVelocity = Vector3.ClampMagnitude(PixelsToGround(pixelsPerSecond), _maxFlingSpeed);
+            if (_flingVelocity.magnitude < _flingStopSpeed)
+                _flingVelocity = Vector3.zero;
+        }
+
+        /// <summary>A new touch catches the view where it is.</summary>
+        public void StopFling() => _flingVelocity = Vector3.zero;
+
+        /// <summary>Ground motion (m) that keeps the ground under a finger moving by this many pixels.</summary>
+        private Vector3 PixelsToGround(Vector2 pixels)
+        {
             float worldPerPixel = 2f * _distance * Mathf.Tan(_fieldOfView * 0.5f * Mathf.Deg2Rad) / Mathf.Max(1, _camera.pixelHeight);
             var right = Quaternion.Euler(0f, _yaw, 0f) * Vector3.right;
             var forward = Quaternion.Euler(0f, _yaw, 0f) * Vector3.forward;
             // Vertical drag moves along the ground: compensate the pitch foreshortening.
             float depthScale = 1f / Mathf.Max(0.3f, Mathf.Sin(_pitch * Mathf.Deg2Rad));
-            _targetFocus = Clamp(_targetFocus - right * (pixelDelta.x * worldPerPixel) - forward * (pixelDelta.y * worldPerPixel * depthScale));
-            _currentSmooth = _smoothTime;
+            return -right * (pixels.x * worldPerPixel) - forward * (pixels.y * worldPerPixel * depthScale);
         }
 
         /// <summary>factor &lt; 1 zooms in, &gt; 1 zooms out (pinch ratio or scroll).</summary>
@@ -110,6 +142,7 @@ namespace PocketWilds.Presentation
                 _worldFocus = _targetFocus;
                 _worldDistance = _targetDistance;
             }
+            _flingVelocity = Vector3.zero;
             State = state;
             _targetFocus = point;
             _targetDistance = state == RefugeCameraState.HatchReveal ? _hatchDistance : _focusAnimalDistance;
@@ -147,9 +180,32 @@ namespace PocketWilds.Presentation
         private void LateUpdate()
         {
             float dt = Time.unscaledDeltaTime;
+            if (_flingVelocity != Vector3.zero)
+                Glide(dt);
             _focus = Vector3.SmoothDamp(_focus, _targetFocus, ref _focusVelocity, _currentSmooth, Mathf.Infinity, dt);
             _distance = Mathf.SmoothDamp(_distance, _targetDistance, ref _distanceVelocity, _currentSmooth, Mathf.Infinity, dt);
             ApplyTransform();
+        }
+
+        /// <summary>One frame of a fling: exponential slow-down; an edge of the bounds stops the motion along it.</summary>
+        private void Glide(float dt)
+        {
+            if (State != RefugeCameraState.DefaultWorld)
+            {
+                _flingVelocity = Vector3.zero;
+                return;
+            }
+            var wanted = _targetFocus + _flingVelocity * dt;
+            var next = Clamp(wanted);
+            if (!Mathf.Approximately(next.x, wanted.x))
+                _flingVelocity.x = 0f;
+            if (!Mathf.Approximately(next.z, wanted.z))
+                _flingVelocity.z = 0f;
+            _targetFocus = next;
+            _currentSmooth = _smoothTime;
+            _flingVelocity *= Mathf.Exp(-dt / _flingTimeConstant);
+            if (_flingVelocity.sqrMagnitude < _flingStopSpeed * _flingStopSpeed)
+                _flingVelocity = Vector3.zero;
         }
 
         private void ApplyTransform()

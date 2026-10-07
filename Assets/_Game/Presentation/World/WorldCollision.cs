@@ -84,10 +84,18 @@ namespace PocketWilds.Presentation
 
         public static float PointSegmentDistanceSq(Vector2 p, Vector2 a, Vector2 b) => (p - ClosestOnSegment(p, a, b)).sqrMagnitude;
 
+        /// <summary>
+        /// Cross products (m²) this small say "on the line": their sign is rounding noise. Two animals walking one behind
+        /// the other on the same line once read as crossing 1.1 m apart.
+        /// </summary>
+        private const float CollinearCross = 1e-6f;
+
         /// <summary>Squared distance between two segments (0 when they cross).</summary>
         public static float SegmentSegmentDistanceSq(Vector2 p1, Vector2 q1, Vector2 p2, Vector2 q2)
         {
-            if (Cross(q1 - p1, p2 - p1) * Cross(q1 - p1, q2 - p1) < 0f && Cross(q2 - p2, p1 - p2) * Cross(q2 - p2, q1 - p2) < 0f)
+            // A real crossing only: each segment has its ends clearly on both sides of the other's line. Ends lying on
+            // the other line are settled exactly by the end distances below (0 when they touch it, the gap otherwise).
+            if (Straddles(Cross(q1 - p1, p2 - p1), Cross(q1 - p1, q2 - p1)) && Straddles(Cross(q2 - p2, p1 - p2), Cross(q2 - p2, q1 - p2)))
                 return 0f;
             float d = PointSegmentDistanceSq(p1, p2, q2);
             d = Mathf.Min(d, PointSegmentDistanceSq(q1, p2, q2));
@@ -104,6 +112,8 @@ namespace PocketWilds.Presentation
             Gap(a0, a1, radius, obstacle.a, obstacle.b, obstacle.radius);
 
         private static float Cross(Vector2 u, Vector2 v) => u.x * v.y - u.y * v.x;
+
+        private static bool Straddles(float a, float b) => (a > CollinearCross && b < -CollinearCross) || (a < -CollinearCross && b > CollinearCross);
     }
 
     /// <summary>

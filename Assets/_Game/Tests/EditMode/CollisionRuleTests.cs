@@ -57,7 +57,8 @@ namespace PocketWilds.Tests.EditMode
             scheduler.SetGround(chunk.Ground);
             scheduler.SetObstacles(chunk.GetWorldObstacles());
             scheduler.SetInterests(chunk.GetWorldInterests());
-            scheduler.SetEggSpot(chunk.EggSpawn.position, RefugeController.EggSpotRadius, RefugeController.EggBodyRadius);
+            scheduler.SetEggSpot(chunk.EggSpawn.position, RefugeController.EggSpotRadius, RefugeController.EggBodyRadius,
+                RefugeController.EggApronRadius);
             return scheduler;
         }
 
@@ -309,6 +310,121 @@ namespace PocketWilds.Tests.EditMode
                 AssertClear(scheduler, handles, StartChunk.Ground, time);
             }
             Assert.IsFalse(scheduler.IsEmerging(newborn), "Then it leaves the whole egg spot.");
+        }
+
+        [Test]
+        public void SegmentDistance_IsExact_OnOneLine_AndCrossingsStillReadZero()
+        {
+            // Two animals one behind the other on the same line, 1.1 m apart, once read as crossing (rounding noise).
+            for (int degrees = 0; degrees < 360; degrees++)
+            {
+                float rad = degrees * Mathf.Deg2Rad;
+                var dir = new Vector2(Mathf.Cos(rad), Mathf.Sin(rad));
+                var a0 = new Vector2(-1.04f, -1.2f);
+                var a1 = a0 + dir * 0.23f;
+                var b0 = a1 + dir * 1.1f;
+                var b1 = b0 + dir * 0.23f;
+                Assert.AreEqual(1.1f, Mathf.Sqrt(CollisionMath.SegmentSegmentDistanceSq(a0, a1, b0, b1)), 1e-3f, $"{degrees} deg");
+                Assert.AreEqual(1.1f, Mathf.Sqrt(CollisionMath.SegmentSegmentDistanceSq(a1, a0, b1, b0)), 1e-3f, $"{degrees} deg, reversed");
+            }
+            Assert.AreEqual(0f, CollisionMath.SegmentSegmentDistanceSq(new Vector2(-1f, 0f), new Vector2(1f, 0f), new Vector2(0f, -1f), new Vector2(0f, 1f)), 1e-9f, "Crossing.");
+            Assert.AreEqual(0f, CollisionMath.SegmentSegmentDistanceSq(new Vector2(-1f, 0f), new Vector2(1f, 0f), new Vector2(0.3f, 0f), new Vector2(0.3f, 1f)), 1e-9f, "An end on the other.");
+            Assert.AreEqual(0f, CollisionMath.SegmentSegmentDistanceSq(new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(2f, 0f)), 1e-9f, "Overlapping on one line.");
+            Assert.AreEqual(0.04f, CollisionMath.SegmentSegmentDistanceSq(new Vector2(-1f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0.2f), new Vector2(0.5f, 1f)), 1e-6f, "Apart.");
+        }
+
+        [Test]
+        public void StartChunk_WalkArea_CoversTheArrivalZone_AndStaysOnItsGround()
+        {
+            var chunk = StartChunk;
+            var area = chunk.WanderArea;
+            var local = area.Center - chunk.transform.position;
+            Assert.GreaterOrEqual(area.Radius, 5f, "Animals live in the whole arrival zone, not a small ring around the egg.");
+            Assert.LessOrEqual(Mathf.Max(Mathf.Abs(local.x), Mathf.Abs(local.z)) + area.Radius, 6.5f,
+                "The walk area ends inside the start chunk (the next zones open with T35A).");
+            var egg = chunk.EggSpawn.position;
+            Assert.Less(Flat(egg - area.Center).magnitude + RefugeController.EggApronRadius, area.Radius, "The egg and its apron lie inside.");
+        }
+
+        [Test]
+        public void Hatches_InARow_InACrowdedRefuge_NeverKeepTheEggWaiting()
+        {
+            string[] keys = { "PF_Animal_Rabbit", "PF_Animal_Squirrel", "PF_Animal_Hedgehog" };
+            var scheduler = RefugeScheduler(48);
+            var handles = Populate(scheduler, 30);
+            var egg = StartChunk.EggSpawn.position;
+            var ground = StartChunk.Ground;
+            float time = 0f;
+            float worst = 0f;
+            // Fifteen hatches as fast as a player taps, on top of thirty animals.
+            for (int hatch = 0; hatch < 15; hatch++)
+            {
+                int newborn = scheduler.Register(null, (uint)(500 + hatch), (uint)(91 + hatch * 7919), egg, 180f, Profile(keys[hatch % 3]), time,
+                    1f + 0.1f * (hatch % 3), emerging: true);
+                Assert.AreNotEqual(AnimalScheduler.InvalidHandle, newborn);
+                handles.Add(newborn);
+                float start = time;
+                while (!scheduler.IsEggSpotClear() && time - start < 4f)
+                {
+                    time += Dt;
+                    scheduler.Tick(time, Dt);
+                    AssertClear(scheduler, handles, ground, time);
+                }
+                Assert.IsTrue(scheduler.IsEggSpotClear(), $"Hatch {hatch}: the newborn got out of the egg spot.");
+                worst = Mathf.Max(worst, time - start);
+                for (int f = 0; f < 20; f++)
+                {
+                    time += Dt;
+                    scheduler.Tick(time, Dt);
+                }
+            }
+            TestContext.WriteLine($"Longest wait for the next egg: {worst:F2} s with {scheduler.Count} animals.");
+            Assert.Less(worst, 1.5f, "The next egg is never kept waiting.");
+
+            // Then a minute of life: animals cross the space in front of the egg but do not settle in it.
+            int restingWorst = 0;
+            for (int f = 0; f < 60 * 30; f++)
+            {
+                time += Dt;
+                scheduler.Tick(time, Dt);
+                if (f % 30 != 0)
+                    continue;
+                int resting = 0;
+                foreach (int h in handles)
+                    if (scheduler.IsValid(h) && scheduler.GetState(h) != AnimalBehaviorState.Wander && !scheduler.IsEmerging(h)
+                        && scheduler.InEggApron(scheduler.GetPosition(h)))
+                        resting++;
+                restingWorst = Mathf.Max(restingWorst, resting);
+            }
+            TestContext.WriteLine($"Most animals resting in front of the egg at once: {restingWorst}");
+            Assert.LessOrEqual(restingWorst, 1, "The egg stays in sight and its way out stays open.");
+        }
+
+        [Test]
+        public void Newborns_SpreadOverTheWholeArrivalZone()
+        {
+            string[] keys = { "PF_Animal_Rabbit", "PF_Animal_Squirrel", "PF_Animal_Hedgehog" };
+            var scheduler = RefugeScheduler(32);
+            var egg = StartChunk.EggSpawn.position;
+            var handles = new List<int>();
+            float time = 0f;
+            // Every animal is born on the egg spot, one every two seconds, then two minutes of life.
+            for (int hatch = 0; hatch < 30; hatch++)
+            {
+                // Like the refuge: the next egg waits for the spot to clear.
+                for (int f = 0; f < 120 && !scheduler.IsEggSpotClear(); f++)
+                    scheduler.Tick(time += Dt, Dt);
+                handles.Add(scheduler.Register(null, (uint)(800 + hatch), (uint)(17 + hatch * 7919), egg, 180f, Profile(keys[hatch % 3]), time,
+                    1f, emerging: true));
+                for (int f = 0; f < 60; f++)
+                    scheduler.Tick(time += Dt, Dt);
+            }
+            for (int f = 0; f < 120 * 30; f++)
+                scheduler.Tick(time += Dt, Dt);
+            int far = handles.Count(h => Flat(scheduler.GetPosition(h) - egg).magnitude > 3.2f);
+            float mean = handles.Average(h => Flat(scheduler.GetPosition(h) - egg).magnitude);
+            TestContext.WriteLine($"{far} of {handles.Count} animals farther than 3.2 m from the egg, mean distance {mean:F2} m.");
+            Assert.GreaterOrEqual(far, handles.Count / 3, "The herd spreads over the zone instead of piling up around the egg.");
         }
 
         [Test]
