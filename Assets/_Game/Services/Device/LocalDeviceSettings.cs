@@ -14,6 +14,9 @@ namespace PocketWilds.Services.Device
 
         /// <summary>30 FPS, lighter rendering and slower secondary ticks.</summary>
         public bool BatterySaver;
+
+        /// <summary>T35B (doc 02 Œufs, section 4): after the first hatches, the short sequence (1.2 s). On by default.</summary>
+        public bool FastHatches = true;
     }
 
     /// <summary>PlayerPrefs storage. Main thread only; read at boot, written when the player changes a setting.</summary>
@@ -21,6 +24,7 @@ namespace PocketWilds.Services.Device
     {
         private const string QualityKey = "pw.device.quality";
         private const string BatteryKey = "pw.device.battery";
+        private const string FastHatchKey = "pw.device.fast_hatch";
 
         public static LocalDeviceSettings Load()
         {
@@ -29,6 +33,7 @@ namespace PocketWilds.Services.Device
             if (quality >= (int)QualityTier.Low && quality <= (int)QualityTier.High)
                 settings.QualityOverride = (QualityTier)quality;
             settings.BatterySaver = PlayerPrefs.GetInt(BatteryKey, 0) == 1;
+            settings.FastHatches = PlayerPrefs.GetInt(FastHatchKey, 1) == 1;
             return settings;
         }
 
@@ -36,6 +41,7 @@ namespace PocketWilds.Services.Device
         {
             PlayerPrefs.SetInt(QualityKey, settings.QualityOverride.HasValue ? (int)settings.QualityOverride.Value : -1);
             PlayerPrefs.SetInt(BatteryKey, settings.BatterySaver ? 1 : 0);
+            PlayerPrefs.SetInt(FastHatchKey, settings.FastHatches ? 1 : 0);
             PlayerPrefs.Save();
         }
     }

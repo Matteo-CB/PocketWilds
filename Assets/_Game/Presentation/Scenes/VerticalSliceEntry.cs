@@ -325,7 +325,7 @@ namespace PocketWilds.Presentation
         {
             var tapCamera = _cameraRig != null ? _cameraRig.Camera : null;
             // T35A: the next zone's hedge or sign shows what opening it brings.
-            if (_zones != null && _refuge != null && tapCamera != null && !_refuge.ModalOpen && !_refuge.Hatch.IsPlaying
+            if (_zones != null && _refuge != null && tapCamera != null && !_refuge.ModalOpen && !_refuge.Hatching
                 && _zones.TryTap(tapCamera.ScreenPointToRay(screenPosition)))
                 return;
             _refuge?.OnTap(screenPosition);

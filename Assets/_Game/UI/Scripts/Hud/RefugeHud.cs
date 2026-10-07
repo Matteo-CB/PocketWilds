@@ -13,7 +13,7 @@ namespace PocketWilds.UI
     /// States use color tokens and scale, not extra sprites. No Update: ticked by the scene controller.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IMotionSettings
+    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IMotionSettings
     {
         private const float PulseSeconds = 0.4f;
 
@@ -82,6 +82,11 @@ namespace PocketWilds.UI
         [SerializeField] private Button _lightButton;
         [SerializeField] private GameObject _levelDot;
 
+        [Header("T35B egg choice")]
+        [SerializeField] private EggChoiceBar _eggChoice;
+        [SerializeField] private Image _costIcon;
+        [SerializeField] private TMP_Text _priceWord;
+
         private IRefugeActions _actions;
         private IProgressionHudActions _progressionActions;
         private bool _upgradeShown;
@@ -136,6 +141,7 @@ namespace PocketWilds.UI
                 if (_toasts != null) _toasts.ReduceMotion = value;
                 if (_tapHint != null) _tapHint.ReduceMotion = value;
                 if (_collect != null) _collect.ReduceMotion = value;
+                if (_eggChoice != null) _eggChoice.ReduceMotion = value;
             }
         }
 
@@ -202,7 +208,7 @@ namespace PocketWilds.UI
                 _freeShown = free;
                 _costRow.SetActive(!free);
             }
-            if (!free)
+            if (!free && _priceText == null)
                 _cost.Set(cost);
 
             int state = _hatchingNow ? 2 : (affordable ? 1 : 0);
@@ -212,6 +218,8 @@ namespace PocketWilds.UI
             _hatchBackground.color = state == 2 ? _tokens.accentBusy : (state == 1 ? _tokens.accentPrimary : _tokens.accentIdle);
             _costLabel.color = state == 0 ? _tokens.errorSoft : _tokens.textPrimary;
             _eggIcon.color = state == 0 ? new Color(1f, 1f, 1f, 0.8f) : Color.white;
+            if (_eggChoice != null)
+                _eggChoice.SetButtonAlpha(state == 0 ? 0.8f : 1f);
         }
 
         public void SetHatching(bool hatching)
@@ -231,6 +239,8 @@ namespace PocketWilds.UI
                 return;
             _mastery = gain;
             _masteryTime = 0f;
+            if (_eggChoice != null)
+                _eggChoice.HideName();
             _masteryLevelShown = false;
             _masteryRoot.gameObject.SetActive(true);
             MasteryLevelShown = gain.Before.Level;
@@ -531,6 +541,8 @@ namespace PocketWilds.UI
             }
             TickUpgradeHint();
             TickLevelUp(unscaledDeltaTime);
+            if (_eggChoice != null)
+                _eggChoice.Tick(unscaledDeltaTime);
             if (_tapHint != null)
                 _tapHint.Tick(unscaledDeltaTime);
             if (_collect != null)
@@ -608,8 +620,59 @@ namespace PocketWilds.UI
             || (_infoRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_infoRoot, screenPosition, null))
             || (_upgradeShown && RectTransformUtility.RectangleContainsScreenPoint(_upgradeRoot, screenPosition, null))
             || (_levelRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_levelRoot, screenPosition, null))
+            || (_eggChoice != null && _eggChoice.Contains(screenPosition))
             || (_shopShown && (RectTransformUtility.RectangleContainsScreenPoint(_shopRoot, screenPosition, null)
                                || RectTransformUtility.RectangleContainsScreenPoint(_gemsChip, screenPosition, null)));
+
+        // ---------------- T35B egg choice (IEggChoiceHud) ----------------
+
+        private string _priceText;
+
+        public EggChoiceBar EggChoice => _eggChoice;
+
+        public void BindEggs(IEggChoiceActions actions)
+        {
+            if (_eggChoice != null)
+                _eggChoice.Bind(actions);
+        }
+
+        public void SetEggSlots(EggSlot[] slots, int count, int selected) => _eggChoice?.SetSlots(slots, count, selected);
+
+        public void ShowEggName(string name)
+        {
+            // The name and the mastery toast share the space above the button; the toast wins.
+            if (_eggChoice != null && !MasteryVisible)
+                _eggChoice.ShowName(name);
+        }
+
+        public void SetHatchQuantity(int quantity, bool visible) => _eggChoice?.SetQuantity(quantity, visible);
+
+        public void SetFocusTargets(PortraitSlot[] portraits, int count) => _eggChoice?.SetTargets(portraits, count);
+
+        /// <summary>"Free" for a Discovery egg: the word replaces the Light icon and price; null brings the price back.</summary>
+        public void SetPriceText(string text)
+        {
+            if (text == _priceText || _priceWord == null)
+                return;
+            _priceText = text;
+            bool word = text != null;
+            _priceWord.gameObject.SetActive(word);
+            if (word)
+                _priceWord.text = text;
+            if (_costIcon != null)
+                _costIcon.enabled = !word;
+            _costLabel.enabled = !word;
+        }
+
+        public string PriceTextShown => _priceText;
+
+        /// <summary>Prefab builder hook (Editor EggUiPipeline).</summary>
+        public void SetEggChoiceReferences(EggChoiceBar bar, Image costIcon, TMP_Text priceWord)
+        {
+            _eggChoice = bar;
+            _costIcon = costIcon;
+            _priceWord = priceWord;
+        }
 
         /// <summary>Prefab builder hook (Editor UiPipeline).</summary>
         public void SetReferences(UiColorTokens tokens, RectTransform safeArea, RectTransform lightChip, TMP_Text lightLabel,

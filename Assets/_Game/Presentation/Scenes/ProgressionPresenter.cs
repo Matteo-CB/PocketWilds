@@ -438,7 +438,7 @@ namespace PocketWilds.Presentation
 
         public void OpenUpgrades()
         {
-            if (_upgrades == null || !UpgradesUnlocked || IsOpen || (_refuge != null && (_refuge.ModalOpen || _refuge.Hatch.IsPlaying)))
+            if (_upgrades == null || !UpgradesUnlocked || IsOpen || (_refuge != null && (_refuge.ModalOpen || _refuge.Hatching)))
                 return;
             _openedThisSession = true;
             Rebuild();
@@ -529,7 +529,7 @@ namespace PocketWilds.Presentation
             if (_hud == null)
                 return;
             bool wanted = _upgradeShown && !_openedThisSession && !_context.State.Analytics.Has(FunnelMilestone.FirstUpgrade)
-                          && !IsOpen && (_refuge == null || (!_refuge.ModalOpen && !_refuge.Hatch.IsPlaying))
+                          && !IsOpen && (_refuge == null || (!_refuge.ModalOpen && !_refuge.Hatching))
                           && _cards[0].State == UpgradeCardState.Affordable;
             _hintIdle = wanted ? _hintIdle + deltaTime : 0f;
             bool show = wanted && _hintIdle >= HintDelay;
@@ -726,7 +726,7 @@ namespace PocketWilds.Presentation
         }
 
         /// <summary>Nothing else on screen and no hatch playing: a card may come.</summary>
-        private bool CanInterrupt() => !IsOpen && (_refuge == null || (!_refuge.ModalOpen && !_refuge.Hatch.IsPlaying));
+        private bool CanInterrupt() => !IsOpen && (_refuge == null || (!_refuge.ModalOpen && !_refuge.Hatching));
 
         /// <summary>
         /// A real pause: nothing on screen, no hatch, and the next egg is there but left alone (between two hatches the

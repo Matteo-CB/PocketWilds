@@ -57,6 +57,7 @@ namespace PocketWilds.Presentation
         private bool _initialized;
 
         public Camera Camera => _camera;
+        public float DefaultDistance => _defaultDistance;
         public RefugeCameraState State { get; private set; }
         public Vector3 Focus => _focus;
         public float Distance => _distance;
@@ -135,7 +136,11 @@ namespace PocketWilds.Presentation
         }
 
         /// <summary>Short framing on an animal or the hatching egg. ReturnToWorld restores the previous view.</summary>
-        public void FocusOn(Vector3 point, RefugeCameraState state)
+        public void FocusOn(Vector3 point, RefugeCameraState state) =>
+            FocusOn(point, state, state == RefugeCameraState.HatchReveal ? _hatchDistance : _focusAnimalDistance);
+
+        /// <summary>T35B: the same framing at a chosen distance (a group of ten eggs needs the wider view).</summary>
+        public void FocusOn(Vector3 point, RefugeCameraState state, float distance)
         {
             if (State == RefugeCameraState.DefaultWorld)
             {
@@ -145,7 +150,7 @@ namespace PocketWilds.Presentation
             _flingVelocity = Vector3.zero;
             State = state;
             _targetFocus = point;
-            _targetDistance = state == RefugeCameraState.HatchReveal ? _hatchDistance : _focusAnimalDistance;
+            _targetDistance = Mathf.Clamp(distance, _minDistance, _maxDistance);
             _currentSmooth = _transitionTime * 0.4f;
         }
 

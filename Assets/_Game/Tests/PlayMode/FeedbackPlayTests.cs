@@ -202,10 +202,13 @@ namespace PocketWilds.Tests.PlayMode
             info.onClick.Invoke();
             Assert.IsTrue(modal.IsOpen);
             Assert.AreEqual(ModalKind.Info, modal.Kind);
-            Assert.AreEqual(Context.Localization.Get(FeedbackText.EggOddsTitle), modal.TitleText);
+            // T35B: the window names the chosen egg (several eggs can be offered).
+            Context.Content.Eggs.TryGet(ContentId.FromSource("egg.grassland.basic"), out var egg);
+            Assert.AreEqual(Context.Localization.Get(egg.DisplayKey), modal.TitleText);
+            // T35B: each line is the rarity's stars, then its word and chance (doc 02 Œufs, section 6).
             var lines = modal.BodyText.Split('\n');
             foreach (var key in new[] { FeedbackText.RarityCommon, FeedbackText.RarityRare, FeedbackText.RarityFabulous })
-                Assert.IsTrue(lines.Any(l => l.StartsWith(Context.Localization.Get(key), StringComparison.Ordinal)), key);
+                Assert.IsTrue(lines.Any(l => l.TrimStart('★', ' ').StartsWith(Context.Localization.Get(key), StringComparison.Ordinal)), key);
             Assert.IsTrue(modal.BodyText.Contains("20"), "The new species guarantee (20 eggs) while species are left.");
             Assert.IsFalse(modal.CancelVisible, "Info has one button.");
             Assert.Greater(modal.CardHeight, 600f, "The card grew to its body.");

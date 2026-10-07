@@ -1407,6 +1407,71 @@ namespace PocketWilds.Presentation
 
         // ---------------- Collision checks ----------------
 
+        /// <summary>
+        /// T35B multi hatch: a round footprint (an egg) of this radius and height standing at <paramref name="point"/> touches
+        /// no obstacle and, with <paramref name="withAnimals"/>, no animal body. Linear in obstacles and animals, no allocation.
+        /// </summary>
+        /// <summary>
+        /// T35B: a newborn's way out of a multi hatch, before it joins the meadow: the straight lane from
+        /// <paramref name="from"/> to <paramref name="to"/>, as wide as <paramref name="radius"/>, meets no prop, no water
+        /// and no animal, and its end lies inside the walk area.
+        /// </summary>
+        public bool IsLaneClear(Vector3 from, Vector3 to, float radius, float height)
+        {
+            if (Flat(_area.Clamp(to) - to).sqrMagnitude > 1e-4f)
+                return false;
+            var f = new Vector2(from.x, from.z);
+            var t = new Vector2(to.x, to.z);
+            float groundY = (from.y + to.y) * 0.5f;
+            for (int i = 0; i < _obstacleCount; i++)
+            {
+                ref var o = ref _obstacles[i];
+                if (!o.BlocksWalker(groundY, height))
+                    continue;
+                float min = radius + o.radius;
+                if (CollisionMath.SegmentSegmentDistanceSq(f, t, o.a, o.b) < min * min)
+                    return false;
+            }
+            for (int i = 0; i < _activeCount; i++)
+            {
+                ref var a = ref _agents[_active[i]];
+                float min = radius + a.Radius;
+                if (CollisionMath.SegmentSegmentDistanceSq(f, t, a.SegA, a.SegB) < min * min)
+                    return false;
+            }
+            return true;
+        }
+
+        public bool IsDiskClear(Vector3 point, float radius, float height, bool withAnimals)
+        {
+            var center = new Vector2(point.x, point.z);
+            for (int i = 0; i < _obstacleCount; i++)
+            {
+                float span = radius + _obstacleReach[i];
+                if ((_obstacleCenter[i] - center).sqrMagnitude >= span * span)
+                    continue;
+                ref var o = ref _obstacles[i];
+                if (!o.BlocksWalker(point.y, height))
+                    continue;
+                float min = radius + o.radius;
+                if (CollisionMath.PointSegmentDistanceSq(center, o.a, o.b) < min * min)
+                    return false;
+            }
+            if (!withAnimals)
+                return true;
+            for (int i = 0; i < _activeCount; i++)
+            {
+                ref var a = ref _agents[_active[i]];
+                float min = radius + a.Radius;
+                if (CollisionMath.PointSegmentDistanceSq(center, a.SegA, a.SegB) < min * min)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>The ground height under a point (the chunk's relief).</summary>
+        public float GroundHeight(Vector3 point) => _ground.HeightAt(point.x, point.z);
+
         /// <summary>The body fits at this pose: no obstacle, no egg spot (unless emerging), and no other animal.</summary>
         private bool Fits(int slot, ref Agent agent, Vector3 position, float yaw, bool withAgents)
         {

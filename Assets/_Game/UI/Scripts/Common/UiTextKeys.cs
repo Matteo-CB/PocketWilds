@@ -49,6 +49,10 @@ namespace PocketWilds.UI
             PocketWilds.Presentation.FeedbackText.ModalCancelButton, PocketWilds.Presentation.FeedbackText.ToastShopOpen,
             PocketWilds.Presentation.FeedbackText.ToastNotEnoughLight, PocketWilds.Presentation.FeedbackText.SheetDetailsButton,
             PocketWilds.Presentation.FeedbackText.SheetBond,
+            // T35B: egg choice and odds window.
+            PocketWilds.Presentation.EggText.Free, PocketWilds.Presentation.EggText.OddsDiscovery,
+            PocketWilds.Presentation.EggText.OddsTargets, PocketWilds.Presentation.EggText.OddsNewSpecies,
+            PocketWilds.Presentation.EggText.OddsNewColor, PocketWilds.Presentation.EggText.OddsStock,
         };
     }
 }

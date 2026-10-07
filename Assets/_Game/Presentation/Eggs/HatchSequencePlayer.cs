@@ -101,6 +101,14 @@ namespace PocketWilds.Presentation
 
         /// <summary>Starts the staging for an already resolved hatch. The animal view must be configured.</summary>
         public bool Hatch(AnimalView animal, ContentId species, RarityTier rarity, bool repeat, IHatchListener listener,
+            HatchNews news = HatchNews.None) =>
+            Hatch(animal, species, rarity, repeat ? _config.repeatSpeed : 1f, listener, news);
+
+        /// <summary>
+        /// Starts the staging at <paramref name="speed"/> (1: the whole sequence; T35B fast hatches play at
+        /// <see cref="HatchPresentationConfig.fastSpeed"/>, about 1.2 s).
+        /// </summary>
+        public bool Hatch(AnimalView animal, ContentId species, RarityTier rarity, float speed, IHatchListener listener,
             HatchNews news = HatchNews.None)
         {
             if (Phase != HatchPhase.Waiting || _egg == null || animal == null)
@@ -111,7 +119,7 @@ namespace PocketWilds.Presentation
             _rarity = rarity;
             _news = news;
             _listener = listener;
-            _speed = repeat ? _config.repeatSpeed : 1f;
+            _speed = Mathf.Max(0.1f, speed);
             _elapsed = 0f;
             _lastCrackTime = -10f;
             _glow = -1;

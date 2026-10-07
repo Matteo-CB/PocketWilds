@@ -94,8 +94,16 @@ namespace PocketWilds.Editor.UI
             { FeedbackText.RarityFabulous, "Fabulous", "Fabuleux" },
             { FeedbackText.EggOddsTitle, "Egg odds", "Chances de l'œuf" },
             { FeedbackText.EggOddsLine, "{0}: {1}%", "{0} : {1} %" },
-            { FeedbackText.EggOddsGuarantee, "After {0} eggs without a new species, the next one brings one.",
-                "Après {0} œufs sans nouvelle espèce, le suivant en apporte une." },
+            { FeedbackText.EggOddsGuarantee, "A new species arrives by the {0}th egg at the latest.",
+                "Une nouvelle espèce arrive au plus tard au {0}e œuf." },
+            // T35B (doc 02 Œufs, sections 3 and 6): egg choice and odds window.
+            { EggText.Free, "Free", "Gratuit" },
+            { EggText.OddsDiscovery, "A species you don't have yet. If none is left, a color you don't have. Otherwise, Rare or better:",
+                "Une espèce que tu n'as pas encore. S'il n'en reste plus, une couleur que tu n'as pas. Sinon, Rare ou mieux :" },
+            { EggText.OddsTargets, "Targets: {0}", "Espèces visées : {0}" },
+            { EggText.OddsNewSpecies, "New species: +{0}%", "Nouvelle espèce : +{0} %" },
+            { EggText.OddsNewColor, "New color: +{0}%", "Nouvelle couleur : +{0} %" },
+            { EggText.OddsStock, "In stock: {0}", "En stock : {0}" },
             { FeedbackText.ModalOkButton, "OK", "OK" },
             { FeedbackText.ModalCancelButton, "Cancel", "Annuler" },
             { FeedbackText.ToastShopOpen, "The shop is open", "La boutique est ouverte" },
@@ -350,7 +358,8 @@ namespace PocketWilds.Editor.UI
                 var action = Rect("HatchAction", safe);
                 action.gameObject.AddComponent<Canvas>();
                 action.gameObject.AddComponent<GraphicRaycaster>();
-                Place(action, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 96f), new Vector2(300f, 330f));
+                // T35B: 48 px higher than T26 so the egg pills fit under the price.
+                Place(action, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 144f), new Vector2(300f, 330f));
                 var hatchRoot = Rect("HatchRoot", action);
                 Stretch(hatchRoot);
                 hatchRoot.pivot = new Vector2(0.5f, 0.45f);
@@ -434,7 +443,7 @@ namespace PocketWilds.Editor.UI
                 var masteryGroup = masteryRoot.gameObject.AddComponent<CanvasGroup>();
                 masteryGroup.interactable = false;
                 masteryGroup.blocksRaycasts = false;
-                Place(masteryRoot, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 452f), new Vector2(500f, 110f));
+                Place(masteryRoot, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 500f), new Vector2(500f, 110f));
                 var toastBack = AddImage("Background", masteryRoot, pill, tokens.panelPrimary, Image.Type.Sliced);
                 Stretch(toastBack.rectTransform);
                 var toastGlow = AddImage("Glow", masteryRoot, AssetDatabase.LoadAssetAtPath<Sprite>(GlowPath), new Color(1f, 0.84f, 0.42f, 0.95f), Image.Type.Simple);
@@ -480,6 +489,8 @@ namespace PocketWilds.Editor.UI
                 FeedbackUiPipeline.AddHudFeedback(root, safe, action, chip, chipIcon.rectTransform, hud, tokens);
                 // T35A: the Upgrades button and its dot, the refuge level badge, the touchable Light chip.
                 ProgressionUiPipeline.AddHudProgression(safe, shortcuts, chip, hud, tokens);
+                // T35B: the egg pills, the chosen egg's name, × 1 / × 3 / × 10, the Focus targets, the price word, the swipe.
+                EggUiPipeline.AddHudEggChoice(action, costRow, costIcon, buttonImage, egg, hud, tokens);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(HudPrefabPath));
                 return PrefabUtility.SaveAsPrefabAsset(root, HudPrefabPath).GetComponent<RefugeHud>();

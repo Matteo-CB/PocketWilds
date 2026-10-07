@@ -42,7 +42,7 @@ namespace PocketWilds.Presentation
     /// offline return screen; its Light counts up into the HUD when collected (T18).
     /// </summary>
     public sealed class RefugeController : IRefugeActions, IHatchListener, IOfflineReturnActions, ICodexActions, IAnimalSheetActions,
-        IModalActions, IAnimalVoiceListener, IDisposable
+        IModalActions, IAnimalVoiceListener, IEggChoiceActions, IMultiHatchListener, IDisposable
     {
         private const float NextEggDelay = 0.45f;
         // Room around the egg spot no animal enters: the egg (0.33 m) or a giant newborn squirrel standing on it.
@@ -81,9 +81,9 @@ namespace PocketWilds.Presentation
         private readonly IAnimalSheetView _sheetView;
         private readonly IModalView _modalView;
         private readonly RefugeCameraInput _input;
-        private readonly ContentId _eggId;
-        private readonly EggDefinition _egg;
-        private readonly uint _eggVisual;
+        private ContentId _eggId;
+        private EggDefinition _egg;
+        private uint _eggVisual;
 
         private readonly AnimalViewPool _animals;
         private readonly GameObjectPool<EggView> _eggs;
@@ -131,6 +131,49 @@ namespace PocketWilds.Presentation
         private float _collectTime = -1f;
         private readonly ShopPresenter _shop;
         private float _momentOfferTime = -1f;
+
+        // T35B egg choice and multi hatch (doc 02 Œufs, sections 3 to 6).
+        private const float ChoiceCheckSeconds = 0.25f;
+        private const float MultiEggRadius = 0.16f;
+        private const float MultiEggHeight = 0.4f;
+        private const float MultiEggSpacing = 0.42f;
+        /// <summary>Ten eggs: a wider pitch and two rows far enough apart that the back row shows above the front one.</summary>
+        private const float MultiTenSpacing = 0.46f;
+        private const float MultiTenFrontZ = -0.22f;
+        private const float MultiTenBackZ = 0.42f;
+        /// <summary>
+        /// How long the group waits for its regular formation: no animal settles in front of the egg (the apron), so the
+        /// last group's newborns walk off within a moment. After that, blocked eggs take the free points of the rings.
+        /// </summary>
+        private const float MultiWaitSeconds = 1.2f;
+        /// <summary>The walk out of a multi hatch: places beyond the apron, a few directions around the way out.</summary>
+        private static readonly float[] ExitDistances = { 1.75f, 2.05f, 2.4f };
+        private static readonly float[] ExitAngles = { 0f, 20f, -20f, 40f, -40f, 60f, -60f, 80f, -80f };
+        private const float ExitSpacing = 0.5f;
+        private const float ExitLaneRadius = 0.2f;
+        private const float ExitLaneGap = 0.34f;
+        private const float ExitStagger = 0.05f;
+        private const float ExitBackRowDelay = 0.35f;
+        private readonly EggChoice _choice;
+        private readonly IEggChoiceHud _choiceHud;
+        private readonly EggSlot[] _slots = new EggSlot[EggChoice.MaxSlots];
+        private readonly PortraitSlot[] _portraits = new PortraitSlot[3];
+        private readonly ContentId[] _targets = new ContentId[EggOdds.MaxTargets];
+        private readonly EggOdds _odds = new EggOdds();
+        private float _nextChoiceCheck;
+        private readonly MultiHatchPlayer _multi;
+        private readonly HatchResult[] _multiResults = new HatchResult[MultiHatchPlayer.MaxEggs];
+        private readonly EggView[] _multiEggs = new EggView[MultiHatchPlayer.MaxEggs];
+        private readonly AnimalView[] _multiAnimals = new AnimalView[MultiHatchPlayer.MaxEggs];
+        private readonly ContentId[] _multiSpecies = new ContentId[MultiHatchPlayer.MaxEggs];
+        private readonly RarityTier[] _multiRarity = new RarityTier[MultiHatchPlayer.MaxEggs];
+        private readonly HatchNews[] _multiNews = new HatchNews[MultiHatchPlayer.MaxEggs];
+        private readonly RareGlowKind[] _multiRare = new RareGlowKind[MultiHatchPlayer.MaxEggs];
+        private readonly Vector3[] _multiSpots = new Vector3[MultiHatchPlayer.MaxEggs];
+        private int _multiCount;
+        private int _multiPending;
+        private float _multiRequestTime;
+        private Vector3 _eggCenter;
         // A hatch ended: the moment offer may come once the next egg is ready and the player pauses (T33C: the egg
         // now waits for the newborn to bound off its spot, so the pause is counted from the egg, not the hatch).
         private bool _momentOfferArmed;
@@ -156,10 +199,9 @@ namespace PocketWilds.Presentation
             _codexView = codexView;
             _input = rig != null ? rig.GetComponent<RefugeCameraInput>() : null;
             _root = root;
-            _eggId = ContentId.FromSource(eggSourceId);
-            _egg = context.Content.Eggs.Get(_eggId);
-            context.Palettes.TryGetRow(_eggId, out int eggRow);
-            _eggVisual = EggVisualPacking.FromDefinition(_egg, eggRow);
+            // T35B: the egg on the pedestal is the player's choice (the last one used), the scene's egg by default.
+            _choice = new EggChoice(context, ContentId.FromSource(eggSourceId));
+            SetEggData(_choice.Selected);
 
             var settings = SchedulerSettings.ForQuality(context.Quality.CurrentTier, false);
             // Visible population: every tier A slot plus a calm background (Performance Test Matrix P3 shape).
@@ -192,11 +234,14 @@ namespace PocketWilds.Presentation
                 throw new InvalidOperationException("Visual catalog has no species prefab.");
             _speciesHandles = handles.ToArray();
             _speciesProfiles = profiles.ToArray();
-            _eggs = new GameObjectPool<EggView>(hatchConfig.eggPrefab, root, 2, 2);
-            _eggs.Warmup(2);
+            // The waiting egg plus a full × 10 (doc 02 Œufs, section 5: pools sized for ten eggs).
+            _eggs = new GameObjectPool<EggView>(hatchConfig.eggPrefab, root, MultiHatchPlayer.MaxEggs + 1, MultiHatchPlayer.MaxEggs + 1);
+            _eggs.Warmup(MultiHatchPlayer.MaxEggs + 1);
             // T34A: every feedback effect warmed here, counts by the device tier (Gate 10: nothing instantiates in play).
             _vfx = hatchConfig.vfx != null ? new FeedbackVfx(hatchConfig.vfx, root, PresentationQuality.Tier) : null;
             _hatch = new HatchSequencePlayer(hatchConfig, _vfx, context.Audio, context.Haptics);
+            _multi = new MultiHatchPlayer(hatchConfig, _vfx, context.Audio, context.Haptics);
+            _hatchConfig = hatchConfig;
             _visibleAllowance = visibleAllowance > 0 ? Math.Min(visibleAllowance, _visibleBudget) : _visibleBudget;
             var walkData = walk ?? RefugeWalkData.FromChunk(chunk);
             _walkArea = walkData.Area;
@@ -207,7 +252,10 @@ namespace PocketWilds.Presentation
             _scheduler.SetGround(walkData.Ground);
             _scheduler.SetObstacles(walkData.Obstacles);
             if (chunk.EggSpawn != null)
-                _scheduler.SetEggSpot(chunk.EggSpawn.position, EggSpotRadius, EggBodyRadius, EggApronRadius);
+            {
+                _eggCenter = chunk.EggSpawn.position;
+                _scheduler.SetEggSpot(_eggCenter, EggSpotRadius, EggBodyRadius, EggApronRadius);
+            }
 
             if (context.Store != null && (shopView != null || offerView != null))
             {
@@ -220,7 +268,9 @@ namespace PocketWilds.Presentation
             WarmupSpares();
             PresentEgg();
             _hud?.Bind(this);
-            RefreshEggCost();
+            _choiceHud = _hud as IEggChoiceHud;
+            _choiceHud?.BindEggs(this);
+            PushChoice(false);
             // T34A: the sheet, the modal and the HUD's hidden parts are built once now (T28 lesson: first opens never hitch).
             var loc = context.Localization;
             _sheetView?.Prewarm(loc);
@@ -230,6 +280,15 @@ namespace PocketWilds.Presentation
 
         public int VisibleAnimals { get; private set; }
         public HatchSequencePlayer Hatch => _hatch;
+
+        /// <summary>T35B: a × 3 or × 10 hatch staging.</summary>
+        public MultiHatchPlayer Multi => _multi;
+
+        /// <summary>A single or multi hatch is playing (screens, offers and taps wait).</summary>
+        public bool Hatching => _hatch.IsPlaying || _multi.IsPlaying;
+
+        public EggChoice Choice => _choice;
+        public ContentId EggId => _eggId;
         public FeedbackVfx Vfx => _vfx;
         public AnimalScheduler Scheduler => _scheduler;
 
@@ -312,7 +371,7 @@ namespace PocketWilds.Presentation
             if (_shop != null)
             {
                 _shop.Tick(deltaTime);
-                if (_momentOfferTime >= 0f && time >= _momentOfferTime && !ModalOpen && !_hatch.IsPlaying)
+                if (_momentOfferTime >= 0f && time >= _momentOfferTime && !ModalOpen && !Hatching)
                 {
                     _momentOfferTime = -1f;
                     _shop.TryShowMomentOffer();
@@ -328,6 +387,16 @@ namespace PocketWilds.Presentation
             }
             _scheduler.Tick(time, deltaTime);
             _hatch.Tick(time, deltaTime);
+            _multi.Tick(time, deltaTime);
+            if (time >= _nextChoiceCheck)
+            {
+                // The offer changes rarely (a Discovery egg won, the Focus egg or × 3 unlocked): a few checks a second.
+                _nextChoiceCheck = time + ChoiceCheckSeconds;
+                if (!Hatching && _choice.Refresh())
+                    PushChoice(false);
+            }
+            if (_multiPending > 0)
+                TryStartMulti();
             if (_vfx != null)
             {
                 TickRareGlints();
@@ -369,7 +438,7 @@ namespace PocketWilds.Presentation
         /// </summary>
         private void UpdateTapHint(float deltaTime)
         {
-            bool wanted = _context.State.Collection.Count == 0 && _waitingEgg != null && !_hatch.IsPlaying && !ModalOpen;
+            bool wanted = _context.State.Collection.Count == 0 && _waitingEgg != null && !Hatching && !ModalOpen;
             _idleOnEgg = wanted ? _idleOnEgg + deltaTime : 0f;
             bool show = wanted && _idleOnEgg >= TapHintDelay;
             var camera = _rig != null ? _rig.Camera : Camera.main;
@@ -391,6 +460,11 @@ namespace PocketWilds.Presentation
         {
             if (ModalOpen || (_hud != null && _hud.IsOverUi(screenPosition)))
                 return;
+            if (_multi.IsPlaying)
+            {
+                _multi.Skip();
+                return;
+            }
             if (_hatch.IsPlaying)
             {
                 _hatch.Skip();
@@ -503,7 +577,7 @@ namespace PocketWilds.Presentation
 
         public void OpenSpeciesDetails(ContentId species)
         {
-            if (_codexView == null || _context.Codex == null || ModalOpen || _hatch.IsPlaying)
+            if (_codexView == null || _context.Codex == null || ModalOpen || Hatching)
                 return;
             _codexView.OpenSpecies(_context.Codex, _context.Localization, this, species);
             _context.Analytics.ScreenView(ScreenId.Codex);
@@ -519,12 +593,14 @@ namespace PocketWilds.Presentation
         /// </summary>
         public void OpenEggInfo()
         {
-            if (_modalView == null || ModalOpen || _hatch.IsPlaying)
+            if (_modalView == null || ModalOpen || Hatching)
                 return;
             var loc = _context.Localization;
-            string body = EggOddsText(_egg, loc, HasSpeciesToFind());
-            _modalView.Show(ModalKind.Info, loc.Get(FeedbackText.EggOddsTitle), body, loc.Get(FeedbackText.ModalOkButton), null, this);
+            _context.Hatch.GetOdds(_eggId, _odds);
+            string body = EggOddsText(_odds, _egg, loc, _context.Content);
+            _modalView.Show(ModalKind.Info, loc.Get(_egg.DisplayKey), body, loc.Get(FeedbackText.ModalOkButton), null, this);
             _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
+            _context.Analytics.EggOddsOpened(_eggId);
         }
 
         /// <summary>
@@ -553,6 +629,58 @@ namespace PocketWilds.Presentation
             return body.ToString();
         }
 
+        /// <summary>
+        /// T35B odds window (doc 02 Œufs, section 6): this egg's table with the stars and the word of each rarity, the Focus
+        /// targets, the protections running now in plain words, the guarantee in one sentence; for a Discovery egg its rules
+        /// and the stock. Every number comes from <see cref="HatchService.GetOdds"/>, the ones the roll uses. Built when the
+        /// window opens, never per frame.
+        /// </summary>
+        public static string EggOddsText(EggOdds odds, EggDefinition egg, ILocalization loc, ContentRegistry content)
+        {
+            var culture = loc.Language == "fr" ? System.Globalization.CultureInfo.GetCultureInfo("fr-FR") : System.Globalization.CultureInfo.InvariantCulture;
+            var body = new System.Text.StringBuilder(384);
+            string line = loc.Get(FeedbackText.EggOddsLine);
+            if (odds.Tier == EggTier.Discovery)
+                body.Append(loc.Get(EggText.OddsDiscovery)).Append('\n');
+            bool first = true;
+            for (int i = 0; i < odds.RarityPercent.Length; i++)
+            {
+                double percent = odds.RarityPercent[i];
+                if (percent <= 0.0)
+                    continue;
+                if (!first)
+                    body.Append('\n');
+                first = false;
+                body.Append('★', i + 1).Append(' ');
+                body.Append(string.Format(line, loc.Get(FeedbackText.RarityKey((RarityTier)i)), Percent(percent, culture)));
+            }
+            if (odds.TargetCount > 0 && odds.TargetCount < egg.Pool.Length)
+            {
+                var names = new System.Text.StringBuilder(64);
+                for (int i = 0; i < odds.TargetCount; i++)
+                {
+                    if (i > 0)
+                        names.Append(", ");
+                    names.Append(content.Species.TryGet(odds.Targets[i], out var species) ? loc.Get(species.DisplayKey) : "?");
+                }
+                body.Append("\n\n").Append(string.Format(loc.Get(EggText.OddsTargets), names));
+            }
+            if (odds.NewSpeciesBonus > 0.0 || odds.NewVariantBonus > 0.0)
+                body.Append('\n');
+            if (odds.NewSpeciesBonus > 0.0)
+                body.Append('\n').Append(string.Format(loc.Get(EggText.OddsNewSpecies), Percent(odds.NewSpeciesBonus * 100.0, culture)));
+            if (odds.NewVariantBonus > 0.0)
+                body.Append('\n').Append(string.Format(loc.Get(EggText.OddsNewColor), Percent(odds.NewVariantBonus * 100.0, culture)));
+            if (odds.EggsToGuarantee > 0)
+                body.Append("\n\n").Append(string.Format(loc.Get(FeedbackText.EggOddsGuarantee), odds.PityHardLimit));
+            if (odds.Free)
+                body.Append("\n\n").Append(string.Format(loc.Get(EggText.OddsStock), odds.Stock));
+            return body.ToString();
+        }
+
+        private static string Percent(double percent, System.Globalization.CultureInfo culture) =>
+            percent.ToString(percent >= 10.0 ? "0.#" : percent >= 1.0 ? "0.##" : "0.###", culture);
+
         private bool HasSpeciesToFind()
         {
             var discovered = _context.State.Collection.DiscoveredSpecies;
@@ -571,7 +699,7 @@ namespace PocketWilds.Presentation
         /// </summary>
         void IAnimalVoiceListener.AnimalVoice(AnimalView view, AnimalBehaviorState state, Vector3 position)
         {
-            if (view == null || ModalOpen || _hatch.IsPlaying)
+            if (view == null || ModalOpen || Hatching)
                 return;
             if (_tappedView >= 0 && _views[_tappedView] == view && _time - _tappedTime < AfterTouchQuietSeconds)
                 return;
@@ -585,14 +713,20 @@ namespace PocketWilds.Presentation
         {
             if (ModalOpen)
                 return;
+            if (_multi.IsPlaying)
+            {
+                _multi.Skip();
+                return;
+            }
             if (_hatch.IsPlaying)
             {
                 _hatch.Skip();
                 return;
             }
-            if (_waitingEgg == null)
+            if (_waitingEgg == null || _multiPending > 0)
                 return;
-            if (!_context.Hatch.CanHatch(_eggId))
+            int count = _choice.NextCount;
+            if (!_context.Hatch.CanHatch(_eggId, count))
             {
                 _hatch.Nudge();
                 _hud?.PulseNotEnough();
@@ -607,7 +741,16 @@ namespace PocketWilds.Presentation
                 return;
             }
 
-            bool paid = !_context.Hatch.IsNextHatchFree;
+            if (count > 1)
+            {
+                // × 3 or × 10: the spots around the pedestal must be clear first (no-collision rule).
+                _multiPending = count;
+                _multiRequestTime = _time;
+                TryStartMulti();
+                return;
+            }
+
+            bool paid = !_context.Hatch.IsNextHatchFree && _egg.Tier != EggTier.Discovery;
             var result = _context.Hatch.Hatch(_eggId);
             if (!result.Succeeded)
             {
@@ -633,8 +776,7 @@ namespace PocketWilds.Presentation
             var news = result.NewSpecies ? HatchNews.NewSpecies : result.NewVariant ? HatchNews.NewVariant : HatchNews.None;
             PrepareReveal(result.Animal, news);
 
-            bool repeat = _time - _lastHatchEnd < RepeatWindowSeconds;
-            if (_hatchingAnimal != null && _hatch.Hatch(_hatchingAnimal, result.Animal.Species, result.Animal.Rarity, repeat, this, news))
+            if (_hatchingAnimal != null && _hatch.Hatch(_hatchingAnimal, result.Animal.Species, result.Animal.Rarity, HatchSpeed(), this, news))
             {
                 _rig?.FocusOn(_waitingEgg.VfxPoint.position, RefugeCameraState.HatchReveal);
                 _hud?.SetHatching(true);
@@ -652,7 +794,7 @@ namespace PocketWilds.Presentation
         /// </summary>
         public void OpenCodex()
         {
-            if (_codexView == null || _context.Codex == null || ModalOpen || _hatch.IsPlaying)
+            if (_codexView == null || _context.Codex == null || ModalOpen || Hatching)
                 return;
             _codexView.Open(_context.Codex, _context.Localization, this);
             _context.Analytics.ScreenView(ScreenId.Codex);
@@ -672,7 +814,7 @@ namespace PocketWilds.Presentation
         /// <summary>HUD shortcut. Like the Codex, the shop is opaque: the world camera stops while it is open.</summary>
         public void OpenShop()
         {
-            if (_shop == null || ModalOpen || _hatch.IsPlaying)
+            if (_shop == null || ModalOpen || Hatching)
                 return;
             _shop.OpenShop();
         }
@@ -778,6 +920,9 @@ namespace PocketWilds.Presentation
             // A hatch is a happy moment (doc 09): the only time a moment offer may appear.
             _momentOfferTime = -1f;
             _momentOfferArmed = true;
+            // The stock of Discovery eggs, the Focus targets and the price follow the new animal.
+            _choice.Refresh();
+            PushChoice(false);
         }
 
         /// <summary>
@@ -790,14 +935,10 @@ namespace PocketWilds.Presentation
             int spares = _visibleBudget + 1 - VisibleAnimals;
             if (spares <= 0)
                 return;
-            int warmed = 0;
-            foreach (var entry in _egg.Pool)
-                if (_speciesSlot.ContainsKey(entry.Species))
-                    warmed++;
-            int perFrame = Math.Max(1, 2 / Math.Max(1, warmed));
-            foreach (var entry in _egg.Pool)
-                if (_speciesSlot.TryGetValue(entry.Species, out int slot))
-                    _ = WarmupSpeciesAsync(_speciesHandles[slot], spares, perFrame);
+            // T35B: every egg type can give any species of an open biome (Discovery eggs too): all species are warmed.
+            int perFrame = Math.Max(1, 2 / Math.Max(1, _speciesHandles.Length));
+            for (int i = 0; i < _speciesHandles.Length; i++)
+                _ = WarmupSpeciesAsync(_speciesHandles[i], spares, perFrame);
         }
 
         private async Awaitable WarmupSpeciesAsync(int handle, int count, int perFrame)
@@ -819,9 +960,8 @@ namespace PocketWilds.Presentation
             get
             {
                 int min = int.MaxValue;
-                foreach (var entry in _egg.Pool)
-                    if (_speciesSlot.TryGetValue(entry.Species, out int slot))
-                        min = Math.Min(min, _animals.GetPool(_speciesHandles[slot]).Stats.Inactive);
+                for (int i = 0; i < _speciesHandles.Length; i++)
+                    min = Math.Min(min, _animals.GetPool(_speciesHandles[i]).Stats.Inactive);
                 return min == int.MaxValue ? 0 : min;
             }
         }
@@ -840,12 +980,376 @@ namespace PocketWilds.Presentation
         private BehaviorProfile ProfileOf(ContentId species) =>
             _speciesSlot.TryGetValue(species, out int slot) ? _speciesProfiles[slot] : _speciesProfiles[0];
 
+        // ---------------- T35B egg choice ----------------
+
+        private readonly HatchPresentationConfig _hatchConfig;
+
+        /// <summary>Device setting "Fast hatches" (on by default; the Settings screen comes with T56).</summary>
+        private readonly bool _fastHatches = Services.Device.LocalDeviceSettingsStore.Load().FastHatches;
+
+        private void SetEggData(ContentId egg)
+        {
+            _eggId = egg;
+            _egg = _context.Content.Eggs.Get(egg);
+            _context.Palettes.TryGetRow(egg, out int row);
+            _eggVisual = EggVisualPacking.FromDefinition(_egg, row);
+        }
+
+        /// <summary>
+        /// The pedestal follows the choice: the waiting egg takes the chosen egg's colors, the HUD its pills, the price (or
+        /// "Free"), the × 1 / × 3 / × 10 pill and the Focus targets. Called on a change, never every frame.
+        /// </summary>
+        private void PushChoice(bool announce)
+        {
+            var selected = _choice.Selected;
+            if (selected != _eggId)
+            {
+                SetEggData(selected);
+                if (_waitingEgg != null && !Hatching && _chunk.EggSpawn != null)
+                {
+                    _waitingEgg.Configure(_chunk.EggSpawn.position, 180f, _eggVisual);
+                    _hatch.Present(_waitingEgg);
+                }
+            }
+            RefreshEggCost();
+            if (_choiceHud == null)
+                return;
+            var eggs = _context.Content.Eggs;
+            for (int i = 0; i < _choice.Count; i++)
+            {
+                var egg = eggs.Get(_choice[i]);
+                _slots[i] = new EggSlot(egg.Id, egg.Palette[0], egg.Palette[1], egg.Tier == EggTier.Discovery ? _context.Hatch.DiscoveryEggs : -1);
+            }
+            _choiceHud.SetEggSlots(_slots, _choice.Count, _choice.SelectedIndex);
+            _choiceHud.SetHatchQuantity(_choice.Quantity, _choice.MaxQuantity > 1);
+            _choiceHud.SetPriceText(_egg.Tier == EggTier.Discovery ? _context.Localization.Get(EggText.Free) : null);
+            PushTargets();
+            if (announce)
+                _choiceHud.ShowEggName(_context.Localization.Get(_egg.DisplayKey));
+        }
+
+        /// <summary>The Focus egg's targets (doc 02 Œufs, section 2.2), recomputed after every hatch. None once it holds the whole biome.</summary>
+        private void PushTargets()
+        {
+            if (_choiceHud == null)
+                return;
+            int count = _egg.FocusTargetCount > 0 ? _context.Hatch.GetFocusTargets(_eggId, _targets) : 0;
+            if (count > _egg.FocusTargetCount)
+                count = 0;
+            count = Math.Min(count, _portraits.Length);
+            var variants = _context.Content.Variants;
+            var found = _context.State.Collection.DiscoveredVariants;
+            for (int i = 0; i < count; i++)
+            {
+                var shown = ContentId.None;
+                for (int v = 0; v < variants.Count && !shown.IsValid; v++)
+                    if (variants[v].Species == _targets[i] && found.Contains(variants[v].Id))
+                        shown = variants[v].Id;
+                _portraits[i] = new PortraitSlot(_targets[i], shown);
+            }
+            _choiceHud.SetFocusTargets(_portraits, count);
+        }
+
+        public void SelectEgg(int index)
+        {
+            if (ModalOpen || Hatching || _multiPending > 0 || !_choice.Select(index))
+                return;
+            PushChoice(true);
+            _context.Audio.Play(AudioEventId.UiTab, Vector3.zero, default);
+            _context.Haptics.Play(HapticEventId.TapLight);
+        }
+
+        public void StepEgg(int direction)
+        {
+            if (ModalOpen || Hatching || _multiPending > 0 || !_choice.Step(direction))
+                return;
+            PushChoice(true);
+            _context.Audio.Play(AudioEventId.UiTab, Vector3.zero, default);
+            _context.Haptics.Play(HapticEventId.TapLight);
+        }
+
+        public void CycleHatchQuantity()
+        {
+            if (ModalOpen || Hatching || _multiPending > 0 || !_choice.CycleQuantity())
+                return;
+            PushChoice(false);
+            _context.Audio.Play(AudioEventId.UiTab, Vector3.zero, default);
+        }
+
+        /// <summary>
+        /// Doc 02 Œufs, section 4: the first hatches play the whole sequence; afterwards the fast one (1.2 s) when the
+        /// device setting allows it (on by default), else the repeat speed of a quick series.
+        /// </summary>
+        private float HatchSpeed()
+        {
+            int hatched = (int)_context.State.Collection.NextInstanceId - 1;
+            int full = _context.Progression != null ? _context.Progression.Config.FullHatchSequences : 20;
+            if (hatched <= full)
+                return 1f;
+            if (_fastHatches)
+                return _hatchConfig.fastSpeed;
+            return _time - _lastHatchEnd < RepeatWindowSeconds ? _hatchConfig.repeatSpeed : 1f;
+        }
+
+        // ---------------- T35B multi hatch ----------------
+
+        /// <summary>
+        /// Spots for the eggs around the pedestal (doc 02 Œufs, section 5): an arc for three, two rows of five for ten, each
+        /// spot on clear ground (no prop, no water, no animal), the eggs never touching. While <paramref name="fallback"/> is
+        /// false the whole formation must be free; afterwards blocked spots move to the nearest free point of two rings
+        /// around the pedestal. False when not enough room yet (an animal is passing).
+        /// </summary>
+        private bool FindMultiSpots(int count, bool fallback)
+        {
+            var c = _eggCenter;
+            int found = 0;
+            for (int i = 0; i < count; i++)
+            {
+                var preferred = c + PreferredSpot(i, count);
+                if (TryTakeSpot(preferred, found))
+                {
+                    _multiSpots[found++] = Ground(preferred);
+                    continue;
+                }
+                if (!fallback)
+                    return false;
+                bool placed = false;
+                for (int ring = 0; ring < 2 && !placed; ring++)
+                {
+                    float radius = ring == 0 ? 0.7f : 1.05f;
+                    int steps = ring == 0 ? 10 : 14;
+                    for (int k = 0; k < steps && !placed; k++)
+                    {
+                        float angle = Mathf.PI * 2f * k / steps;
+                        var candidate = c + new Vector3(Mathf.Sin(angle) * radius, 0f, -Mathf.Cos(angle) * radius);
+                        if (TryTakeSpot(candidate, found))
+                        {
+                            _multiSpots[found++] = Ground(candidate);
+                            placed = true;
+                        }
+                    }
+                }
+                if (!placed)
+                    return false;
+            }
+            return true;
+        }
+
+        private static Vector3 PreferredSpot(int i, int count)
+        {
+            if (count <= 3)
+            {
+                // The pedestal egg in the middle, one on each side a little behind.
+                return i == 0 ? Vector3.zero : new Vector3(i == 1 ? -MultiEggSpacing : MultiEggSpacing, 0f, 0.1f);
+            }
+            int row = i / 5, column = i % 5;
+            return new Vector3((column - 2) * MultiTenSpacing, 0f, row == 0 ? MultiTenFrontZ : MultiTenBackZ);
+        }
+
+        private bool TryTakeSpot(Vector3 point, int taken)
+        {
+            for (int j = 0; j < taken; j++)
+            {
+                var d = _multiSpots[j] - point;
+                d.y = 0f;
+                if (d.sqrMagnitude < (2f * MultiEggRadius + 0.06f) * (2f * MultiEggRadius + 0.06f))
+                    return false;
+            }
+            return _scheduler.IsDiskClear(Ground(point), MultiEggRadius, MultiEggHeight, withAnimals: true);
+        }
+
+        private Vector3 Ground(Vector3 point) => new Vector3(point.x, _scheduler.GroundHeight(point), point.z);
+
+        /// <summary>Once the spots are clear: the eggs hatch in the simulation (all paid at once), then the staging starts.</summary>
+        private void TryStartMulti()
+        {
+            int count = _multiPending;
+            if (ModalOpen || _waitingEgg == null || !FindMultiSpots(count, _time - _multiRequestTime >= MultiWaitSeconds))
+                return;
+            _multiPending = 0;
+            if (!_context.Hatch.CanHatch(_eggId, count))
+                return;
+            bool paid = _egg.Tier != EggTier.Discovery;
+            int done = _context.Hatch.Hatch(_eggId, count, _multiResults);
+            if (done == 0)
+            {
+                _hatch.Nudge();
+                _hud?.PulseNotEnough();
+                return;
+            }
+            if (paid)
+                _context.Audio.Play(AudioEventId.SpendLight, Vector3.zero, default);
+
+            // The pedestal egg is the first of the group; the others come from the pool onto their spots.
+            float reach = 0f;
+            _multiCount = 0;
+            for (int i = 0; i < done; i++)
+            {
+                EggView egg;
+                if (i == 0)
+                    egg = _waitingEgg;
+                else if (!_eggs.TryAcquire(out egg))
+                    break;
+                egg.Configure(_multiSpots[i], 180f, _eggVisual);
+                var result = _multiResults[i];
+                var reveal = egg.RevealPoint;
+                _context.Visuals.TryResolve(result.Animal, reveal.position, reveal.eulerAngles.y, out var snapshot);
+                TryAcquire(snapshot, out var view);
+                _multiEggs[i] = egg;
+                _multiAnimals[i] = view;
+                _multiSpecies[i] = result.Animal.Species;
+                _multiRarity[i] = result.Animal.Rarity;
+                _multiNews[i] = result.NewSpecies ? HatchNews.NewSpecies : result.NewVariant ? HatchNews.NewVariant : HatchNews.None;
+                _multiRare[i] = RareGlow.KindOf(result.Animal.Rarity, result.Animal.TraitBits);
+                var offset = _multiSpots[i] - _eggCenter;
+                offset.y = 0f;
+                reach = Mathf.Max(reach, offset.magnitude);
+                _multiCount++;
+            }
+            _waitingEgg = null;
+            // The eggs' spot covers them all while they stand: animals walk around, never through (no-collision rule).
+            _scheduler.SetEggSpot(_eggCenter, reach + MultiEggRadius + 0.1f, EggBodyRadius, Mathf.Max(EggApronRadius, reach + 0.6f));
+            _multi.Play(_multiEggs, _multiAnimals, _multiSpecies, _multiRarity, _multiNews, _multiCount, this);
+            // Three eggs: the hatch framing. Ten: a wider view on the middle of the two rows, so the whole group shows.
+            if (_rig != null)
+            {
+                if (count > 3)
+                    _rig.FocusOn(_eggCenter + new Vector3(0f, 0f, (MultiTenFrontZ + MultiTenBackZ) * 0.5f), RefugeCameraState.HatchReveal,
+                        _rig.DefaultDistance * 0.85f);
+                else
+                    _rig.FocusOn(_eggCenter, RefugeCameraState.HatchReveal);
+            }
+            _hud?.SetHatching(true);
+            RefreshEggCost();
+        }
+
+        public void OnMultiRevealed()
+        {
+        }
+
+        /// <summary>A Rare or better result, or a new species or color: the camera comes closer and its banner shows.</summary>
+        public void OnMultiMoment(int index)
+        {
+            var view = _multiAnimals[index];
+            if (view == null)
+                return;
+            _rig?.FocusOn(view.transform.position + new Vector3(0f, 0.2f, 0f), RefugeCameraState.HatchReveal);
+            PrepareReveal(_multiResults[index].Animal, _multiNews[index]);
+            if (_hasPendingReveal)
+            {
+                _hasPendingReveal = false;
+                _hud?.ShowReveal(_pendingReveal);
+            }
+        }
+
+        /// <summary>
+        /// Doc 02 Œufs, section 5: each newborn walks out to a free place before it joins the meadow. The front row leaves
+        /// first, the back row a moment later; each place lies outside the egg's apron (no animal settles there, so the next
+        /// group finds its formation clear), on a lane that meets no prop, no water, no animal and no other newborn's lane or
+        /// starting point. A newborn with no such place stays and walks out through the meadow like a single hatch's.
+        /// </summary>
+        public bool OnMultiExits(Vector3[] exits, float[] delays)
+        {
+            int count = _multiCount;
+            bool rows = count > 3;
+            for (int i = 0; i < count; i++)
+                delays[i] = (rows && i >= 5 ? ExitBackRowDelay : 0f) + (rows ? i % 5 : i) * ExitStagger;
+            for (int i = 0; i < count; i++)
+            {
+                var view = _multiAnimals[i];
+                if (view == null)
+                    continue;
+                var start = view.transform.position;
+                exits[i] = start;
+                var outward = start - _eggCenter;
+                outward.y = 0f;
+                if (outward.sqrMagnitude < 1e-4f)
+                    outward = new Vector3(0f, 0f, -1f);
+                outward.Normalize();
+                bool found = false;
+                for (int d = 0; d < ExitDistances.Length && !found; d++)
+                {
+                    for (int a = 0; a < ExitAngles.Length && !found; a++)
+                    {
+                        var direction = Quaternion.Euler(0f, ExitAngles[a], 0f) * outward;
+                        var candidate = Ground(_eggCenter + direction * ExitDistances[d]);
+                        if (!ExitFits(i, start, candidate, exits, delays))
+                            continue;
+                        exits[i] = candidate;
+                        found = true;
+                    }
+                }
+            }
+            return true;
+        }
+
+        private bool ExitFits(int i, Vector3 start, Vector3 candidate, Vector3[] exits, float[] delays)
+        {
+            var from = new Vector2(start.x, start.z);
+            var to = new Vector2(candidate.x, candidate.z);
+            for (int j = 0; j < _multiCount; j++)
+            {
+                if (j == i || _multiAnimals[j] == null)
+                    continue;
+                var otherStart = _multiAnimals[j].transform.position;
+                var jFrom = new Vector2(otherStart.x, otherStart.z);
+                if (j < i)
+                {
+                    // Places already given: apart from this one, and the two lanes never cross.
+                    var jTo = new Vector2(exits[j].x, exits[j].z);
+                    if ((jTo - to).sqrMagnitude < ExitSpacing * ExitSpacing)
+                        return false;
+                    if (CollisionMath.SegmentSegmentDistanceSq(from, to, jFrom, jTo) < ExitLaneGap * ExitLaneGap)
+                        return false;
+                }
+                else if (delays[j] >= delays[i] - 1e-3f
+                    && CollisionMath.PointSegmentDistanceSq(jFrom, from, to) < ExitLaneGap * ExitLaneGap)
+                {
+                    // A newborn still waiting at its egg: no lane passes through it.
+                    return false;
+                }
+            }
+            return _scheduler.IsLaneClear(start, candidate, ExitLaneRadius, MultiEggHeight);
+        }
+
+        public void OnMultiFinished()
+        {
+            _scheduler.SetEggSpot(_eggCenter, EggSpotRadius, EggBodyRadius, EggApronRadius);
+            for (int i = 0; i < _multiCount; i++)
+            {
+                _eggs.Release(_multiEggs[i]);
+                _multiEggs[i] = null;
+                var view = _multiAnimals[i];
+                if (view != null)
+                {
+                    var animal = _multiResults[i].Animal;
+                    AddToMeadow(view, animal.Species, animal.InstanceId, animal.Seed, _multiRare[i], emerging: true);
+                }
+                _multiAnimals[i] = null;
+            }
+            ShowMultiSummary();
+            _lastHatchEnd = _time;
+            _rig?.ReturnToWorld();
+            _hud?.SetHatching(false);
+            _nextEggTime = _time + NextEggDelay;
+            _momentOfferTime = -1f;
+            _momentOfferArmed = true;
+            _choice.Refresh();
+            PushChoice(false);
+        }
+
+        /// <summary>The summary card (screen 028) of the last multi hatch; step 3 builds it.</summary>
+        private void ShowMultiSummary()
+        {
+        }
+
         public void Dispose()
         {
             _shop?.Dispose();
             _lifetime.Cancel();
             _lifetime.Dispose();
             _hatch.Clear();
+            _multi.Clear();
             _vfx?.Dispose();
             _animals.Dispose();
             _eggs.Clear();
@@ -855,7 +1359,7 @@ namespace PocketWilds.Presentation
         {
             if (_offlineView == null)
                 return;
-            if (!_offlineView.IsOpen && !CodexOpen && !ShopOpen && _collectTime < 0f && !_hatch.IsPlaying
+            if (!_offlineView.IsOpen && !CodexOpen && !ShopOpen && _collectTime < 0f && !Hatching
                 && _context.Offline != null && _context.Offline.TryTakePending(out var report))
             {
                 // Already in the wallet (saved at once); the HUD holds it back until Collect.
@@ -905,7 +1409,7 @@ namespace PocketWilds.Presentation
             }
         }
 
-        private void RefreshEggCost() => _eggCost = _context.Hatch.GetCost(_eggId);
+        private void RefreshEggCost() => _eggCost = _context.Hatch.GetCost(_eggId, _choice.NextCount);
 
         private void SpawnSavedAnimals() => SpawnSaved(_walkArea);
 
@@ -1096,7 +1600,7 @@ namespace PocketWilds.Presentation
             if (_time < _nextGlintTime)
                 return;
             _nextGlintTime = _time + RareGlintSeconds * (PresentationQuality.Tier == QualityTier.Low ? 2f : 1f);
-            if (ModalOpen || _hatch.IsPlaying)
+            if (ModalOpen || Hatching)
                 return;
             int count = _views.Length;
             for (int n = 0; n < count; n++)

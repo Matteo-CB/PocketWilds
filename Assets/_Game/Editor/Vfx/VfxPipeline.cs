@@ -51,17 +51,19 @@ namespace PocketWilds.Editor.Vfx
         {
             var material = EnsureMaterial();
             var catalog = LoadOrCreate<VfxCatalog>(CatalogPath);
+            // T35B multi hatch: up to three full hatch effects (with their rarity accent and new-discovery ring) and a crack
+            // puff for each other egg play together, so these pools hold that many and keep them (soft = hard, no churn).
             var effects = new List<VfxCatalog.Effect>
             {
-                Effect(VfxId.Crack, Build("VFX_Crack", material, ConfigureCrack), 2, 3, 2),
-                Effect(VfxId.HatchCommon, Build("VFX_HatchCommon", material, ConfigureHatchCommon), 1, 2, 1),
-                Effect(VfxId.HatchRare, Build("VFX_HatchRare", material, ConfigureHatchRare), 1, 2, 1),
-                Effect(VfxId.HatchEpic, Build("VFX_HatchEpic", material, ConfigureHatchEpic), 1, 2, 1),
-                Effect(VfxId.HatchLegendary, Build("VFX_HatchLegendary", material, ConfigureHatchLegendary), 1, 2, 1),
-                Effect(VfxId.HatchFabulous, Build("VFX_HatchFabulous", material, ConfigureHatchFabulous), 1, 2, 1),
+                Effect(VfxId.Crack, Build("VFX_Crack", material, ConfigureCrack), 10, 10, 2),
+                Effect(VfxId.HatchCommon, Build("VFX_HatchCommon", material, ConfigureHatchCommon), 3, 3, 1),
+                Effect(VfxId.HatchRare, Build("VFX_HatchRare", material, ConfigureHatchRare), 3, 3, 1),
+                Effect(VfxId.HatchEpic, Build("VFX_HatchEpic", material, ConfigureHatchEpic), 3, 3, 1),
+                Effect(VfxId.HatchLegendary, Build("VFX_HatchLegendary", material, ConfigureHatchLegendary), 3, 3, 1),
+                Effect(VfxId.HatchFabulous, Build("VFX_HatchFabulous", material, ConfigureHatchFabulous), 3, 3, 1),
                 Effect(VfxId.EggTap, Build("VFX_EggTap", material, ConfigureEggTap), 1, 2, 1),
-                Effect(VfxId.NewSpecies, Build("VFX_NewSpecies", material, ConfigureNewSpecies), 1, 2, 1),
-                Effect(VfxId.NewVariant, Build("VFX_NewVariant", material, ConfigureNewVariant), 1, 2, 1),
+                Effect(VfxId.NewSpecies, Build("VFX_NewSpecies", material, ConfigureNewSpecies), 3, 3, 1),
+                Effect(VfxId.NewVariant, Build("VFX_NewVariant", material, ConfigureNewVariant), 3, 3, 1),
                 Effect(VfxId.MasteryLevelUp, Build("VFX_MasteryLevelUp", material, ConfigureMasteryLevelUp), 1, 2, 1),
                 Effect(VfxId.FavoriteHeart, Build("VFX_FavoriteHeart", material, ConfigureFavoriteHeart), 2, 3, 2),
                 Effect(VfxId.RareGlint, Build("VFX_RareGlint", material, ConfigureRareGlint), 2, 3, 2),
@@ -70,7 +72,7 @@ namespace PocketWilds.Editor.Vfx
             catalog.effects = effects.ToArray();
             catalog.lowCountScale = 0.5f;
             catalog.highCountScale = 1.25f;
-            catalog.maxPlaying = 16;
+            catalog.maxPlaying = 20;
             EditorUtility.SetDirty(catalog);
 
             var config = AssetDatabase.LoadAssetAtPath<HatchPresentationConfig>(HatchConfigPath);

@@ -129,7 +129,7 @@ MonoBehaviour:
   - key: egg.odds.line
     value: '{0}: {1}%'
   - key: egg.odds.guarantee
-    value: After {0} eggs without a new species, the next one brings one.
+    value: A new species arrives by the {0}th egg at the latest.
   - key: ui.ok.button
     value: OK
   - key: ui.cancel.button
@@ -284,3 +284,16 @@ MonoBehaviour:
     value: '{mastery}: level {level}'
   - key: egg.discovery.name
     value: Discovery Egg
+  - key: egg.price.free
+    value: Free
+  - key: egg.odds.discovery
+    value: 'A species you don''t have yet. If none is left, a color you don''t have.
+      Otherwise, Rare or better:'
+  - key: egg.odds.targets
+    value: 'Targets: {0}'
+  - key: egg.odds.new_species
+    value: 'New species: +{0}%'
+  - key: egg.odds.new_color
+    value: 'New color: +{0}%'
+  - key: egg.odds.stock
+    value: 'In stock: {0}'

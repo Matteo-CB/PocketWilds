@@ -37,6 +37,8 @@ namespace PocketWilds.Presentation
         public float[] rarityExtraSeconds = { 0f, 0f, 0.25f, 0.4f, 0.6f, 0.8f };
         [Tooltip("Repeated hatches play faster (UX: the player can speed up repetitions).")]
         [Min(1f)] public float repeatSpeed = 1.6f;
+        [Tooltip("T35B fast hatches (doc 02 Œufs, section 4): after the first hatches, about 1.2 s for a common one.")]
+        [Min(1f)] public float fastSpeed = 2.05f;
 
         [Header("Shell motion")]
         [Range(0f, 30f)] public float wobbleDegrees1 = 7f;
