@@ -108,6 +108,7 @@ namespace PocketWilds.Editor.UI
             { "biome.grassland.name", "Meadow", "Prairie" },
             { "egg.grassland.basic.name", "Meadow Egg", "Œuf de prairie" },
             { "egg.grassland.focus.name", "Precious Meadow Egg", "Œuf de prairie précieux" },
+            { "egg.discovery.name", "Discovery Egg", "Œuf Découverte" },
             { "species.rabbit.name", "Rabbit", "Lapin" },
             { "variant.rabbit.brown.name", "Brown", "Brun" },
             { "variant.rabbit.white.name", "White", "Blanc" },

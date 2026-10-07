@@ -34,8 +34,9 @@ namespace PocketWilds.Services.Save
         /// <summary>
         /// 2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids). 4: Pity counters.
         /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
+        /// 8: Discovery egg stock (World 3).
         /// </summary>
-        public const int CurrentVersion = 7;
+        public const int CurrentVersion = 8;
     }
 
     /// <summary>
@@ -46,8 +47,8 @@ namespace PocketWilds.Services.Save
     {
         private const ushort MetaVersion = 1;
         private const ushort WalletVersion = 1;
-        // 2: per biome, zones opened, mastery XP and level, upgrade levels.
-        private const ushort WorldVersion = 2;
+        // 2: per biome, zones opened, mastery XP and level, upgrade levels. 3: Discovery egg stock.
+        private const ushort WorldVersion = 3;
         private const ushort CollectionVersion = 1;
         private const ushort NamesVersion = 1;
         private const ushort MasteryVersion = 1;
@@ -216,6 +217,7 @@ namespace PocketWilds.Services.Save
             }
 
             output.WriteInt32(world.RenewalCount);
+            output.WriteInt32(world.DiscoveryEggs);
         }
 
         private static void WriteCollection(ByteBufferWriter output, CollectionState collection)
@@ -522,6 +524,8 @@ namespace PocketWilds.Services.Save
             }
 
             world.RenewalCount = r.ReadInt32();
+            if (section.Version >= 3)
+                world.DiscoveryEggs = Math.Max(0, r.ReadInt32());
         }
 
         private static void ReadCollection(SaveSection section, CollectionState collection)

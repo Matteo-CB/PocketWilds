@@ -26,6 +26,11 @@ namespace PocketWilds.Services.Analytics
         void BiomeGateSeen(ContentId biome, GateConditions met)
         {
         }
+
+        /// <summary>T35B: the odds window of an egg was opened (doc 02 Œufs, section 8).</summary>
+        void EggOddsOpened(ContentId egg)
+        {
+        }
     }
 
     public sealed class NullAnalytics : IAnalytics

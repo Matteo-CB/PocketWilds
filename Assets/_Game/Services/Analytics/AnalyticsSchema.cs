@@ -24,6 +24,11 @@ namespace PocketWilds.Services.Analytics
         DecorationBuyLight = 28,
         TreatBuy = 29,
         Economy = 30,
+        // T35B (doc 02 Œufs, section 8).
+        EggBuy = 33,
+        MultiHatch = 34,
+        DiscoveryEggGain = 35,
+        EggOddsOpen = 36,
         EconomySnapshot = 31,
         EconomyFlow = 32,
         ScreenView = 40,
@@ -99,8 +104,19 @@ namespace PocketWilds.Services.Analytics
             AnalyticsEventId.LoadTime => new[] { Field.D(0, 0), Field.D(1, 0) },
             // milestone, seconds since install
             AnalyticsEventId.Milestone => new[] { Field.I(0), Field.D(0, 0) },
-            // egg, species, variant, rarity, flags, cost mantissa, cost exponent, mastery level
-            AnalyticsEventId.Hatch => new[] { Field.U(0), Field.U(1), Field.U(2), Field.I(0), Field.I(1), Field.D(0, 3), Field.I(2), Field.I(3) },
+            // egg, species, variant, rarity, flags (1 new species, 2 new variant, 4 free, 8 any protection, 16 species
+            // protection, 32 variant protection, 64 Discovery egg), cost mantissa, cost exponent, mastery level; T35B appends
+            // the position in a multi hatch (0: single) and the Discovery rule.
+            AnalyticsEventId.Hatch => new[] { Field.U(0), Field.U(1), Field.U(2), Field.I(0), Field.I(1), Field.D(0, 3), Field.I(2), Field.I(3),
+                Field.D(1, 0), Field.D(2, 0) },
+            // egg, quantity, eggs bought before in the cycle, cost log10, currency (0 Light, 1 Discovery stock, 2 event)
+            AnalyticsEventId.EggBuy => new[] { Field.U(0), Field.I(0), Field.I(1), Field.D(0, 2), Field.I(2) },
+            // egg, quantity, Rare or better, new species or variants
+            AnalyticsEventId.MultiHatch => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2) },
+            // source, eggs gained, stock after
+            AnalyticsEventId.DiscoveryEggGain => new[] { Field.I(0), Field.I(1), Field.I(2) },
+            // egg
+            AnalyticsEventId.EggOddsOpen => new[] { Field.U(0) },
             // T35A (doc 02 Améliorations, section 14). Costs travel as their log10 (no personal data, any size).
             // biome, kind, level from, level to, cost log10, quantity mode
             AnalyticsEventId.UpgradeBuy => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2), Field.D(0, 2), Field.I(3) },

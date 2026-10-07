@@ -154,10 +154,15 @@ namespace PocketWilds.Editor.Production
                 row.Checks.Add(new Check("Source Blender", blend, blend ? BlenderEggs : $"aucun .blend dans {BlenderEggs}"));
                 row.Checks.Add(new Check("Prefab et validateur", File.Exists(EggPipeline.EggPrefabPath) && prefabErrors.Count == 0,
                     prefabErrors.Count == 0 ? EggPipeline.EggPrefabPath : string.Join(" ; ", prefabErrors.Take(3))));
-                row.Checks.Add(new Check("Biome", biomes.Contains(egg.biomeId), egg.biomeId));
+                // A Discovery egg belongs to no biome and has no pool: it picks by its own rules (doc 02 Œufs, section 2.3).
+                bool discovery = egg.tier == EggTier.Discovery;
+                row.Checks.Add(discovery
+                    ? new Check("Biome", string.IsNullOrEmpty(egg.biomeId), "aucun : œuf Découverte")
+                    : new Check("Biome", biomes.Contains(egg.biomeId), egg.biomeId));
                 var unknown = egg.pool.Where(p => !species.Contains(p.speciesId)).Select(p => p.speciesId).ToList();
-                bool pool = egg.pool.Count > 0 && egg.pool.All(p => p.weight > 0f) && unknown.Count == 0;
-                row.Checks.Add(new Check("Pool", pool, unknown.Count > 0 ? "espèces inconnues : " + string.Join(", ", unknown)
+                bool pool = discovery ? egg.pool.Count == 0 : egg.pool.Count > 0 && egg.pool.All(p => p.weight > 0f) && unknown.Count == 0;
+                row.Checks.Add(new Check("Pool", pool, discovery ? "règles de l'œuf Découverte"
+                    : unknown.Count > 0 ? "espèces inconnues : " + string.Join(", ", unknown)
                     : $"{egg.pool.Count} espèces, poids {string.Join(" / ", egg.pool.Select(p => p.weight.ToString("0.##")))}"));
                 bool weights = egg.rarityWeights != null && egg.rarityWeights.Length == 6 && egg.rarityWeights.All(w => w >= 0.0) && egg.rarityWeights.Sum() > 0.0;
                 row.Checks.Add(new Check("Raretés", weights, weights ? string.Join(" / ", egg.rarityWeights) : "6 poids positifs attendus"));

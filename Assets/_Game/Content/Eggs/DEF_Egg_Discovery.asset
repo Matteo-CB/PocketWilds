@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95b774443b3a43746bb79788a568b963, type: 3}
+  m_Name: DEF_Egg_Discovery
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.EggDefinitionAsset
+  sourceId: egg.discovery
+  displayKey: egg.discovery.name
+  biomeId: 
+  tier: 2
+  visualKey: PF_Egg_Base
+  shell: {r: 0.9647059, g: 0.94509804, b: 0.90588236, a: 1}
+  spots: {r: 0.9137255, g: 0.76862746, b: 0.41568628, a: 1}
+  band: {r: 0.7490196, g: 0.8509804, b: 0.93333334, a: 1}
+  flowers: {r: 0.95686275, g: 0.8352941, b: 0.5411765, a: 1}
+  crack: {r: 0.41568628, g: 0.3254902, b: 0.2509804, a: 1}
+  innerShell: {r: 1, g: 0.9764706, b: 0.93333334, a: 1}
+  accent: {r: 1, g: 0.90588236, b: 0.627451, a: 1}
+  spotsStrength: 12
+  bandStrength: 6
+  flowersStrength: 10
+  baseCost: 1
+  costGrowth: 1
+  rarityWeights:
+  - 0
+  - 0
+  - 70
+  - 22
+  - 7
+  - 1
+  pool: []
+  pityHardLimit: 20
+  starterSpeciesId: 
+  unlockBiomeMastery: 0
+  focusTargetCount: 0

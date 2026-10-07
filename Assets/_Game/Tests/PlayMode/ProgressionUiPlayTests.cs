@@ -153,8 +153,11 @@ namespace PocketWilds.Tests.PlayMode
             context.Economy.Grant(CurrencyId.Light, BigValue.FromDouble(1e6), EconomyReason.Debug);
 
             // Hatching levels the refuge up: the badge celebrates, the card waits (a dot) until a calm moment.
-            yield return Hatch(refuge, presenter, 3);
-            Assert.Greater(context.Progression.Refuge.Level, 1, "Three hatches reach refuge level 2.");
+            // The profile is new each run: the hatches differ, and two known animals in a row add little. Hatch until level 2
+            // (a few eggs; the cap only guards against a broken score).
+            for (int i = 0; i < 12 && context.Progression.Refuge.Level <= 1; i++)
+                yield return Hatch(refuge, presenter, 1);
+            Assert.Greater(context.Progression.Refuge.Level, 1, "A few hatches reach refuge level 2.");
             Assert.IsTrue(presenter.RewardWaiting, "A level card waits after the level up.");
             var card = Object.FindAnyObjectByType<LevelRewardScreen>();
             Assert.IsFalse(card.IsOpen, "The card never cuts a hatching run.");

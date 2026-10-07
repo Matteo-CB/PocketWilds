@@ -54,6 +54,8 @@ namespace PocketWilds.Services.Analytics
         private readonly ContentId[] _seenOffers = new ContentId[MaxSeenOffers];
         private readonly uint _perfSeed;
         private readonly Action<HatchResult> _onHatched;
+        private readonly Action<MultiHatchSummary> _onMultiHatched;
+        private readonly Action<int, DiscoverySource> _onDiscoveryEggs;
         private readonly Action<EconomyChange> _onEconomy;
         private readonly Action<PurchaseOutcome> _onPurchase;
         private readonly Action<int> _onRestore;
@@ -90,6 +92,8 @@ namespace PocketWilds.Services.Analytics
             _ring = new AnalyticsEvent[Math.Max(16, _config.RingCapacity)];
             _perfSeed = ContentIdHash.Compute(device.AnalyticsId ?? string.Empty);
             _onHatched = OnHatched;
+            _onMultiHatched = OnMultiHatched;
+            _onDiscoveryEggs = OnDiscoveryEggs;
             _onEconomy = OnEconomyChanged;
             _onPurchase = OnPurchaseFinished;
             _onRestore = OnRestoreFinished;
@@ -119,7 +123,11 @@ namespace PocketWilds.Services.Analytics
             if (_economy != null)
                 _economy.Changed += _onEconomy;
             if (_hatch != null)
+            {
                 _hatch.Hatched += _onHatched;
+                _hatch.MultiHatched += _onMultiHatched;
+                _hatch.DiscoveryEggsGranted += _onDiscoveryEggs;
+            }
             if (_store != null)
             {
                 _store.PurchaseFinished += _onPurchase;
@@ -322,8 +330,11 @@ namespace PocketWilds.Services.Analytics
             if (!result.Succeeded)
                 return;
             var animal = result.Animal;
+            bool discovery = result.Discovery != DiscoveryRule.None;
             int flags = (result.NewSpecies ? 1 : 0) | (result.NewVariant ? 2 : 0) | (result.WasFree ? 4 : 0)
-                        | (result.Pity != PityOutcome.None ? 8 : 0);
+                        | (result.Pity != PityOutcome.None ? 8 : 0)
+                        | (result.Pity == PityOutcome.SpeciesBonus || result.Pity == PityOutcome.SpeciesGuarantee ? 16 : 0)
+                        | (result.Pity == PityOutcome.VariantBonus ? 32 : 0) | (discovery ? 64 : 0);
             var e = new AnalyticsEvent(AnalyticsEventId.Hatch)
             {
                 U0 = result.Egg.Value,
@@ -332,9 +343,14 @@ namespace PocketWilds.Services.Analytics
                 I0 = (int)animal.Rarity,
                 I1 = flags,
                 I3 = result.Mastery.After.Level,
+                D1 = result.MultiIndex,
+                D2 = (int)result.Discovery,
             };
             AnalyticsSchema.Split(result.Cost, out e.D0, out e.I2);
             Record(ref e);
+            // A single egg is a purchase of one (the free tutorial egg included); a multi hatch sends one for all.
+            if (result.MultiIndex == 0)
+                EggBuy(result.Egg, 1, result.Cost, discovery);
             Milestone(FunnelMilestone.FirstHatch);
             if (result.NewSpecies && _state.Collection.DiscoveredSpecies.Count >= 2)
                 Milestone(FunnelMilestone.FirstNewSpecies);
@@ -551,6 +567,46 @@ namespace PocketWilds.Services.Analytics
 
         private static double CostLog10(BigValue cost) => cost.IsZero ? 0.0 : BigValue.Log10(cost);
 
+        private void EggBuy(ContentId egg, int quantity, BigValue cost, bool discovery)
+        {
+            _state.World.EggPurchasesInCycle.TryGetValue(egg, out int bought);
+            var e = new AnalyticsEvent(AnalyticsEventId.EggBuy)
+            {
+                U0 = egg.Value,
+                I0 = quantity,
+                I1 = discovery ? 0 : Math.Max(0, bought - quantity),
+                D0 = CostLog10(cost),
+                I2 = discovery ? 1 : 0,
+            };
+            Record(ref e);
+        }
+
+        private void OnMultiHatched(MultiHatchSummary summary)
+        {
+            bool discovery = _hatch != null && summary.Egg == _hatch.DiscoveryEgg;
+            EggBuy(summary.Egg, summary.Count, summary.Cost, discovery);
+            var e = new AnalyticsEvent(AnalyticsEventId.MultiHatch)
+            {
+                U0 = summary.Egg.Value, I0 = summary.Count, I1 = summary.RareOrBetter, I2 = summary.New,
+            };
+            Record(ref e);
+        }
+
+        private void OnDiscoveryEggs(int count, DiscoverySource source)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.DiscoveryEggGain)
+            {
+                I0 = (int)source, I1 = count, I2 = _state.World.DiscoveryEggs,
+            };
+            Record(ref e);
+        }
+
+        public void EggOddsOpened(ContentId egg)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.EggOddsOpen) { U0 = egg.Value };
+            Record(ref e);
+        }
+
         private int DaysSinceInstall => Math.Max(0, (int)(_clock.UtcNow - _state.Meta.CreatedUtc).TotalDays);
 
         private void OnUpgrade(UpgradePurchase purchase)
@@ -633,7 +689,11 @@ namespace PocketWilds.Services.Analytics
             if (_economy != null)
                 _economy.Changed -= _onEconomy;
             if (_hatch != null)
+            {
                 _hatch.Hatched -= _onHatched;
+                _hatch.MultiHatched -= _onMultiHatched;
+                _hatch.DiscoveryEggsGranted -= _onDiscoveryEggs;
+            }
             if (_store != null)
             {
                 _store.PurchaseFinished -= _onPurchase;

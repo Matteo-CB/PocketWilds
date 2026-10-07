@@ -43,7 +43,7 @@ namespace PocketWilds.Tests.EditMode
             AddSpecies(builder, "species.secret", commons, true);
             builder.AddEgg(new EggDefinition(Egg, "egg.test.pity.name", ContentId.FromSource("biome.grassland"), EggTier.Basic,
                 new Color32[EggDefinition.PaletteSize], 15, 0, 15, "PF_Egg_Base", 10.0, 1.0,
-                weights ?? new[] { 1.0, 0, 0, 0, 0, 0 },
+                weights ?? new[] { 100.0, 0, 0, 0, 0, 0 },
                 new[] { new EggDropEntry(A, 1000.0), new EggDropEntry(B, weightB), new EggDropEntry(C, 1.0), new EggDropEntry(S, 1.0) }),
                 "egg.test.pity");
             var content = builder.Build();

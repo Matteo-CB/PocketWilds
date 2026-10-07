@@ -134,6 +134,9 @@ namespace PocketWilds.Simulation
         public Dictionary<ContentId, int> EggPurchasesInCycle { get; } = new Dictionary<ContentId, int>();
 
         public int RenewalCount;
+
+        /// <summary>Discovery eggs won and not hatched yet (doc 02 Œufs, section 2.3: a stock with no limit).</summary>
+        public int DiscoveryEggs;
     }
 
     public struct SpeciesMastery

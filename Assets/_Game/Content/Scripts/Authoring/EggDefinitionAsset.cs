@@ -53,6 +53,12 @@ namespace PocketWilds.Content
         [Tooltip("Species of the free first hatch of a profile. Empty: the pool is rolled.")]
         public string starterSpeciesId = "";
 
+        [Tooltip("Biome mastery level that offers this egg (Focus: 3). 0: always offered.")]
+        [Min(0)] public int unlockBiomeMastery;
+
+        [Tooltip("Focus eggs: pool species targeted (the most undiscovered base variants). 0: the whole pool.")]
+        [Min(0)] public int focusTargetCount;
+
         public EggDefinition ToRuntime()
         {
             var palette = new Color32[EggDefinition.PaletteSize];
@@ -67,7 +73,8 @@ namespace PocketWilds.Content
             return new EggDefinition(ContentId.FromSource(sourceId), displayKey, ContentId.FromSource(biomeId), tier, palette,
                 (byte)Mathf.Clamp(spotsStrength, 0, 15), (byte)Mathf.Clamp(bandStrength, 0, 15), (byte)Mathf.Clamp(flowersStrength, 0, 15),
                 visualKey, baseCost, costGrowth, (double[])rarityWeights.Clone(), BuildPool(), pityHardLimit,
-                string.IsNullOrEmpty(starterSpeciesId) ? ContentId.None : ContentId.FromSource(starterSpeciesId));
+                string.IsNullOrEmpty(starterSpeciesId) ? ContentId.None : ContentId.FromSource(starterSpeciesId),
+                unlockBiomeMastery, focusTargetCount);
         }
 
         private EggDropEntry[] BuildPool()

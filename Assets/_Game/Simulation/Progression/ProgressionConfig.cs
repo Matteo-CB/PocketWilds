@@ -183,6 +183,16 @@ namespace PocketWilds.Simulation
         public int LevelEssenceEvery = 10;
         public int LevelEssence = 5;
 
+        // ---- Eggs (doc 02 Œufs, sections 4, 5 and 9) ----
+        /// <summary>Refuge level that offers × 3 hatching.</summary>
+        public int MultiThreeLevel = 12;
+
+        /// <summary>Refuge level that offers × 10 hatching (with a Renewal done).</summary>
+        public int MultiTenLevel = 25;
+
+        /// <summary>Hatches that play the whole sequence before the fast one may take over.</summary>
+        public int FullHatchSequences = 20;
+
         // ---- Biome mastery (section 7) ----
         public double MasteryCurveMult = 40.0;
         public double MasteryCurveExp = 1.3;
@@ -354,6 +364,9 @@ namespace PocketWilds.Simulation
             ["econ.decoration.copy_growth"] = new Bound(1.2, 2.5, (c, v) => c.DecorationCopyGrowth = v),
             ["econ.treats.daily"] = new Bound(0, 5, (c, v) => c.TreatsDaily = (int)v),
             ["econ.treats.minutes"] = new Bound(1, 10, (c, v) => c.TreatMinutes = v),
+            ["econ.egg.multi3_refuge_level"] = new Bound(1, 40, (c, v) => c.MultiThreeLevel = (int)v),
+            ["econ.egg.multi10_refuge_level"] = new Bound(1, 60, (c, v) => c.MultiTenLevel = (int)v),
+            ["econ.hatch.full_sequence_count"] = new Bound(0, 100, (c, v) => c.FullHatchSequences = (int)v),
         };
 
         /// <summary>Remote Config keys this config understands (section 15).</summary>

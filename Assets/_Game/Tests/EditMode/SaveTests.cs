@@ -398,6 +398,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Shop_v5")]
         [TestCase("GoldenSave_Analytics_v6")]
         [TestCase("GoldenSave_Progression_v7")]
+        [TestCase("GoldenSave_Eggs_v8")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -419,6 +420,8 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(0, state.Pity.NewSpeciesMisses.Count + state.Pity.VariantMisses.Count, "Older saves start without pity.");
             if (version < 5)
                 Assert.AreEqual(0, state.Shop.Offers.Count + state.Shop.PaidPurchases, "Older saves start without shop history.");
+            if (version < 8)
+                Assert.AreEqual(0, state.World.DiscoveryEggs, "Older saves start with no Discovery egg.");
             if (version < 6)
             {
                 Assert.AreEqual(0, state.Analytics.Sessions, "Older saves start counting sessions now.");
@@ -480,6 +483,12 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(0b001, state.Progression.TreatStand.BoughtMask);
                     Assert.AreEqual(1, state.Progression.Treats[ContentId.FromSource("treat.clover_crunch")]);
                     Assert.AreEqual(9, state.Analytics.Sessions);
+                    break;
+
+                case "GoldenSave_Eggs_v8":
+                    Assert.AreEqual(240, state.Meta.Revision);
+                    Assert.AreEqual(4, state.World.DiscoveryEggs);
+                    Assert.AreEqual(6, state.World.EggPurchasesInCycle[ContentId.FromSource("egg.grassland.focus")]);
                     break;
 
                 case "GoldenSave_Offline_v2":

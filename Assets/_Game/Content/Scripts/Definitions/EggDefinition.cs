@@ -46,8 +46,10 @@ namespace PocketWilds.Content
         public EggDefinition(ContentId id, string displayKey, ContentId biome, EggTier tier, Color32[] palette,
             byte maskStrengthR, byte maskStrengthG, byte maskStrengthB, string visualKey,
             double baseCost, double costGrowth, double[] rarityWeights, EggDropEntry[] pool, int pityHardLimit = DefaultPityHardLimit,
-            ContentId starterSpecies = default)
+            ContentId starterSpecies = default, int unlockBiomeMastery = 0, int focusTargetCount = 0)
         {
+            UnlockBiomeMastery = unlockBiomeMastery;
+            FocusTargetCount = focusTargetCount;
             PityHardLimit = pityHardLimit;
             StarterSpecies = starterSpecies;
             Id = id;
@@ -100,5 +102,14 @@ namespace PocketWilds.Content
         /// the player starts with a rabbit). None: the tutorial hatch rolls the pool like any other.
         /// </summary>
         public ContentId StarterSpecies { get; }
+
+        /// <summary>Biome mastery level that offers this egg (doc 02 Œufs, section 1: Focus at 3). 0: always offered.</summary>
+        public int UnlockBiomeMastery { get; }
+
+        /// <summary>
+        /// Focus eggs (doc 02 Œufs, section 2.2): how many pool species the egg targets, those with the most undiscovered
+        /// base variants (ties: pool order). 0: the whole pool.
+        /// </summary>
+        public int FocusTargetCount { get; }
     }
 }

@@ -215,15 +215,38 @@ namespace PocketWilds.Editor.Eggs
                 egg.spotsStrength = 8;
                 egg.bandStrength = 15;
                 egg.flowersStrength = 0;
-                // Doc 02: Focus costs 3 to 5x a Basic for a smaller pool. Same tier odds until a rule says otherwise.
+                // Doc 02 Œufs, section 2.2: 4 x B, the 3 species with the most colors left, a better rarity table, offered
+                // from biome mastery 3.
                 egg.baseCost = 40.0;
                 egg.costGrowth = 1.18;
-                egg.rarityWeights = new[] { 72.0, 20.0, 6.0, 1.6, 0.36, 0.04 };
+                egg.rarityWeights = new[] { 50.0, 30.0, 14.0, 4.5, 1.3, 0.2 };
+                egg.unlockBiomeMastery = 3;
+                egg.focusTargetCount = 3;
+            });
+            // C-EGG-003 (doc 02 Œufs, section 2.3): free, won as a reward, kept in a stock; a pearl shell with round gold
+            // dots (no star motif: owner rule against the four-point star). Its table is the last rule's: Rare or better.
+            var discovery = EnsureEgg("DEF_Egg_Discovery", "egg.discovery", EggTier.Discovery, egg =>
+            {
+                egg.biomeId = "";
+                egg.pool.Clear();
+                egg.shell = Hex("F6F1E7");
+                egg.spots = Hex("E9C46A");
+                egg.band = Hex("BFD9EE");
+                egg.flowers = Hex("F4D58A");
+                egg.crack = Hex("6A5340");
+                egg.innerShell = Hex("FFF9EE");
+                egg.accent = Hex("FFE7A0");
+                egg.spotsStrength = 12;
+                egg.bandStrength = 6;
+                egg.flowersStrength = 10;
+                egg.baseCost = 1.0;
+                egg.costGrowth = 1.0;
+                egg.rarityWeights = new[] { 0.0, 0.0, 70.0, 22.0, 7.0, 1.0 };
             });
 
             var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath)
                            ?? throw new InvalidOperationException("Missing " + AnimalPipeline.ContentDatabasePath);
-            foreach (var egg in new[] { basic, focus })
+            foreach (var egg in new[] { basic, focus, discovery })
                 if (!database.eggs.Contains(egg))
                     database.eggs.Add(egg);
             EditorUtility.SetDirty(database);
@@ -252,6 +275,8 @@ namespace PocketWilds.Editor.Eggs
             foreach (var species in GrasslandSpecies)
                 asset.pool.Add(new EggDefinitionAsset.PoolEntry { speciesId = species, weight = 1f });
             asset.starterSpeciesId = "";
+            asset.unlockBiomeMastery = 0;
+            asset.focusTargetCount = 0;
             fill(asset);
             EditorUtility.SetDirty(asset);
             return asset;

@@ -163,6 +163,13 @@ namespace PocketWilds.Tests.EditMode
                 (typeof(AnalyticsEventId), "BiomeGateSeen", 25), (typeof(AnalyticsEventId), "RefugeLevelUp", 26),
                 (typeof(AnalyticsEventId), "BiomeMasteryUp", 27), (typeof(AnalyticsEventId), "DecorationBuyLight", 28),
                 (typeof(AnalyticsEventId), "TreatBuy", 29),
+                (typeof(AnalyticsEventId), "EggBuy", 33), (typeof(AnalyticsEventId), "MultiHatch", 34),
+                (typeof(AnalyticsEventId), "DiscoveryEggGain", 35), (typeof(AnalyticsEventId), "EggOddsOpen", 36),
+                (typeof(DiscoverySource), "Debug", 0), (typeof(DiscoverySource), "Calendar", 1), (typeof(DiscoverySource), "WeeklyBook", 2),
+                (typeof(DiscoverySource), "Expedition", 3), (typeof(DiscoverySource), "EventTrack", 4), (typeof(DiscoverySource), "DailyGift", 5),
+                (typeof(DiscoverySource), "BiomeOpening", 6), (typeof(DiscoverySource), "Pass", 7), (typeof(DiscoverySource), "ReturnGift", 8),
+                (typeof(DiscoveryRule), "None", 0), (typeof(DiscoveryRule), "NewSpecies", 1), (typeof(DiscoveryRule), "NewVariant", 2),
+                (typeof(DiscoveryRule), "RareOrBetter", 3),
                 (typeof(EconomyReason), "Upgrade", 4), (typeof(EconomyReason), "Expansion", 5),
                 (typeof(EconomyReason), "Decoration", 12), (typeof(EconomyReason), "Treat", 13), (typeof(EconomyReason), "BiomeGate", 14),
                 (typeof(UpgradeKind), "Production", 0), (typeof(UpgradeKind), "Nests", 1), (typeof(UpgradeKind), "Curiosity", 2),
@@ -377,6 +384,33 @@ namespace PocketWilds.Tests.EditMode
                 string expected = "[20," + TestUtil.T0.ToUnixTimeMilliseconds() + ",1," + result.Egg.Value + "," + result.Animal.Species.Value + ","
                                   + result.Animal.Variant.Value + "," + (int)result.Animal.Rarity + ",";
                 StringAssert.Contains(expected, rig.Sink.All);
+            }
+        }
+
+        [Test]
+        public void Eggs_PurchasesMultiHatchesDiscoveryEggsAndOdds_AreSent()
+        {
+            using (var rig = new Rig())
+            {
+                rig.Analytics.StartSession(0);
+                rig.HatchOne();
+                rig.State.Wallet.Light = BigValue.FromMantissaExponent(1.0, 30);
+                var results = new HatchResult[3];
+                Assert.AreEqual(3, rig.Hatch.Hatch(rig.Egg, 3, results));
+                rig.Hatch.GrantDiscoveryEggs(2, DiscoverySource.BiomeOpening);
+                rig.Analytics.EggOddsOpened(rig.Egg);
+                rig.Analytics.Flush();
+                string all = rig.Sink.All;
+                Assert.AreEqual(4, Events(all, AnalyticsEventId.Hatch));
+                Assert.AreEqual(2, Events(all, AnalyticsEventId.EggBuy), "The single egg, then one purchase for the three.");
+                var multi = Fields(all, AnalyticsEventId.MultiHatch);
+                Assert.AreEqual(rig.Egg.Value.ToString(), multi[3]);
+                Assert.AreEqual("3", multi[4]);
+                var gain = Fields(all, AnalyticsEventId.DiscoveryEggGain);
+                Assert.AreEqual(((int)DiscoverySource.BiomeOpening).ToString(), gain[3]);
+                Assert.AreEqual("2", gain[4]);
+                Assert.AreEqual("2", gain[5]);
+                Assert.AreEqual(1, Events(all, AnalyticsEventId.EggOddsOpen));
             }
         }
 

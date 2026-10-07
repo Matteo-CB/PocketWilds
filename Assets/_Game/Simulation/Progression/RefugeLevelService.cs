@@ -200,12 +200,12 @@ namespace PocketWilds.Simulation
                 case RefugeFeature.NutRain: return level >= 10 && (day >= 4 || animals >= 15);
                 case RefugeFeature.PawMemory: return level >= 11 && day >= 5;
                 case RefugeFeature.Albums: return level >= 12 && day >= 5;
-                case RefugeFeature.HatchThree: return level >= 12;
+                case RefugeFeature.HatchThree: return level >= _config.MultiThreeLevel;
                 case RefugeFeature.RenewalGoal: return level >= 15 && day >= 6;
                 case RefugeFeature.PhotoSafari: return level >= 16 && day >= 6;
                 case RefugeFeature.TilePuzzle: return level >= 18 && day >= 8;
                 case RefugeFeature.BurrowMaze: return level >= 20 && day >= 10;
-                case RefugeFeature.HatchTen: return level >= 25 && _state.World.RenewalCount > 0;
+                case RefugeFeature.HatchTen: return level >= _config.MultiTenLevel && _state.World.RenewalCount > 0;
                 default: return false;
             }
         }

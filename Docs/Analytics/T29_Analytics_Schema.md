@@ -54,7 +54,7 @@ s'ajoute à la fin d'un événement.
 | 2 | SessionEnd | durée (s), animaux |
 | 3 | LoadTime | boot (ms depuis le lancement), chargement de scène (ms) |
 | 10 | Milestone | étape du funnel, secondes depuis l'installation |
-| 20 | Hatch | œuf, espèce, variante, rareté, drapeaux (1 nouvelle espèce, 2 nouvelle variante, 4 gratuit, 8 pitié), coût (mantisse, exposant), niveau de maîtrise |
+| 20 | Hatch | œuf, espèce, variante, rareté, drapeaux (1 nouvelle espèce, 2 nouvelle variante, 4 gratuit, 8 pitié, 16 garantie d'espèce, 32 garantie de variante, 64 œuf Découverte), coût (mantisse, exposant), niveau de maîtrise, rang dans une éclosion multiple (0 : simple), règle de l'œuf Découverte (1 espèce, 2 variante, 3 Rare ou mieux). T35B ajoute les deux derniers champs |
 | 21 | UpgradeBuy | biome, sorte (0 Production, 1 Nids douillets, 2 Regard curieux), niveau de départ, niveau d'arrivée, log10 du coût, quantité (0 × 1, 1 × 10, 2 Max). T35A |
 | 22 | UpgradeMilestone | biome, sorte, niveau (palier × 2 franchi). T35A |
 | 23 | ZoneOpen | zone, biome, rang de l'agrandissement, log10 du coût, minutes depuis l'installation. T35A |
@@ -67,6 +67,10 @@ s'ajoute à la fin d'un événement.
 | 30 | Economy | monnaie, raison, variation (mantisse, exposant), solde (mantisse, exposant). Gemmes seulement |
 | 31 | EconomySnapshot | Lumière (mantisse, exposant), production/s (mantisse, exposant), Gemmes, animaux, espèces. Fin de session |
 | 32 | EconomyFlow | monnaie, raison, nombre de changements, somme (mantisse, exposant). Fin de session |
+| 33 | EggBuy | œuf, quantité (1, 3, 10), œufs achetés avant dans le cycle, log10 du coût, monnaie (0 Lumière, 1 stock Découverte, 2 événement). T35B |
+| 34 | MultiHatch | œuf, quantité, résultats Rare ou mieux, nouveautés (espèces ou variantes). T35B |
+| 35 | DiscoveryEggGain | source (0 test, 1 calendrier, 2 carnet, 3 expédition, 4 parcours d'événement, 5 cadeau du jour, 6 ouverture de biome, 7 Pass, 8 cadeau de retour), œufs gagnés, stock après. T35B |
+| 36 | EggOddsOpen | œuf. T35B |
 | 40 | ScreenView | écran |
 | 41 | OfferImpression | offre, emplacement. Une fois par offre et par session |
 | 42 | OfferClick | offre, emplacement |

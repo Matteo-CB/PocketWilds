@@ -96,6 +96,15 @@ namespace PocketWilds.Simulation
         /// <summary>Each mastery milestone (every 5 levels) strengthens the variant pity by this fraction.</summary>
         public double PityVariantMilestoneBoost { get; set; } = 0.10;
 
+        /// <summary>
+        /// Ceiling of the new variant chance once Curious Eye adds its points to the protection (doc 02 Améliorations,
+        /// section 3.4, and doc 02 Œufs, section 2.1: 30 % of protection + 10 points, 40 % in all).
+        /// </summary>
+        public double PityVariantTotalCap { get; set; } = 0.40;
+
+        /// <summary>Doc 02 Œufs, section 2.3: weight of undiscovered species of the biome the camera is in.</summary>
+        public double DiscoveryCameraBiomeWeight { get; set; } = 2.0;
+
         public double RenewalExponent { get; set; } = 0.42;
 
         /// <summary>Production is applied at this cadence, not every frame.</summary>

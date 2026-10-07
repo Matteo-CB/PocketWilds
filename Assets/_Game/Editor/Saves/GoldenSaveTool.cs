@@ -33,6 +33,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Shop_v5", BuildShop());
             created += WriteIfMissing("GoldenSave_Analytics_v6", BuildAnalytics());
             created += WriteIfMissing("GoldenSave_Progression_v7", BuildProgression());
+            created += WriteIfMissing("GoldenSave_Eggs_v8", BuildEggs());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -82,6 +83,17 @@ namespace PocketWilds.Editor.Saves
         /// Schema 7 (T35A): two Prairie zones opened, Prairie mastery 4, Light upgrades, refuge level 5 with rewards
         /// claimed up to 3, two Cute Benches bought, a treat stand filled with one treat bought.
         /// </summary>
+        /// <summary>Schema 8: four Discovery eggs in stock and Focus eggs bought this cycle.</summary>
+        private static PlayerState BuildEggs()
+        {
+            var state = BuildProgression();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-000000000061");
+            state.Meta.Revision = 240;
+            state.World.DiscoveryEggs = 4;
+            state.World.EggPurchasesInCycle[ContentId.FromSource("egg.grassland.focus")] = 6;
+            return state;
+        }
+
         private static PlayerState BuildProgression()
         {
             var state = BuildAnalytics();

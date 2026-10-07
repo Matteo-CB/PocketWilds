@@ -13,6 +13,7 @@ namespace PocketWilds.Services.Save
             new Migration0004AddShop(),
             new Migration0005AddAnalytics(),
             new Migration0006AddProgression(),
+            new Migration0007AddDiscoveryEggs(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -97,6 +98,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 6;
         public int ToVersion => 7;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 7 to 8: the Discovery egg stock (World section 3, doc 02 Œufs, section 7). Nothing to convert: a World 2
+    /// section reads as an empty stock.
+    /// </summary>
+    public sealed class Migration0007AddDiscoveryEggs : ISaveMigration
+    {
+        public int FromVersion => 7;
+        public int ToVersion => 8;
 
         public void Apply(SaveDocument document)
         {

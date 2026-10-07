@@ -245,9 +245,25 @@ namespace PocketWilds.Content
                 _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Egg needs " + EggDefinition.RarityTierCount + " rarity weights with a positive total."));
                 return;
             }
-            if (definition.Pool.Length == 0)
+            // A Discovery egg picks by its own rules (doc 02 Œufs, section 2.3): no pool, no starter.
+            if (definition.Tier == EggTier.Discovery ? definition.Pool.Length > 0 || definition.StarterSpecies.IsValid : definition.Pool.Length == 0)
             {
-                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Egg pool is empty."));
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId,
+                    definition.Tier == EggTier.Discovery ? "A Discovery egg has no pool and no starter." : "Egg pool is empty."));
+                return;
+            }
+            if (definition.UnlockBiomeMastery < 0 || definition.FocusTargetCount < 0)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Egg unlock mastery and Focus targets are 0 or more."));
+                return;
+            }
+            // Doc 02 Œufs, section 7: every table sums to 100 %.
+            double sum = 0.0;
+            foreach (var weight in definition.RarityWeights)
+                sum += weight;
+            if (Math.Abs(sum - 100.0) > 0.01)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, $"Egg rarity table sums to {sum:0.###} %, not 100 %."));
                 return;
             }
             if (definition.PityHardLimit < 1)
@@ -375,6 +391,11 @@ namespace PocketWilds.Content
                 {
                     if (!speciesIds.Contains(entry.Species) || !(entry.Weight > 0.0))
                         _issues.Add(new ContentIssue(ContentIssueSeverity.Error, egg.Id.ToString(), "Egg pool entry needs a known species and a positive weight."));
+                    // Doc 02 Œufs, section 7: every rarity of the table falls back to a normal variant (secret variants never
+                    // enter the normal tables: HatchService leaves them out).
+                    var species = _species.Find(s => s.Id == entry.Species);
+                    if (species != null && !_variants.Exists(v => v.Species == entry.Species && !v.IsSecret))
+                        _issues.Add(new ContentIssue(ContentIssueSeverity.Error, egg.Id.ToString(), "Every egg pool species needs a normal variant."));
                 }
                 if (egg.StarterSpecies.IsValid && Array.FindIndex(egg.Pool, e => e.Species == egg.StarterSpecies) < 0)
                     _issues.Add(new ContentIssue(ContentIssueSeverity.Error, egg.Id.ToString(), "Starter species must be in the egg pool."));
