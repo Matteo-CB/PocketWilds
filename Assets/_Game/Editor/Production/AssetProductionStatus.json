@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-07T07:17:38Z",
+  "updatedUtc": "2026-10-07T12:00:00Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -296,7 +296,7 @@
       "task": "T35A",
       "title": "Améliorations, zones, niveau du refuge, portes de biome, maîtrise de biome",
       "status": "IN_PROGRESS",
-      "notes": "Replaces part of T35. Step 1 done 2026-10-07: simulation (UpgradeService, ZoneService, BiomeMasteryService, RefugeLevelService, BiomeGateService, DecorationShopService, TreatStandService, ProgressionConfig with Remote Config bounds), economy and hatch modifiers, save schema 7 (World 2 + Progression section, golden save v7), analytics events 21-29, ProgressionTests. Next: world (hedges, signs, walk area and camera bounds by open zones, opening sequence) and UI (HUD Upgrade button and level badge, screens 039-042)."
+      "notes": "Replaces part of T35. Step 1 done 2026-10-07: simulation (UpgradeService, ZoneService, BiomeMasteryService, RefugeLevelService, BiomeGateService, DecorationShopService, TreatStandService, ProgressionConfig with Remote Config bounds), economy and hatch modifiers, save schema 7 (World 2 + Progression section, golden save v7), analytics events 21-29, ProgressionTests. Step 2 done 2026-10-07: open zones in the world (walk area across open zones, next zone kept loaded, hedge GL_ZoneHedge and sign GL_ZoneSign modeled in Blender, camera bounds, opening sequence, animals walk in on parallel lanes with a watch that replaces stopped walkers). Step 3 done 2026-10-07: HUD Upgrades button with its dot and tutorial paw, refuge level badge with level-up ring of paws, touchable Light chip, screens 039 Upgrades, 040 ZoneOpen (real zone captures), 041 RefugeLevel, 042 BiomeGate, level reward card waiting for a calm moment, ProgressionUiPlayTests; design note Docs/Design/T35A_Progression_et_ecrans.md. Open: treat stand UI (waits for a use of treats), Forest gate prop in the world, dedicated VFX H-VFX-100..105 and sounds J-SFX-UPGRADE-001/002, J-SFX-REWARD-005..007, closed zone desaturation."
     },
     {
       "task": "T35B",
@@ -16274,6 +16274,527 @@
         "G14"
       ],
       "notes": "T34B2: SFX_World_BirdTakeOff_01..03, soft wing beats slowing and fading; small birds of AmbientLife flying off near the view (startled or approached), one at a time, every 2.5 s at most, skipped in battery saver. Phone listening pending (no test phone)."
+    },
+    {
+      "id": "I-SCR-039",
+      "name": "Upgrades",
+      "family": "UIScreen",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/ProgressionUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_Upgrades.prefab",
+      "validationGates": [
+        "G12",
+        "G13"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "Doc 02 Améliorations 11.2. T35A: bottom panel over two thirds, production counting up, ×1/×10/Max kept on the device, three reused PF_UI_UpgradeCard (affordable, not enough, maxed, locked by mastery; Best pick ribbon), biome mastery block, next zone with See. Cards rebuilt only when what they show changes.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "K-PF-UI-UpgradeCard",
+      "name": "PF_UI_UpgradeCard",
+      "family": "UIPrefab",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/ProgressionUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_Upgrades.prefab",
+      "validationGates": [
+        "G12",
+        "G13"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: built inside PF_UI_Upgrades (three cards); purchase squash and bounce, round motes, ×2 milestone ring and round five-point stars, soft shake when not enough Light.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "I-SCR-040",
+      "name": "Open a zone",
+      "family": "UIScreen",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/ProgressionUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_ZoneOpen.prefab",
+      "validationGates": [
+        "G12",
+        "G13"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "Doc 02 Améliorations 11.3. T35A: two-line title, real zone capture (CAP_Zone_*), gains, price, condition and bar; opened by touching the hedge or the sign. The decoration spots line waits for the decoration mode.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "I-SCR-041",
+      "name": "Refuge level",
+      "family": "UIScreen",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/ProgressionUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_RefugeLevel.prefab",
+      "validationGates": [
+        "G12",
+        "G13"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "Doc 02 Améliorations 11.4. T35A: level in its medallion, bar, score, score by source, reward track (functions of this build only). Opened from the HUD badge.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "K-PF-UI-LevelReward",
+      "name": "PF_UI_LevelReward",
+      "family": "UIPrefab",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/ProgressionUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_LevelReward.prefab",
+      "validationGates": [
+        "G12",
+        "G13"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "Doc 02 Améliorations 6.3. T35A: one card for the levels reached, Gems and new functions, collected with one touch; waits for a calm moment (4 s without hatch or screen, the next egg ready), a dot on the badge meanwhile.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "I-SCR-042",
+      "name": "Open a biome",
+      "family": "UIScreen",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/ProgressionUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_BiomeGate.prefab",
+      "validationGates": [
+        "G12",
+        "G13"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "Doc 02 Améliorations 11.5. T35A: conditions with ticks (level, species, mastery, day in plain words or play minutes), six round silhouettes, price and Open; Coming soon for a biome without content. Opened by the gate prop (to come).",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "ICO_Upgrade",
+      "name": "ICO_Upgrade",
+      "family": "UIIcon",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t35a.py",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_Upgrade.png",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: a paw print holding up a warm orb, no arrow. HUD Upgrades button.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "ICO_Upgrade_Production",
+      "name": "ICO_Upgrade_Production",
+      "family": "UIIcon",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t35a.py",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_Upgrade_Production.png",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: warm orb in a ring of ten round rays; the card circle behind it takes the biome tint.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "ICO_Upgrade_Nests",
+      "name": "ICO_Upgrade_Nests",
+      "family": "UIIcon",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t35a.py",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_Upgrade_Nests.png",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: round woven nest holding an egg with the Prairie band.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "ICO_Upgrade_Curiosity",
+      "name": "ICO_Upgrade_Curiosity",
+      "family": "UIIcon",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t35a.py",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_Upgrade_Curiosity.png",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: round magnifying glass over a paw print.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "ICO_ZoneSign",
+      "name": "ICO_ZoneSign",
+      "family": "UIIcon",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t35a.py",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_ZoneSign.png",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: the rounded wooden board on two posts (next zone block, capture stand-in).",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "ICO_RefugeLevel",
+      "name": "ICO_RefugeLevel",
+      "family": "UIIcon",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t35a.py",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_RefugeLevel.png",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: scalloped round medallion with a paw on top, the level as runtime text.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "ICO_BiomeMastery",
+      "name": "ICO_BiomeMastery",
+      "family": "UIIcon",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t35a.py",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_BiomeMastery.png",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: a Prairie leaf in a golden ring.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "ICO_Check",
+      "name": "ICO_Check",
+      "family": "UIIcon",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t35a.py",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/ICO_Check.png",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: round green badge with a soft check (gate conditions, reward track).",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "PF_World_ZoneSign",
+      "name": "GL_ZoneSign",
+      "family": "EnvironmentProp",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Tools/pw_grassland_t35a_props.py",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/Baked/Kit/GL_ZoneSign.asset",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: notice board of three planks on two posts with pointed caps, the meadow fence wood, 68 triangles, in DEF_ZoneKit_Grassland (measured volume, no-collision rule)."
+    },
+    {
+      "id": "PF_World_ZoneHedge_Grassland",
+      "name": "GL_ZoneHedge",
+      "family": "EnvironmentProp",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "SourceArt/Blender/Tools/pw_grassland_t35a_props.py",
+      "runtimePath": "Assets/_Game/Art/Environment/Grassland/Baked/Kit/GL_ZoneHedge.asset",
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: 2 m low hedge segment grown like the meadow bushes, 574 triangles, laid as capsules along the seam, sinks at the opening."
+    },
+    {
+      "id": "CAP_Zone_Grassland",
+      "name": "CAP_Zone_* (6)",
+      "family": "Texture",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Capture/WorldCapture.T35A.cs",
+      "runtimePath": "Assets/_Game/Art/UI/Zones/",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T35A",
+      "lastValidationUtc": "2026-10-07T12:00:00Z",
+      "notes": "T35A: one capture per Prairie expansion zone rendered with the game light, ground, plants and life; 740 x 356, rounded corners, ASTC 6x6, Addressable zones.capture.grassland.*; only the next zone's is loaded.",
+      "passedGates": [
+        "G12"
+      ]
+    },
+    {
+      "id": "PF_World_BiomeGate_Forest",
+      "name": "Forest gate (arch of branches)",
+      "family": "EnvironmentProp",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G01",
+        "G02",
+        "G06"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 5.2 and 12: at the end of the Forest Edge passage, under 1,500 triangles; opens PF_UI_BiomeGate."
+    },
+    {
+      "id": "H-VFX-100",
+      "name": "UpgradeBuy",
+      "family": "VFX",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G10"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 11.6. T35A uses the card motes in the UI meanwhile."
+    },
+    {
+      "id": "H-VFX-101",
+      "name": "UpgradeMilestone",
+      "family": "VFX",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G10"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 11.6. T35A: golden ring and round stars on the card meanwhile."
+    },
+    {
+      "id": "H-VFX-102",
+      "name": "ZoneOpen",
+      "family": "VFX",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G10"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 11.6. T35A reuses the mastery level-up effect at the sign meanwhile."
+    },
+    {
+      "id": "H-VFX-103",
+      "name": "BiomeOpen",
+      "family": "VFX",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G10"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 11.6."
+    },
+    {
+      "id": "H-VFX-104",
+      "name": "RefugeLevelUp",
+      "family": "VFX",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G10"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 11.6. T35A: the HUD badge grows with a ring of paws meanwhile."
+    },
+    {
+      "id": "H-VFX-105",
+      "name": "BiomeMasteryUp",
+      "family": "VFX",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G10"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 11.6."
+    },
+    {
+      "id": "J-SFX-UPGRADE-001",
+      "name": "UpgradeBuy",
+      "family": "Audio",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 11.6. T35A plays SpendLight meanwhile."
+    },
+    {
+      "id": "J-SFX-UPGRADE-002",
+      "name": "UpgradeMilestone",
+      "family": "Audio",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 11.6. T35A plays MasteryLevelUp meanwhile."
+    },
+    {
+      "id": "J-SFX-REWARD-005",
+      "name": "ZoneOpen",
+      "family": "Audio",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 11.6. T35A plays Claim meanwhile."
+    },
+    {
+      "id": "J-SFX-REWARD-006",
+      "name": "RefugeLevelUp",
+      "family": "Audio",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 11.6. T35A plays Claim meanwhile."
+    },
+    {
+      "id": "J-SFX-REWARD-007",
+      "name": "BiomeMasteryUp",
+      "family": "Audio",
+      "releaseScope": "VerticalSlice",
+      "dependencies": [],
+      "status": "PLANNED",
+      "sourcePath": null,
+      "runtimePath": null,
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": null,
+      "lastValidationUtc": null,
+      "notes": "Doc 02 Améliorations 11.6."
     }
   ]
 }

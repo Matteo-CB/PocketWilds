@@ -4,6 +4,8 @@ using PocketWilds.Core;
 using PocketWilds.Services.Feedback;
 using PocketWilds.Simulation;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace PocketWilds.Presentation
 {
@@ -11,10 +13,11 @@ namespace PocketWilds.Presentation
     /// T35A: the open zones of the refuge's biome in the world (doc 02 Améliorations, section 4.6). It keeps every
     /// open zone loaded, lets the animals walk across all of them, closes the next zone with a hedge and a sign,
     /// bounds the camera to the open zones (with a glimpse past the hedge), and plays the opening: the hedge sinks,
-    /// a few animals walk in, more animals may be seen. A plain class ticked by the scene entry; it allocates only
+    /// a few animals walk in, more animals may be seen. A touch on the hedge or the sign raises <see cref="SignTapped"/>
+    /// (the progression presenter shows the zone's window). A plain class ticked by the scene entry; it allocates only
     /// when the zones change (never per frame).
     /// </summary>
-    public sealed class RefugeZones : IModalActions, IDisposable
+    public sealed class RefugeZones : IDisposable
     {
         /// <summary>The walk area stops this far from the island's west edge and from either side (m).</summary>
         public const float WestReach = 5.4f;
@@ -29,6 +32,16 @@ namespace PocketWilds.Presentation
         private const float GlideSeconds = 1.3f;
         private const int AnimalsWalkingIn = 3;
 
+        /// <summary>
+        /// After an opening, the walk-in is watched this long: a walker stopped on its way (another animal in the path)
+        /// is replaced, so two or three animals really enter the new zone (doc 02, section 4.6).
+        /// </summary>
+        private const float WalkInSeconds = 20f;
+        private const float WalkInCheck = 1.5f;
+
+        /// <summary>At most this many walkers per opening (the first ones and their replacements).</summary>
+        private const int WalkInMaxSent = 6;
+
         private readonly GameContext _context;
         private readonly ProgressionServices _progression;
         private readonly WorldStreamer _streamer;
@@ -36,10 +49,8 @@ namespace PocketWilds.Presentation
         private readonly ScatterRenderer _scatter;
         private readonly AmbientLife _life;
         private readonly RefugeCameraRig _rig;
-        private readonly IModalView _modal;
         private readonly ZoneBoundary _boundary;
         private readonly ContentId _biome;
-        private readonly string _biomeSourceId;
         private readonly ZoneDefinition[] _zones;
         private readonly int[] _chunkIndex;
         private readonly float _half;
@@ -48,13 +59,18 @@ namespace PocketWilds.Presentation
         private int _walkZones = -1;
         private int _boundaryZone = -1;
         private int _keepOutZone = -1;
-        private bool _confirmPending;
+        private int _captureZone = -1;
+        private AsyncOperationHandle<Sprite> _capture;
         private float _glideEnd = -1f;
         private int _pendingAnimals;
+        private int _walkInZone = -1;
+        private float _walkInEnd = -1f;
+        private float _walkInNext;
+        private int _walkInSent;
         private float _time;
 
         public RefugeZones(GameContext context, WorldStreamer streamer, WorldChunkSet set, ZoneKit kit, RefugeController refuge,
-            ScatterRenderer scatter, AmbientLife life, RefugeCameraRig rig, IModalView modal, Transform root)
+            ScatterRenderer scatter, AmbientLife life, RefugeCameraRig rig, Transform root)
         {
             _context = context;
             _progression = context.Progression ?? throw new ArgumentException("No progression services.", nameof(context));
@@ -63,10 +79,8 @@ namespace PocketWilds.Presentation
             _scatter = scatter;
             _life = life;
             _rig = rig;
-            _modal = modal;
             _half = set != null ? set.HalfSize : 7f;
             _biome = _progression.FirstBiome;
-            _biomeSourceId = _progression.Config.Biomes[0].SourceId;
             var zones = new List<ZoneDefinition>();
             foreach (var zone in _progression.Config.Zones)
                 if (zone.Biome == _biome)
@@ -83,6 +97,12 @@ namespace PocketWilds.Presentation
         }
 
         public ZoneBoundary Boundary => _boundary;
+
+        /// <summary>A zone is opening: the hedge sinks, the camera glides, animals walk in (no card comes meanwhile).</summary>
+        public bool Opening => (_boundary != null && _boundary.IsMoving) || _glideEnd >= 0f || _pendingAnimals > 0;
+
+        /// <summary>After an opening, the walk-in is still watched (replacements may set off).</summary>
+        public bool WalkingIn => _walkInEnd >= 0f;
 
         /// <summary>Open zones in a row from the arrival zone (the walkable part of the biome).</summary>
         public int OpenZones
@@ -140,15 +160,52 @@ namespace PocketWilds.Presentation
                 _glideEnd = -1f;
                 _rig?.ReturnToWorld();
             }
+            if (_walkInEnd >= 0f && time >= _walkInNext)
+                WatchWalkIn(time);
         }
 
-        /// <summary>A world tap: on the hedge or the sign it shows the zone's price and what it brings.</summary>
+        /// <summary>A world tap: on the hedge or the sign it asks for the zone's window.</summary>
         public bool TryTap(Ray ray)
         {
             if (_boundary == null || !_boundary.Hits(ray) || _boundary.IsMoving)
                 return false;
-            ShowZone();
+            SignTapped?.Invoke();
             return true;
+        }
+
+        /// <summary>The hedge or the sign of the next zone was touched.</summary>
+        public event Action SignTapped;
+
+        /// <summary>Where the next zone's sign stands (false while no hedge is placed).</summary>
+        public bool TryGetSignPosition(out Vector3 position)
+        {
+            if (_boundary != null && _boundary.IsPlaced && _boundary.HasSign)
+            {
+                position = _boundary.SignPosition;
+                return true;
+            }
+            position = default;
+            return false;
+        }
+
+        /// <summary>The capture of a zone for its window, when loaded (null: the window shows the sign icon meanwhile).</summary>
+        public Sprite CaptureFor(in ZoneDefinition zone) =>
+            zone.Index == _captureZone && _capture.IsValid() && _capture.Status == AsyncOperationStatus.Succeeded ? _capture.Result : null;
+
+        /// <summary>Address of a zone's capture (WorldCapture.CaptureZones writes them, one Addressable each).</summary>
+        public static string CaptureAddress(in ZoneDefinition zone) => "zones.capture." + zone.ChunkAddress.Substring("chunk.".Length);
+
+        /// <summary>Only the next zone's capture is in memory (one small texture), loaded when its hedge stands.</summary>
+        private void LoadCapture(int zone)
+        {
+            if (zone == _captureZone)
+                return;
+            if (_capture.IsValid())
+                Addressables.Release(_capture);
+            _capture = default;
+            _captureZone = zone;
+            if (zone >= 0 && zone < _zones.Length && _zones[zone].Role == ZoneRole.Expansion)
+                _capture = Addressables.LoadAssetAsync<Sprite>(CaptureAddress(_zones[zone]));
         }
 
         /// <summary>
@@ -225,6 +282,7 @@ namespace PocketWilds.Presentation
             }
             _walkZones = loaded;
             _boundaryZone = boundaryZone;
+            LoadCapture(boundaryZone);
             CameraRangeChanged?.Invoke();
         }
 
@@ -243,55 +301,9 @@ namespace PocketWilds.Presentation
         {
             _progression.Zones.Opened -= _onOpened;
             _boundary?.Dispose();
-        }
-
-        // ---------------- The sign's window ----------------
-
-        private void ShowZone()
-        {
-            if (_modal == null || _modal.IsOpen || !_progression.Zones.TryGetNext(_biome, out var zone))
-                return;
-            var loc = _context.Localization;
-            var state = _progression.Zones.GetState(zone);
-            string name = Text(zone.DisplayKey);
-            string title = Format(Text(ProgressionText.ZoneOpenTitle), "{zone}", name);
-            var body = new System.Text.StringBuilder(160);
-            body.Append(Text(ProgressionText.ZoneGainProduction)).Append('\n')
-                .Append(Text(ProgressionText.ZoneGainAnimals)).Append('\n')
-                .Append(Text(ProgressionText.ZoneGainDecor)).Append("\n\n")
-                .Append(Format(Text(ProgressionText.ZoneOpenPrice), "{price}", FormatLight(_progression.Zones.Price(zone))));
-            _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
-            if (state == ZoneState.Available)
-            {
-                _confirmPending = true;
-                _modal.Show(ModalKind.Confirm, title, body.ToString(), Text(ProgressionText.ZoneOpenButton),
-                    Text(FeedbackText.ModalCancelButton), this);
-                return;
-            }
-            body.Append("\n\n");
-            if (state == ZoneState.NeedsMastery)
-                body.Append(Format(Format(Text(ProgressionText.ZoneLockedMastery), "{mastery}", Text(ProgressionText.BiomeMastery(_biomeSourceId))),
-                    "{level}", _progression.Zones.RequiredMastery(zone).ToString()));
-            else
-                body.Append(Text(ProgressionText.ZoneNeedLight));
-            _confirmPending = false;
-            _modal.Show(ModalKind.Info, title, body.ToString(), Text(FeedbackText.ModalOkButton), null, this);
-        }
-
-        void IModalActions.ModalClosed(bool confirmed)
-        {
-            bool open = _confirmPending && confirmed;
-            _confirmPending = false;
-            if (!open)
-            {
-                _context.Audio.Play(AudioEventId.UiBack, Vector3.zero, default);
-                return;
-            }
-            if (!_progression.Zones.TryGetNext(_biome, out var zone) || !_progression.Zones.TryOpen(zone.Id, out _))
-            {
-                _context.Audio.Play(AudioEventId.ErrorSoft, Vector3.zero, default);
-                _context.Haptics.Play(HapticEventId.ErrorSoft);
-            }
+            if (_capture.IsValid())
+                Addressables.Release(_capture);
+            _capture = default;
         }
 
         // ---------------- The opening ----------------
@@ -333,7 +345,38 @@ namespace PocketWilds.Presentation
             }
             int sent = _refuge.SendAnimalsInto(ZoneArea(_walkZones - 1), _pendingAnimals);
             GameLog.Info(LogCategory.Presentation, $"[Zones] {sent} of {_pendingAnimals} animals walk into zone {_walkZones - 1}");
+            _walkInSent = sent;
             _pendingAnimals = 0;
+            _walkInZone = _walkZones - 1;
+            _walkInEnd = _time + WalkInSeconds;
+            _walkInNext = _time + WalkInCheck;
+        }
+
+        /// <summary>
+        /// Every second and a half after an opening, until three animals stand in the new zone: a walker stopped on its
+        /// way (it met another animal, then sat or slept) no longer counts, and another one sets off.
+        /// </summary>
+        private void WatchWalkIn(float time)
+        {
+            _walkInNext = time + WalkInCheck;
+            if (_refuge == null)
+            {
+                _walkInEnd = -1f;
+                return;
+            }
+            var zone = ZoneArea(_walkInZone);
+            if (_refuge.CountAnimalsIn(zone, false) >= AnimalsWalkingIn || time >= _walkInEnd || _walkInSent >= WalkInMaxSent)
+            {
+                _walkInEnd = -1f;
+                return;
+            }
+            int there = _refuge.CountAnimalsIn(zone, true);
+            if (there >= AnimalsWalkingIn)
+                return;
+            int sent = _refuge.SendAnimalsInto(zone, Math.Min(AnimalsWalkingIn - there, WalkInMaxSent - _walkInSent));
+            _walkInSent += sent;
+            if (sent > 0)
+                GameLog.Info(LogCategory.Presentation, $"[Zones] {sent} more animals walk into zone {_walkInZone}");
         }
 
         // ---------------- Helpers ----------------
@@ -352,18 +395,6 @@ namespace PocketWilds.Presentation
             if (_scatter == null || zone < 0 || zone >= _chunkIndex.Length || _streamer.GetState(_chunkIndex[zone]) != ChunkStreamState.Active)
                 return;
             _scatter.Rebuild(_streamer.GetChunk(_chunkIndex[zone]));
-        }
-
-        private string Text(string key) => _context.Localization != null ? _context.Localization.Get(key) : key;
-
-        private static string Format(string template, string token, string value) => template.Replace(token, value);
-
-        private string FormatLight(BigValue value)
-        {
-            // Same digits as the HUD's Light counter.
-            var buffer = new char[BigValueFormatter.MaxLength];
-            int length = BigValueFormatter.Format(value, buffer, 0, NumberFormatSettings.Invariant);
-            return new string(buffer, 0, length);
         }
     }
 }

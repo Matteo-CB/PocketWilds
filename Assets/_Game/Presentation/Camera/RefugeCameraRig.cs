@@ -149,6 +149,16 @@ namespace PocketWilds.Presentation
             _currentSmooth = _transitionTime * 0.4f;
         }
 
+        /// <summary>T35A: glides the world view to a point (the next zone's sign), within the bounds.</summary>
+        public void GlideTo(Vector3 point)
+        {
+            if (State != RefugeCameraState.DefaultWorld)
+                return;
+            _flingVelocity = Vector3.zero;
+            _targetFocus = Clamp(new Vector3(point.x, _targetFocus.y, point.z));
+            _currentSmooth = _transitionTime * 1.2f;
+        }
+
         public void ReturnToWorld()
         {
             if (State == RefugeCameraState.DefaultWorld)

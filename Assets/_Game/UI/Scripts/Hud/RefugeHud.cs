@@ -13,7 +13,7 @@ namespace PocketWilds.UI
     /// States use color tokens and scale, not extra sprites. No Update: ticked by the scene controller.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IMotionSettings
+    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IMotionSettings
     {
         private const float PulseSeconds = 0.4f;
 
@@ -67,7 +67,32 @@ namespace PocketWilds.UI
         [SerializeField] private Button _infoButton;
         [SerializeField] private RectTransform _infoRoot;
 
+        [Header("Progression (T35A): Upgrades button, refuge level badge")]
+        [SerializeField] private Button _upgradeButton;
+        [SerializeField] private RectTransform _upgradeRoot;
+        [SerializeField] private GameObject _upgradeDot;
+        [SerializeField] private Button _levelButton;
+        [SerializeField] private RectTransform _levelRoot;
+        [SerializeField] private RectTransform _levelMedal;
+        [SerializeField] private TMP_Text _levelLabel;
+        [SerializeField] private RectTransform _levelRing;
+        [SerializeField] private Image _levelRingImage;
+        [SerializeField] private RectTransform[] _levelPaws = System.Array.Empty<RectTransform>();
+        [SerializeField] private Image[] _levelPawImages = System.Array.Empty<Image>();
+        [SerializeField] private Button _lightButton;
+        [SerializeField] private GameObject _levelDot;
+
         private IRefugeActions _actions;
+        private IProgressionHudActions _progressionActions;
+        private bool _upgradeShown;
+        private bool _upgradeDotShown;
+        private bool _upgradeHint;
+        private bool _eggHint;
+        private int _levelShown = -1;
+        private readonly UiNumberText _levelText = new UiNumberText();
+        private float _levelUpTime = -1f;
+        private bool _levelDotShown;
+        private const float LevelUpSeconds = 1.2f;
         private BigValueText _light;
         private BigValueText _rate;
         private BigValueText _cost;
@@ -146,6 +171,11 @@ namespace PocketWilds.UI
                 _shopShown = _shopRoot.gameObject.activeSelf;
             }
             _badgeShown = _codexBadge != null && _codexBadge.activeSelf;
+            if (_upgradeRoot != null)
+            {
+                _upgradeShown = _upgradeRoot.gameObject.activeSelf;
+                _upgradeDotShown = _upgradeDot.activeSelf;
+            }
             if (_masteryRoot != null)
                 _masteryRoot.gameObject.SetActive(false);
             _reveal?.Hide();
@@ -231,7 +261,175 @@ namespace PocketWilds.UI
 
         public void ShowToast(ToastKind kind, string text) => _toasts?.Enqueue(kind, text);
 
-        public void SetTapHint(bool visible, Vector2 screenPosition) => _tapHint?.Set(visible, screenPosition);
+        public void SetTapHint(bool visible, Vector2 screenPosition)
+        {
+            // The first egg's hint wins over the Upgrades button's (they never meet in play, tests may ask for both).
+            _eggHint = visible;
+            _tapHint?.Set(visible, screenPosition);
+        }
+
+        // ---------------- T35A progression parts ----------------
+
+        public void BindProgression(IProgressionHudActions actions)
+        {
+            _progressionActions = actions;
+            if (_upgradeButton != null)
+            {
+                _upgradeButton.onClick.RemoveListener(OnUpgradePressed);
+                _upgradeButton.onClick.AddListener(OnUpgradePressed);
+            }
+            if (_levelButton != null)
+            {
+                _levelButton.onClick.RemoveListener(OnLevelPressed);
+                _levelButton.onClick.AddListener(OnLevelPressed);
+            }
+            if (_lightButton != null)
+            {
+                _lightButton.onClick.RemoveListener(OnUpgradePressed);
+                _lightButton.onClick.AddListener(OnUpgradePressed);
+            }
+            if (_levelRing != null)
+                _levelRing.gameObject.SetActive(false);
+            for (int i = 0; i < _levelPaws.Length; i++)
+                _levelPaws[i].gameObject.SetActive(false);
+        }
+
+        public bool UpgradeVisible => _upgradeShown;
+        public bool UpgradeDotVisible => _upgradeDotShown;
+        public bool UpgradeHintShown => _upgradeHint && !_eggHint;
+        public string LevelText => _levelLabel != null ? _levelLabel.text : string.Empty;
+        public Button UpgradeButton => _upgradeButton;
+        public Button LevelButton => _levelButton;
+        public Button LightButton => _lightButton;
+        public bool LevelUpPlaying => _levelUpTime >= 0f;
+
+        public void SetUpgrade(bool visible, bool dot)
+        {
+            if (_upgradeRoot == null)
+                return;
+            if (visible != _upgradeShown)
+            {
+                _upgradeShown = visible;
+                _upgradeRoot.gameObject.SetActive(visible);
+            }
+            bool showDot = visible && dot;
+            if (showDot != _upgradeDotShown)
+            {
+                _upgradeDotShown = showDot;
+                _upgradeDot.SetActive(showDot);
+            }
+        }
+
+        public void SetUpgradeHint(bool visible)
+        {
+            if (visible == _upgradeHint)
+                return;
+            _upgradeHint = visible;
+            if (!visible && !_eggHint)
+                _tapHint?.Set(false, default);
+        }
+
+        public void SetRefugeLevel(int level, float fraction)
+        {
+            if (_levelLabel == null || level == _levelShown)
+                return;
+            _levelShown = level;
+            _levelText.SetCount(_levelLabel, level);
+        }
+
+        public void SetLevelReward(bool pending)
+        {
+            if (_levelDot == null || pending == _levelDotShown)
+                return;
+            _levelDotShown = pending;
+            _levelDot.SetActive(pending);
+        }
+
+        public bool LevelRewardDotVisible => _levelDotShown;
+
+        public void PlayRefugeLevelUp()
+        {
+            if (_levelRoot == null)
+                return;
+            _levelUpTime = 0f;
+            if (ReduceMotion)
+                return;
+            _levelRing.gameObject.SetActive(true);
+            for (int i = 0; i < _levelPaws.Length; i++)
+                _levelPaws[i].gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// The badge grows and settles; a ring and a ring of paws spread from it and fade (section 11.6, 1.2 s). With
+        /// Reduce Motion the number simply changes (sound and vibration stay).
+        /// </summary>
+        private void TickLevelUp(float dt)
+        {
+            if (_levelUpTime < 0f)
+                return;
+            _levelUpTime += dt;
+            float t = Mathf.Clamp01(_levelUpTime / LevelUpSeconds);
+            if (!ReduceMotion)
+            {
+                float grow = t < 0.25f ? Mathf.Lerp(1f, 1.3f, t / 0.25f) : Mathf.Lerp(1.3f, 1f, Mathf.SmoothStep(0f, 1f, (t - 0.25f) / 0.75f));
+                _levelMedal.localScale = new Vector3(grow, grow, 1f);
+                float spread = 1f - (1f - t) * (1f - t);
+                float ring = Mathf.Lerp(0.8f, 2.2f, spread);
+                _levelRing.localScale = new Vector3(ring, ring, 1f);
+                var color = _levelRingImage.color;
+                color.a = 0.9f * (1f - t);
+                _levelRingImage.color = color;
+                for (int i = 0; i < _levelPaws.Length; i++)
+                {
+                    float angle = (i / (float)_levelPaws.Length) * Mathf.PI * 2f + 0.3f;
+                    float radius = Mathf.Lerp(50f, 150f, spread);
+                    _levelPaws[i].anchoredPosition = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                    _levelPaws[i].localRotation = Quaternion.Euler(0f, 0f, angle * Mathf.Rad2Deg - 90f);
+                    var paw = _levelPawImages[i].color;
+                    paw.a = t < 0.2f ? t / 0.2f : 1f - (t - 0.2f) / 0.8f;
+                    _levelPawImages[i].color = paw;
+                }
+            }
+            if (t < 1f)
+                return;
+            _levelUpTime = -1f;
+            _levelMedal.localScale = Vector3.one;
+            _levelRing.gameObject.SetActive(false);
+            for (int i = 0; i < _levelPaws.Length; i++)
+                _levelPaws[i].gameObject.SetActive(false);
+        }
+
+        private void TickUpgradeHint()
+        {
+            if (_tapHint == null || !_upgradeHint || _eggHint || !_upgradeShown)
+                return;
+            var center = _upgradeRoot.TransformPoint(_upgradeRoot.rect.center);
+            _tapHint.Set(true, RectTransformUtility.WorldToScreenPoint(null, center));
+        }
+
+        private void OnUpgradePressed() => _progressionActions?.OpenUpgrades();
+
+        private void OnLevelPressed() => _progressionActions?.OpenRefugeLevel();
+
+        /// <summary>Prefab builder hook for the T35A parts (Editor ProgressionUiPipeline).</summary>
+        public void SetProgressionReferences(Button upgradeButton, RectTransform upgradeRoot, GameObject upgradeDot, Button levelButton,
+            RectTransform levelRoot, RectTransform levelMedal, TMP_Text levelLabel, RectTransform levelRing, Image levelRingImage,
+            RectTransform[] levelPaws, Image[] levelPawImages, Button lightButton, GameObject levelDot)
+        {
+            _levelDot = levelDot;
+            _upgradeButton = upgradeButton;
+            _upgradeRoot = upgradeRoot;
+            _upgradeDot = upgradeDot;
+            _levelButton = levelButton;
+            _levelRoot = levelRoot;
+            _levelMedal = levelMedal;
+            _levelLabel = levelLabel;
+            _levelRing = levelRing;
+            _levelRingImage = levelRingImage;
+            _levelPaws = levelPaws;
+            _levelPawImages = levelPawImages;
+            _lightButton = lightButton;
+        }
 
         public void PlayCollect(Vector2 fromScreenPosition) => _collect?.Play(fromScreenPosition);
 
@@ -331,6 +529,8 @@ namespace PocketWilds.UI
                 _toasts.Paused = _noticeRoot != null && _noticeRoot.gameObject.activeSelf;
                 _toasts.Tick(unscaledDeltaTime);
             }
+            TickUpgradeHint();
+            TickLevelUp(unscaledDeltaTime);
             if (_tapHint != null)
                 _tapHint.Tick(unscaledDeltaTime);
             if (_collect != null)
@@ -406,6 +606,8 @@ namespace PocketWilds.UI
             || RectTransformUtility.RectangleContainsScreenPoint(_lightChip, screenPosition, null)
             || (_codexRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_codexRoot, screenPosition, null))
             || (_infoRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_infoRoot, screenPosition, null))
+            || (_upgradeShown && RectTransformUtility.RectangleContainsScreenPoint(_upgradeRoot, screenPosition, null))
+            || (_levelRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_levelRoot, screenPosition, null))
             || (_shopShown && (RectTransformUtility.RectangleContainsScreenPoint(_shopRoot, screenPosition, null)
                                || RectTransformUtility.RectangleContainsScreenPoint(_gemsChip, screenPosition, null)));
 
@@ -513,6 +715,12 @@ namespace PocketWilds.UI
                 _shopButton.onClick.RemoveListener(OnShopPressed);
             if (_infoButton != null)
                 _infoButton.onClick.RemoveListener(OnInfoPressed);
+            if (_upgradeButton != null)
+                _upgradeButton.onClick.RemoveListener(OnUpgradePressed);
+            if (_levelButton != null)
+                _levelButton.onClick.RemoveListener(OnLevelPressed);
+            if (_lightButton != null)
+                _lightButton.onClick.RemoveListener(OnUpgradePressed);
         }
     }
 }

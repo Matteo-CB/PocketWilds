@@ -148,6 +148,57 @@ namespace PocketWilds.Editor.UI
             { "variant.hedgehog.black.name", "Black", "Noir" },
             { "variant.hedgehog.white.name", "White", "Blanc" },
             { "variant.hedgehog.mushroom.name", "Mushroom", "Champignon" },
+            // T35A Upgrades screen (doc 02 Améliorations, section 11.7). Gains are what the purchase brings.
+            { ProgressionText.UpgradesTitle, "Upgrades", "Améliorer" },
+            { ProgressionText.QtyOne, "× 1", "× 1" },
+            { ProgressionText.QtyTen, "× 10", "× 10" },
+            { ProgressionText.QtyMax, "Max", "Max" },
+            { ProgressionText.ProductionName, "{biome} Glow", "Lumière de la {biome}" },
+            { ProgressionText.ProductionEffect, "+{pct}% Light", "+{pct} % de Lumière" },
+            { ProgressionText.ProductionMilestone, "Next milestone: × 2", "Prochain palier : × 2" },
+            { ProgressionText.NestsName, "Cozy Nests", "Nids douillets" },
+            { ProgressionText.NestsEffect, "Eggs −{pct}%", "Œufs −{pct} %" },
+            { ProgressionText.CuriosityName, "Curious Eye", "Regard curieux" },
+            { ProgressionText.CuriosityEffect, "Variants +{pct}%", "Variantes +{pct} %" },
+            { ProgressionText.UpgradesMax, "Maxed", "Au maximum" },
+            { ProgressionText.UpgradesLockedMastery, "{mastery} {level}", "{mastery} {level}" },
+            { ProgressionText.UpgradesBest, "Best pick", "Conseillé" },
+            { ProgressionText.UpgradesTutorial, "Make your meadow glow", "Rends ta Prairie plus lumineuse" },
+            { ProgressionText.UpgradesLevel, "Lv. {n}", "Niv. {n}" },
+            { ProgressionText.UpgradesLevels, "+{n} lv.", "+{n} niv." },
+            { ProgressionText.UpgradesTotal, "Total: {effect}", "Total : {effect}" },
+            { ProgressionText.UpgradesRateAfter, "→ {rate}/s", "→ {rate}/s" },
+            { ProgressionText.UpgradesNextZone, "Next zone", "Prochaine zone" },
+            { ProgressionText.UpgradesSee, "See", "Voir" },
+            { ProgressionText.UpgradesMasteryNext, "Level {n}: {reward}", "Niveau {n} : {reward}" },
+            // T35A refuge level and its reward card. The score by source, in plain words.
+            { ProgressionText.RefugeLevelTitle, "Refuge level", "Niveau du refuge" },
+            { ProgressionText.RefugeLevelUp, "Level {n}", "Niveau {n}" },
+            { ProgressionText.RefugeLevelScore, "Score", "Score" },
+            { ProgressionText.RefugeLevelRewards, "Rewards", "Récompenses" },
+            { ProgressionText.RefugeLevelClaim, "Collect", "Récupérer" },
+            { ProgressionText.SourceSpecies, "Species", "Espèces" },
+            { ProgressionText.SourceVariants, "Variants", "Variantes" },
+            { ProgressionText.SourceTraits, "Rare traits", "Traits rares" },
+            { ProgressionText.SourceSpeciesMastery, "Species mastery", "Maîtrise des espèces" },
+            { ProgressionText.SourceBiomes, "Biomes", "Biomes" },
+            { ProgressionText.SourceZones, "Zones", "Zones" },
+            { ProgressionText.SourceBiomeMastery, "Biome mastery", "Maîtrise des biomes" },
+            { ProgressionText.RewardGems, "+{n} Gems", "+{n} Gemmes" },
+            { ProgressionText.FeatureShop, "Shop", "Boutique" },
+            { ProgressionText.RewardUnlock, "New: {feature}", "Nouveau : {feature}" },
+            // T35A biome gates: real days in plain words, never a countdown.
+            { ProgressionText.BiomeGateTitle, "Open {biome}", "Ouvrir {biome}" },
+            { ProgressionText.BiomeGateSoon, "Coming soon", "Bientôt" },
+            { ProgressionText.BiomeGateTomorrow, "Tomorrow", "Demain" },
+            { ProgressionText.BiomeGateDaysIn, "In {n} days", "Dans {n} jours" },
+            { ProgressionText.BiomeGateDay, "Day {n}", "Jour {n}" },
+            { ProgressionText.BiomeGatePlay, "{n} min of play", "{n} min de jeu" },
+            { ProgressionText.BiomeGateLevel, "Refuge level {n}", "Niveau du refuge {n}" },
+            { ProgressionText.BiomeGateSpecies, "{biome} species: {found}/{n}", "Espèces de la {biome} : {found}/{n}" },
+            { "biome.grassland.name_the", "the Meadow", "la Prairie" },
+            { "biome.forest.name", "Forest", "Forêt" },
+            { "biome.forest.name_the", "the Forest", "la Forêt" },
         };
 
         public static readonly string[] Languages = { "en", "fr" };
@@ -424,6 +475,8 @@ namespace PocketWilds.Editor.UI
 
                 // T34A: reveal banner, toasts, tutorial hand, collect motes, egg odds button.
                 FeedbackUiPipeline.AddHudFeedback(root, safe, action, chip, chipIcon.rectTransform, hud, tokens);
+                // T35A: the Upgrades button and its dot, the refuge level badge, the touchable Light chip.
+                ProgressionUiPipeline.AddHudProgression(safe, shortcuts, chip, hud, tokens);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(HudPrefabPath));
                 return PrefabUtility.SaveAsPrefabAsset(root, HudPrefabPath).GetComponent<RefugeHud>();

@@ -40,12 +40,14 @@ namespace PocketWilds.Tests.EditMode
             var action = prefab.transform.Find("SafeArea/HatchAction");
             Assert.IsNotNull(chip.GetComponent<Canvas>(), "The Light counter must rebuild its own canvas only.");
             Assert.IsNotNull(action.GetComponent<Canvas>());
-            Assert.IsNull(chip.GetComponent<GraphicRaycaster>());
+            // T35A: touching the Light counter opens Upgrades (its background is a button on the chip's own canvas).
+            Assert.IsNotNull(chip.GetComponent<GraphicRaycaster>());
             Assert.IsNotNull(action.GetComponent<GraphicRaycaster>());
 
             var graphics = prefab.GetComponentsInChildren<Graphic>(true);
             var targets = graphics.Where(g => g.raycastTarget).ToArray();
-            Assert.AreEqual(4, targets.Length, "Only the hatch button, the egg odds button (T34A) and the Codex and shop shortcuts catch touches.");
+            Assert.AreEqual(7, targets.Length, "Only the hatch button, the egg odds button (T34A), the Codex and shop shortcuts, the " +
+                "Upgrades button, the refuge level badge and the Light counter (T35A) catch touches.");
             Assert.IsTrue(targets.All(t => t.GetComponent<Button>() != null));
             var shortcuts = prefab.transform.Find("SafeArea/Shortcuts");
             Assert.IsNotNull(shortcuts.GetComponent<Canvas>(), "Shortcuts rebuild on their own canvas.");

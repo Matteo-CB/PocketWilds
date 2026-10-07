@@ -561,9 +561,11 @@ SPRITES = (kit_pill, kit_icon_circle, kit_panel_primary, kit_button_primary, kit
 def main():
     # T34A sprites live in their own file (frames, badges, traits, hearts, gesture, splash); same method.
     from pw_ui_sprites_t34a import RUNTIME_CODEX, T34A_SPRITES
+    # T35A sprites (upgrades, zones, refuge level, biome gates) too.
+    from pw_ui_sprites_t35a import T35A_SPRITES
     for folder in (RUNTIME_KIT, RUNTIME_ICONS, RUNTIME_SHOP, RUNTIME_CODEX, MASTERS):
         os.makedirs(folder, exist_ok=True)
-    for build in SPRITES + T34A_SPRITES:
+    for build in SPRITES + T34A_SPRITES + T35A_SPRITES:
         name, canvas, folder = build()
         canvas.image(True).save(os.path.join(folder, name + ".png"), optimize=True)
         canvas.image(False).save(os.path.join(MASTERS, name + "@4x.png"), optimize=True)

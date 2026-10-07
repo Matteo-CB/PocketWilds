@@ -135,6 +135,8 @@ namespace PocketWilds.Tests.PlayMode
                 yield return null;
             }
             Assert.AreEqual(AnimalBehaviorState.Social, scheduler.GetState(b));
+            // The pair may meet anywhere in the arrival zone: look at it (animators of animals off screen do not run).
+            entry.CameraRig.SnapTo((scheduler.GetPosition(a) + scheduler.GetPosition(b)) * 0.5f);
             // Let the crossfade and the last few degrees of turning finish.
             for (int i = 0; i < 12; i++)
                 yield return null;

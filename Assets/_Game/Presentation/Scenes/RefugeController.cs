@@ -257,8 +257,20 @@ namespace PocketWilds.Presentation
         public bool SheetOpen => _sheetView != null && _sheetView.IsOpen;
         public bool DialogOpen => _modalView != null && _modalView.IsOpen;
 
+        /// <summary>T35A: the progression screens (Upgrades, zone, refuge level, gate), set by the scene entry.</summary>
+        public ProgressionPresenter Progression { get; set; }
+
+        public bool ProgressionOpen => Progression != null && Progression.IsOpen;
+
         /// <summary>A screen covers the refuge: world touches and hatching wait.</summary>
-        public bool ModalOpen => OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen;
+        public bool ModalOpen => OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen || ProgressionOpen;
+
+        /// <summary>T35A: Cozy Nests lowers the egg's price at once (the cost is cached, never evaluated per frame).</summary>
+        public void OnUpgradePurchased(in UpgradePurchase purchase)
+        {
+            if (purchase.Kind == UpgradeKind.Nests)
+                RefreshEggCost();
+        }
 
         /// <summary>The tutorial hand shows on the first egg (tests).</summary>
         public bool TapHintShown => _tapHintShown;
@@ -961,40 +973,91 @@ namespace PocketWilds.Presentation
                 SpawnSaved(spawnArea);
         }
 
+        /// <summary>T35A: visible animals standing in a zone (and, with <paramref name="heading"/>, those walking to it).</summary>
+        public int CountAnimalsIn(in WanderArea zone, bool heading)
+        {
+            int count = 0;
+            for (int i = 0; i < _views.Length; i++)
+            {
+                int handle = _agentByView[i];
+                if (_views[i] == null || handle == AnimalScheduler.InvalidHandle)
+                    continue;
+                if (heading ? _scheduler.IsInOrHeadingInto(handle, zone) : zone.Contains(_scheduler.GetPosition(handle)))
+                    count++;
+            }
+            return count;
+        }
+
         /// <summary>
         /// T35A, zone opening: the animals nearest to the new zone walk into it (two or three, doc 02 section 4.6).
         /// Returns how many set off.
         /// </summary>
         public int SendAnimalsInto(WanderArea zone, int count)
         {
-            int sent = 0, tries = 0;
-            float tried = float.MinValue;
-            while (sent < count && tries < count * 3)
+            // Each walker goes straight ahead at its own depth, at least a lane apart from the others: their paths never
+            // cross, so they never stand in each other's way at a narrow passage between two props.
+            const float LaneSpacing = 0.9f;
+            const float LaneMargin = 0.8f;
+            count = Math.Min(count, 8);
+            Span<float> lanes = stackalloc float[8];
+            float minZ = zone.Center.z - zone.HalfSize.y + LaneMargin;
+            float maxZ = zone.Center.z + zone.HalfSize.y - LaneMargin;
+            // Lanes already taken by animals on their way there (sent a moment ago): the new walkers keep clear of them.
+            int taken = 0;
+            for (int i = 0; i < _views.Length && taken < lanes.Length; i++)
             {
-                tries++;
-                // The next nearest animal not tried yet (by its distance to the zone along the strip).
-                int best = -1;
-                float bestDistance = float.MaxValue;
-                for (int i = 0; i < _views.Length; i++)
+                int handle = _agentByView[i];
+                if (_views[i] != null && handle != AnimalScheduler.InvalidHandle && _scheduler.GetGoalLegs(handle) > 0
+                    && zone.Contains(_scheduler.GetGoal(handle)) && !zone.Contains(_scheduler.GetPosition(handle)))
+                    lanes[taken++] = _scheduler.GetGoal(handle).z;
+            }
+            count = Math.Min(count, lanes.Length - taken);
+            int sent = 0;
+            // First the animals with a free straight lane (no prop to go around, no animal standing in it), then lanes free
+            // of props only, then any.
+            for (int pass = 0; pass < 3 && sent < count; pass++)
+            {
+                int tries = 0;
+                float tried = float.MinValue;
+                while (sent < count && tries < _views.Length)
                 {
-                    int handle = _agentByView[i];
-                    if (_views[i] == null || handle == AnimalScheduler.InvalidHandle || _scheduler.IsEmerging(handle)
-                        || _scheduler.GetState(handle) == AnimalBehaviorState.Wander || zone.Contains(_scheduler.GetPosition(handle)))
-                        continue;
-                    float distance = Mathf.Abs(_scheduler.GetPosition(handle).x - zone.Center.x);
-                    if (distance > tried && distance < bestDistance)
+                    tries++;
+                    // The next nearest animal not tried yet (by its distance to the zone along the strip).
+                    int best = -1;
+                    float bestDistance = float.MaxValue;
+                    for (int i = 0; i < _views.Length; i++)
                     {
-                        bestDistance = distance;
-                        best = handle;
+                        int handle = _agentByView[i];
+                        if (_views[i] == null || handle == AnimalScheduler.InvalidHandle || _scheduler.IsEmerging(handle)
+                            || _scheduler.GetState(handle) == AnimalBehaviorState.Wander || zone.Contains(_scheduler.GetPosition(handle)))
+                            continue;
+                        float distance = Mathf.Abs(_scheduler.GetPosition(handle).x - zone.Center.x);
+                        if (distance > tried && distance < bestDistance)
+                        {
+                            bestDistance = distance;
+                            best = handle;
+                        }
                     }
+                    if (best < 0)
+                        break;
+                    tried = bestDistance;
+                    var position = _scheduler.GetPosition(best);
+                    float lane = Mathf.Clamp(position.z, minZ, maxZ);
+                    bool crowded = false;
+                    for (int k = 0; k < taken + sent && !crowded; k++)
+                        crowded = Mathf.Abs(lanes[k] - lane) < LaneSpacing;
+                    if (crowded)
+                        continue;
+                    float u = (sent + 0.5f) / count;
+                    float x = zone.Center.x - zone.HalfSize.x + (0.25f + 0.2f * u) * 2f * zone.HalfSize.x;
+                    var target = new Vector3(x, position.y, lane);
+                    if (pass < 2 && !_scheduler.IsStraightPathClear(best, target))
+                        continue;
+                    if (pass == 0 && !_scheduler.IsLaneFreeOfAnimals(best, target))
+                        continue;
+                    if (_scheduler.TryWalkTo(best, target, _time))
+                        lanes[taken + sent++] = lane;
                 }
-                if (best < 0)
-                    break;
-                tried = bestDistance;
-                float u = (sent + 0.5f) / count;
-                var target = zone.PointAt(0.25f + 0.2f * u, 0.2f + 0.6f * u);
-                if (_scheduler.TryWalkTo(best, target, _time))
-                    sent++;
             }
             return sent;
         }

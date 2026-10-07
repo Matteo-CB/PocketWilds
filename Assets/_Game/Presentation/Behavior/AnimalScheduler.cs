@@ -412,11 +412,55 @@ namespace PocketWilds.Presentation
         public SimulationTier GetTier(int handle) => _agents[handle].Tier;
         public Temperament GetTemperament(int handle) => _agents[handle].Temperament;
         public Vector3 GetPosition(int handle) => _agents[handle].Position;
+
+        /// <summary>T35A: the straight walk from where the animal stands to a point meets no prop and no egg spot.</summary>
+        public bool IsStraightPathClear(int handle, Vector3 target) =>
+            IsValid(handle) && PathClear(ref _agents[handle], _agents[handle].Position, target, out _);
+
+        /// <summary>T35A: no other animal stands within a body's reach of the straight walk to a point.</summary>
+        public bool IsLaneFreeOfAnimals(int handle, Vector3 target)
+        {
+            if (!IsValid(handle))
+                return false;
+            ref var agent = ref _agents[handle];
+            var from = new Vector2(agent.Position.x, agent.Position.z);
+            var to = new Vector2(target.x, target.z);
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int other = _active[i];
+                if (other == handle)
+                    continue;
+                ref var o = ref _agents[other];
+                float reach = agent.Reach + o.Reach + PathMargin;
+                if (CollisionMath.PointSegmentDistanceSq(new Vector2(o.Position.x, o.Position.z), from, to) < reach * reach)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>Where the current walk ends (tests, debug).</summary>
+        public Vector3 GetTarget(int handle) => _agents[handle].Target;
+
+        /// <summary>The far point a goal walk heads for (meaningful while <see cref="GetGoalLegs"/> is above 0).</summary>
+        public Vector3 GetGoal(int handle) => _agents[handle].Goal;
+
+        /// <summary>Legs left toward a far goal (0: none; tests, debug).</summary>
+        public int GetGoalLegs(int handle) => _agents[handle].GoalLegs;
         public float GetYaw(int handle) => _agents[handle].Yaw;
         public uint GetInstanceId(int handle) => _agents[handle].InstanceId;
         public int GetPartner(int handle) => _agents[handle].Partner;
         public int GetInterest(int handle) => _agents[handle].Interest;
         public bool IsEmerging(int handle) => _agents[handle].Emerging;
+
+        /// <summary>T35A: the animal stands in the area, or walks toward it (its walk or its goal ends there).</summary>
+        public bool IsInOrHeadingInto(int handle, in WanderArea area)
+        {
+            if (!IsValid(handle))
+                return false;
+            ref var agent = ref _agents[handle];
+            return area.Contains(agent.Position) || (agent.State == AnimalBehaviorState.Wander && area.Contains(agent.Target))
+                   || (agent.GoalLegs > 0 && area.Contains(agent.Goal));
+        }
 
         /// <summary>Handle of the i-th registered animal (0 to <see cref="Count"/> - 1), for neighbours such as the ambient life.</summary>
         public int GetActiveHandle(int index) => _active[index];
@@ -523,7 +567,9 @@ namespace PocketWilds.Presentation
             if (!planned)
                 return false;
             EndActivity(handle, ref agent, time);
-            agent.GoalLegs = fraction >= 1f ? 0 : agent.GoalLegs - 1;
+            // Every leg spends one try, a full one too: a walk stopped on its way (an animal in the path) plans again
+            // from where it stands, until the goal is reached or the tries run out.
+            agent.GoalLegs = Math.Max(0, agent.GoalLegs - 1);
             agent.Target = spot;
             agent.Waypoint = waypoint;
             agent.HasWaypoint = detour;
@@ -1031,10 +1077,11 @@ namespace PocketWilds.Presentation
             var arrive = agent.Arrive;
             agent.Arrive = AnimalBehaviorState.Idle;
             agent.HasWaypoint = false;
-            // Heading somewhere far: the next leg right away (a leg that cannot be planned ends the trip).
+            // Heading somewhere far: the next leg right away (a leg that cannot be planned ends the trip; the goal reached
+            // ends it too).
             if (arrive == AnimalBehaviorState.Idle && agent.GoalLegs > 0)
             {
-                if (WalkLeg(slot, ref agent, time))
+                if (Flat(agent.Goal - agent.Position).magnitude > NearEnough && WalkLeg(slot, ref agent, time))
                     return;
                 agent.GoalLegs = 0;
             }

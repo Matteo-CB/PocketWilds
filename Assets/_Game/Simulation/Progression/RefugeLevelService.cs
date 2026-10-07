@@ -176,7 +176,10 @@ namespace PocketWilds.Simulation
             var collection = _state.Collection;
             int animals = collection.Count;
             int species = collection.DiscoveredSpecies.Count;
-            int day = ProgressionMath.DayNumber(_state, _clock.UtcNow, _config.TimeZone);
+            // The calendar day only for the functions that wait for one (a time zone conversion, checked often by the HUD).
+            int day = feature >= RefugeFeature.WeeklyBook && feature <= RefugeFeature.BurrowMaze
+                ? ProgressionMath.DayNumber(_state, _clock.UtcNow, _config.TimeZone)
+                : 0;
             switch (feature)
             {
                 case RefugeFeature.Codex: return level >= 1 && animals >= 2;

@@ -60,6 +60,12 @@ namespace PocketWilds.Presentation
         [SerializeField] private MonoBehaviour _animalSheet;
         [Tooltip("T34A modal shell implementing IModalView (UI assembly).")]
         [SerializeField] private MonoBehaviour _modal;
+        [Header("T35A progression screens (UI assembly)")]
+        [SerializeField] private MonoBehaviour _upgrades;
+        [SerializeField] private MonoBehaviour _zoneOpen;
+        [SerializeField] private MonoBehaviour _refugeLevel;
+        [SerializeField] private MonoBehaviour _levelReward;
+        [SerializeField] private MonoBehaviour _biomeGate;
 
         private GameContext _context;
         private RefugeController _refuge;
@@ -75,6 +81,7 @@ namespace PocketWilds.Presentation
         private AsyncOperationHandle<HatchPresentationConfig> _hatch;
         private AsyncOperationHandle<ZoneKit> _zoneKit;
         private RefugeZones _zones;
+        private ProgressionPresenter _progressionPresenter;
 
         public bool HasContext => _context != null;
         public WorldChunkSet ChunkSet => _chunkSet;
@@ -94,6 +101,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>T35A: the open zones, the hedge and the sign (null without progression services).</summary>
         public RefugeZones Zones => _zones;
+
+        /// <summary>T35A: the Upgrades, zone, refuge level and gate screens (null without progression services).</summary>
+        public ProgressionPresenter ProgressionScreens => _progressionPresenter;
 
         public ZoneKit ZoneKit => _zoneKit.IsValid() && _zoneKit.Status == AsyncOperationStatus.Succeeded ? _zoneKit.Result : null;
 
@@ -207,10 +217,17 @@ namespace PocketWilds.Presentation
                 if (context.Progression != null && _streamer != null)
                 {
                     // T35A: animals walk across every open zone; the next one is closed by a hedge and a sign.
-                    _zones = new RefugeZones(context, _streamer, _chunkSet, ZoneKit, _refuge, _scatter, _life, _cameraRig,
-                        _modal as IModalView, transform);
+                    _zones = new RefugeZones(context, _streamer, _chunkSet, ZoneKit, _refuge, _scatter, _life, _cameraRig, transform);
                     _zones.CameraRangeChanged += UpdateCameraBounds;
                     UpdateCameraBounds();
+                }
+                if (context.Progression != null)
+                {
+                    // T35A: the Upgrades button and screen, the zone window, the refuge level and the biome gates.
+                    _progressionPresenter = new ProgressionPresenter(context, _refuge, _zones, _cameraRig, _hud as IProgressionHud,
+                        _upgrades as IUpgradesView, _zoneOpen as IZoneOpenView, _refugeLevel as IRefugeLevelView,
+                        _levelReward as ILevelRewardView, _biomeGate as IBiomeGateView);
+                    _refuge.Progression = _progressionPresenter;
                 }
             }
             _onQuality = ApplyQuality;
@@ -229,7 +246,8 @@ namespace PocketWilds.Presentation
         /// <summary>T34A: the player's Reduce Motion setting reaches every screen of the scene.</summary>
         public void ApplyReduceMotion(bool reduce)
         {
-            foreach (var screen in new[] { _hud, _offlineReturn, _codex, _shop, _offerModal, _animalSheet, _modal })
+            foreach (var screen in new[] { _hud, _offlineReturn, _codex, _shop, _offerModal, _animalSheet, _modal, _upgrades, _zoneOpen,
+                         _refugeLevel, _levelReward, _biomeGate })
                 if (screen is IMotionSettings motion)
                     motion.ReduceMotion = reduce;
         }
@@ -269,6 +287,8 @@ namespace PocketWilds.Presentation
             _onQuality = null;
             _life?.SetAnimals(null);
             _life?.SetListener(null);
+            _progressionPresenter?.Dispose();
+            _progressionPresenter = null;
             if (_zones != null)
             {
                 _zones.CameraRangeChanged -= UpdateCameraBounds;
@@ -380,6 +400,7 @@ namespace PocketWilds.Presentation
                 _streamer?.Tick(Footprint(), Time.unscaledTime);
             _refuge?.Tick(Time.time, Time.deltaTime);
             _zones?.Tick(Time.time);
+            _progressionPresenter?.Tick(Time.time, Time.unscaledDeltaTime);
             _weather?.Tick(Time.unscaledTime);
             _atmosphere?.Tick(Time.unscaledTime);
             var camera = _cameraRig != null ? _cameraRig.Camera : null;

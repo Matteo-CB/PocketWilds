@@ -106,7 +106,8 @@ namespace PocketWilds.Tests.PlayMode
             Assert.AreEqual(1, hud.VisualState, "The free egg is ready to touch.");
 
             // First touch: through the HUD button, like a player.
-            var button = hud.GetComponentInChildren<Button>();
+            // The hatch button itself (since T35A the Light counter above it is a button too).
+            var button = hud.transform.Find("SafeArea/HatchAction/HatchRoot/Button").GetComponent<Button>();
             button.onClick.Invoke();
             Assert.AreEqual(1, context.State.Collection.Count);
             Assert.IsTrue(refuge.Hatch.IsPlaying);

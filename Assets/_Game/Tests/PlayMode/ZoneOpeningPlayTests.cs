@@ -146,12 +146,19 @@ namespace PocketWilds.Tests.PlayMode
             Assert.AreEqual(2, zones.OpenZones);
             Assert.AreEqual(2, zones.WalkZones, "The meadow joined the walk area.");
             Assert.Greater(refuge.WalkArea.Center.x + refuge.WalkArea.HalfSize.x, 20f, "The animals may walk across the meadow.");
-            Assert.IsTrue(entered, $"Animals walked into the new zone (farthest: {farthestState}, area {refuge.WalkArea.Center} {refuge.WalkArea.HalfSize}).");
+            Assert.IsTrue(entered, $"Animals walked into the new zone (farthest: {farthestState}, area {refuge.WalkArea.Center} {refuge.WalkArea.HalfSize}; " +
+                $"agents: {Agents(scheduler)}; obstacles near the seam: {SeamObstacles(scheduler)}).");
             Assert.AreEqual(RefugeController.ArrivalVisibleAnimals + 3, refuge.VisibleAllowance, "Three more animals may be seen.");
             entry.Zones.GetCameraRange(out _, out float maxX);
             Assert.Greater(maxX, 21f, "The camera reaches the next hedge.");
 
-            // Steady state: the scheduler, the zones and the boundary allocate nothing.
+            // Steady state (the walk-in watch over): the scheduler, the zones and the boundary allocate nothing.
+            float watch = Time.realtimeSinceStartup + 25f;
+            while (zones.WalkingIn)
+            {
+                Assert.Less(Time.realtimeSinceStartup, watch, "The walk-in watch never ended.");
+                yield return null;
+            }
             for (int i = 0; i < 5; i++)
                 yield return null;
             float t = Time.time;
@@ -168,6 +175,31 @@ namespace PocketWilds.Tests.PlayMode
             Assert.Ignore("Editor only.");
             yield break;
 #endif
+        }
+
+        private static string SeamObstacles(AnimalScheduler scheduler)
+        {
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            var obstacles = (Obstacle[])typeof(AnimalScheduler).GetField("_obstacles", flags).GetValue(scheduler);
+            int count = (int)typeof(AnimalScheduler).GetField("_obstacleCount", flags).GetValue(scheduler);
+            var text = new System.Text.StringBuilder();
+            for (int i = 0; i < count; i++)
+                if (obstacles[i].Center.x > 6f && obstacles[i].Center.x < 8.5f)
+                    text.Append(obstacles[i].kind).Append(' ').Append(obstacles[i].a.ToString("F2")).Append('-').Append(obstacles[i].b.ToString("F2"))
+                        .Append(" r").Append(obstacles[i].radius.ToString("F2")).Append("; ");
+            return text.ToString();
+        }
+
+        private static string Agents(AnimalScheduler scheduler)
+        {
+            var text = new System.Text.StringBuilder();
+            for (int i = 0; i < scheduler.Count; i++)
+            {
+                int h = scheduler.GetActiveHandle(i);
+                text.Append(h).Append(' ').Append(scheduler.GetState(h)).Append(' ').Append(scheduler.GetPosition(h).ToString("F1"))
+                    .Append("->").Append(scheduler.GetTarget(h).ToString("F1")).Append(" legs ").Append(scheduler.GetGoalLegs(h)).Append("; ");
+            }
+            return text.ToString();
         }
 
         /// <summary>No bush and no sign enters a prop or the water of either zone.</summary>

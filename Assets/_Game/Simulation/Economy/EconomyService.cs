@@ -208,7 +208,18 @@ namespace PocketWilds.Simulation
             return (long)result;
         }
 
+        /// <summary>
+        /// T35A: one biome's share of the production (the Upgrades screen's cards). Computed on demand, never per frame.
+        /// </summary>
+        public BigValue GetBiomeLightPerSecond(ContentId biome) => BigValue.Multiply(Rate(biome, true), _globalMultiplier);
+
         private void RecomputeRate()
+        {
+            _lightPerSecond = BigValue.Multiply(Rate(default, false), _globalMultiplier);
+            _rateDirty = false;
+        }
+
+        private BigValue Rate(ContentId biome, bool oneBiome)
         {
             var total = BigValue.Zero;
             var species = _content.Species;
@@ -219,14 +230,14 @@ namespace PocketWilds.Simulation
                     continue;
 
                 var definition = species[i];
+                if (oneBiome && definition.Biome != biome)
+                    continue;
                 int masteryLevel = _state.Mastery.GetLevel(definition.Id);
                 double masteryMultiplier = 1.0 + _config.MasteryPerLevel * masteryLevel;
                 double biomeMultiplier = _modifiers != null ? _modifiers.BiomeProductionMultiplier(definition.Biome) : 1.0;
                 total = BigValue.Add(total, BigValue.FromDouble(definition.BaseProduction * sum * masteryMultiplier * biomeMultiplier));
             }
-
-            _lightPerSecond = BigValue.Multiply(total, _globalMultiplier);
-            _rateDirty = false;
+            return total;
         }
     }
 }

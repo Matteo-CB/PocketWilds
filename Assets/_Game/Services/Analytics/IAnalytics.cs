@@ -21,6 +21,11 @@ namespace PocketWilds.Services.Analytics
 
         /// <summary>Fires once per profile; later calls are ignored.</summary>
         void Milestone(FunnelMilestone milestone);
+
+        /// <summary>T35A: a biome gate was shown, with the conditions it shows met.</summary>
+        void BiomeGateSeen(ContentId biome, GateConditions met)
+        {
+        }
     }
 
     public sealed class NullAnalytics : IAnalytics
