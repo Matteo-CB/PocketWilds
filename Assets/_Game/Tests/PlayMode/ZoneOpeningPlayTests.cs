@@ -103,7 +103,12 @@ namespace PocketWilds.Tests.PlayMode
                 yield return null;
             }
             Assert.AreEqual(7f, zones.SeamX, 1e-3f);
-            Assert.Greater(zones.Boundary.BushCount, 6, "A hedge across the entrance.");
+            float covered = 0f;
+            foreach (var piece in zones.Boundary.Obstacles)
+                if (piece.radius < 0.5f || (piece.b - piece.a).sqrMagnitude > 0f)
+                    covered += (piece.b - piece.a).magnitude + 2f * piece.radius;
+            Assert.Greater(covered, 0.7f * 2f * RefugeZones.HalfDepth, $"A hedge across the entrance ({zones.Boundary.BushCount} pieces, {covered:F1} m).");
+            Assert.IsTrue(zones.Boundary.HasSign, "The sign stands by the hedge.");
             AssertHedgeClear(entry, zones);
             Assert.LessOrEqual(refuge.WalkArea.Center.x + refuge.WalkArea.HalfSize.x, 7f - RefugeZones.SeamMargin + 1e-3f,
                 "Animals stop before the hedge.");

@@ -219,7 +219,7 @@ namespace PocketWilds.Editor.Environment
         /// Standalone copy of a kit mesh that several chunks share (trees, rocks). The Addressables kit bundle owns
         /// it explicitly; the FBX itself stays out of bundles because its model prefab drags the URP Lit material.
         /// </summary>
-        private static Mesh KitMesh(Mesh source)
+        internal static Mesh KitMesh(Mesh source)
         {
             Directory.CreateDirectory(KitMeshFolder);
             string path = $"{KitMeshFolder}/{source.name}.asset";

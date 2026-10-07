@@ -23,7 +23,9 @@ namespace PocketWilds.Presentation
         private readonly Transform _root;
         private readonly MeshRenderer[] _bushes = new MeshRenderer[MaxBushes];
         private readonly Vector3[] _bushRest = new Vector3[MaxBushes];
-        private readonly float[] _bushRadius;
+        // Per hedge piece: half its length (laid along the hedge) and half its depth (its capsule's radius).
+        private readonly float[] _halfLength;
+        private readonly float[] _halfDepth;
         private readonly MeshRenderer _sign;
         private Vector3 _signRest;
         private int _count;
@@ -40,9 +42,10 @@ namespace PocketWilds.Presentation
             _root.SetParent(parent, false);
             uint bushData = Pack(palettes, kit.paletteId, kit.brightness);
             int kinds = kit.bushes != null ? kit.bushes.Length : 0;
-            _bushRadius = new float[Math.Max(1, kinds)];
+            _halfLength = new float[Math.Max(1, kinds)];
+            _halfDepth = new float[Math.Max(1, kinds)];
             for (int k = 0; k < kinds; k++)
-                _bushRadius[k] = FootprintRadius(kit.bushes[k]);
+                Extents(kit.bushes[k], out _halfLength[k], out _halfDepth[k]);
             for (int i = 0; i < MaxBushes && kinds > 0; i++)
                 _bushes[i] = MakeRenderer("Hedge_" + i, kit.bushes[i % kinds], kit.material, bushData);
             if (kit.signMesh != null)
@@ -84,27 +87,32 @@ namespace PocketWilds.Presentation
                 uint hash = SeedHash.Mix((uint)Mathf.RoundToInt(seamX * 10f), 0x4ED60001u);
                 while (_count < MaxBushes)
                 {
-                    float radius = _bushRadius[kind % kinds];
-                    float centerZ = z + radius;
-                    if (centerZ + radius > zMax)
+                    int piece = kind % kinds;
+                    float half = _halfLength[piece], depth = _halfDepth[piece];
+                    float centerZ = z + half;
+                    if (centerZ + half > zMax)
                         break;
                     hash = SeedHash.Mix(hash);
-                    float jitter = ((hash & 0xFF) / 255f - 0.5f) * 0.12f;
+                    float jitter = ((hash & 0xFF) / 255f - 0.5f) * 0.08f;
                     var p = new Vector3(seamX + jitter, 0f, centerZ);
-                    if (Clear(p, radius, avoid, ground))
+                    // The piece seen from above: a capsule along the hedge.
+                    float reach = Mathf.Max(0f, half - depth);
+                    var a = new Vector2(p.x, centerZ - reach);
+                    var b = new Vector2(p.x, centerZ + reach);
+                    if (Clear(a, b, depth, avoid, ground.HeightAt(p.x, p.z)))
                     {
                         p.y = ground.HeightAt(p.x, p.z);
                         var bush = _bushes[_count];
-                        bush.GetComponent<MeshFilter>().sharedMesh = _kit.bushes[kind % kinds];
-                        // Long side along the hedge, a little turned so it never reads as a row of copies.
-                        float yaw = 90f + ((hash >> 8 & 0xFF) / 255f - 0.5f) * 24f;
+                        bush.GetComponent<MeshFilter>().sharedMesh = _kit.bushes[piece];
+                        // Long side along the hedge, every other piece turned around, a little off so it never reads as copies.
+                        float yaw = 90f + ((hash >> 9 & 1) == 0 ? 0f : 180f) + ((hash >> 8 & 0xFF) / 255f - 0.5f) * (reach > 0.2f ? 6f : 24f);
                         bush.transform.SetPositionAndRotation(p, Quaternion.Euler(0f, yaw, 0f));
                         bush.gameObject.SetActive(true);
                         _bushRest[_count] = p;
-                        volumes.Add(new Obstacle(new Vector2(p.x, p.z), new Vector2(p.x, p.z), radius, p.y, 0f, _kit.bushHeight, ObstacleKind.Solid));
+                        volumes.Add(new Obstacle(a, b, depth, p.y, 0f, _kit.bushHeight, ObstacleKind.Solid));
                         _count++;
                         kind++;
-                        z = centerZ + radius;
+                        z = centerZ + half;
                     }
                     else
                     {
@@ -124,7 +132,8 @@ namespace PocketWilds.Presentation
                 {
                     float z = (k & 1) == 0 ? k * 0.35f : -(k + 1) * 0.35f;
                     var p = new Vector3(seamX - SignSetback, 0f, Mathf.Clamp(z, zMin + 0.5f, zMax - 0.5f));
-                    if (!Clear(p, _kit.signRadius, avoid, ground) || Touches(p, _kit.signRadius, volumes))
+                    var c = new Vector2(p.x, p.z);
+                    if (!Clear(c, c, _kit.signRadius, avoid, ground.HeightAt(p.x, p.z)) || Touches(p, _kit.signRadius, volumes))
                         continue;
                     p.y = ground.HeightAt(p.x, p.z);
                     _sign.transform.SetPositionAndRotation(p, Quaternion.identity);
@@ -191,9 +200,15 @@ namespace PocketWilds.Presentation
                 return false;
             if (_hasSign && HitsSphere(ray, _signRest + new Vector3(0f, _kit.signHeight * 0.6f, 0f), 0.45f))
                 return true;
+            // Each piece: three spheres along its length (pieces are laid along z).
             for (int i = 0; i < _count; i++)
-                if (HitsSphere(ray, _bushRest[i] + new Vector3(0f, _kit.bushHeight * 0.5f, 0f), 0.45f))
-                    return true;
+            {
+                var mid = _bushRest[i] + new Vector3(0f, _kit.bushHeight * 0.5f, 0f);
+                float half = Mathf.Max(0f, _obstacles.Length > i ? (_obstacles[i].b - _obstacles[i].a).magnitude * 0.5f : 0f);
+                for (int k = -1; k <= 1; k++)
+                    if (HitsSphere(ray, mid + new Vector3(0f, 0f, k * half), 0.5f))
+                        return true;
+            }
             return false;
         }
 
@@ -214,17 +229,15 @@ namespace PocketWilds.Presentation
                 _sign.transform.position = _signRest - new Vector3(0f, (1f - eased) * (_kit.signHeight + 0.1f), 0f);
         }
 
-        private static bool Clear(Vector3 p, float radius, IReadOnlyList<Obstacle> avoid, GroundSurface ground)
+        private static bool Clear(Vector2 a, Vector2 b, float radius, IReadOnlyList<Obstacle> avoid, float groundY)
         {
-            float y = ground.HeightAt(p.x, p.z);
-            var c = new Vector2(p.x, p.z);
             for (int i = 0; i < avoid.Count; i++)
             {
                 var o = avoid[i];
-                if (!o.BlocksWalker(y, 1.5f))
+                if (!o.BlocksWalker(groundY, 1.5f))
                     continue;
                 float min = radius + o.radius;
-                if (CollisionMath.PointSegmentDistanceSq(c, o.a, o.b) < min * min)
+                if (CollisionMath.SegmentSegmentDistanceSq(a, b, o.a, o.b) < min * min)
                     return false;
             }
             return true;
@@ -236,7 +249,7 @@ namespace PocketWilds.Presentation
             for (int i = 0; i < volumes.Count; i++)
             {
                 float min = radius + volumes[i].radius;
-                if ((volumes[i].Center - c).sqrMagnitude < min * min)
+                if (CollisionMath.PointSegmentDistanceSq(c, volumes[i].a, volumes[i].b) < min * min)
                     return true;
             }
             return false;
@@ -260,13 +273,17 @@ namespace PocketWilds.Presentation
             return EnvironmentVisualPacking.Pack(row, brightness, false, false);
         }
 
-        /// <summary>Half of the long side of the mesh seen from above (the hedge sets bushes long side along it).</summary>
-        private static float FootprintRadius(Mesh mesh)
+        /// <summary>Half the mesh's length along its x (laid along the hedge) and half its depth along z, from above.</summary>
+        private static void Extents(Mesh mesh, out float halfLength, out float halfDepth)
         {
             if (mesh == null)
-                return 0.45f;
+            {
+                halfLength = halfDepth = 0.45f;
+                return;
+            }
             var b = mesh.bounds;
-            return Mathf.Max(Mathf.Max(Mathf.Abs(b.min.x), Mathf.Abs(b.max.x)), Mathf.Max(Mathf.Abs(b.min.z), Mathf.Abs(b.max.z)));
+            halfLength = Mathf.Max(Mathf.Abs(b.min.x), Mathf.Abs(b.max.x));
+            halfDepth = Mathf.Max(Mathf.Abs(b.min.z), Mathf.Abs(b.max.z));
         }
 
         private static bool HitsSphere(Ray ray, Vector3 center, float radius)
