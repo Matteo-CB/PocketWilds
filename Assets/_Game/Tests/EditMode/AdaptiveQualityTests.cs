@@ -242,5 +242,20 @@ namespace PocketWilds.Tests.EditMode
             Assert.IsTrue(scene.Contains(AssetDatabase.AssetPathToGUID("Assets/_Game/Content/Graphics/DEF_ShaderWarmup.asset")),
                 "GameBootstrap warms DEF_ShaderWarmup behind the loading screen.");
         }
+
+        /// <summary>
+        /// 2026-10-07, first phone run (Redmi Note 13 5G, Vulkan): the variant fallback looped on isWarmedUp, which stays
+        /// false after progressive warmup, and the loading screen never ended. Every warmup loop is now bounded.
+        /// </summary>
+        [Test]
+        public void ShaderWarmup_LoopsAreBounded()
+        {
+            Assert.AreEqual(60, ShaderWarmup.MaxSteps(0, 16), "an empty collection still ends");
+            Assert.AreEqual(82 / 16 + 60, ShaderWarmup.MaxSteps(82, 16), "the 82 traced states of T34A");
+            Assert.AreEqual(1000 + 60, ShaderWarmup.MaxSteps(1000, 0), "a zero batch size cannot divide by zero");
+            string source = System.IO.File.ReadAllText("Assets/_Game/Presentation/Platform/ShaderWarmup.cs");
+            Assert.IsFalse(source.Contains("while (!set.variants.isWarmedUp)"), "never loop on ShaderVariantCollection.isWarmedUp alone");
+            Assert.IsTrue(source.Contains("done = set.variants.WarmUpProgressively(perBatch)"), "the fallback ends on the progressive warmup result");
+        }
     }
 }

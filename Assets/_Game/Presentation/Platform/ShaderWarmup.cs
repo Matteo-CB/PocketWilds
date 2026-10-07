@@ -63,7 +63,9 @@ namespace PocketWilds.Presentation
                     if (collection == null || collection.graphicsDeviceType != SystemInfo.graphicsDeviceType || collection.runtimePlatform != Application.platform)
                         continue;
                     traced = true;
-                    while (!collection.isWarmedUp)
+                    // Bounded: a state the device cannot build must never keep the loading screen up.
+                    int batches = 0, maxBatches = MaxSteps(collection.totalGraphicsStateCount, perBatch);
+                    while (!collection.isWarmedUp && batches++ < maxBatches)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         var batch = collection.WarmUpProgressively(perBatch);
@@ -74,16 +76,24 @@ namespace PocketWilds.Presentation
                         while (!batch.IsCompleted);
                         batch.Complete();
                     }
+                    if (!collection.isWarmedUp)
+                        GameLog.Warning(LogCategory.Boot, $"Graphics state warmup stopped after {maxBatches} batches ({collection.name}).");
                     LastWarmed += collection.totalGraphicsStateCount;
                 }
                 if (!traced && set.variants != null)
                 {
-                    while (!set.variants.isWarmedUp)
+                    // WarmUpProgressively returns true once every variant is done; isWarmedUp only reflects a full
+                    // WarmUp() call and stays false on devices (Android, T66 measure): looping on it never ended there.
+                    bool done = set.variants.isWarmedUp;
+                    int steps = 0, maxSteps = MaxSteps(set.variants.variantCount, perBatch);
+                    while (!done && steps++ < maxSteps)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        set.variants.WarmUpProgressively(perBatch);
+                        done = set.variants.WarmUpProgressively(perBatch);
                         await NextFrame(cancellationToken);
                     }
+                    if (!done)
+                        GameLog.Warning(LogCategory.Boot, $"Shader variant warmup stopped after {maxSteps} steps ({set.variants.name}).");
                     LastWarmed += set.variants.variantCount;
                     anyVariants = true;
                 }
@@ -93,6 +103,9 @@ namespace PocketWilds.Presentation
             LastMilliseconds = watch.Elapsed.TotalMilliseconds;
             GameLog.Info(LogCategory.Boot, $"Shader warmup: {LastWarmed} {LastSource} in {LastMilliseconds:F0} ms, longest frame {LastLongestFrameMs:F1} ms");
         }
+
+        /// <summary>Enough steps for every item in batches of perBatch, plus a margin; never unbounded.</summary>
+        public static int MaxSteps(int itemCount, int perBatch) => Math.Max(1, itemCount) / Math.Max(1, perBatch) + 60;
 
         private static async Awaitable NextFrame(CancellationToken cancellationToken)
         {
