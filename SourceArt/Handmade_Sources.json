@@ -1,0 +1,78 @@
+{
+  "about": "Where every final asset of Assets/_Game/Art comes from (charte « fait main », section 12.3; Docs/Design/Handmade_Rule.md). Checked by Assets/_Game/Tests/EditMode/HandmadeRuleTests.cs. Models need nothing here beyond their .blend: each FBX records the .blend it was exported from. Sounds, UI sprites and fonts are found by name (SourceArt/Audio/Masters, SourceArt/UI/Masters, SourceArt/Fonts/Build). Everything else built from the project's own sources is listed under generated.",
+  "blends": [
+    {
+      "blend": "SourceArt/Blender/Animals/Rabbit/BL_Animal_Rabbit.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
+      "blend": "SourceArt/Blender/Animals/Squirrel/BL_Animal_Squirrel.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
+      "blend": "SourceArt/Blender/Animals/Hedgehog/BL_Animal_Hedgehog.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
+      "blend": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_anim_library.py", "SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
+      "blend": "SourceArt/Blender/Eggs/BL_Egg_Family.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_egg.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
+      "blend": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Core.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
+      "blend": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
+      "builders": [
+        "SourceArt/Blender/Tools/pw_grassland.py",
+        "SourceArt/Blender/Tools/pw_grassland_t33.py",
+        "SourceArt/Blender/Tools/pw_grassland_t33b.py",
+        "SourceArt/Blender/Tools/pw_grassland_t33b_props.py",
+        "SourceArt/Blender/Tools/pw_grassland_t35a_props.py",
+        "SourceArt/Blender/Tools/pw_export.py"
+      ]
+    }
+  ],
+  "generated": [
+    {
+      "final": "Assets/_Game/Art/Environment/Grassland/Baked/",
+      "from": "the Prairie FBX meshes, baked and combined in Unity",
+      "builders": [
+        "Assets/_Game/Editor/Environment/GrasslandPipeline.cs",
+        "Assets/_Game/Editor/Environment/GrasslandPipeline.T33.cs",
+        "Assets/_Game/Editor/Environment/GrasslandPipeline.T33B.Kit.cs",
+        "Assets/_Game/Editor/Environment/ZonePipeline.cs"
+      ]
+    },
+    {
+      "final": "Assets/_Game/Art/Eggs/Textures/T_EggMask_Common.png",
+      "from": "the parametric egg surface of BL_Egg_Family.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_egg.py"]
+    },
+    {
+      "final": "Assets/_Game/Art/VFX/Textures/T_VFX_FeedbackAtlas.png",
+      "from": "particle tiles drawn by signed distances",
+      "builders": ["Assets/_Game/Editor/Vfx/VfxPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Thumbnails/Animals/",
+      "from": "the real animal prefabs with the game shaders and the fixed capture light",
+      "builders": ["Assets/_Game/Editor/Capture/AnimalThumbnailPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Zones/",
+      "from": "the real zones of the Prairie with the game light and plants",
+      "builders": ["Assets/_Game/Editor/Capture/WorldCapture.T35A.cs"]
+    }
+  ],
+  "largeTextures": [
+    {
+      "final": "Assets/_Game/Art/UI/Zones/",
+      "why": "Zone window captures, 740 x 356, ASTC 6x6; only the next zone's capture is loaded."
+    }
+  ]
+}

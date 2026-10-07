@@ -93,7 +93,8 @@ namespace PocketWilds.Editor.Environment
             string start = BuildStartChunkT33(prefabs, kit);
             string meadow = BuildMeadowChunkT33(prefabs, kit);
             AssetDatabase.SaveAssets();
-            return $"{kit.kinds.Length} scatter kinds; {start}; {meadow}";
+            string pruned = PruneScatterInsideProps();
+            return $"{kit.kinds.Length} scatter kinds; {start}; {meadow}; {pruned}";
         }
 
         // ---------------- materials, kit, quality ----------------

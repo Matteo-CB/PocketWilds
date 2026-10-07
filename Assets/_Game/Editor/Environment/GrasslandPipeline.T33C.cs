@@ -46,7 +46,7 @@ namespace PocketWilds.Editor.Environment
         /// another, this chunk's and the neighbours' at the seams. Returns one line per moved prop.
         /// </summary>
         private static List<string> SettleProps(string chunkName, Vector3 origin, List<Placement> layout, Dictionary<string, GameObject> prefabs,
-            Func<float, float, float> groundY = null)
+            Func<float, float, float, float> groundY = null)
         {
             var neighbours = new List<CollisionProxies.Placed>();
             foreach (var entry in BuiltProps)
@@ -66,8 +66,9 @@ namespace PocketWilds.Editor.Environment
             {
                 var p = layout[index];
                 float x = p.Position.x + delta.x, z = p.Position.z + delta.y;
-                // Rim pieces hang at the island's edge height; everything else follows the ground it moves onto.
-                float y = groundY != null && !p.Prop.StartsWith("GL_Edge", StringComparison.Ordinal) ? groundY(x, z) : p.Position.y;
+                // Rim pieces hang at the island's edge height; everything else follows the ground under its footprint.
+                float y = groundY != null && !p.Prop.StartsWith("GL_Edge", StringComparison.Ordinal)
+                    ? groundY(x, z, PropRadius(p.Prop) * p.Scale * 0.9f) : p.Position.y;
                 p.Position = new Vector3(x, y, z);
                 layout[index] = p;
             }
@@ -316,6 +317,62 @@ namespace PocketWilds.Editor.Environment
             public string Chunk;
             public string Prop;
             public CollisionProxies.Placed Placed;
+        }
+
+        /// <summary>
+        /// Last pass of a build: removes the scatter instances whose footprint enters a prop's measured outline at ground
+        /// level, the neighbours' props at the seams included (a chunk's scatter is generated before the next chunk settles
+        /// its props, so the result no longer depends on the build order). T34E: a rebuild left three tufts inside a
+        /// meadow prop at the start chunk's seam.
+        /// </summary>
+        public static string PruneScatterInsideProps()
+        {
+            var volumes = BuiltPropVolumes();
+            var report = new List<string>();
+            foreach (var (address, path, origin, _) in World.WorldContentPipeline.GrasslandChunks)
+            {
+                var chunk = UnityEditor.AssetDatabase.LoadAssetAtPath<WorldChunk>(path);
+                var data = chunk != null ? chunk.Scatter : null;
+                if (data == null)
+                    continue;
+                var outlines = volumes.Where(v => Mathf.Abs(v.Placed.Position.x - origin.x) < 11f)
+                    .Select(v => v.Placed.Ground).Where(b => b != null).Select(b => b.Hull).ToList();
+                var groups = new List<ScatterData.Group>();
+                var placements = new List<Vector4>();
+                var scales = new List<float>();
+                int removed = 0;
+                foreach (var group in data.groups)
+                {
+                    var mesh = data.kit.kinds[group.kind].mesh;
+                    var b = mesh != null ? mesh.bounds : new Bounds(Vector3.zero, Vector3.one * 0.1f);
+                    float kindRadius = Mathf.Max(Mathf.Max(Mathf.Abs(b.min.x), Mathf.Abs(b.max.x)), Mathf.Max(Mathf.Abs(b.min.z), Mathf.Abs(b.max.z)));
+                    int start = placements.Count;
+                    for (int i = group.start; i < group.start + group.count; i++)
+                    {
+                        var local = data.placements[i];
+                        var p = new Vector2(local.x + origin.x, local.z + origin.z);
+                        float r = kindRadius * data.scales[i];
+                        if (outlines.Any(hull => CollisionProxies.HullDistance(hull, p) < r))
+                        {
+                            removed++;
+                            continue;
+                        }
+                        placements.Add(local);
+                        scales.Add(data.scales[i]);
+                    }
+                    if (placements.Count > start)
+                        groups.Add(new ScatterData.Group { kind = group.kind, start = start, count = placements.Count - start });
+                }
+                if (removed == 0)
+                    continue;
+                data.groups = groups.ToArray();
+                data.placements = placements.ToArray();
+                data.scales = scales.ToArray();
+                UnityEditor.EditorUtility.SetDirty(data);
+                report.Add($"{address} {removed}");
+            }
+            UnityEditor.AssetDatabase.SaveAssets();
+            return report.Count == 0 ? "no scatter inside a prop" : "scatter removed inside props: " + string.Join(", ", report);
         }
 
         /// <summary>The props of every built Grassland chunk prefab, measured again from their instances (world space).</summary>

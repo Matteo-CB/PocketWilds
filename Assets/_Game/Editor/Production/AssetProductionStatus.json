@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-07T17:00:00Z",
+  "updatedUtc": "2026-10-07T21:00:00Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -289,8 +289,8 @@
     {
       "task": "T34E",
       "title": "Contrôle « fait main » (HandmadeRuleTests, grille de revue de la charte)",
-      "status": "PLANNED",
-      "notes": "Added by the 2026-10-07 documentation work (doc « 05 — Charte « fait main » »)."
+      "status": "DONE",
+      "notes": "Added by the 2026-10-07 documentation work (charte « fait main », Drive folder 05). Done 2026-10-07. HandmadeRuleTests (9 EditMode tests, about 1 s) run before every commit: models are FBX written by Blender from a .blend listed in SourceArt/Handmade_Sources.json with its build scripts, sounds have their master and recipe, UI sprites their @4x master and drawing script, fonts are byte copies of SourceArt/Fonts/Build, Unity-made images and meshes are listed with their pipeline, textures over 512 px carry a reason, no generator or model-library trace in names or metadata (FBX strings, PNG text keys, WAV chunks, font name tables, .meta), no generative tool called by project code. Rule summary Docs/Design/Handmade_Rule.md, CLAUDE.md section. Review grid applied to Rabbit, Squirrel, Hedgehog, Prairie kit and icons: Docs/Captures/Review/T34E_Revue_fait_main.md with measures and captures (WorldCapture.T34E: silhouettes at 64 px, family under three moods, value and colour contrast per variant with a deuteranope simulation, clip measures, frame strips; beauty_review.py bands). Fixed: the clip bounce rode the Root bone forward axis since T10 (hops slid the body 5 to 8 cm; now they lift it), idle ear twitches within 8 degrees, Bush C and the windmill floated (bush base and footprint-aware placement; 257 props checked), scatter pruned inside neighbour props, clip library versioned as pw_anim_library.py. Owner decisions: eye ranges (Rabbit, Hedgehog), Hedgehog head share, contrast rule and colourblind variants with a palette pass, Prairie saturation. Follow-ups: paw contact in locomotion (speed matched to the hop), chamfers on wooden props, nose and apples on LOD2."
     },
     {
       "task": "T35A",
@@ -569,9 +569,9 @@
         "G05",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-04T20:57:15Z",
-      "notes": "Source BL_Rig_SmallQuadruped.blend: 24 deform bones (spec names), FK only, consistent rolls, no control bones exported, sockets HeadTop/Neck/Back/TailBase/Ear_L/Ear_R world-aligned at rest. | T07: rabbit skinned (max 3 influences, rigid head/cheeks, ellipsoid neck blend, ear axis weights). 9 extreme poses captured (SourceArt/Blender/Animals/Rabbit/Captures/T07_pose_sheet.png). FBX export with project preset OK. Second-species bind test pending (T23 Squirrel). | T10: family controller AC_SmallQuadruped (11 states, 7 exit transitions). Clips bind to SK_SmallQuadruped/... paths (preserveHierarchy). | T24: RIG-001 validation met, Rabbit, Squirrel and Hedgehog bind to the unchanged skeleton without runtime code changes (GrasslandSpeciesTests compare bone paths and bind poses). Family library gains AN_SmallQuadruped_Locomotion_Walk (0.8 s loop) and Happy_Bounce (1 s) for low-bodied species, selected per species by AnimatorOverrideController (data). AC_SmallQuadruped untouched. | T30 audit: runtime path corrected: the skeleton ships in the species FBX and AN_SmallQuadruped.fbx (Art/Animations/SmallQuadruped).",
+      "lastValidationVersion": "T34E",
+      "lastValidationUtc": "2026-10-07T21:00:00Z",
+      "notes": "Source BL_Rig_SmallQuadruped.blend: 24 deform bones (spec names), FK only, consistent rolls, no control bones exported, sockets HeadTop/Neck/Back/TailBase/Ear_L/Ear_R world-aligned at rest. | T07: rabbit skinned (max 3 influences, rigid head/cheeks, ellipsoid neck blend, ear axis weights). 9 extreme poses captured (SourceArt/Blender/Animals/Rabbit/Captures/T07_pose_sheet.png). FBX export with project preset OK. Second-species bind test pending (T23 Squirrel). | T10: family controller AC_SmallQuadruped (11 states, 7 exit transitions). Clips bind to SK_SmallQuadruped/... paths (preserveHierarchy). | T24: RIG-001 validation met, Rabbit, Squirrel and Hedgehog bind to the unchanged skeleton without runtime code changes (GrasslandSpeciesTests compare bone paths and bind poses). Family library gains AN_SmallQuadruped_Locomotion_Walk (0.8 s loop) and Happy_Bounce (1 s) for low-bodied species, selected per species by AnimatorOverrideController (data). AC_SmallQuadruped untouched. | T30 audit: runtime path corrected: the skeleton ships in the species FBX and AN_SmallQuadruped.fbx (Art/Animations/SmallQuadruped). | T34E: Root bone points up (local Y = world up); clips use it for the lift.",
       "skeleton": "SK_SmallQuadruped",
       "passedGates": [
         "G04"
@@ -2409,9 +2409,9 @@
         "G05",
         "G19"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-04T21:01:06Z",
-      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit.",
+      "lastValidationVersion": "T34E",
+      "lastValidationUtc": "2026-10-07T21:00:00Z",
+      "notes": "Action authored in BL_Rig_SmallQuadruped.blend (WORK_anim_library.py rebuilds it). | T08: loops close exactly, ground contact >= -5 mm, keyframe review sheet Captures_SmallQuadruped/T08_clip_sheet.png. Unity compression check pending (T10). | T10: imported via Animation_Library rules (Optimal compression, rotations only + Root position), plays on PF_Animal_Rabbit. | T34E: the library is versioned as SourceArt/Blender/Tools/pw_anim_library.py; the bounce now rides the Root bone Y (world up) instead of its Z (the animal forward axis): hops lift the body instead of sliding it 5 to 8 cm; idle ear twitches within 8 degrees. Paw sliding in locomotion (6 to 8 cm per contact) is a follow-up.",
       "passedGates": [
         "G05"
       ]
@@ -15380,9 +15380,9 @@
         "G02",
         "G06"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": "2026-10-05T22:36:46Z",
-      "notes": "T33: rounded bush, about 300 tris.",
+      "lastValidationVersion": "T34E",
+      "lastValidationUtc": "2026-10-07T21:00:00Z",
+      "notes": "T33: rounded bush, about 300 tris. | T34E: rebuilt from pw_grassland_t33.py with its base 3 cm under the ground (it started 12.6 cm above its pivot and floated at seven spots); same 236 faces.",
       "passedGates": [
         "G01",
         "G02",

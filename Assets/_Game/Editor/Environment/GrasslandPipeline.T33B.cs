@@ -138,6 +138,7 @@ namespace PocketWilds.Editor.Environment
             foreach (var chunk in StripChunks)
                 reports.Add(BuildStripChunk(chunk, prefabs, kit, water));
             AssetDatabase.SaveAssets();
+            reports.Add(PruneScatterInsideProps());
             return string.Join("; ", reports);
         }
 
@@ -320,18 +321,41 @@ namespace PocketWilds.Editor.Environment
 
         // ---------------- chunk ----------------
 
+        /// <summary>
+        /// Height for a prop: the lowest ground under its footprint (the center and eight points on a ring at its
+        /// radius), 2 cm into it. On a slope or a crest the whole base then touches the ground and nothing floats (T34E:
+        /// the windmill on its rise stood 4 cm above the ground at the rim; charte « fait main », signe 20).
+        /// </summary>
+        private static float GroundUnder(GroundSampler sampler, float x, float z, float radius)
+        {
+            float lowest = float.MaxValue;
+            if (sampler.TrySample(x, z, out float h, out _))
+                lowest = h;
+            for (int k = 0; k < 8; k++)
+            {
+                float angle = k * Mathf.PI * 0.25f;
+                if (sampler.TrySample(x + Mathf.Cos(angle) * radius, z + Mathf.Sin(angle) * radius, out h, out _))
+                    lowest = Mathf.Min(lowest, h);
+            }
+            return lowest == float.MaxValue ? 0f : lowest - 0.02f;
+        }
+
+        /// <summary>The part of a prop's footprint that rests on the ground (its trunk, base or body).</summary>
+        private static float FootprintRadius(Placement p) => PropRadius(p.Prop) * p.Scale * 0.9f;
+
         private static string BuildStripChunk(StripChunk def, Dictionary<string, GameObject> prefabs, ScatterKit kit, Material waterMaterial)
         {
             var meshes = ModelMeshes();
             var groundMesh = meshes[def.Ground];
             var groundSampler = new GroundSampler(groundMesh);
             var layout = def.Layout();
-            // Props stand on the ground (hill, rise, banks): the layout gives x and z, the ground gives y.
+            // Props stand on the ground (hill, rise, banks): the layout gives x and z, the ground under the footprint gives y.
             for (int i = 0; i < layout.Count; i++)
             {
                 var p = layout[i];
-                if (groundSampler.TrySample(p.Position.x, p.Position.z, out float h, out _))
-                    p.Position = new Vector3(p.Position.x, p.Prop.StartsWith("GL_Edge", StringComparison.Ordinal) ? 0f : h - 0.02f, p.Position.z);
+                if (groundSampler.TrySample(p.Position.x, p.Position.z, out _, out _))
+                    p.Position = new Vector3(p.Position.x, p.Prop.StartsWith("GL_Edge", StringComparison.Ordinal) ? 0f
+                        : GroundUnder(groundSampler, p.Position.x, p.Position.z, FootprintRadius(p)), p.Position.z);
                 layout[i] = p;
             }
             Mesh waterMesh = def.Water != null ? meshes[def.Water] : null;
@@ -377,7 +401,7 @@ namespace PocketWilds.Editor.Environment
 
             // T33C: no prop enters another (neighbours at the seams included); moved props follow the ground.
             var moves = SettleProps(def.Name, new Vector3(def.OriginX, 0f, 0f), layout, prefabs,
-                (x, z) => groundSampler.TrySample(x, z, out float gh, out _) ? gh - 0.02f : 0f);
+                (x, z, radius) => GroundUnder(groundSampler, x, z, radius));
 
             const float Margin = 0.35f;
             var rules = new ScatterRules

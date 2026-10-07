@@ -437,9 +437,12 @@ def build_bush(kind, collections):
     bm = bmesh.new()
     bm.from_mesh(crown.data)
     bmesh.ops.triangulate(bm, faces=bm.faces)
-    # Sink the bush slightly into the ground.
+    # Sink the bush slightly into the ground: 4 cm, or more when its lowest mass sits high, so the lowest leaves always
+    # end 3 cm under the ground (T34E: Bush C stood 12.6 cm above its pivot and floated on the meadow).
+    lowest = min(v.co.z for v in bm.verts)
+    sink = 0.04 if lowest - 0.04 <= 0.01 else lowest + 0.03
     for v in bm.verts:
-        v.co.z -= 0.04
+        v.co.z -= sink
     crown_end = len(bm.verts)
     tree = BVHTree.FromBMesh(bm)
     zs = [v.co.z for v in bm.verts]

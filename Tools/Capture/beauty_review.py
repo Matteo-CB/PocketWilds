@@ -6,6 +6,7 @@ The verdict stays a human review of the images; this script adds measurable evid
   - colour fidelity: mean colour distance in CIE Lab (dE76);
   - detail energy: high-frequency content (Laplacian) relative to Magnifique, a proxy for "richness".
 Usage: python beauty_review.py <prefix> [folder]   e.g. python beauty_review.py T33h TestResults/Captures
+       python beauty_review.py bands <image> [...]  60/30/10 saturation bands of game frames (T34E, charte 4.2)
 """
 import json
 import sys
@@ -64,7 +65,34 @@ def compare(reference, other):
     }
 
 
+def bands(rgb):
+    """Charte « fait main », 4.2: share of pixels per saturation band (CIELAB chroma) on a frame like the game's.
+    Dominant (C* up to 35) 60 %, secondary (35 to 50) 30 %, accents (over 50) 10 %, each within 8 points; more than
+    18 % of accents is too loud, under 5 % is dull. Also the value spread (L* deciles) and pure whites and blacks."""
+    lab_img = lab(rgb).reshape(-1, 3)
+    chroma = np.hypot(lab_img[:, 1], lab_img[:, 2])
+    value = lab_img[:, 0]
+    shares = {
+        "dominant": float((chroma <= 35).mean()),
+        "secondary": float(((chroma > 35) & (chroma <= 50)).mean()),
+        "accent": float((chroma > 50).mean()),
+    }
+    targets = {"dominant": 0.60, "secondary": 0.30, "accent": 0.10}
+    return {
+        "shares": {k: round(v, 3) for k, v in shares.items()},
+        "withinEightPoints": {k: abs(shares[k] - targets[k]) <= 0.08 for k in targets},
+        "accentInRange": 0.05 <= shares["accent"] <= 0.18,
+        "valueDeciles": [round(float(x), 1) for x in np.percentile(value, [10, 30, 50, 70, 90])],
+        "pureWhite": round(float((value > 95).mean()), 4),
+        "pureBlack": round(float((value < 5).mean()), 4),
+    }
+
+
 def main():
+    if sys.argv[1] == "bands":
+        result = {path: bands(load(path)) for path in sys.argv[2:]}
+        print(json.dumps(result, indent=2))
+        return
     prefix = sys.argv[1]
     folder = Path(sys.argv[2] if len(sys.argv) > 2 else "TestResults/Captures")
     high = load(folder / f"{prefix}_world_High.png")

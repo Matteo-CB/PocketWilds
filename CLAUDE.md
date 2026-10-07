@@ -32,3 +32,16 @@ caractère. Cela vaut pour les icônes, badges, cadres, particules, textes, code
 
 - Règle détaillée : `Docs/Design/No_Sparkle_Rule.md`.
 - Contrôle automatique : `Assets/_Game/Tests/EditMode/NoSparkleRuleTests.cs` doit passer avant chaque commit.
+
+## Fait main (demande du propriétaire, 7 octobre 2026)
+
+Des assets qui ne ressemblent jamais à de l'IA. Aucun générateur d'image, de 3D, de texture, de son ou de voix dans la
+chaîne, aucun modèle de bibliothèque, aucune police tierce. Chaque asset final a sa source éditable : `.blend` et
+script Blender, master WAV et recette, master de sprite et script de dessin, build de police.
+
+- Règle détaillée : `Docs/Design/Handmade_Rule.md` ; charte complète : la charte « fait main » du Drive (dossier 05).
+- Sources : `SourceArt/Handmade_Sources.json` (chaque `.blend` avec ses scripts, ce que produit Unity).
+- Contrôle automatique : `Assets/_Game/Tests/EditMode/HandmadeRuleTests.cs` doit passer avant chaque commit.
+- Les outils `generate_3d`, `import_asset`, `search_assets` (Blender MCP) et les outils de génération de Coplay ne
+  sont jamais appelés.
+- Tout nouvel asset passe la grille de revue de la charte, remplie dans `Docs/Captures/Review/`.
