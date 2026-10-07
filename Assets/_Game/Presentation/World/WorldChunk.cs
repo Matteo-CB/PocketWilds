@@ -58,8 +58,16 @@ namespace PocketWilds.Presentation
         /// <summary>The chunk's ground in world space. Chunks are only ever translated (never rotated or scaled).</summary>
         public GroundSurface Ground => new GroundSurface(_ground, transform.position);
 
-        /// <summary>Walkable disk in world space (simple region data, no NavMesh).</summary>
-        public WanderArea WanderArea => new WanderArea(transform.TransformPoint(_wanderArea.Center), _wanderArea.Radius);
+        /// <summary>Walkable area in world space (simple region data, no NavMesh).</summary>
+        public WanderArea WanderArea
+        {
+            get
+            {
+                var area = _wanderArea;
+                area.Center = transform.TransformPoint(_wanderArea.Center);
+                return area;
+            }
+        }
 
         /// <summary>Wander area in chunk space (authoring).</summary>
         public WanderArea LocalWanderArea => _wanderArea;

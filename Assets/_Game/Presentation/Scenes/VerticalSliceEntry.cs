@@ -44,6 +44,8 @@ namespace PocketWilds.Presentation
         [Tooltip("T34C: hatch staging (egg prefab, feedback effects) in the Addressables group CommonAnimals.")]
         [SerializeField] private string _hatchConfigKey = "animals.hatch";
         [SerializeField] private string _eggId = "egg.grassland.basic";
+        [Tooltip("T35A: hedge and sign of the next zone (ZoneKit address, group Biome_Grassland_Kit). Empty: no hedge.")]
+        [SerializeField] private string _zoneKitKey = "zones.grassland";
         [Tooltip("HUD component implementing IRefugeHud (UI assembly).")]
         [SerializeField] private MonoBehaviour _hud;
         [Tooltip("Offline return screen implementing IOfflineReturnView (UI assembly).")]
@@ -71,6 +73,8 @@ namespace PocketWilds.Presentation
         private Action<QualityState> _onQuality;
         private AsyncOperationHandle<BiomeAudioSet> _biomeAudio;
         private AsyncOperationHandle<HatchPresentationConfig> _hatch;
+        private AsyncOperationHandle<ZoneKit> _zoneKit;
+        private RefugeZones _zones;
 
         public bool HasContext => _context != null;
         public WorldChunkSet ChunkSet => _chunkSet;
@@ -87,6 +91,11 @@ namespace PocketWilds.Presentation
         private WorldQualityProfile.Tier WorldQuality(QualityTier tier) =>
             _worldQuality != null ? _worldQuality.Get(tier) : WorldQualityProfile.Default(tier);
         public RefugeController Refuge => _refuge;
+
+        /// <summary>T35A: the open zones, the hedge and the sign (null without progression services).</summary>
+        public RefugeZones Zones => _zones;
+
+        public ZoneKit ZoneKit => _zoneKit.IsValid() && _zoneKit.Status == AsyncOperationStatus.Succeeded ? _zoneKit.Result : null;
 
         /// <summary>Hatch staging once loaded (null before PrepareAsync or when it failed).</summary>
         public HatchPresentationConfig HatchConfig => _hatch.IsValid() && _hatch.Status == AsyncOperationStatus.Succeeded ? _hatch.Result : null;
@@ -108,6 +117,8 @@ namespace PocketWilds.Presentation
                 _biomeAudio = Addressables.LoadAssetAsync<BiomeAudioSet>(_biomeAudioKey);
             if (!string.IsNullOrEmpty(_hatchConfigKey) && !_hatch.IsValid())
                 _hatch = Addressables.LoadAssetAsync<HatchPresentationConfig>(_hatchConfigKey);
+            if (!string.IsNullOrEmpty(_zoneKitKey) && !_zoneKit.IsValid())
+                _zoneKit = Addressables.LoadAssetAsync<ZoneKit>(_zoneKitKey);
             // T34: each world part follows its own dimension of the adaptive quality state.
             var quality = context.Quality.State;
             _streamer = new WorldStreamer(_chunkSet, new AddressablesChunkSource(), context.Palettes, quality.Ground);
@@ -141,7 +152,7 @@ namespace PocketWilds.Presentation
             }
             _onChunkState = OnChunkState;
             _streamer.StateChanged += _onChunkState;
-            while ((_biomeAudio.IsValid() && !_biomeAudio.IsDone) || (_hatch.IsValid() && !_hatch.IsDone))
+            while ((_biomeAudio.IsValid() && !_biomeAudio.IsDone) || (_hatch.IsValid() && !_hatch.IsDone) || (_zoneKit.IsValid() && !_zoneKit.IsDone))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 await Task.Yield();
@@ -150,6 +161,8 @@ namespace PocketWilds.Presentation
                 GameLog.Error(LogCategory.Presentation, "Hatch staging did not load: " + _hatchConfigKey);
             if (_biomeAudio.IsValid() && _biomeAudio.Status != AsyncOperationStatus.Succeeded)
                 GameLog.Warning(LogCategory.Presentation, "Biome audio did not load: " + _biomeAudioKey);
+            if (_zoneKit.IsValid() && _zoneKit.Status != AsyncOperationStatus.Succeeded)
+                GameLog.Warning(LogCategory.Presentation, "Zone kit did not load: " + _zoneKitKey);
         }
 
         public void Enter(GameContext context)
@@ -179,14 +192,26 @@ namespace PocketWilds.Presentation
             if (_startChunk != null && hatchConfig != null && context.VisualCatalog != null && context.Content.Eggs.TryGet(ContentId.FromSource(_eggId), out _))
             {
                 ApplyReduceMotion(context.State.Settings.ReduceMotion);
+                // T35A: the arrival zone shows a set number of animals, each open zone a few more (within the device budget).
+                int allowance = context.Progression != null
+                    ? RefugeController.ArrivalVisibleAnimals + context.Progression.Zones.VisibleAnimalBonus(context.Progression.FirstBiome)
+                    : -1;
                 _refuge = new RefugeController(context, _startChunk, _cameraRig, _hud as IRefugeHud, hatchConfig, _eggId, transform,
                     _offlineReturn as IOfflineReturnView, _codex as ICodexView, _shop as IShopView, _offerModal as IOfferModalView,
-                    _animalSheet as IAnimalSheetView, _modal as IModalView);
+                    _animalSheet as IAnimalSheetView, _modal as IModalView, null, allowance);
                 var input = _cameraRig != null ? _cameraRig.GetComponent<RefugeCameraInput>() : null;
                 if (input != null)
                     input.SetTapHandler(this);
                 // No-collision rule: insects fly around the animals, birds fly off when one comes near.
                 _life?.SetAnimals(_refuge.Scheduler);
+                if (context.Progression != null && _streamer != null)
+                {
+                    // T35A: animals walk across every open zone; the next one is closed by a hedge and a sign.
+                    _zones = new RefugeZones(context, _streamer, _chunkSet, ZoneKit, _refuge, _scatter, _life, _cameraRig,
+                        _modal as IModalView, transform);
+                    _zones.CameraRangeChanged += UpdateCameraBounds;
+                    UpdateCameraBounds();
+                }
             }
             _onQuality = ApplyQuality;
             context.Quality.StateChanged += _onQuality;
@@ -244,6 +269,12 @@ namespace PocketWilds.Presentation
             _onQuality = null;
             _life?.SetAnimals(null);
             _life?.SetListener(null);
+            if (_zones != null)
+            {
+                _zones.CameraRangeChanged -= UpdateCameraBounds;
+                _zones.Dispose();
+                _zones = null;
+            }
             _refuge?.Dispose();
             _refuge = null;
             if (_streamer != null)
@@ -264,11 +295,19 @@ namespace PocketWilds.Presentation
             // After the refuge is gone (its pools are destroyed): the staging assets can leave memory.
             if (_hatch.IsValid())
                 Addressables.Release(_hatch);
+            if (_zoneKit.IsValid())
+                Addressables.Release(_zoneKit);
+            _zoneKit = default;
             _hatch = default;
         }
 
         public void OnTap(Vector2 screenPosition)
         {
+            var tapCamera = _cameraRig != null ? _cameraRig.Camera : null;
+            // T35A: the next zone's hedge or sign shows what opening it brings.
+            if (_zones != null && _refuge != null && tapCamera != null && !_refuge.ModalOpen && !_refuge.Hatch.IsPlaying
+                && _zones.TryTap(tapCamera.ScreenPointToRay(screenPosition)))
+                return;
             _refuge?.OnTap(screenPosition);
             // Butterflies and birds near the tapped ground flee: the meadow reacts to the finger.
             var camera = _cameraRig != null ? _cameraRig.Camera : null;
@@ -290,7 +329,14 @@ namespace PocketWilds.Presentation
                 return;
             var egg = _startChunk.EggSpawn.position;
             float minX = egg.x - _panHalfSize.x, maxX = egg.x + _panHalfSize.x;
-            if (_streamer != null && _streamer.TryGetBounds(out var world))
+            if (_zones != null)
+            {
+                // T35A: the open zones only, and a glimpse past the next zone's hedge.
+                _zones.GetCameraRange(out float zonesMin, out float zonesMax);
+                minX = Mathf.Min(minX, zonesMin);
+                maxX = Mathf.Max(maxX, zonesMax);
+            }
+            else if (_streamer != null && _streamer.TryGetBounds(out var world))
             {
                 float margin = _chunkSet.HalfSize - _panHalfSize.x;
                 minX = Mathf.Min(minX, world.xMin + margin);
@@ -303,6 +349,7 @@ namespace PocketWilds.Presentation
         {
             if (state == ChunkStreamState.Failed)
                 UpdateCameraBounds();
+            _zones?.OnChunkState(index, state);
             if (_scatter == null)
                 return;
             var chunk = _streamer.GetChunk(index);
@@ -332,6 +379,7 @@ namespace PocketWilds.Presentation
             if (_context != null)
                 _streamer?.Tick(Footprint(), Time.unscaledTime);
             _refuge?.Tick(Time.time, Time.deltaTime);
+            _zones?.Tick(Time.time);
             _weather?.Tick(Time.unscaledTime);
             _atmosphere?.Tick(Time.unscaledTime);
             var camera = _cameraRig != null ? _cameraRig.Camera : null;

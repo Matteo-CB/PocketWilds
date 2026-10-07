@@ -647,10 +647,19 @@ namespace PocketWilds.Presentation
 
         // ---------------- no-collision checks ----------------
 
+        private Obstacle[] _extraObstacles = System.Array.Empty<Obstacle>();
+
+        /// <summary>T35A: volumes outside the chunks (a zone's hedge and sign), world space. Rebuilds the near lists.</summary>
+        public void SetExtraObstacles(Obstacle[] volumes)
+        {
+            _extraObstacles = volumes ?? System.Array.Empty<Obstacle>();
+            RebuildObstacles();
+        }
+
         /// <summary>All active chunks' obstacles, and for each agent the ones near its home (allocates: Add/Remove only).</summary>
         private void RebuildObstacles()
         {
-            int total = 0;
+            int total = _extraObstacles.Length;
             foreach (var chunk in _chunks)
                 total += chunk != null ? chunk.ObstacleCount : 0;
             if (_obstacles.Length < total)
@@ -664,6 +673,8 @@ namespace PocketWilds.Presentation
                 for (int i = 0; i < chunk.ObstacleCount; i++)
                     _obstacles[count++] = chunk.GetObstacle(i).Translated(origin);
             }
+            for (int i = 0; i < _extraObstacles.Length; i++)
+                _obstacles[count++] = _extraObstacles[i];
             var near = new List<int>();
             foreach (var s in _species)
             {

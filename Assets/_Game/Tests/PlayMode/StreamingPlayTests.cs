@@ -63,7 +63,7 @@ namespace PocketWilds.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Meadow_StreamsInBeforeTheCamera_AndIsReleasedAfterIt_Twice()
+        public IEnumerator StreamBend_StreamsInBeforeTheCamera_AndIsReleasedAfterIt_Twice()
         {
 #if UNITY_EDITOR
             var database = UnityEditor.AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>("Assets/_Game/Content/DEF_ContentDatabase.asset");
@@ -90,7 +90,10 @@ namespace PocketWilds.Tests.PlayMode
             var streamer = entry.Streamer;
             Assert.IsNotNull(streamer, "The scene entry streams its chunks.");
             int start = streamer.IndexOf("chunk.grassland.start");
-            int meadow = streamer.IndexOf("chunk.grassland.meadow");
+            // T35A: the open zones and the next one (the meadow) stay loaded; StreamBend, two zones away, streams.
+            int meadow = streamer.IndexOf("chunk.grassland.streambend");
+            Assert.IsTrue(streamer.IsResident(streamer.IndexOf("chunk.grassland.meadow")), "The next zone stays loaded: its hedge meets the start chunk.");
+            Assert.IsFalse(streamer.IsResident(meadow));
             Assert.AreEqual(ChunkStreamState.Active, streamer.GetState(start), "The start chunk is ready before Enter.");
             Assert.AreSame(streamer.GetChunk(start), entry.StartChunk);
             Assert.IsNotNull(entry.Refuge, "The refuge starts on the streamed chunk.");
@@ -101,9 +104,18 @@ namespace PocketWilds.Tests.PlayMode
             // not whatever size the test runner's game view has.
             rig.Camera.aspect = 480f / 1040f;
             var egg = entry.StartChunk.EggSpawn.position;
-            // T33B: the pan limits reach the far east of the strip (ForestEdge at 98 m, 3.5 m short of its rim).
+            // T35A: the pan limits stop past the next zone's hedge (seam at 7 m, a 2.2 m glimpse beyond it), once the
+            // next zone has loaded and its hedge stands.
+            float hedge = Time.realtimeSinceStartup + 10f;
+            while (!entry.Zones.Boundary.IsPlaced)
+            {
+                Assert.Less(Time.realtimeSinceStartup, hedge, "The next zone's hedge never stood.");
+                yield return null;
+            }
             rig.SnapTo(new Vector3(400f, 0f, egg.z));
-            Assert.AreEqual(101.5f, rig.Focus.x, 0.01f);
+            Assert.AreEqual(7f + RefugeZones.CameraPastSeam, rig.Focus.x, 0.01f);
+            // The streaming itself is tested along the whole strip, past the zones' limits.
+            rig.SetBounds(new Vector3(50f, egg.y, egg.z), new Vector2(60f, 4f));
             rig.SnapTo(new Vector3(-3.5f, 0f, egg.z));
             yield return null;
             // Counted from the portrait frame on: a landscape test view sees the meadow from the egg at boot.
@@ -111,28 +123,28 @@ namespace PocketWilds.Tests.PlayMode
 
             for (int cycle = 0; cycle < 2; cycle++)
             {
-                // From the west end of the start chunk the meadow is out of the window.
+                // From the west end of the start chunk StreamBend is out of the window.
                 float until = Time.realtimeSinceStartup + 8f;
                 while (streamer.GetState(meadow) != ChunkStreamState.Unloaded)
                 {
-                    Assert.Less(Time.realtimeSinceStartup, until, "The meadow was never released.");
+                    Assert.Less(Time.realtimeSinceStartup, until, "StreamBend was never released.");
                     yield return null;
                 }
                 yield return null; // Destroy runs at the end of the release frame
-                Assert.AreEqual(0, CountChunks("PF_Chunk_Grassland_Meadow"), "Released chunks leave no instance behind.");
+                Assert.AreEqual(0, CountChunks("PF_Chunk_Grassland_StreamBend"), "Released chunks leave no instance behind.");
                 int loads = streamer.Stats.loads;
 
-                yield return Travel(rig, 14f);
+                yield return Travel(rig, 28f);
                 until = Time.realtimeSinceStartup + 5f;
                 while (streamer.GetState(meadow) != ChunkStreamState.Active)
                 {
-                    Assert.Less(Time.realtimeSinceStartup, until, "The meadow never became active.");
+                    Assert.Less(Time.realtimeSinceStartup, until, $"StreamBend never became active (focus {rig.Focus.x:F1}, state {streamer.GetState(meadow)}).");
                     yield return null;
                 }
                 Assert.AreEqual(loads + 1, streamer.Stats.loads);
-                Assert.AreEqual(1, CountChunks("PF_Chunk_Grassland_Meadow"));
+                Assert.AreEqual(1, CountChunks("PF_Chunk_Grassland_StreamBend"));
                 var chunk = streamer.GetChunk(meadow);
-                Assert.AreEqual(new Vector3(14f, 0f, 0f), chunk.transform.position);
+                Assert.AreEqual(new Vector3(28f, 0f, 0f), chunk.transform.position);
                 Assert.IsTrue(chunk.transform.Find("Ground").GetComponent<MeshRenderer>().GetShaderUserValue() != 0u, "Palettes are bound before activation.");
 
                 yield return Travel(rig, -3.5f);
@@ -141,13 +153,13 @@ namespace PocketWilds.Tests.PlayMode
             float end = Time.realtimeSinceStartup + 8f;
             while (streamer.GetState(meadow) != ChunkStreamState.Unloaded)
             {
-                Assert.Less(Time.realtimeSinceStartup, end, "The meadow was never released.");
+                Assert.Less(Time.realtimeSinceStartup, end, "StreamBend was never released.");
                 yield return null;
             }
             yield return null;
-            Assert.AreEqual(0, CountChunks("PF_Chunk_Grassland_Meadow"));
+            Assert.AreEqual(0, CountChunks("PF_Chunk_Grassland_StreamBend"));
             Assert.GreaterOrEqual(streamer.Stats.releases, 2);
-            Assert.AreEqual(lateBefore, streamer.Stats.lateActivations, "The meadow was always active before entering the frame.");
+            Assert.AreEqual(lateBefore, streamer.Stats.lateActivations, "StreamBend was always active before entering the frame.");
             Assert.AreEqual(0, streamer.Stats.failures);
 #else
             Assert.Ignore("Editor only.");

@@ -25,8 +25,8 @@ namespace PocketWilds.Presentation
     public sealed class AnimalScheduler
     {
         public const int InvalidHandle = -1;
-        public const int MaxInterests = 32;
-        public const int MaxObstacles = 256;
+        public const int MaxInterests = 128;
+        public const int MaxObstacles = 1024;
 
         /// <summary>Bodies may touch: an overlap under this (m) is a contact, not a collision (float rounding).</summary>
         public const float ContactTolerance = 0.002f;
@@ -52,6 +52,8 @@ namespace PocketWilds.Presentation
         private static readonly float[] SlideAngles = { 0f, 35f, -35f, 70f, -70f };
         private static readonly float[] DetourWidening = { 1f, 1.4f, 1.9f };
         private const int WanderCandidates = 6;
+        private static readonly float[] WalkToFractions = { 1f, 0.7f, 0.45f, 0.25f };
+        private const int MaxGoalLegs = 6;
         // Neighbours counted around a wander target: walks lean toward the emptier side, so the herd spreads over the
         // whole area instead of piling up where animals are born. One neighbour more or less does not count.
         private const float SpreadRadius = 1.2f;
@@ -89,6 +91,10 @@ namespace PocketWilds.Presentation
             public bool HasWaypoint;
             public bool Emerging;
             public bool Newborn;
+
+            /// <summary>T35A: a far spot the animal is heading for in several legs (a zone just opened).</summary>
+            public Vector3 Goal;
+            public int GoalLegs;
         }
 
         private readonly Agent[] _agents;
@@ -476,6 +482,56 @@ namespace PocketWilds.Presentation
                 Play(handle, ref agent, profile, AnimalBehaviorState.Wake, time, false);
             else if (agent.State != AnimalBehaviorState.React)
                 Play(handle, ref agent, profile, AnimalBehaviorState.React, time, false);
+        }
+
+        /// <summary>
+        /// T35A: the animal walks to a spot now (a zone just opened: a few animals go and live there). The spot is
+        /// moved to the nearest free place where the body fits; false when no walkable way was found.
+        /// </summary>
+        public bool TryWalkTo(int handle, Vector3 target, float time)
+        {
+            if (!IsValid(handle))
+                return false;
+            ref var agent = ref _agents[handle];
+            if (agent.Emerging)
+                return false;
+            agent.Goal = target;
+            agent.GoalLegs = MaxGoalLegs;
+            if (WalkLeg(handle, ref agent, time))
+                return true;
+            agent.GoalLegs = 0;
+            return false;
+        }
+
+        /// <summary>
+        /// One walk toward the agent's goal: straight there when one detour is enough, else a shorter leg first; the
+        /// next leg starts when it arrives (see Arrive), up to <see cref="MaxGoalLegs"/> legs.
+        /// </summary>
+        private bool WalkLeg(int handle, ref Agent agent, float time)
+        {
+            var target = agent.Goal;
+            Vector3 spot = agent.Position, waypoint = agent.Position;
+            bool detour = false, planned = false;
+            float fraction = 1f;
+            for (int k = 0; k < WalkToFractions.Length && !planned; k++)
+            {
+                fraction = WalkToFractions[k];
+                var step = agent.Position + (target - agent.Position) * fraction;
+                spot = FindFreeSpot(handle, ref agent, Grounded(_area.Clamp(step)), YawTo(agent.Position, step));
+                planned = Fits(handle, ref agent, spot, YawTo(agent.Position, spot), false) && TryPlan(handle, ref agent, spot, out waypoint, out detour);
+            }
+            if (!planned)
+                return false;
+            EndActivity(handle, ref agent, time);
+            agent.GoalLegs = fraction >= 1f ? 0 : agent.GoalLegs - 1;
+            agent.Target = spot;
+            agent.Waypoint = waypoint;
+            agent.HasWaypoint = detour;
+            agent.Arrive = AnimalBehaviorState.Idle;
+            if (detour)
+                Detours++;
+            Play(handle, ref agent, _profiles[handle], AnimalBehaviorState.Wander, time, false);
+            return true;
         }
 
         /// <summary>
@@ -975,6 +1031,13 @@ namespace PocketWilds.Presentation
             var arrive = agent.Arrive;
             agent.Arrive = AnimalBehaviorState.Idle;
             agent.HasWaypoint = false;
+            // Heading somewhere far: the next leg right away (a leg that cannot be planned ends the trip).
+            if (arrive == AnimalBehaviorState.Idle && agent.GoalLegs > 0)
+            {
+                if (WalkLeg(slot, ref agent, time))
+                    return;
+                agent.GoalLegs = 0;
+            }
             switch (arrive)
             {
                 case AnimalBehaviorState.Inspect:

@@ -184,29 +184,62 @@ namespace PocketWilds.Presentation
         }
     }
 
-    /// <summary>A chunk's ground in world space (height field plus the chunk origin); flat when no field is given.</summary>
+    /// <summary>
+    /// A chunk's ground in world space (height field plus the chunk origin); flat when no field is given. T35A: a strip
+    /// of chunk grounds side by side along x (the open zones of a biome) answers from the chunk under the point.
+    /// </summary>
     public readonly struct GroundSurface
     {
         private const float NormalStep = 0.15f;
 
         private readonly GroundHeightField _field;
         private readonly Vector3 _offset;
+        private readonly GroundSurface[] _strip;
+        private readonly float _stripMinX;
+        private readonly float _stripWidth;
 
         public GroundSurface(GroundHeightField field, Vector3 offset)
         {
             _field = field != null && field.IsValid ? field : null;
             _offset = offset;
+            _strip = null;
+            _stripMinX = 0f;
+            _stripWidth = 0f;
+        }
+
+        private GroundSurface(GroundSurface[] strip, float minX, float width)
+        {
+            _field = null;
+            _offset = strip.Length > 0 ? strip[0]._offset : Vector3.zero;
+            _strip = strip;
+            _stripMinX = minX;
+            _stripWidth = width;
         }
 
         public static GroundSurface Flat(float height) => new GroundSurface(null, new Vector3(0f, height, 0f));
 
-        public bool HasField => _field != null;
+        /// <summary>
+        /// Chunks of equal width side by side along x, the first one's west edge at <paramref name="minX"/>. Points
+        /// beyond either end read the nearest chunk.
+        /// </summary>
+        public static GroundSurface Strip(GroundSurface[] chunks, float minX, float width) =>
+            chunks == null || chunks.Length == 0 ? Flat(0f) : chunks.Length == 1 ? chunks[0] : new GroundSurface(chunks, minX, width);
 
-        public float HeightAt(float x, float z) => _field != null ? _offset.y + _field.Sample(x - _offset.x, z - _offset.z) : _offset.y;
+        public bool HasField => _field != null || (_strip != null && _strip[0].HasField);
+
+        public float HeightAt(float x, float z)
+        {
+            if (_strip != null)
+            {
+                int index = Mathf.Clamp((int)Mathf.Floor((x - _stripMinX) / _stripWidth), 0, _strip.Length - 1);
+                return _strip[index].HeightAt(x, z);
+            }
+            return _field != null ? _offset.y + _field.Sample(x - _offset.x, z - _offset.z) : _offset.y;
+        }
 
         public Vector3 NormalAt(float x, float z)
         {
-            if (_field == null)
+            if (!HasField)
                 return Vector3.up;
             float dx = HeightAt(x + NormalStep, z) - HeightAt(x - NormalStep, z);
             float dz = HeightAt(x, z + NormalStep) - HeightAt(x, z - NormalStep);

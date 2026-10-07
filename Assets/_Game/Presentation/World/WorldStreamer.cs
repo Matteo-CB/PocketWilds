@@ -69,6 +69,10 @@ namespace PocketWilds.Presentation
             public IChunkRequest Request;
             public WorldChunk Chunk;
             public float LastNear;
+
+            /// <summary>T35A: an open zone. Loaded and never released (its ground and obstacles stay for the animals),
+            /// shown or hidden by distance like any chunk.</summary>
+            public bool Resident;
         }
 
         private readonly Slot[] _slots;
@@ -118,6 +122,22 @@ namespace PocketWilds.Presentation
         public WorldChunk GetChunk(int index) => _slots[index].Chunk;
         public WorldChunkSet.Entry GetEntry(int index) => _slots[index].Entry;
         public Rect GetArea(int index) => _slots[index].Area;
+
+        /// <summary>
+        /// T35A: keeps a chunk loaded whatever the camera does (an open zone: animals walk on it), or lets it stream
+        /// again. Activation still follows the camera, so a resident chunk out of sight is staged, not drawn.
+        /// </summary>
+        public void SetResident(int index, bool resident)
+        {
+            if (index >= 0 && index < _slots.Length)
+                _slots[index].Resident = resident;
+        }
+
+        public bool IsResident(int index) => index >= 0 && index < _slots.Length && (_slots[index].Resident || _slots[index].Entry.pinned);
+
+        /// <summary>Loaded (staged or active): its data can be read.</summary>
+        public bool IsLoaded(int index) =>
+            index >= 0 && index < _slots.Length && (_slots[index].State == ChunkStreamState.Staged || _slots[index].State == ChunkStreamState.Active);
 
         public int IndexOf(string id)
         {
@@ -202,14 +222,15 @@ namespace PocketWilds.Presentation
                 {
                     ref var s = ref _slots[i];
                     bool pinned = s.Entry.pinned;
+                    bool kept = pinned || s.Resident;
                     float distance = Distance(footprint, s.Area);
-                    if (pinned || distance <= _window.releaseDistance)
+                    if (kept || distance <= _window.releaseDistance)
                         s.LastNear = time;
 
                     switch (s.State)
                     {
                         case ChunkStreamState.Unloaded:
-                            if (!started && (pinned || distance <= _window.preloadDistance))
+                            if (!started && (kept || distance <= _window.preloadDistance))
                             {
                                 started = true;
                                 Load(i, ref s);
@@ -224,7 +245,7 @@ namespace PocketWilds.Presentation
                                 activated = true;
                                 Activate(i, ref s, late: !pinned && distance <= 0f);
                             }
-                            else if (!released && !pinned && time - s.LastNear >= _window.releaseDelay)
+                            else if (!released && !kept && time - s.LastNear >= _window.releaseDelay)
                             {
                                 released = true;
                                 Release(i, ref s);

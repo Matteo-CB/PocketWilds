@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using PocketWilds.Core;
 using UnityEngine;
@@ -67,6 +68,37 @@ namespace PocketWilds.Presentation
             _fadeEnd = Mathf.Max(_fadeStart + 0.01f, end);
         }
 
+        private Obstacle[] _keepOut = Array.Empty<Obstacle>();
+
+        /// <summary>
+        /// T35A: world volumes nothing grows in (a zone's hedge). Chunks added afterwards skip the plants inside; call
+        /// <see cref="Rebuild"/> for chunks already shown. The array is kept, not copied.
+        /// </summary>
+        public void SetKeepOut(Obstacle[] volumes) => _keepOut = volumes ?? Array.Empty<Obstacle>();
+
+        /// <summary>Builds a chunk again (after the keep-out volumes changed). Allocates, like Add.</summary>
+        public void Rebuild(WorldChunk chunk)
+        {
+            if (Remove(chunk))
+                Add(chunk);
+        }
+
+        private bool KeptOut(in Matrix4x4 matrix, float radius)
+        {
+            if (_keepOut.Length == 0)
+                return false;
+            var p = new Vector2(matrix.m03, matrix.m23);
+            float scale = new Vector2(matrix.m00, matrix.m20).magnitude;
+            for (int k = 0; k < _keepOut.Length; k++)
+            {
+                ref var o = ref _keepOut[k];
+                float min = o.radius + radius * scale;
+                if (CollisionMath.PointSegmentDistanceSq(p, o.a, o.b) < min * min)
+                    return true;
+            }
+            return false;
+        }
+
         /// <summary>Builds the chunk's instance matrices (allocates: call when the chunk becomes active).</summary>
         public bool Add(WorldChunk chunk)
         {
@@ -83,9 +115,20 @@ namespace PocketWilds.Presentation
                 if (group.kind < 0 || group.kind >= kit.kinds.Length || group.count <= 0 || kit.kinds[group.kind].mesh == null)
                     continue;
                 var kind = kit.kinds[group.kind];
-                var matrices = new Matrix4x4[group.count];
+                var kept = new List<Matrix4x4>(group.count);
+                var meshBounds = kind.mesh.bounds;
+                float kindRadius = Mathf.Max(Mathf.Max(Mathf.Abs(meshBounds.min.x), Mathf.Abs(meshBounds.max.x)),
+                    Mathf.Max(Mathf.Abs(meshBounds.min.z), Mathf.Abs(meshBounds.max.z)));
                 for (int i = 0; i < group.count; i++)
-                    matrices[i] = toWorld * data.LocalMatrix(group.start + i);
+                {
+                    var matrix = toWorld * data.LocalMatrix(group.start + i);
+                    // No plant grows inside a hedge (no-collision rule); order is kept for the density prefix.
+                    if (!KeptOut(matrix, kindRadius))
+                        kept.Add(matrix);
+                }
+                if (kept.Count == 0)
+                    continue;
+                var matrices = kept.ToArray();
                 var properties = new MaterialPropertyBlock();
                 int row = _palettes != null && _palettes.TryGetRow(new ContentId(kind.paletteId), out int r) ? r : -1;
                 properties.SetFloat(PaletteRowId, row);

@@ -11,6 +11,30 @@ using UnityEngine;
 namespace PocketWilds.Presentation
 {
     /// <summary>
+    /// Where the refuge's animals live (T35A): the open zones side by side. Area, ground heights, every volume they
+    /// must not enter, points of interest. The arrays are copied by the scheduler.
+    /// </summary>
+    public readonly struct RefugeWalkData
+    {
+        public readonly WanderArea Area;
+        public readonly GroundSurface Ground;
+        public readonly Obstacle[] Obstacles;
+        public readonly InterestPoint[] Interests;
+
+        public RefugeWalkData(WanderArea area, GroundSurface ground, Obstacle[] obstacles, InterestPoint[] interests)
+        {
+            Area = area;
+            Ground = ground;
+            Obstacles = obstacles;
+            Interests = interests;
+        }
+
+        /// <summary>One chunk alone (tests, a world without zones).</summary>
+        public static RefugeWalkData FromChunk(WorldChunk chunk) =>
+            new RefugeWalkData(chunk.WanderArea, chunk.Ground, chunk.GetWorldObstacles(), chunk.GetWorldInterests());
+    }
+
+    /// <summary>
     /// The playable refuge loop (T17): animals from the save live in the meadow, an egg waits on its
     /// spawn point, a touch (on the egg or the hatch button) buys and hatches it, the new animal joins the
     /// meadow and the next egg appears. Plain class ticked by VerticalSliceEntry: one Update for the scene,
@@ -71,6 +95,8 @@ namespace PocketWilds.Presentation
         private readonly BehaviorProfile[] _speciesProfiles;
         private readonly Dictionary<ContentId, int> _speciesSlot;
         private readonly int _visibleBudget;
+        private int _visibleAllowance;
+        private WanderArea _walkArea;
         private readonly AnimalView[] _views;
         private readonly int[] _agentByView;
         private readonly RareGlowKind[] _rareByView;
@@ -109,10 +135,16 @@ namespace PocketWilds.Presentation
         // now waits for the newborn to bound off its spot, so the pause is counted from the egg, not the hatch).
         private bool _momentOfferArmed;
 
+        /// <summary>
+        /// Visible animals of the arrival zone; each open zone adds ProgressionConfig.ZoneVisibleAnimals (doc 04 Heure,
+        /// section 4.2), always within the device tier's budget.
+        /// </summary>
+        public const int ArrivalVisibleAnimals = 20;
+
         public RefugeController(GameContext context, WorldChunk chunk, RefugeCameraRig rig, IRefugeHud hud,
             HatchPresentationConfig hatchConfig, string eggSourceId, Transform root, IOfflineReturnView offlineView = null,
             ICodexView codexView = null, IShopView shopView = null, IOfferModalView offerView = null,
-            IAnimalSheetView sheetView = null, IModalView modalView = null)
+            IAnimalSheetView sheetView = null, IModalView modalView = null, RefugeWalkData? walk = null, int visibleAllowance = -1)
         {
             _sheetView = sheetView;
             _modalView = modalView;
@@ -165,12 +197,15 @@ namespace PocketWilds.Presentation
             // T34A: every feedback effect warmed here, counts by the device tier (Gate 10: nothing instantiates in play).
             _vfx = hatchConfig.vfx != null ? new FeedbackVfx(hatchConfig.vfx, root, PresentationQuality.Tier) : null;
             _hatch = new HatchSequencePlayer(hatchConfig, _vfx, context.Audio, context.Haptics);
-            _scheduler = new AnimalScheduler(_visibleBudget + 2, settings, chunk.WanderArea);
+            _visibleAllowance = visibleAllowance > 0 ? Math.Min(visibleAllowance, _visibleBudget) : _visibleBudget;
+            var walkData = walk ?? RefugeWalkData.FromChunk(chunk);
+            _walkArea = walkData.Area;
+            _scheduler = new AnimalScheduler(_visibleBudget + 2, settings, walkData.Area);
             _scheduler.SetVoiceListener(this);
-            _scheduler.SetInterests(chunk.GetWorldInterests());
-            // T33C no-collision rule: animals stand on the chunk's ground, never enter a prop, the water or the egg spot.
-            _scheduler.SetGround(chunk.Ground);
-            _scheduler.SetObstacles(chunk.GetWorldObstacles());
+            _scheduler.SetInterests(walkData.Interests);
+            // T33C no-collision rule: animals stand on the ground, never enter a prop, the water or the egg spot.
+            _scheduler.SetGround(walkData.Ground);
+            _scheduler.SetObstacles(walkData.Obstacles);
             if (chunk.EggSpawn != null)
                 _scheduler.SetEggSpot(chunk.EggSpawn.position, EggSpotRadius, EggBodyRadius, EggApronRadius);
 
@@ -860,22 +895,24 @@ namespace PocketWilds.Presentation
 
         private void RefreshEggCost() => _eggCost = _context.Hatch.GetCost(_eggId);
 
-        private void SpawnSavedAnimals()
+        private void SpawnSavedAnimals() => SpawnSaved(_walkArea);
+
+        /// <summary>
+        /// Favorites first, then the newest animals, up to the visible allowance, each somewhere in the area (spread
+        /// by its seed). The rest lives in the logical reserve and keeps producing through the aggregates.
+        /// </summary>
+        private void SpawnSaved(WanderArea area)
         {
             var collection = _context.State.Collection;
-            var area = _chunk.WanderArea;
-            // Favorites first, then the newest animals, up to the visible budget. The rest lives in the
-            // logical reserve and keeps producing through the aggregates.
             for (int pass = 0; pass < 2; pass++)
             {
-                for (int i = collection.Count - 1; i >= 0 && VisibleAnimals < _visibleBudget; i--)
+                for (int i = collection.Count - 1; i >= 0 && VisibleAnimals < _visibleAllowance; i--)
                 {
                     ref readonly var animal = ref collection[i];
-                    if (animal.IsFavorite != (pass == 0))
+                    if (animal.IsFavorite != (pass == 0) || IsVisible(animal.InstanceId))
                         continue;
-                    float angle = SeedHash.Unit(animal.Seed, 0x51A70001u) * Mathf.PI * 2f;
-                    float radius = Mathf.Sqrt(SeedHash.Unit(animal.Seed, 0x51A70002u)) * area.Radius * 0.9f;
-                    var position = area.Center + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                    var position = area.PointAt(SeedHash.Unit(animal.Seed, 0x51A70001u) * 0.9f + 0.05f,
+                        SeedHash.Unit(animal.Seed, 0x51A70002u) * 0.9f + 0.05f);
                     if (!_context.Visuals.TryResolve(animal, position, SeedHash.Unit(animal.Seed, 0x51A70003u) * 360f, out var snapshot))
                         continue;
                     if (!TryAcquire(snapshot, out var view))
@@ -885,20 +922,99 @@ namespace PocketWilds.Presentation
             }
         }
 
+        private bool IsVisible(uint instanceId)
+        {
+            for (int i = 0; i < _views.Length; i++)
+                if (_views[i] != null && _views[i].OwnerInstanceId == instanceId)
+                    return true;
+            return false;
+        }
+
+        /// <summary>The visible allowance this refuge shows now (arrival zone plus the open zones, within the budget).</summary>
+        public int VisibleAllowance => _visibleAllowance;
+
+        /// <summary>The area animals walk in now.</summary>
+        public WanderArea WalkArea => _walkArea;
+
+        /// <summary>
+        /// T35A: a zone opened or a zone's chunk finished loading: animals walk in the new area. Those already
+        /// standing stay where they are; the next walks spread them.
+        /// </summary>
+        public void SetWalkData(in RefugeWalkData walk)
+        {
+            _walkArea = walk.Area;
+            _scheduler.SetArea(walk.Area);
+            _scheduler.SetGround(walk.Ground);
+            _scheduler.SetObstacles(walk.Obstacles);
+            _scheduler.SetInterests(walk.Interests);
+        }
+
+        /// <summary>
+        /// T35A: more animals may be seen (a zone opened). The new ones appear in <paramref name="spawnArea"/> (the new
+        /// zone, away from the egg); fewer never removes anyone at once (the oldest step back at the next hatches).
+        /// </summary>
+        public void SetVisibleAllowance(int allowance, WanderArea spawnArea)
+        {
+            int before = _visibleAllowance;
+            _visibleAllowance = Math.Max(1, Math.Min(allowance, _visibleBudget));
+            if (_visibleAllowance > before)
+                SpawnSaved(spawnArea);
+        }
+
+        /// <summary>
+        /// T35A, zone opening: the animals nearest to the new zone walk into it (two or three, doc 02 section 4.6).
+        /// Returns how many set off.
+        /// </summary>
+        public int SendAnimalsInto(WanderArea zone, int count)
+        {
+            int sent = 0, tries = 0;
+            float tried = float.MinValue;
+            while (sent < count && tries < count * 3)
+            {
+                tries++;
+                // The next nearest animal not tried yet (by its distance to the zone along the strip).
+                int best = -1;
+                float bestDistance = float.MaxValue;
+                for (int i = 0; i < _views.Length; i++)
+                {
+                    int handle = _agentByView[i];
+                    if (_views[i] == null || handle == AnimalScheduler.InvalidHandle || _scheduler.IsEmerging(handle)
+                        || _scheduler.GetState(handle) == AnimalBehaviorState.Wander || zone.Contains(_scheduler.GetPosition(handle)))
+                        continue;
+                    float distance = Mathf.Abs(_scheduler.GetPosition(handle).x - zone.Center.x);
+                    if (distance > tried && distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        best = handle;
+                    }
+                }
+                if (best < 0)
+                    break;
+                tried = bestDistance;
+                float u = (sent + 0.5f) / count;
+                var target = zone.PointAt(0.25f + 0.2f * u, 0.2f + 0.6f * u);
+                if (_scheduler.TryWalkTo(best, target, _time))
+                    sent++;
+            }
+            return sent;
+        }
+
         /// <summary>emerging: the newborn stands on the egg spot and first walks out of it.</summary>
         private void AddToMeadow(AnimalView view, ContentId species, uint instanceId, uint seed, RareGlowKind rare, bool emerging)
         {
-            int slot = Array.IndexOf(_views, null);
-            if (slot < 0)
+            // Views stay packed from index 0 in arrival order, so index 0 is always the oldest visible animal.
+            int slot = VisibleAnimals;
+            if (VisibleAnimals >= _visibleAllowance || slot >= _views.Length)
             {
-                // Budget full: the oldest visible animal steps back into the reserve.
+                // Allowance reached: the oldest visible animal steps back into the reserve.
                 _scheduler.Unregister(_agentByView[0]);
                 _animals.Release(_views[0]);
                 VisibleAnimals--;
-                Array.Copy(_views, 1, _views, 0, _views.Length - 1);
-                Array.Copy(_agentByView, 1, _agentByView, 0, _agentByView.Length - 1);
-                Array.Copy(_rareByView, 1, _rareByView, 0, _rareByView.Length - 1);
-                slot = _views.Length - 1;
+                int last = VisibleAnimals;
+                Array.Copy(_views, 1, _views, 0, last);
+                Array.Copy(_agentByView, 1, _agentByView, 0, last);
+                Array.Copy(_rareByView, 1, _rareByView, 0, last);
+                slot = last;
             }
             var transform = view.transform;
             _views[slot] = view;

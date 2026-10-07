@@ -51,10 +51,11 @@ namespace PocketWilds.Tests.PlayMode
             var state = service.State;
             var animals = new[] { ("species.rabbit", "variant.rabbit.brown"), ("species.hedgehog", "variant.hedgehog.brown"),
                 ("species.squirrel", "variant.squirrel.red"), ("species.rabbit", "variant.rabbit.white") };
-            for (int i = 0; i < animals.Length; i++)
+            // A small refuge (T35A: the whole arrival zone): ten animals, so neighbours meet like in a real game.
+            for (int i = 0; i < 10; i++)
             {
-                var species = ContentId.FromSource(animals[i].Item1);
-                var variant = ContentId.FromSource(animals[i].Item2);
+                var species = ContentId.FromSource(animals[i % animals.Length].Item1);
+                var variant = ContentId.FromSource(animals[i % animals.Length].Item2);
                 state.Collection.Add(new AnimalInstance { Species = species, Variant = variant, Rarity = RarityTier.Common, Seed = SeedHash.Mix((uint)i + 7u, 0x50C1A1u) });
                 state.Collection.DiscoveredSpecies.Add(species);
                 state.Collection.DiscoveredVariants.Add(variant);
@@ -113,7 +114,7 @@ namespace PocketWilds.Tests.PlayMode
 
             // Animals are spread over the meadow: any of them that has a free neighbour within reach invites it.
             int a = -1;
-            float searchUntil = Time.realtimeSinceStartup + 6f;
+            float searchUntil = Time.realtimeSinceStartup + 12f;
             while (a < 0)
             {
                 for (int h = 0; h < scheduler.Capacity && a < 0; h++)
