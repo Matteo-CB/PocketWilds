@@ -100,6 +100,13 @@ namespace PocketWilds.Simulation
         public ContentId Treat;
         public int Treats;
 
+        /// <summary>
+        /// T38: the activity's own item (doc 01 Contenu, « Objet gagné »: Grooming gives 1 Clover Crunch at 3 stars), a treat
+        /// given with the rewards and shown on the result card; None and 0 without one. Never doubled by the weekend.
+        /// </summary>
+        public ContentId ItemTreat;
+        public int ItemTreats;
+
         public int EventCurrency;
         public bool Weekend;
 
@@ -124,6 +131,9 @@ namespace PocketWilds.Simulation
     /// treats of the newest biome, as T36 does.</item>
     /// <item>Event currency 20, 30 or 40 during a big event (× 1.5 on the featured activity); the « Week-end des
     /// Activités » doubles the rewards except Gems and stickers.</item>
+    /// <item>T38: the activity's item (« Objet gagné »), a treat set by <see cref="SetItemReward"/> (Grooming: 1 Clover
+    /// Crunch at 3 stars), in every rewarded game reaching its stars, free mode or challenge; an item, so the weekend never
+    /// doubles it.</item>
     /// </list>
     /// <see cref="Compute"/> reads only; <see cref="Grant"/> computes, writes the counters and gives through the T36
     /// <see cref="RewardGranter"/> (Gems with <see cref="EconomyReason.Activity"/>, Light, treats, decoration, stickers).
@@ -151,6 +161,11 @@ namespace PocketWilds.Simulation
 
         private readonly ActivityContext _ctx;
 
+        // T38: each activity's item (« Objet gagné »), by slot.
+        private readonly ContentId[] _itemTreat = new ContentId[ActivityCatalog.SlotCount];
+        private readonly int[] _itemCount = new int[ActivityCatalog.SlotCount];
+        private readonly int[] _itemStars = new int[ActivityCatalog.SlotCount];
+
         public ActivityRewardService(ActivityContext ctx)
         {
             _ctx = ctx;
@@ -158,6 +173,31 @@ namespace PocketWilds.Simulation
 
         /// <summary>The event systems (null until they exist).</summary>
         public IActivityEventHooks? Events { get; set; }
+
+        /// <summary>
+        /// The item a rewarded game of this activity gives from <paramref name="minStars"/> stars (doc 01 Contenu, « Objet
+        /// gagné »): <paramref name="count"/> of a treat. Registered by <see cref="ActivityRegistry.RegisterShipped"/>; a count
+        /// of 0 removes it.
+        /// </summary>
+        public void SetItemReward(ActivityId activity, ContentId treat, int count, int minStars = 3)
+        {
+            int slot = ActivityCatalog.SlotOf(activity);
+            if (slot < 0)
+                return;
+            bool valid = count > 0 && treat.IsValid;
+            _itemTreat[slot] = valid ? treat : ContentId.None;
+            _itemCount[slot] = valid ? count : 0;
+            _itemStars[slot] = Math.Max(1, Math.Min(3, minStars));
+        }
+
+        /// <summary>The item of an activity: its treat (None: none), its count and the stars it needs.</summary>
+        public ContentId ItemReward(ActivityId activity, out int count, out int minStars)
+        {
+            int slot = ActivityCatalog.SlotOf(activity);
+            count = slot >= 0 ? _itemCount[slot] : 0;
+            minStars = slot >= 0 ? _itemStars[slot] : 0;
+            return slot >= 0 && count > 0 ? _itemTreat[slot] : ContentId.None;
+        }
 
         /// <summary>The n-th challenge decoration (0 = E-DEC-CH-01 Brosse géante), None past the 36th.</summary>
         public static ContentId ChallengeDecoration(int index) =>
@@ -260,6 +300,14 @@ namespace PocketWilds.Simulation
                 outcome.Treats = outcome.Stickers * DailyRewardTables.StickerTreats;
             }
 
+            // T38: the activity's item, an item: never doubled.
+            int item = ActivityCatalog.SlotOf(request.Activity);
+            if (_itemCount[item] > 0 && stars >= _itemStars[item])
+            {
+                outcome.ItemTreat = _itemTreat[item];
+                outcome.ItemTreats = _itemCount[item];
+            }
+
             if (events != null && events.EventRunning)
             {
                 double featured = events.IsFeatured(request.Activity) ? Math.Max(1.0, config.FeaturedMultiplier) : 1.0;
@@ -309,8 +357,27 @@ namespace PocketWilds.Simulation
                 Treat = outcome.Treat,
                 Treats = outcome.Treats,
             };
+            // The item rides in the same bundle when it is the same treat (or no other treat comes), else in its own.
+            bool itemApart = false;
+            if (outcome.ItemTreats > 0)
+            {
+                if (bundle.Treats <= 0 || bundle.Treat == outcome.ItemTreat)
+                {
+                    bundle.Treat = outcome.ItemTreat;
+                    bundle.Treats += outcome.ItemTreats;
+                }
+                else
+                {
+                    itemApart = true;
+                }
+            }
             var granted = _ctx.Granter.Grant(in bundle, EconomyReason.Activity, DiscoverySource.Debug);
             outcome.Light = granted.Light;
+            if (itemApart)
+            {
+                var item = new RewardBundle { Treat = outcome.ItemTreat, Treats = outcome.ItemTreats };
+                _ctx.Granter.Grant(in item, EconomyReason.Activity, DiscoverySource.Debug);
+            }
 
             int added = 0;
             var bond = _ctx.Bond;

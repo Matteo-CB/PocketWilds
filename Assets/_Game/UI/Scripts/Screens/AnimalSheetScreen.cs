@@ -16,9 +16,12 @@ namespace PocketWilds.UI
     /// Back. Content saved inactive; nothing runs while closed. Ticked by the scene controller.
     /// T36 (doc 01 section 10.1): the « Friandise » button under the bond bar, with the treat this animal would eat, how
     /// many are owned and a small heart when its family prefers it; a treat given sends hearts up to the bar, which grows.
+    /// T38 (doc 01 S-ACT-001: the animal is chosen in its sheet): the « Brosser » button beside it, same look, with the
+    /// Grooming icon and, under its word, « Gratuit » for the free first game or a small ticket and « 1 ». Shown only while
+    /// Grooming can start; the two buttons share the row, a lone one sits centered under the bond bar.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class AnimalSheetScreen : MonoBehaviour, IAnimalSheetView, IAnimalSheetTreatView, IMotionSettings
+    public sealed class AnimalSheetScreen : MonoBehaviour, IAnimalSheetView, IAnimalSheetTreatView, IAnimalSheetGroomView, IMotionSettings
     {
         public const int MaxTraits = 6;
         private const float OpenSeconds = 0.22f;
@@ -66,6 +69,19 @@ namespace PocketWilds.UI
         [SerializeField] private RectTransform[] _hearts = System.Array.Empty<RectTransform>();
         [SerializeField] private Image[] _heartImages = System.Array.Empty<Image>();
 
+        [Header("T38 groom (doc 01 S-ACT-001)")]
+        [SerializeField] private RectTransform _groomRoot;
+        [SerializeField] private Button _groomButton;
+        [SerializeField] private TMP_Text _groomLabel;
+        [SerializeField] private GameObject _groomFree;
+        [SerializeField] private TMP_Text _groomFreeLabel;
+        [SerializeField] private GameObject _groomTicket;
+
+        /// <summary>The row under the bond bar (card space, top-left anchor): a lone button, or the treat and « Brosser » side by side.</summary>
+        [SerializeField] private Vector2 _rowSolo = new Vector2(550f, -620f);
+        [SerializeField] private Vector2 _rowLeft = new Vector2(277f, -620f);
+        [SerializeField] private Vector2 _rowRight = new Vector2(755f, -620f);
+
         private IAnimalSheetActions _actions;
         private AnimalSheetData _data;
         private float _time = -1f;
@@ -83,6 +99,9 @@ namespace PocketWilds.UI
         private float _bondTime = -1f;
         private float _heartTime = -1f;
         private float _press = -1f;
+        private bool _groomShown;
+        private int _groomCost = -1;
+        private float _groomPress = -1f;
         private const float BondGrowSeconds = 0.55f;
         private const float HeartSeconds = 0.75f;
         private const float HeartStagger = 0.09f;
@@ -108,6 +127,16 @@ namespace PocketWilds.UI
         public string TreatCountText => _treatCount != null ? _treatCount.text : string.Empty;
         public Sprite TreatIconShown => _treatIcon != null ? _treatIcon.sprite : null;
         public bool TreatAnimating => _bondTime >= 0f || _heartTime >= 0f;
+        public Vector2 TreatPosition => _treatRoot != null ? _treatRoot.anchoredPosition : Vector2.zero;
+        public Button GroomButton => _groomButton;
+        public bool GroomShown => _groomShown;
+        public bool GroomFreeShown => _groomFree != null && _groomFree.activeSelf;
+        public bool GroomTicketShown => _groomTicket != null && _groomTicket.activeSelf;
+        public string GroomLabelText => _groomLabel != null ? _groomLabel.text : string.Empty;
+        public string GroomFreeText => _groomFreeLabel != null ? _groomFreeLabel.text : string.Empty;
+        public Vector2 GroomPosition => _groomRoot != null ? _groomRoot.anchoredPosition : Vector2.zero;
+        public RectTransform TreatRect => _treatRoot;
+        public RectTransform GroomRect => _groomRoot;
 
         /// <summary>The bond bar's fill as drawn (0 to 1), animations included.</summary>
         public float BondFillShown { get; private set; }
@@ -125,12 +154,19 @@ namespace PocketWilds.UI
                 _details.onClick.AddListener(OnDetails);
                 if (_treatButton != null)
                     _treatButton.onClick.AddListener(OnTreat);
+                if (_groomButton != null)
+                    _groomButton.onClick.AddListener(OnGroom);
             }
             _bondLabel.text = localization.Get(FeedbackText.SheetBond);
             if (_treatLabel != null)
                 _treatLabel.text = localization.Get(DailyVisitText.SheetTreat);
-            // The treat row waits for SetTreat (sheets without treats keep the T34A look).
+            if (_groomLabel != null)
+                _groomLabel.text = localization.Get(ActivityText.SheetGroom);
+            if (_groomFreeLabel != null)
+                _groomFreeLabel.text = localization.Get(ActivityText.HubFree);
+            // The treat row waits for SetTreat (sheets without treats keep the T34A look), « Brosser » for SetGroom.
             ShowTreat(false);
+            ShowGroom(false);
             StopTreatMotion();
             _detailsLabel.text = localization.Get(FeedbackText.SheetDetailsButton);
             _rarityLabel.text = localization.Get(FeedbackText.RarityKey(data.Rarity));
@@ -154,9 +190,13 @@ namespace PocketWilds.UI
                 (uint)(AnimalTrait.Tiny | AnimalTrait.Shiny | AnimalTrait.Golden));
             Open(sample, localization, null);
             SetTreat(new SheetTreatData { Available = true, Owned = 12, Preferred = true });
+            SetGroom(true, true);
+            if (_groomTicket != null)
+                _groomTicket.SetActive(true);
             _group.alpha = 0f;
             Canvas.ForceUpdateCanvases();
             ShowTreat(false);
+            ShowGroom(false);
             IsOpen = false;
             _closing = false;
             _time = -1f;
@@ -368,6 +408,63 @@ namespace PocketWilds.UI
                 return;
             _treatShown = visible;
             _treatRoot.gameObject.SetActive(visible);
+            LayoutRow();
+        }
+
+        // ---------------- T38 « Brosser » (IAnimalSheetGroomView) ----------------
+
+        /// <summary>
+        /// The « Brosser » button (doc 01 S-ACT-001): shown while Grooming can start, with « Gratuit » under its word for the
+        /// free first game (doc 01 A15), else a small ticket and « 1 ». Hidden when not available.
+        /// </summary>
+        public void SetGroom(bool available, bool free)
+        {
+            if (_groomRoot == null)
+                return;
+            ShowGroom(available);
+            if (!available)
+                return;
+            int cost = free ? 0 : 1;
+            if (cost == _groomCost)
+                return;
+            _groomCost = cost;
+            if (_groomFree != null && _groomFree.activeSelf != free)
+                _groomFree.SetActive(free);
+            if (_groomTicket != null && _groomTicket.activeSelf == free)
+                _groomTicket.SetActive(!free);
+        }
+
+        private void ShowGroom(bool visible)
+        {
+            if (_groomRoot == null)
+                return;
+            if (!visible)
+                _groomCost = -1;
+            if (visible == _groomShown && _groomRoot.gameObject.activeSelf == visible)
+                return;
+            _groomShown = visible;
+            _groomRoot.gameObject.SetActive(visible);
+            LayoutRow();
+        }
+
+        /// <summary>The row under the bond bar: the treat and « Brosser » side by side, or the one shown centered.</summary>
+        private void LayoutRow()
+        {
+            bool treat = _treatRoot != null && _treatShown;
+            bool groom = _groomRoot != null && _groomShown;
+            if (treat)
+                _treatRoot.anchoredPosition = groom ? _rowLeft : _rowSolo;
+            if (groom)
+                _groomRoot.anchoredPosition = treat ? _rowRight : _rowSolo;
+        }
+
+        private void OnGroom()
+        {
+            if (_closing || !IsOpen || !_groomShown)
+                return;
+            // Answered at once: the button dips; the refuge closes the sheet and the game starts with this animal.
+            _groomPress = 0f;
+            (_actions as IAnimalSheetGroomActions)?.GroomAnimal(_data.InstanceId);
         }
 
         private Sprite TreatSprite(ContentId treat)
@@ -404,6 +501,18 @@ namespace PocketWilds.UI
                 {
                     _press = -1f;
                     _treatRoot.localScale = Vector3.one;
+                }
+            }
+            if (_groomPress >= 0f && _groomRoot != null)
+            {
+                _groomPress += dt;
+                float k = Mathf.Clamp01(_groomPress / PressSeconds);
+                float s = ReduceMotion ? 1f : 1f - 0.08f * Mathf.Sin(k * Mathf.PI);
+                _groomRoot.localScale = new Vector3(s, s, 1f);
+                if (k >= 1f)
+                {
+                    _groomPress = -1f;
+                    _groomRoot.localScale = Vector3.one;
                 }
             }
             if (_bondTime >= 0f)
@@ -464,7 +573,9 @@ namespace PocketWilds.UI
                 heart.anchoredPosition = BondTarget();
                 return;
             }
-            var from = _treatRoot.anchoredPosition + new Vector2(-216f + i * 22f, 24f);
+            // From just right of the treat's icon, wherever the row put the button.
+            float icon = _treatIcon != null ? _treatIcon.rectTransform.anchoredPosition.x : 70f;
+            var from = _treatRoot.anchoredPosition + new Vector2(-_treatRoot.rect.width * 0.5f + icon + 34f + i * 22f, 24f);
             var to = BondTarget() + new Vector2((i - 1.5f) * 26f, 6f);
             float e = 1f - (1f - t) * (1f - t);
             float sway = Mathf.Sin((t * 2.2f + i * 0.37f) * Mathf.PI * 2f) * 16f * (1f - t);
@@ -499,8 +610,11 @@ namespace PocketWilds.UI
         {
             _press = -1f;
             _heartTime = -1f;
+            _groomPress = -1f;
             if (_treatRoot != null)
                 _treatRoot.localScale = Vector3.one;
+            if (_groomRoot != null)
+                _groomRoot.localScale = Vector3.one;
             for (int i = 0; i < _hearts.Length; i++)
             {
                 if (_hearts[i].gameObject.activeSelf)
@@ -529,6 +643,24 @@ namespace PocketWilds.UI
             _treatItemIcons = itemIcons;
             _hearts = hearts;
             _heartImages = heartImages;
+        }
+
+        /// <summary>
+        /// Prefab builder hook for the T38 « Brosser » button (Editor FeedbackUiPipeline): its parts, and the row's three
+        /// places in the card (a lone button, the treat on the left and « Brosser » on the right).
+        /// </summary>
+        public void SetGroomReferences(RectTransform root, Button button, TMP_Text label, GameObject free, TMP_Text freeLabel, GameObject ticket,
+            Vector2 rowSolo, Vector2 rowLeft, Vector2 rowRight)
+        {
+            _groomRoot = root;
+            _groomButton = button;
+            _groomLabel = label;
+            _groomFree = free;
+            _groomFreeLabel = freeLabel;
+            _groomTicket = ticket;
+            _rowSolo = rowSolo;
+            _rowLeft = rowLeft;
+            _rowRight = rowRight;
         }
 
         private Color RarityColor(RarityTier rarity)
@@ -582,6 +714,8 @@ namespace PocketWilds.UI
             _details.onClick.RemoveListener(OnDetails);
             if (_treatButton != null)
                 _treatButton.onClick.RemoveListener(OnTreat);
+            if (_groomButton != null)
+                _groomButton.onClick.RemoveListener(OnGroom);
         }
     }
 }

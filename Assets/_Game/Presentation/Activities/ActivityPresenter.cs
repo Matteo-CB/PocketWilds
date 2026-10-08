@@ -118,7 +118,15 @@ namespace PocketWilds.Presentation
             _empty = empty;
             _text = context.Localization ?? KeysOnly.Instance;
             _host = host;
-            Stages = new ActivityStageRegistry();
+            if (_host != null)
+            {
+                _host.Hud = hud;
+                _host.Text = _text;
+            }
+            var stages = new ActivityStageRegistry();
+            // The stages of the activities shipped in this build (each registers its factory and its themes).
+            GroomingStage.Register(stages);
+            Stages = stages;
 
             _onEnded = OnEnded;
             _onTicketsChanged = OnTicketsChanged;
@@ -219,6 +227,44 @@ namespace PocketWilds.Presentation
             else
                 _hub.Open(this, _text, this);
             _context.Analytics.ScreenView(ScreenId.ActivityHub);
+            ShowCardHint();
+        }
+
+        // ---------------- A15: the first Grooming game (doc 01 Contenu, A15) ----------------
+
+        private bool _cardHint;
+
+        /// <summary>The free first game of Grooming, never played yet: the game shows its gestures and tips.</summary>
+        private bool IsTutorialGame(in ActivityRequest request) =>
+            request.Activity == ActivityId.Grooming && request.Mode != ActivityMode.Practice
+            && _services.FreeGameAvailable(ActivityId.Grooming) && _services.Record(ActivityId.Grooming).GamesPlayed == 0;
+
+        /// <summary>A15: the paw on the Grooming card (selected first as « Nouveau ») until the first game starts.</summary>
+        private void ShowCardHint()
+        {
+            if (_refugeHud == null || _hub == null || !_hub.IsOpen)
+                return;
+            bool pending = _services.IsAvailable(ActivityId.Grooming) && _services.FreeGameAvailable(ActivityId.Grooming)
+                           && _services.Record(ActivityId.Grooming).GamesPlayed == 0;
+            int card = -1;
+            for (int i = 0; i < _cardCount; i++)
+                if (_cardIds[i] == ActivityId.Grooming)
+                    card = i;
+            if (!pending || card < 0)
+            {
+                HideCardHint();
+                return;
+            }
+            _cardHint = true;
+            _refugeHud.SetTapHint(true, _hub.CardScreenPosition(card));
+        }
+
+        private void HideCardHint()
+        {
+            if (!_cardHint)
+                return;
+            _cardHint = false;
+            _refugeHud?.SetTapHint(false, default);
         }
 
         /// <summary>Today opens over the refuge: the hub steps aside without a sound.</summary>
@@ -226,6 +272,26 @@ namespace PocketWilds.Presentation
         {
             if (_hub != null && _hub.IsOpen)
                 _hub.Close();
+        }
+
+        // ---------------- T38: Grooming from the animal sheet ----------------
+
+        /// <summary>Grooming can start from a sheet now (open in this build, no game running); the next game is free.</summary>
+        public bool CanGroom(out bool free)
+        {
+            free = _services.FreeGameAvailable(ActivityId.Grooming);
+            return PlayAvailable && !InGame && _services.IsAvailable(ActivityId.Grooming);
+        }
+
+        /// <summary>The sheet's « Brosser »: a game with this animal (practice when the hub's practice toggle is on).</summary>
+        public void GroomAnimal(uint instanceId)
+        {
+            if (!CanGroom(out _))
+                return;
+            var request = _practice ? ActivityRequest.Practice(ActivityId.Grooming) : ActivityRequest.Free(ActivityId.Grooming);
+            request.SetAnimals(instanceId);
+            _context.Audio.Play(AudioEventId.UiConfirm, Vector3.zero, default);
+            StartGame(request);
         }
 
         // ---------------- IActivityHubActions ----------------
@@ -306,6 +372,7 @@ namespace PocketWilds.Presentation
         {
             if (_hub == null || !_hub.IsOpen)
                 return;
+            HideCardHint();
             _hub.Close();
             _context.Audio.Play(AudioEventId.UiBack, Vector3.zero, default);
             // Leaving the activities releases their content (doc Mini-jeux, section 1: loaded at the opening, freed at the exit).
@@ -360,8 +427,10 @@ namespace PocketWilds.Presentation
                 return;
             if (request.Theme == ContentId.None)
                 request.Theme = _services.Theme(request.Activity);
+            if (Stages != null && !Stages.SupportsTheme(request.Activity, request.Theme) && ActivityCatalog.TryGet(request.Activity, out var played))
+                request.Theme = played.BaseBiome;
             if (request.AnimalCount == 0)
-                request.SetAnimals(PickAnimal());
+                request.SetAnimals(PickAnimal(request.Activity, request.Challenge));
             var verdict = _services.Runner.CanStart(request);
             if (verdict == ActivityStartResult.NoTicket)
             {
@@ -381,6 +450,9 @@ namespace PocketWilds.Presentation
             }
             if (_phase == Phase.Result)
                 LeaveResult();
+            if (_host != null)
+                _host.Tutorial = IsTutorialGame(in request);
+            HideCardHint();
             _stage = stage;
             _pending = request;
             _phase = Phase.Loading;
@@ -388,6 +460,8 @@ namespace PocketWilds.Presentation
                 _hub.Close();
             _playHud?.SetPlaying(true);
             LoadMusic(request.Activity);
+            // The stage builds the played animal and measures it before the runner begins the game (Grooming's zones).
+            (stage as IActivityStagePreparation)?.Prepare(in request);
             if (stage.Ready)
                 BeginGame();
         }
@@ -505,10 +579,21 @@ namespace PocketWilds.Presentation
                 _cells[n++] = new RewardCell(RewardKind.Bond, rewards.BondPerAnimal);
             if (rewards.Decoration != ContentId.None)
                 _cells[n++] = new RewardCell(RewardKind.Decoration, 1, rewards.Decoration);
+            // The activity's own item (Grooming: a Clover Crunch at 3 stars), merged with the sticker's treats when the same.
+            int itemTreats = rewards.ItemTreats;
             if (rewards.Treats > 0)
-                _cells[n++] = new RewardCell(RewardKind.Treat, rewards.Treats, rewards.Treat);
+            {
+                bool same = itemTreats > 0 && rewards.ItemTreat == rewards.Treat;
+                _cells[n++] = new RewardCell(RewardKind.Treat, rewards.Treats + (same ? itemTreats : 0), rewards.Treat);
+                if (same)
+                    itemTreats = 0;
+            }
             else if (rewards.Stickers > 0)
+            {
                 _cells[n++] = new RewardCell(RewardKind.Sticker, rewards.Stickers);
+            }
+            if (itemTreats > 0 && n < _cells.Length)
+                _cells[n++] = new RewardCell(RewardKind.Treat, itemTreats, rewards.ItemTreat);
             return n;
         }
 
@@ -581,6 +666,7 @@ namespace PocketWilds.Presentation
             if (_result != null && _result.IsOpen)
                 _result.Close();
             _stage?.Exit();
+            _host?.SetWorldVisible?.Invoke(true);
             _phase = Phase.None;
         }
 
@@ -592,6 +678,7 @@ namespace PocketWilds.Presentation
             _stage = null;
             _phase = Phase.None;
             _hud?.Hide();
+            _host?.SetWorldVisible?.Invoke(true);
             _playHud?.SetPlaying(false);
             RestoreBeds();
             if (openHub)
@@ -686,7 +773,8 @@ namespace PocketWilds.Presentation
             _hud.SetTimeLeft(runner.TimeLeft);
             int streak = runner.Streak;
             _hud.SetStreak(streak);
-            if (streak > _streakShown && streak >= 2)
+            // Activities with their own streak sound (Grooming's rising glass) keep the shared one quiet.
+            if (streak > _streakShown && streak >= 2 && !ActivityAudio.HasOwnStreakSound(runner.Setup.Activity))
                 _context.Audio.PlayVariant(AudioEventId.ActivityStreak, streak - 2);
             _streakShown = streak;
         }
@@ -840,19 +928,40 @@ namespace PocketWilds.Presentation
                 var biome = biomes[i].Id;
                 if (store != null ? !store.IsUnlocked(biome) : biome != definition.BaseBiome)
                     continue;
+                // Only the themes whose set exists in this build (the others open with their sets).
+                if (Stages != null && !Stages.SupportsTheme(activity, biome))
+                    continue;
                 if (biome == chosen)
                     _selectedTheme = _themeCount;
                 _themes[_themeCount++] = biome;
             }
         }
 
-        /// <summary>The animal a game features (doc Mini-jeux, section 1: « c'est son lapin qu'on brosse »): a favorite first.</summary>
-        private uint PickAnimal()
+        /// <summary>The challenge of an activity that needs the heaviest animal owned (Grooming 7 « Grand gabarit »).</summary>
+        public static bool NeedsHeaviestAnimal(ActivityId activity, int challenge) =>
+            activity == ActivityId.Grooming && challenge == GroomingRules.HeavyAnimalChallenge;
+
+        /// <summary>
+        /// The animal a game features (doc Mini-jeux, section 1: « c'est son lapin qu'on brosse »). Grooming proposes the
+        /// visible animal with the lowest bond (doc 01 S-ACT-001), its « Grand gabarit » challenge the heaviest one owned;
+        /// the others a favorite first. Runs once per game start (never per frame).
+        /// </summary>
+        private uint PickAnimal(ActivityId activity, int challenge)
         {
             var collection = _context.State.Collection;
             int count = collection.Count;
             if (count == 0)
                 return 0;
+            if (NeedsHeaviestAnimal(activity, challenge))
+                return HeaviestAnimal(collection);
+            if (activity == ActivityId.Grooming)
+            {
+                // A pending wish « Brosse {animal} » (WISH-019) names its animal: it comes first.
+                if (_context.Daily != null && _context.Daily.Wishes.GroomWishAnimal(out uint wished) && collection.TryGet(wished, out _))
+                    return wished;
+                uint visible = LowestBond(collection, true);
+                return visible != 0 ? visible : LowestBond(collection, false);
+            }
             int start = _services.Activities.GamesStarted % count;
             for (int i = 0; i < count; i++)
             {
@@ -862,6 +971,58 @@ namespace PocketWilds.Presentation
             }
             return collection[start].InstanceId;
         }
+
+        private readonly uint[] _visible = new uint[64];
+
+        private uint LowestBond(CollectionState collection, bool visibleOnly)
+        {
+            int visible = visibleOnly && _host?.Refuge != null ? _host.Refuge.CopyVisibleAnimals(_visible) : 0;
+            if (visibleOnly && visible == 0)
+                return 0;
+            uint best = 0;
+            int bestBond = int.MaxValue;
+            int n = visibleOnly ? visible : collection.Count;
+            for (int i = 0; i < n; i++)
+            {
+                AnimalInstance animal;
+                if (visibleOnly)
+                {
+                    if (!collection.TryGet(_visible[i], out animal))
+                        continue;
+                }
+                else
+                {
+                    animal = collection[i];
+                }
+                if (animal.BondPoints < bestBond)
+                {
+                    bestBond = animal.BondPoints;
+                    best = animal.InstanceId;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>The heaviest animal owned: the biggest rig family first.</summary>
+        private uint HeaviestAnimal(CollectionState collection)
+        {
+            uint best = 0;
+            int bestFamily = -1;
+            for (int i = 0; i < collection.Count; i++)
+            {
+                ref readonly var animal = ref collection[i];
+                int family = _context.Content.Species.TryGet(animal.Species, out var species) ? HeavyRank(species.RigFamily) : 0;
+                if (family > bestFamily)
+                {
+                    bestFamily = family;
+                    best = animal.InstanceId;
+                }
+            }
+            return best;
+        }
+
+        private static int HeavyRank(PocketWilds.Content.RigFamily family) =>
+            family == PocketWilds.Content.RigFamily.HeavyQuadruped ? 3 : family == PocketWilds.Content.RigFamily.MediumQuadruped ? 2 : 1;
 
         // ---------------- Music (doc 01 Contenu, section 12.0) ----------------
 

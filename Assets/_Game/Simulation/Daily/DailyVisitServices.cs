@@ -157,6 +157,16 @@ namespace PocketWilds.Simulation
         }
 
         /// <summary>
+        /// T38: a grooming game ended (<see cref="GroomingHooks"/> calls it): its wishes (WISH-019 to 022) and the journal's
+        /// JRN-033. Allocation-free.
+        /// </summary>
+        public void OnGroomingGame(in GroomingGameSummary game)
+        {
+            Wishes.OnGroomingGame(in game);
+            Journal.OnGroomingGame(in game);
+        }
+
+        /// <summary>
         /// At boot (after the offline resolution) and when the app comes back: the day check first, then the return gift of
         /// this absence (doc 01, section 6).
         /// </summary>

@@ -189,7 +189,8 @@ namespace PocketWilds.Tests.EditMode
     /// </summary>
     public class WishDrawTests
     {
-        private static readonly int[] Shipped = { 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 25, 26, 30 };
+        // T36: SYS-01, 02, 03, 04 and 06; T38 adds SYS-09 Grooming (WISH-019 to 022) with its activity.
+        private static readonly int[] Shipped = { 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 30 };
 
         // ---------------- Catalog (section 2.3) ----------------
 
@@ -205,7 +206,7 @@ namespace PocketWilds.Tests.EditMode
                 Assert.Greater(t.Weight, 0, t.Id.ToString());
                 Assert.AreEqual(WishSystems.FamilyOf(t.System), t.Family);
                 Assert.AreEqual(!t.Timer && t.TypicalSeconds <= 120, t.Quick, t.Id + ": quick is 2 min or less, no timer.");
-                Assert.AreEqual(Shipped.Contains(i + 1), t.ShippedInThisBuild, t.Id + " ships with SYS-01, 02, 03, 04, 06 only.");
+                Assert.AreEqual(Shipped.Contains(i + 1), t.ShippedInThisBuild, t.Id + " ships with SYS-01, 02, 03, 04, 06 and 09 only.");
                 Assert.AreEqual("wish." + (i + 1).ToString("000"), WishCatalog.TextKey(t.Id));
             }
 

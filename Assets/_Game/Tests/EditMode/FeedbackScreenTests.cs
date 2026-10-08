@@ -159,6 +159,11 @@ namespace PocketWilds.Tests.EditMode
                     ActivityText.ResultTitleTwo, ActivityText.ResultTitleThree)),
                 (ActivityUiPipeline.TicketsEmptyPath, "Practice/Label", Longest(ActivityText.EmptyPractice)),
                 (ActivityUiPipeline.TicketsEmptyPath, "Card/Title", Longest(ActivityText.EmptyTitle)),
+                // T38: the HUD's tip bubble (its widest box) and the sheet's « Brosser » button with its « Gratuit » tag.
+                (ActivityUiPipeline.HudPath, "Tip/Label", Longest(ActivityText.GroomingTipBrush, ActivityText.GroomingTipLeaves,
+                    ActivityText.GroomingTipBurr, ActivityText.GroomingTipBow, ActivityText.GroomingTipBubble)),
+                (FeedbackUiPipeline.SheetPrefabPath, "Content/SafeArea/Card/Groom/Button/Label", Longest(ActivityText.SheetGroom)),
+                (FeedbackUiPipeline.SheetPrefabPath, "Content/SafeArea/Card/Groom/Button/Free/Label", Longest(ActivityText.HubFree)),
             };
             var problems = new List<string>();
             foreach (var group in cases.GroupBy(c => c.prefab))

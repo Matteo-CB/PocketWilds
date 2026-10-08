@@ -440,7 +440,18 @@ namespace PocketWilds.Services.Feedback
         public float MusicTrimDb => _musicTrimDb;
         public float AmbienceTrimDb => _ambienceTrimDb;
 
-        public void Play(AudioEventId id, Vector3 position, ContentId context)
+        public void Play(AudioEventId id, Vector3 position, ContentId context) => PlayAt(id, position, context, 1f, false);
+
+        /// <summary>
+        /// T38: a close-up sound at a chosen pitch (the grooming giggle: AnimalHappy at 1.1). An animal voice keeps its
+        /// species' clips and pitch, times pitchScale (0.5 to 2); it plays at full level from the centre (the camera frames
+        /// that animal, the refuge's view may look elsewhere) and the battery saver does not skip it. Same cooldowns,
+        /// voices and priorities as Play; no allocation.
+        /// </summary>
+        public void PlayPitched(AudioEventId id, Vector3 position, ContentId context, float pitchScale) =>
+            PlayAt(id, position, context, Mathf.Clamp(pitchScale, 0.5f, 2f), true);
+
+        private void PlayAt(AudioEventId id, Vector3 position, ContentId context, float pitchScale, bool closeUp)
         {
             int index = (int)id;
             if (index <= 0 || index >= _byId.Length)
@@ -448,13 +459,13 @@ namespace PocketWilds.Services.Feedback
             var def = _byId[index];
             if (def == null || _sfxLevel <= 0f || _root == null)
                 return;
-            if ((_batterySaver && def.skipOnBatterySaver) || _time - _lastStart[index] < def.cooldown)
+            if ((_batterySaver && def.skipOnBatterySaver && !closeUp) || _time - _lastStart[index] < def.cooldown)
             {
                 Dropped++;
                 return;
             }
             float gain = 1f, pan = 0f;
-            if (def.world)
+            if (def.world && !closeUp)
             {
                 gain = ViewGain(position, out pan);
                 if (gain < 0.04f)
@@ -470,7 +481,7 @@ namespace PocketWilds.Services.Feedback
                 return;
             }
 
-            float pitch = 1f;
+            float pitch = pitchScale;
             var clips = def.clips;
             if (context.IsValid && (id == AudioEventId.AnimalHappy || id == AudioEventId.AnimalChatter || id == AudioEventId.AnimalSleep
                                     || id == AudioEventId.AnimalEat))
@@ -481,7 +492,7 @@ namespace PocketWilds.Services.Feedback
                     var own = id == AudioEventId.AnimalSleep ? voice.sleep : id == AudioEventId.AnimalEat ? voice.eat : voice.happy;
                     if (own != null && own.Length > 0)
                         clips = own;
-                    pitch = voice.pitch;
+                    pitch = voice.pitch * pitchScale;
                 }
             }
             if (clips == null || clips.Length == 0)

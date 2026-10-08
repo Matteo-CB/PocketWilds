@@ -281,6 +281,8 @@ namespace PocketWilds.Presentation
                 {
                     // T37: the Play button, the hub, the activity HUD, the result card and the « no ticket » card.
                     var host = new ActivityStageHost(context, _refuge, _cameraRig, transform);
+                    // A stage with its own set turns the refuge's rendering off while it plays (doc Mini-jeux, section 1).
+                    host.SetWorldVisible = SetWorldVisible;
                     _activityPresenter = new ActivityPresenter(context, _hud as IPlayHud, _activityHub as IActivityHubView,
                         _activityHud as IActivityHudView, _activityResult as IActivityResultView, _ticketsEmpty as ITicketsEmptyView, host);
                     _activityPresenter.Daily = _dailyPresenter;
@@ -468,6 +470,17 @@ namespace PocketWilds.Presentation
             if (camera == null)
                 return new Rect(-1f, -1f, 2f, 2f);
             return WorldStreamer.GroundFootprint(camera, _footprintMaxDistance);
+        }
+
+        /// <summary>
+        /// T38: the refuge's world rendering on or off (an activity set renders alone): its camera, so nothing of the world
+        /// is drawn; the simulation and the animals keep living.
+        /// </summary>
+        private void SetWorldVisible(bool visible)
+        {
+            var camera = _cameraRig != null ? _cameraRig.Camera : null;
+            if (camera != null)
+                camera.enabled = visible;
         }
 
         /// <summary>T37: the app leaves mid-game: the game pauses (the pause card waits on return).</summary>

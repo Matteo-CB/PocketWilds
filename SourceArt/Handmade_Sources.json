@@ -35,6 +35,10 @@
         "SourceArt/Blender/Tools/pw_grassland_t35a_props.py",
         "SourceArt/Blender/Tools/pw_export.py"
       ]
+    },
+    {
+      "blend": "SourceArt/Blender/Activities/BL_Activity_Grooming.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_grooming.py", "SourceArt/Blender/Tools/pw_export.py"]
     }
   ],
   "generated": [
@@ -67,6 +71,11 @@
       "final": "Assets/_Game/Art/UI/Zones/",
       "from": "the real zones of the Prairie with the game light and plants",
       "builders": ["Assets/_Game/Editor/Capture/WorldCapture.T35A.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/Activities/Grooming/Bodies/",
+      "from": "each species' LOD0 mesh (BL_Animal_<Species>.blend) copied with its grooming zones (uv2) and bind positions (uv3)",
+      "builders": ["Assets/_Game/Editor/Activities/GroomingPipeline.cs"]
     }
   ],
   "largeTextures": [

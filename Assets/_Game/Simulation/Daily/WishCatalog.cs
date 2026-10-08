@@ -144,7 +144,7 @@ namespace PocketWilds.Simulation
         /// <summary>A score wish (one game): its amount follows the score rule (<see cref="WishCatalog.ScoreTarget"/>).</summary>
         public readonly bool Score;
 
-        /// <summary>Its system exists in this build (T36: SYS-01, 02, 03, 04, 06). Other templates are never drawn.</summary>
+        /// <summary>Its system exists in this build (T36: SYS-01, 02, 03, 04, 06; T38: SYS-09). Other templates are never drawn.</summary>
         public readonly bool ShippedInThisBuild;
 
         public WishTemplate(WishTemplateId id, WishSystem system, int weight, int typicalSeconds, bool timer, int p1, int p2, int p3, int p4,
@@ -422,10 +422,11 @@ namespace PocketWilds.Simulation
         private static readonly string[] Keys = BuildKeys();
 
         /// <summary>The systems whose wishes exist in this build (T36: Hatching, Discoveries and mastery, Cuddles and treats,
-        /// Upgrades, Expansions).</summary>
+        /// Upgrades, Expansions; T38: Grooming, with its activity).</summary>
         public static bool IsShipped(WishSystem system) =>
             system == WishSystem.Hatching || system == WishSystem.DiscoveriesAndMastery || system == WishSystem.CuddlesAndTreats
-            || system == WishSystem.Upgrades || system == WishSystem.Expansions;
+            || system == WishSystem.Upgrades || system == WishSystem.Expansions
+            || (system == WishSystem.Grooming && ActivityCatalog.Get(ActivityId.Grooming).ShippedInThisBuild);
 
         /// <summary>Index in <see cref="All"/> (number - 1), or -1 (the tutorial and unknown ids).</summary>
         public static int IndexOf(WishTemplateId id)

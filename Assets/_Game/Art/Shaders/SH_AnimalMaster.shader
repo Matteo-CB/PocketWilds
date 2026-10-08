@@ -7,6 +7,9 @@
 //   bits 17-20 rare glow level (Include/SH_RareGlow.hlsl): 0 off, 1-7 warm gold, 8-15 sky gradient
 // Regions come from vertex colors: R secondary, G belly, B detail (nose, paws), A eyes.
 // Albedo is resolved per vertex: cheap and soft, which suits the plush style.
+// T38 local keyword _PW_DUST (Include/PW_GroomDust.hlsl): the groomed animal of the grooming set only (its own material
+// instance, a per-zone dust array in a MaterialPropertyBlock). Off, nothing changes: same interpolators, same cost, and the
+// SRP Batcher path of every refuge animal stays as it was (the per-material CBUFFER is untouched).
 Shader "PocketWilds/AnimalMaster"
 {
     Properties
@@ -51,9 +54,14 @@ Shader "PocketWilds/AnimalMaster"
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile _ FOG_LINEAR
+            // T38: compiled in (a runtime material instance turns it on), but only for this pass.
+            #pragma multi_compile_local _ _PW_DUST
 
             #include "Include/PW_Stylized.hlsl"
             #include "Include/SH_RareGlow.hlsl"
+            #if defined(_PW_DUST)
+            #include "Include/PW_GroomDust.hlsl"
+            #endif
 
             struct Attributes
             {
@@ -62,6 +70,10 @@ Shader "PocketWilds/AnimalMaster"
                 half4 color : COLOR;
                 float2 mask01 : TEXCOORD0;
                 float2 mask23 : TEXCOORD1;
+            #if defined(_PW_DUST)
+                float2 groomZone : TEXCOORD2;
+                float3 groomBind : TEXCOORD3;
+            #endif
             };
 
             struct Varyings
@@ -74,6 +86,13 @@ Shader "PocketWilds/AnimalMaster"
                 half3 ambient : TEXCOORD4;
                 half fogFactor : TEXCOORD5;
                 half2 rareGlow : TEXCOORD6;
+            #if defined(_PW_DUST)
+                // x dust (eyes and details masked), y clean glint
+                half2 groom : TEXCOORD7;
+                float3 groomBind : TEXCOORD8;
+                // The fur's own color, for the content eyes' lid.
+                half3 fur : TEXCOORD9;
+            #endif
             };
 
             Varyings Vert(Attributes input)
@@ -120,6 +139,12 @@ Shader "PocketWilds/AnimalMaster"
 
                 output.albedo = color;
                 output.eye = input.color.a;
+            #if defined(_PW_DUST)
+                half2 zone = PW_GroomZone(input.groomZone.x);
+                output.groom = half2(zone.x * (1.0h - input.color.a) * (1.0h - input.color.b), zone.y);
+                output.groomBind = input.groomBind;
+                output.fur = lerp(lerp(primary, secondary, input.color.r), patternColor, saturate(pattern) * patternStrength);
+            #endif
                 output.ambient = SampleSH(output.normalWS);
                 output.rareGlow = PW_RareGlowLevels(data);
                 return output;
@@ -129,10 +154,22 @@ Shader "PocketWilds/AnimalMaster"
             {
                 half3 normalWS = normalize(input.normalWS);
                 half3 viewWS = normalize(GetWorldSpaceViewDir(input.positionWS));
-                PWLightResult lighting = PW_StylizedLighting(input.albedo, normalWS, viewWS, input.positionWS, input.ambient);
+                half3 albedo = input.albedo;
+                half eye = input.eye;
+            #if defined(_PW_DUST)
+                half2 lid = PW_GroomLid(input.eye, normalWS.y, (half)_PW_GroomParams.x);
+                albedo = lerp(albedo, input.fur * (1.0h - 0.45h * lid.y), saturate(lid.x + lid.y * 0.6h));
+                eye *= 1.0h - lid.x;
+                if (input.groom.x > 0.003h)
+                    albedo = PW_ApplyGroomDust(albedo, input.groom.x, input.groomBind);
+            #endif
+                PWLightResult lighting = PW_StylizedLighting(albedo, normalWS, viewWS, input.positionWS, input.ambient);
 
-                half spec = PW_Specular(normalWS, viewWS, lighting.mainLight, 64.0h) * input.eye * _EyeGloss;
+                half spec = PW_Specular(normalWS, viewWS, lighting.mainLight, 64.0h) * eye * _EyeGloss;
                 half3 color = lighting.color + spec * lighting.mainLight.color;
+            #if defined(_PW_DUST)
+                color = PW_ApplyGroomGlint(color, input.groom.y, normalWS, viewWS);
+            #endif
                 color = PW_ApplyRareGlow(color, input.rareGlow, normalWS, viewWS, input.positionWS);
                 return half4(MixFog(color, input.fogFactor), 1);
             }

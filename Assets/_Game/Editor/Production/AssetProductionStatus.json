@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-08T19:00:00Z",
+  "updatedUtc": "2026-10-08T23:59:00Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -325,8 +325,8 @@
     {
       "task": "T38",
       "title": "Toilettage",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "DONE 2026-10-08. Grooming (S-ACT-001, doc 01 lines 1235 to 1328; doc Mini-jeux section 6): GroomingController (zones measured on the model, dust in patches, passes 2 then 3 from d8, streak x1.0 to x2.0, debris +15, burrs +25 in two taps, rebrush giggle without loss, bubbles at 15 s and 30 s cleaning the 3 nearest dirty zones, golden brush at 20 s for 5 s of double passes, bow phase on all clean or 5 s before the end, +50 and +5 per second left), GroomingRules (200/380/520, d1/d5/d10 parameters, 10 challenges), 3-star Clover Crunch, wishes WISH-019 to 022 and journal JRN-033 hooks; GroomingStage on a dedicated Prairie set (Addressables Activity_Grooming, refuge rendering off during the game), dust feature _PW_DUST in SH_AnimalMaster, props avoid ears, paws and the silhouette's edge, bow on SOCK_HeadTop, A15 tutorial (swipe and tap paws, tips), HUD tips/gesture/picker/boost, sheet « Brosser » button; Blender props (BL_Activity_Grooming.blend), 18 sounds, 5 sprites. EditMode 810/810, PlayMode 133 passed 1 skipped (a whole game on its set, 0 allocation). Device FPS benchmark pending (no device). Docs/Design/T38_Toilettage.md."
     },
     {
       "task": "T39",
@@ -17194,6 +17194,88 @@
       "lastValidationVersion": "T37",
       "lastValidationUtc": "2026-10-08T18:00:00Z",
       "notes": "T37 screen 030: game HUD (score bar with star marks, soft time ring, streak, pause card) and result card (doc 05 sheet 20 timings, record ribbon, rewards one by one, quick reveal), plus PF_UI_TicketsEmpty. Captures TestResults/Captures/T37_game_*, T37_result_*, T37_tickets_empty_*."
+    },
+    {
+      "id": "P-ACT-001-SET",
+      "name": "Grooming set (Prairie)",
+      "family": "Prop",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Blender/Activities/BL_Activity_Grooming.blend",
+      "runtimePath": "Assets/_Game/Prefabs/Activities/PF_Activity_Grooming_Set.prefab",
+      "validationGates": [
+        "G6",
+        "G12"
+      ],
+      "lastValidationVersion": "T38",
+      "lastValidationUtc": "2026-10-08T23:30:00Z",
+      "notes": "T38: GR_SetMound (grass mound, knitted rose cushion, 2440 tris) and GR_SetBackdrop (rounded Prairie hills in 3 layers, daisies, 2906 tris), built by pw_grooming.py, vertex colors, DEF_Palettes_Grooming rows; Addressables Activity_Grooming (activity.grooming.set). Review Docs/Captures/Review/T38_props_review.md; captures TestResults/Captures/T38_*."
+    },
+    {
+      "id": "P-ACT-001-PROPS",
+      "name": "Grooming props",
+      "family": "Prop",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Blender/Activities/BL_Activity_Grooming.blend",
+      "runtimePath": "Assets/_Game/Art/Activities/Grooming/",
+      "validationGates": [
+        "G6",
+        "G12"
+      ],
+      "lastValidationVersion": "T38",
+      "lastValidationUtc": "2026-10-08T23:30:00Z",
+      "notes": "T38: GR_Brush (568 tris, wood and gold palettes), GR_Debris (grass blade, daisy petal, clover leaf, leaf, twig, seed; the seed is left out of the Prairie theme), GR_Burr (296), GR_Bow (384, pink, sky blue, cream), GR_SoapBubble (288, SH_SoapBubble). Zones measured per species into DEF_GroomingBodies and Bodies/ME_Groom_<Species> (uv2 zone, uv3 bind position)."
+    },
+    {
+      "id": "J-SFX-ACT-001",
+      "name": "Grooming sounds",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T38",
+      "lastValidationUtc": "2026-10-08T23:30:00Z",
+      "notes": "T38: J-SFX-ACT-001-01 brushing (SFX_Groom_Brush_01..03, -25 LUFS), -02 leaf pop (SFX_Groom_Debris_01..02), -03 burr (SFX_Groom_Burr_01..02), -05 clean zone rising 8 steps (SFX_Groom_Clean_01..08), -06 bow (SFX_Groom_Bow_01), J-SFX-FEEL-020 bubble puff (SFX_World_BubblePuff_01..02, BubblePuff = 49); -04 giggle and -07 sigh from the species voice banks (PlayPitched). AudioEventId 73 to 77. Review Docs/Captures/Review/T38_sounds_review.md."
+    },
+    {
+      "id": "I-ICO-T38",
+      "name": "T38 UI sprites",
+      "family": "UIIcon",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t38.py",
+      "runtimePath": "Assets/_Game/Art/UI/",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T38",
+      "lastValidationUtc": "2026-10-08T23:30:00Z",
+      "notes": "T38: UI_Gesture_Swipe (Kit, 192, pad pivot 0.642/0.447), ICO_Bow_Pink, ICO_Bow_SkyBlue, ICO_Bow_Cream, ICO_GoldenBrush (Icons, 128); lent to the stage by the HUD (IActivityHudView.Icon). Review Docs/Captures/Review/T38_sprites_review.md."
+    },
+    {
+      "id": "H-VFX-ACT-001",
+      "name": "Grooming effects",
+      "family": "VFX",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "Assets/_Game/Editor/Activities/GroomingPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/Activities/PF_Activity_Grooming_Set.prefab",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T38",
+      "lastValidationUtc": "2026-10-08T23:30:00Z",
+      "notes": "T38: soft dust mask on the coat (SH_AnimalMaster keyword _PW_DUST, per-zone dust array, object-space noise, clean sheen, content eyes), foam of soft bubbles (H-VFX-ACT-001-01), debris flying off (-02), 3 round glints per clean zone (-03, MAT_VFX_AdditiveLite, round dots only), end hearts (H-VFX-012)."
     }
   ]
 }

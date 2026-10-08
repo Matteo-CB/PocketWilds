@@ -228,6 +228,21 @@ namespace PocketWilds.Presentation
         void GiveTreat(uint instanceId);
     }
 
+    /// <summary>
+    /// T38: the sheet's « Brosser » button (doc 01 S-ACT-001: the animal is chosen in its sheet). Implemented by the animal
+    /// sheet next to <see cref="IAnimalSheetView"/>; hidden while Grooming is not open.
+    /// </summary>
+    public interface IAnimalSheetGroomView
+    {
+        /// <summary>The button shows, with « Gratuit » for the free first game, else the ticket cost (1).</summary>
+        void SetGroom(bool available, bool free);
+    }
+
+    public interface IAnimalSheetGroomActions
+    {
+        void GroomAnimal(uint instanceId);
+    }
+
     // ------------------------------------------------------------------------------------------- Today (screen 031)
 
     public enum TodayGiftState : byte

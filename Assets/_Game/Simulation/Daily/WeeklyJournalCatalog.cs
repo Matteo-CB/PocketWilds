@@ -125,8 +125,9 @@ namespace PocketWilds.Simulation
     /// The 52 goals of the weekly journal (doc 01 Contenu, section 5.2), in id order: <c>All[id - 1]</c>. Eligibility is in
     /// the comment of each line and lives in <see cref="WeeklyJournalService"/> for the goals this build ships. Text keys
     /// are « journal.001 » to « journal.052 » (section 0, localization keys).
-    /// <para>T36 ships the goals whose systems exist (plan 1.7): JRN-001 to 005, 021 to 023, 031, 032, 034, 036 and 038.
-    /// The others wait for their tasks (activities T37, expeditions and garden T43, albums T44, decoration T56...).</para>
+    /// <para>T36 ships the goals whose systems exist (plan 1.7): JRN-001 to 005, 021 to 023, 031, 032, 034, 036 and 038;
+    /// T38 adds JRN-033 with Grooming. The others wait for their tasks (activities, expeditions and garden T43, albums T44,
+    /// decoration T56...).</para>
     /// <para>Systems of the goals the doc marks « toujours » (plan, gap 18): hatching goals to SYS-01, discoveries and
     /// mastery to SYS-02, wishes, gifts and calendar to the rendez-vous, care to SYS-03, upgrades to SYS-04, expansions to
     /// SYS-06.</para>
@@ -210,8 +211,9 @@ namespace PocketWilds.Simulation
             G(JournalGoalId.BondPoints, JournalSlot.Care, WishSystem.CuddlesAndTreats, 80, 120, 160, 200, shipped: true),
             // JRN-032 « Donne {n} friandises »: the treat stand open (in the Shop).
             G(JournalGoalId.TreatsGiven, JournalSlot.Care, WishSystem.CuddlesAndTreats, 6, 9, 12, 15, shipped: true),
-            // JRN-033 « Brosse {n} animaux »: Grooming open.
-            G(JournalGoalId.Grooming, JournalSlot.Care, WishSystem.Grooming, 3, 4, 5, 6),
+            // JRN-033 « Brosse {n} animaux »: Grooming open (T38: each grooming game finished counts one animal brushed).
+            G(JournalGoalId.Grooming, JournalSlot.Care, WishSystem.Grooming, 3, 4, 5, 6,
+                shipped: ActivityCatalog.Get(ActivityId.Grooming).ShippedInThisBuild),
             // JRN-034 « Touche {n} animaux »: always (touches counted for bond).
             G(JournalGoalId.AnimalsTapped, JournalSlot.Care, WishSystem.CuddlesAndTreats, 30, 45, 60, 75, shipped: true),
             // JRN-035 « Change {n} tenues »: 2 outfits or accessories owned.

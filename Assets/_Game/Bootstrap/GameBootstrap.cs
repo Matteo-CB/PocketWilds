@@ -71,6 +71,7 @@ namespace PocketWilds.Bootstrap
         private ProgressionServices _progression;
         private DailyVisitServices _daily;
         private ActivityServices _activities;
+        private GroomingHooks _groomingHooks;
         private GrantService _grants;
         private OfferService _offers;
         private StoreService _store;
@@ -229,6 +230,8 @@ namespace PocketWilds.Bootstrap
                     _daily.Bond, _clock, _save, null, _daily.Context);
                 ActivityRegistry.RegisterShipped(_activities);
                 _activities.Runner.Ended += _daily.OnActivityEnded;
+                // T38: grooming games feed their wishes (WISH-019 to 022) and the journal (JRN-033).
+                _groomingHooks = new GroomingHooks(_activities, _daily);
                 if (_activities.AnyShipped)
                 {
                     _daily.Config.ActivitiesAvailable = true;
@@ -466,6 +469,8 @@ namespace PocketWilds.Bootstrap
                 AudioListener.volume = 1f;
             _analytics?.Dispose();
             _analytics = null;
+            _groomingHooks?.Dispose();
+            _groomingHooks = null;
             _activities?.Dispose();
             _activities = null;
             _daily?.Dispose();

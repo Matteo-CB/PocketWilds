@@ -28,6 +28,8 @@ namespace PocketWilds.Editor.UI
     /// (ActivityText keys). Layout targets the 1080 x 2340 portrait reference; touch targets are 124 units (48 dp) or more.
     /// Rerunnable. Sorting orders: HUD 20, hub 22 (Today's level: they never show together), result 30, « no ticket » 31.
     /// The HUD's Play button is built by <see cref="UiPipeline.BuildHudPrefab"/>.
+    /// T38: PF_UI_ActivityHud also carries what an activity's stage shows over its game (the tip bubble, the tutorial paw,
+    /// the round choices and the boost chip), and Atlas_Activities the T38 sprites of agent GI when drawn.
     /// </summary>
     public static class ActivityUiPipeline
     {
@@ -50,11 +52,19 @@ namespace PocketWilds.Editor.UI
         /// <summary>
         /// Sprites used only by the activity screens (agent I, T37), packed in Atlas_Activities: the framework icons
         /// (Art/UI/Icons) and the two result stars (Art/UI/Kit, 192 px, same frame). ICO_Play stays in Atlas_CommonHUD (HUD).
+        /// T38 (agent GI): the three bow choices and the golden brush (Icons); each is packed when drawn, nothing breaks while
+        /// one is missing. The swipe paw UI_Gesture_Swipe stays in Atlas_CommonHUD next to UI_Gesture_Tap.
         /// </summary>
         public static readonly string[] ScreenOnlyIcons =
         {
             "ICO_Practice", "ICO_Record", "ICO_Challenge", "ICO_Pause", "ICO_Timer", "ICO_Lock", "UI_Star_Result_Empty", "UI_Star_Result_Full",
+            "ICO_Bow_Pink", "ICO_Bow_SkyBlue", "ICO_Bow_Cream", "ICO_GoldenBrush",
         };
+
+        /// <summary>T38 HUD parts: the picker's choices (diameter, at least 150), their pitch and the height of their row's center.</summary>
+        public const float PickerSize = 176f;
+        public const float PickerPitch = 216f;
+        public const float PickerY = 300f;
 
         /// <summary>The result stars' visual center in their frame: a pop centered on the star.</summary>
         public static readonly Vector2 ResultStarPivot = new Vector2(0.5f, 0.484f);
@@ -85,6 +95,9 @@ namespace PocketWilds.Editor.UI
         private static readonly Color PracticeOn = UiColorTokens.Hex(0xDEEFC8);
         private static readonly Color MarkOff = UiColorTokens.Hex(0xE3DCCF);
         private static readonly Color RingSoft = UiColorTokens.Hex(0xF6C98A);
+        private static readonly Color SoftShadow = new Color(0.42f, 0.30f, 0.20f, 0.18f);
+        private static readonly Color PickerShadow = new Color(0.36f, 0.24f, 0.14f, 0.32f);
+        private static readonly Color TrailTint = new Color(0.965f, 0.788f, 0.541f, 0.6f);
 
         /// <summary>The biome themes the hub names (doc 01 section 12.0), with the soft color of their dot.</summary>
         private static readonly (string id, uint tint)[] Themes =
@@ -143,7 +156,7 @@ namespace PocketWilds.Editor.UI
 
         public static void ImportSprites()
         {
-            foreach (var path in new[] { Icon("ICO_Play"), Icon("ICO_Ticket"), Icon("ICO_Paw"), Kit("UI_Ring_Soft"), Kit("UI_Glow_Soft") })
+            foreach (var path in new[] { Icon("ICO_Play"), Icon("ICO_Ticket"), Icon("ICO_Paw"), Kit("UI_Ring_Soft"), Kit("UI_Glow_Soft"), Kit("UI_Gesture_Swipe") })
             {
                 if (File.Exists(path))
                     AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
@@ -253,6 +266,10 @@ namespace PocketWilds.Editor.UI
             public readonly Sprite Pause = Optional(Icon("ICO_Pause"));
             public readonly Sprite StarEmpty = Optional(Kit("UI_Star_Result_Empty"));
             public readonly Sprite StarFull = Optional(Kit("UI_Star_Result_Full"));
+            // T38 (agent GI): the tutorial paws and the golden brush; the swipe falls back to the tap paw while undrawn.
+            public readonly Sprite GestureTap = Load(Kit("UI_Gesture_Tap"));
+            public readonly Sprite GestureSwipe = Optional(Kit("UI_Gesture_Swipe"));
+            public readonly Sprite GoldenBrush = Optional(Icon("ICO_GoldenBrush"));
             public readonly Sprite[] ActivityIcons;
             public readonly int ActivityIconsFound;
 
@@ -803,6 +820,13 @@ namespace PocketWilds.Editor.UI
                 UiPipeline.Place(practiceLabel.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(76f, 2f), new Vector2(378f, 56f));
                 practiceTag.gameObject.SetActive(false);
 
+                // T38: the tip bubble, the boost chip and the round choices in the safe area; the tutorial paw on its own
+                // full screen layer above them; the pause card stays above everything.
+                BuildTip(screen, safe, kit);
+                BuildBoost(screen, safe, kit);
+                BuildPicker(screen, safe, kit);
+                BuildGesture(screen, content, kit);
+
                 // The pause card: a dim that keeps touches from the game, « Reprendre » and « Quitter ».
                 var pauseLayer = UiPipeline.Rect("PauseLayer", content);
                 UiPipeline.Stretch(pauseLayer);
@@ -848,6 +872,163 @@ namespace PocketWilds.Editor.UI
             {
                 Object.DestroyImmediate(root);
             }
+        }
+
+        /// <summary>
+        /// T38 tip (doc 01 A15): a soft cream bubble with a warm shadow under the score card and the streak row, on its own
+        /// passive canvas. The bubble's width is set per tip around its text; the label keeps the widest box (920 units), so
+        /// the longest tip plus 30 % fits at the Body minimum (38).
+        /// </summary>
+        private static void BuildTip(ActivityHudScreen screen, RectTransform safe, KitSprites kit)
+        {
+            var tokens = kit.Tokens;
+            var center = new Vector2(0.5f, 0.5f);
+            var top = new Vector2(0.5f, 1f);
+            const float height = ActivityHudScreen.TipHeight;
+            var root = UiPipeline.Rect("Tip", safe);
+            UiPipeline.Place(root, top, top, new Vector2(0f, ActivityHudScreen.TipTop), new Vector2(ActivityHudScreen.TipMaxWidth, height + 16f));
+            root.gameObject.AddComponent<Canvas>();
+            var group = PassiveGroup(root.gameObject);
+            var bubble = UiPipeline.Rect("Bubble", root);
+            UiPipeline.Place(bubble, top, top, Vector2.zero, new Vector2(560f, height));
+            var shadow = UiPipeline.AddImage("Shadow", bubble, kit.Pill, SoftShadow, Image.Type.Sliced);
+            shadow.pixelsPerUnitMultiplier = 1.3f;
+            UiPipeline.Stretch(shadow.rectTransform);
+            shadow.rectTransform.offsetMin = new Vector2(6f, -10f);
+            shadow.rectTransform.offsetMax = new Vector2(-6f, -6f);
+            var back = UiPipeline.AddImage("Background", bubble, kit.Pill, tokens.backgroundLight, Image.Type.Sliced);
+            back.pixelsPerUnitMultiplier = 1.3f;
+            UiPipeline.Stretch(back.rectTransform);
+            var label = UiPipeline.AddText("Label", root, TextRole.Body, 46f, tokens.textPrimary, "Brush the fur", 38f);
+            label.alignment = TextAlignmentOptions.Center;
+            UiPipeline.Place(label.rectTransform, top, center, new Vector2(0f, -height * 0.5f + 2f), new Vector2(ActivityHudScreen.TipLabelWidth, 72f));
+            screen.SetTipReferences(root, group, bubble, label);
+            root.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// T38 boost chip (the golden brush, doc 01 S-ACT-001): a cream disc in a soft gold glow, the brush icon and a soft
+        /// gold ring that empties like the time ring (never red), on its own passive canvas under the score card.
+        /// </summary>
+        private static void BuildBoost(ActivityHudScreen screen, RectTransform safe, KitSprites kit)
+        {
+            var tokens = kit.Tokens;
+            var center = new Vector2(0.5f, 0.5f);
+            const float size = ActivityHudScreen.BoostSize;
+            var root = UiPipeline.Rect("Boost", safe);
+            UiPipeline.Place(root, new Vector2(0.5f, 1f), center, new Vector2(0f, ActivityHudScreen.BoostY), new Vector2(size, size));
+            root.gameObject.AddComponent<Canvas>();
+            var group = PassiveGroup(root.gameObject);
+            var glow = UiPipeline.AddImage("Glow", root, kit.Glow, GoldGlow, Image.Type.Simple);
+            UiPipeline.Place(glow.rectTransform, center, center, Vector2.zero, new Vector2(size * 1.6f, size * 1.6f));
+            var disc = UiPipeline.AddImage("Disc", root, kit.Circle, tokens.panelPrimary, Image.Type.Simple);
+            UiPipeline.Stretch(disc.rectTransform);
+            var track = UiPipeline.AddImage("RingBack", root, kit.Ring, tokens.panelSecondary, Image.Type.Simple);
+            UiPipeline.Place(track.rectTransform, center, center, Vector2.zero, new Vector2(size * 0.92f, size * 0.92f));
+            var ring = UiPipeline.AddImage("Ring", root, kit.Ring, Gold, Image.Type.Filled);
+            ring.fillMethod = Image.FillMethod.Radial360;
+            ring.fillOrigin = (int)Image.Origin360.Top;
+            ring.fillClockwise = true;
+            ring.fillAmount = 1f;
+            ring.preserveAspect = true;
+            UiPipeline.Place(ring.rectTransform, center, center, Vector2.zero, new Vector2(size * 0.92f, size * 0.92f));
+            var fallback = kit.GoldenBrush != null ? kit.GoldenBrush : kit.Paw;
+            var icon = UiPipeline.AddImage("Icon", root, fallback, Color.white, Image.Type.Simple);
+            UiPipeline.Place(icon.rectTransform, center, center, new Vector2(0f, 2f), new Vector2(size * 0.6f, size * 0.6f));
+            screen.SetBoostReferences(root, group, icon, ring, fallback);
+            // T38: the icons the stages borrow (their bundles never copy the UI atlas).
+            var lent = new System.Collections.Generic.List<Sprite>();
+            foreach (var name in new[] { "ICO_Bow_Pink", "ICO_Bow_SkyBlue", "ICO_Bow_Cream", "ICO_GoldenBrush" })
+            {
+                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(UiPipeline.IconFolder + "/" + name + ".png");
+                if (sprite != null)
+                    lent.Add(sprite);
+            }
+            screen.SetIcons(lent.ToArray());
+            root.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// T38 picker (the three grooming bows): 4 big round choices (176 units, 48 dp and more) at the bottom of the play
+        /// area, each a cream disc with a soft warm rim, a soft shadow under it, its icon, and the kit's pressed tint. Own
+        /// canvas with its raycaster (the only touchable T38 part).
+        /// </summary>
+        private static void BuildPicker(ActivityHudScreen screen, RectTransform safe, KitSprites kit)
+        {
+            var tokens = kit.Tokens;
+            var center = new Vector2(0.5f, 0.5f);
+            int count = ActivityHudScreen.MaxPickerItems;
+            var root = UiPipeline.Rect("Picker", safe);
+            UiPipeline.Place(root, new Vector2(0.5f, 0f), center, new Vector2(0f, PickerY), new Vector2(count * PickerPitch, PickerSize + 80f));
+            root.gameObject.AddComponent<Canvas>();
+            root.gameObject.AddComponent<GraphicRaycaster>();
+            var items = new RectTransform[count];
+            var groups = new CanvasGroup[count];
+            var buttons = new Button[count];
+            var icons = new Image[count];
+            for (int i = 0; i < count; i++)
+            {
+                var item = UiPipeline.Rect("Choice" + i, root);
+                UiPipeline.Place(item, center, center, new Vector2((i - (count - 1) * 0.5f) * PickerPitch, 0f), new Vector2(PickerSize, PickerSize));
+                groups[i] = item.gameObject.AddComponent<CanvasGroup>();
+                var shadow = UiPipeline.AddImage("Shadow", item, kit.Glow, PickerShadow, Image.Type.Simple);
+                UiPipeline.Place(shadow.rectTransform, center, center, new Vector2(0f, -18f), new Vector2(PickerSize * 1.3f, PickerSize * 1.3f));
+                var disc = UiPipeline.AddImage("Button", item, kit.Circle, tokens.backgroundLight, Image.Type.Simple);
+                disc.raycastTarget = true;
+                UiPipeline.Stretch(disc.rectTransform);
+                buttons[i] = disc.gameObject.AddComponent<Button>();
+                UiPipeline.ConfigureButton(buttons[i], disc);
+                var rim = UiPipeline.AddImage("Rim", disc.rectTransform, kit.Ring, tokens.accentBusy, Image.Type.Simple);
+                UiPipeline.Stretch(rim.rectTransform);
+                // The bow icons (agent GI) read best at 64 % of the button.
+                icons[i] = UiPipeline.AddImage("Icon", disc.rectTransform, kit.Dot, Color.white, Image.Type.Simple);
+                UiPipeline.Place(icons[i].rectTransform, center, center, new Vector2(0f, 2f), new Vector2(PickerSize * 0.64f, PickerSize * 0.64f));
+                items[i] = item;
+                item.gameObject.SetActive(false);
+            }
+            screen.SetPickerReferences(root, items, groups, buttons, icons, PickerPitch, kit.Dot);
+            root.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// T38 tutorial paw (doc 01 A15, doc Mini-jeux section 1): a full screen layer on its own passive canvas above the
+        /// play area (under the pause card), with the paw (UI_Gesture_Swipe, else UI_Gesture_Tap), two soft rings for the
+        /// taps and six warm round dots for the swipe's trail, all pooled here.
+        /// </summary>
+        private static void BuildGesture(ActivityHudScreen screen, RectTransform content, KitSprites kit)
+        {
+            var center = new Vector2(0.5f, 0.5f);
+            var root = UiPipeline.Rect("Gesture", content);
+            UiPipeline.Stretch(root);
+            root.pivot = center;
+            root.gameObject.AddComponent<Canvas>();
+            var group = PassiveGroup(root.gameObject);
+            // Dots, rings and the paw fade through their alpha while a gesture loops: a clear one draws nothing.
+            var trail = new Image[ActivityHudScreen.TrailDots];
+            for (int i = 0; i < trail.Length; i++)
+            {
+                trail[i] = UiPipeline.AddImage("Trail" + i, root, kit.Dot, TrailTint, Image.Type.Simple);
+                UiPipeline.Place(trail[i].rectTransform, center, center, Vector2.zero, new Vector2(30f, 30f));
+                trail[i].canvasRenderer.cullTransparentMesh = true;
+                trail[i].gameObject.SetActive(false);
+            }
+            var rings = new Image[2];
+            for (int i = 0; i < rings.Length; i++)
+            {
+                rings[i] = UiPipeline.AddImage("Ring" + i, root, kit.Ring, new Color(1f, 1f, 1f, 0f), Image.Type.Simple);
+                UiPipeline.Place(rings[i].rectTransform, center, center, Vector2.zero, new Vector2(200f, 200f));
+                rings[i].canvasRenderer.cullTransparentMesh = true;
+                rings[i].gameObject.SetActive(false);
+            }
+            // UI_Gesture_Swipe (192 px, drawn sliding right) turns around its pad, the point that follows the path; the tap
+            // paw around its center. 170 units, like the A12 paw.
+            var paw = UiPipeline.AddImage("Paw", root, kit.GestureSwipe != null ? kit.GestureSwipe : kit.GestureTap, Color.white, Image.Type.Simple);
+            UiPipeline.Place(paw.rectTransform, center, kit.GestureSwipe != null ? ActivityHudScreen.SwipePadPivot : center, Vector2.zero,
+                new Vector2(170f, 170f));
+            paw.canvasRenderer.cullTransparentMesh = true;
+            screen.SetGestureReferences(root, group, paw.rectTransform, paw, rings, trail, kit.GestureSwipe, kit.GestureTap,
+                ActivityHudScreen.SwipePadPivot);
+            root.gameObject.SetActive(false);
         }
 
         // ---------------- PF_UI_ActivityResult (doc 05 sheet 20) ----------------

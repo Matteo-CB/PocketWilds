@@ -202,6 +202,33 @@ namespace PocketWilds.Presentation
         void QuitActivity();
     }
 
+    /// <summary>The tutorial gestures an activity shows on its first game (doc Mini-jeux section 1: understood without text in 3 s).</summary>
+    public enum ActivityGesture : byte
+    {
+        None = 0,
+
+        /// <summary>A paw that slides from one point to another and back (UI_Gesture_Swipe): brush, drag.</summary>
+        Swipe = 1,
+
+        /// <summary>A paw that taps a point (UI_Gesture_Tap).</summary>
+        Tap = 2,
+
+        /// <summary>A paw that taps twice (a burr, a stubborn thing).</summary>
+        DoubleTap = 3,
+    }
+
+    /// <summary>One choice of the in-game picker (the grooming bows): its icon and its tint (white keeps the icon's colors).</summary>
+    public struct ActivityPickerItem
+    {
+        public Sprite Icon;
+        public Color Tint;
+    }
+
+    public interface IActivityPickerActions
+    {
+        void Pick(int index);
+    }
+
     /// <summary>PF_UI_ActivityHud: score, time left (a soft ring, never a red countdown), streak, pause.</summary>
     public interface IActivityHudView
     {
@@ -216,6 +243,41 @@ namespace PocketWilds.Presentation
         void Hide();
         void Tick(float unscaledDeltaTime);
         void Prewarm(ILocalization text);
+
+        // T38: what an activity's stage shows over its game.
+
+        /// <summary>A short tip in a soft bubble at the top of the play area (« Brosse le pelage »), for this many seconds.</summary>
+        void ShowTip(string text, float seconds);
+
+        void HideTip();
+
+        /// <summary>The tutorial paw: a swipe between two screen points, or a tap (or double tap) on <paramref name="from"/>; it loops until hidden.</summary>
+        void ShowGesture(ActivityGesture gesture, Vector2 from, Vector2 to);
+
+        void HideGesture();
+
+        bool GestureShown { get; }
+
+        /// <summary>
+        /// Round choice buttons at the bottom of the play area (the three grooming bows), appearing with a small bounce. A
+        /// pick hides them and calls <see cref="IActivityPickerActions.Pick"/>. At most 4 items; the array is not kept.
+        /// </summary>
+        void ShowPicker(ActivityPickerItem[] items, int count, IActivityPickerActions actions);
+
+        void HidePicker();
+
+        bool PickerShown { get; }
+
+        /// <summary>A small chip under the score with an icon and a ring emptying over <paramref name="seconds"/> (the golden brush).</summary>
+        void ShowBoost(Sprite icon, float seconds);
+
+        void HideBoost();
+
+        /// <summary>
+        /// An activity icon the HUD carries (ICO_Bow_Pink…, ICO_GoldenBrush): the stages borrow them so their bundles never
+        /// hold a copy of the UI atlas. Null when unknown. Called when a game starts, not per frame.
+        /// </summary>
+        Sprite Icon(string name);
     }
 
     // ------------------------------------------------------------------------------------------- result (doc 05 sheet 20)

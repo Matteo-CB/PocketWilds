@@ -492,6 +492,8 @@ namespace PocketWilds.Simulation
             _systemOpen[(int)WishSystem.Upgrades] = _ctx.Feature(RefugeFeature.UpgradeButton);
             _systemOpen[(int)WishSystem.Expansions] = _ctx.Feature(RefugeFeature.ZoneSigns);
             _systemOpen[(int)WishSystem.Rendezvous] = _ctx.TodayOpen;
+            // T38: Grooming (refuge level 3 and 5 animals) once the build has activities.
+            _systemOpen[(int)WishSystem.Grooming] = welcomeOver && Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.Grooming);
         }
 
         private bool IsEligible(JournalGoalId id, int target)
@@ -503,6 +505,7 @@ namespace PocketWilds.Simulation
                 case JournalGoalId.BondPoints:
                 case JournalGoalId.AnimalsTapped:
                 case JournalGoalId.Upgrades:
+                case JournalGoalId.Grooming:
                     return true;
                 case JournalGoalId.DiscoverVariants:
                     return _missingVariants >= target;
@@ -743,6 +746,17 @@ namespace PocketWilds.Simulation
             AddProgress(JournalGoalId.ActivityStars, stars);
             if (challengePassed)
                 AddProgress(JournalGoalId.ActivityChallenges, 1);
+        }
+
+        /// <summary>
+        /// T38: JRN-033 « Brosse {n} animaux »: each grooming game finished brushes one animal, practice included (section
+        /// 5.1); a game left before its end does not count. The same animal twice counts twice (kind: a refuge of 5 animals
+        /// never blocks the goal).
+        /// </summary>
+        public void OnGroomingGame(in GroomingGameSummary game)
+        {
+            if (game.Finished)
+                AddProgress(JournalGoalId.Grooming, 1);
         }
 
         /// <summary>Adds to every goal of this kind while its week runs, up to its target.</summary>

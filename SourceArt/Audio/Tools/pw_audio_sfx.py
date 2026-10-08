@@ -794,6 +794,177 @@ def activity_streak(v):
     return _soft_start(wet(x, ROOM, 0.08))
 
 
+# ---------------------------------------------------------------- T38: grooming (doc 01 Contenu, S-ACT-001 "Sons et
+# effets"; doc Audio, J-SFX-ACT-001-01 to 07). Soft, tactile, cosy: felt on fur, leaves, a small glass bead, the music
+# box; F major. The giggle (-04) and the content sigh (-07) are the species voice banks (AnimalHappy at +10 %,
+# AnimalSleep), played by the stage through IAudioService.PlayPitched.
+
+CLEAN_STEPS = 8
+
+
+def _rise_fall(n, peak_at, fall_power=1.4):
+    """A stroke's envelope over n samples: a raised-cosine rise to peak_at (fraction of n), then a rounded fall to 0."""
+    k = max(int(n * peak_at), 1)
+    rise = 0.5 - 0.5 * np.cos(np.pi * np.arange(k) / k)
+    fall = (0.5 + 0.5 * np.cos(np.pi * np.arange(n - k) / max(n - k, 1))) ** fall_power
+    return np.concatenate([rise, fall])
+
+
+def _moving_band(n, centre, rng, width=0.55, low=280.0, high=3200.0):
+    """Noise whose band follows a centre curve (Hz per sample): half-octave bands from low to high, each weighted by its
+    distance to the centre in octaves (width), so the colour of the swish glides with the stroke without a filter sweep."""
+    bands = np.geomspace(low, high, 9)
+    out = np.zeros(n)
+    for c in bands:
+        weight = np.exp(-0.5 * (np.log2(c / np.maximum(centre, 1.0)) / width) ** 2)
+        out += band_noise(n, c / 1.25, c * 1.25, rng) * weight
+    return out / 3.0
+
+
+def _flutter(n, rate_hz, rng):
+    """A slow random wobble around 1 (strands of fur passing under the bristles): white noise smoothed below rate_hz,
+    unit deviation. Smooth on purpose: a texture, never a crackle."""
+    w = fft_filter(rng.standard_normal(n), lowpass(rate_hz, 2))
+    return w / (np.std(w) + 1e-12)
+
+
+def groom_brush(v):
+    """J-SFX-ACT-001-01: one pass of a soft brush on the coat, played per pass while the finger slides. A felted whoosh
+    (noise whose colour glides with the stroke: up, down, or a short arc for the three variants), the strands of fur
+    under the bristles (a slow smooth wobble of that noise, never a crackle) and the soft body of the felt pad pressing on
+    the coat. Under 3.2 kHz: cosy, tactile, never scratchy. About 0.3 s."""
+    rng = np.random.default_rng(1900 + v)
+    seconds, peak_at = ((0.3, 0.42), (0.33, 0.36), (0.26, 0.5))[v]
+    n = samples(seconds)
+    t = np.arange(n) / SR
+    u = t / seconds
+    if v == 0:
+        centre = 620.0 * 2.0 ** (1.1 * u)
+    elif v == 1:
+        centre = 1250.0 * 2.0 ** (-1.0 * u)
+    else:
+        centre = 640.0 * 2.0 ** (0.95 * np.sin(np.pi * u))
+    env = _rise_fall(n, peak_at)
+    swish = _moving_band(n, centre, rng) * (1.0 + 0.32 * _flutter(n, 22.0, rng)) * env
+    body = band_noise(n, 200.0, 650.0, rng) * _rise_fall(n, peak_at * 0.8, 2.0) * 0.32
+    air = band_noise(n, 2200.0, 4200.0, rng) * env ** 2 * 0.035
+    x = swish + body + air
+    x = fft_filter(x, chain(lowpass(3200.0, 2), highpass(170.0, 2), peak(2600.0, -3.0, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.04), 0.003)
+
+
+def _pop(note, start=0.62, seconds=0.12, tau=0.028, bright=0.18):
+    """A round plucky pop: a sine that bends up into its note within 12 ms (a soft 'pwip'), a touch of its octave. No
+    click: 1.5 ms rounded attack."""
+    t = t_axis(seconds)
+    ph = phase_of(glide(t, note * start, note, 0.012))
+    return np.sin(ph) * env_ad(t, 0.0015, tau) + bright * np.sin(2.0 * ph) * env_ad(t, 0.0015, tau * 0.45)
+
+
+def _leaf_flight(seconds, spin_hz, rng, lo=450.0, hi=1700.0):
+    """A small leaf flying off spinning: soft puffs of air at the spin rate, fading as it goes."""
+    t = t_axis(seconds)
+    spin = (0.5 + 0.5 * np.sin(2.0 * np.pi * spin_hz * t - np.pi / 2.0)) ** 2
+    return band_noise(len(t), lo, hi, rng) * spin * env_ad(t, 0.03, seconds * 0.3)
+
+
+def _tug(rng, grains=6, span=0.024, lo=900.0, hi=2800.0):
+    """The hooks of a burr letting go of the fur: a few tiny soft grains (2 ms each), like a whisper of felt tape."""
+    out = np.zeros(samples(span + 0.004))
+    g = samples(0.002)
+    window = np.hanning(g)
+    for i in range(grains):
+        at = int(samples(span) * (i + rng.uniform(0.1, 0.9)) / grains)
+        out[at:at + g] += window * rng.uniform(0.5, 1.0) * rng.standard_normal(g)
+    return fft_filter(out, bandpass(lo, hi))
+
+
+def groom_debris(v):
+    """J-SFX-ACT-001-02: a leaf picked off the coat with one tap: the soft snap of its stem, a round plucky pop that bends
+    up into F (A for the second variant, so a run of leaves does not repeat one sound), and the leaf flying away
+    spinning (H-VFX-ACT-001-02). Soft and cute, never a crunch. About 0.3 s."""
+    rng = np.random.default_rng(1910 + v)
+    out = np.zeros(samples(0.36))
+    t = t_axis(0.012)
+    place(out, band_noise(len(t), 1400.0, 3800.0, rng) * env_ad(t, 0.0008, 0.0025) * 0.1, 0.0, release=0.004)
+    place(out, _pop(hz(('F5', 'A5')[v])) * 0.5, 0.004, release=0.02)
+    place(out, _leaf_flight(0.2, (15.0, 18.0)[v], rng) * 0.045, 0.045, release=0.03)
+    x = fft_filter(out, chain(lowpass(5500.0, 2), highpass(220.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.06))
+
+
+def groom_burr(v):
+    """J-SFX-ACT-001-03: a burr. Variant 1, the burr taken off (its second tap): the double pop, the hooks letting go
+    of the fur in a whisper, then two round pops a fourth apart, C then F, 70 ms apart, and a little flight as it leaves.
+    Variant 2, its first tap (it loosens): one softer, lower pop on A with the start of the tug, muffled. About 0.35 s."""
+    rng = np.random.default_rng(1920 + v)
+    out = np.zeros(samples(0.42))
+    if v == 0:
+        place(out, _tug(rng) * 0.09, 0.0, release=0.004)
+        place(out, _pop(hz('C5'), start=0.66, tau=0.03, bright=0.14) * 0.42, 0.02, release=0.02)
+        place(out, _pop(hz('F5'), start=0.6, tau=0.034) * 0.5, 0.09, release=0.02)
+        place(out, _leaf_flight(0.18, 13.0, rng, 550.0, 2000.0) * 0.04, 0.12, release=0.03)
+        x = fft_filter(out, chain(lowpass(5500.0, 2), highpass(200.0, 2)))
+    else:
+        place(out, _tug(rng, grains=3, span=0.012) * 0.06, 0.0, release=0.004)
+        place(out, _pop(hz('A4'), start=0.7, tau=0.026, bright=0.1) * 0.5, 0.008, release=0.02)
+        x = fft_filter(out, chain(lowpass(2600.0, 2), highpass(200.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.05))
+
+
+def _glass_bead(f, seconds, vel, tau, attack=0.003, clear=0.12):
+    """A small glass bead touched: an almost pure glass tone (a light FM, rounded over 3 ms) with the clear partial of a
+    small glass (x2.76, clear), gone in tau. Shorter than the music box note: one clean zone, not a reward chime."""
+    t = t_axis(seconds)
+    x = fm_bell(t, f, ratio=2.0, index=0.25 + 0.35 * vel, index_tau=0.02, amp_tau=tau, attack=attack)
+    x += clear * vel * np.sin(2.0 * np.pi * f * 2.76 * t) * np.exp(-t / (tau * 0.4)) * np.clip(t / attack, 0.0, 1.0)
+    return x * vel
+
+
+def groom_clean(v):
+    """J-SFX-ACT-001-05: a zone is clean: a small glass bead, one semitone higher at each zone cleaned in a row (8 steps,
+    F up to C: the climb ends on the fifth, stable), its octave whispered above. Glass where the activity streak is a
+    kalimba tine (grooming plays this one instead). Very short and soft (-24, the star is -19) so a run of zones never
+    tires and the result star stays the big sound. Past step 8 the stage stays on the top. About 0.15 s."""
+    f = hz('F5') * 2.0 ** (v / 12.0)
+    out = np.zeros(samples(0.36))
+    place(out, _glass_bead(f, 0.3, 0.6, 0.06) * 0.42, 0.0)
+    place(out, _glass_bead(f * 2.0, 0.2, 0.3, 0.03, clear=0.0) * 0.06, 0.001)
+    x = fft_filter(out, chain(lowpass(6500.0, 2), highpass(300.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.07))
+
+
+def groom_bow(v):
+    """J-SFX-ACT-001-06: the bow is placed on the head: the ribbon settles (a tiny soft swish), then two music box notes,
+    C then F above it (the fourth that comes home), the F left to ring over a soft tine on the F below. About 0.8 s,
+    just before the end chord rolls down from the same C."""
+    rng = np.random.default_rng(1930)
+    out = np.zeros(samples(1.2))
+    n = samples(0.07)
+    place(out, band_noise(n, 600.0, 2000.0, rng) * _rise_fall(n, 0.5) * 0.025, 0.0, release=0.01)
+    place(out, _glass_note(hz('C6'), 0.45, 0.48, 0.13) * 0.3, 0.05)
+    place(out, _glass_note(hz('F6'), 1.0, 0.52, 0.36) * 0.36, 0.16)
+    place(out, _tine_under(hz('F5'), 0.9, 0.45, 0.3, rng) * 0.2, 0.16)
+    x = fft_filter(out, chain(lowpass(7500.0, 2), highpass(160.0, 2), peak(3000.0, -2.5, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.14))
+
+
+def bubble_puff(v):
+    """J-SFX-FEEL-020: a soft puff of bubbles (the grooming's soap bubble bursting into foam; doc 05 also gives it to the
+    change of look of a bond level): a breath of air and a small cluster of round bubbles popping, rising around F
+    (four for the first variant, three lighter ones for the second). About 0.4 s."""
+    rng = np.random.default_rng(1940 + v)
+    out = np.zeros(samples(0.5))
+    place(out, _puff(0.14, 350.0, 1500.0, 0.012, 0.045, rng) * 0.1, 0.0, release=0.02)
+    pops = ((0.012, 330.0, 'F5', 0.36), (0.05, 380.0, 'A5', 0.3), (0.082, 350.0, 'G5', 0.26), (0.125, 420.0, 'C6', 0.3))
+    if v == 1:
+        pops = ((0.01, 380.0, 'A5', 0.32), (0.055, 400.0, 'C6', 0.28), (0.1, 460.0, 'F6', 0.22))
+    for at, start, note, level in pops:
+        place(out, _bubble(start, hz(note), rng) * level, at, release=0.02)
+    x = fft_filter(out, chain(lowpass(6500.0, 2), highpass(200.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.08))
+
+
 # ---------------------------------------------------------------- catalog
 
 # name: (recipe, variants, loudness target (loudest 200 ms, K-weighted, LUFS scale), group)
@@ -847,4 +1018,12 @@ SFX = {
     'SFX_Activity_Record': (lambda v: activity_record(), 1, -17.0, 'Rewards'),
     'SFX_Activity_Pause': (activity_pause, 2, -25.0, 'UI'),
     'SFX_Activity_Streak': (activity_streak, STREAK_STEPS, -22.0, 'Rewards'),
+    # T38 grooming (doc 01 Contenu, S-ACT-001 "Sons et effets"; doc 05 Sensations, section 6.1 for the bubble puff).
+    # The burr's two variants are its two taps: the double pop when it comes off (1), the loosening tap (2), softer.
+    'SFX_Groom_Brush': (groom_brush, 3, -25.0, 'UI'),
+    'SFX_Groom_Debris': (groom_debris, 2, -20.0, 'Rewards'),
+    'SFX_Groom_Burr': (groom_burr, 2, (-20.0, -22.5), 'Rewards'),
+    'SFX_Groom_Clean': (groom_clean, CLEAN_STEPS, -24.0, 'Rewards'),
+    'SFX_Groom_Bow': (groom_bow, 1, -19.0, 'Rewards'),
+    'SFX_World_BubblePuff': (bubble_puff, 2, -20.0, 'World'),
 }

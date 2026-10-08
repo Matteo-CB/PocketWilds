@@ -42,6 +42,7 @@ namespace PocketWilds.Presentation
     /// offline return screen; its Light counts up into the HUD when collected (T18).
     /// </summary>
     public sealed class RefugeController : IRefugeActions, IHatchListener, IOfflineReturnActions, ICodexActions, IAnimalSheetActions,
+        IAnimalSheetGroomActions,
         IModalActions, IAnimalVoiceListener, IEggChoiceActions, IMultiHatchListener, IRewardSummaryActions, IAnimalSheetTreatActions,
         IDisposable
     {
@@ -369,6 +370,28 @@ namespace PocketWilds.Presentation
 
         public bool ActivitiesOpen => Activities != null && Activities.IsOpen;
 
+        /// <summary>T38: the animals shown in the refuge right now (their instance ids), for the activities' animal choice.</summary>
+        public int CopyVisibleAnimals(uint[] into)
+        {
+            int n = 0;
+            for (int i = 0; i < _views.Length && n < into.Length; i++)
+            {
+                if (_views[i] == null || _agentByView[i] == AnimalScheduler.InvalidHandle)
+                    continue;
+                into[n++] = _views[i].OwnerInstanceId;
+            }
+            return n;
+        }
+
+        /// <summary>T38: the sheet's « Brosser » button (doc 01 S-ACT-001: the animal is chosen in its sheet).</summary>
+        public void GroomAnimal(uint instanceId)
+        {
+            if (Activities == null || !Activities.CanGroom(out _))
+                return;
+            _sheetView?.Close();
+            Activities.GroomAnimal(instanceId);
+        }
+
         /// <summary>T36: the wish bubbles above animals (doc 06 screen 002); null without the prefab.</summary>
         public WishBubbleLayer Bubbles { get; set; }
 
@@ -594,6 +617,12 @@ namespace PocketWilds.Presentation
                 return;
             _sheetView.Open(data, _context.Localization, this);
             RefreshSheetTreat(view.OwnerInstanceId);
+            if (_sheetView is IAnimalSheetGroomView groom)
+            {
+                bool free = false;
+                bool available = Activities != null && Activities.CanGroom(out free);
+                groom.SetGroom(available, available && free);
+            }
             _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
             _context.Haptics.Play(HapticEventId.TapLight);
         }

@@ -946,7 +946,8 @@ namespace PocketWilds.Simulation
 
         /// <summary>
         /// Section 2.2: SYS-01 to SYS-03 open at the end of the welcome (A10); SYS-04 with the first upgrade bought or the
-        /// Upgrade button (A07); SYS-06 when a biome offers its first expansion (zone signs shown, the next zone allowed).
+        /// Upgrade button (A07); SYS-06 when a biome offers its first expansion (zone signs shown, the next zone allowed);
+        /// T38: SYS-09 with Grooming (refuge level 3 and 5 animals) once the build has activities.
         /// </summary>
         private bool SystemOpensNow(WishSystem system)
         {
@@ -962,10 +963,15 @@ namespace PocketWilds.Simulation
                     return AnyUpgradeBought() || _ctx.Feature(RefugeFeature.UpgradeButton);
                 case WishSystem.Expansions:
                     return ExpansionOffered();
+                case WishSystem.Grooming:
+                    return GroomingOpen;
                 default:
                     return false;
             }
         }
+
+        /// <summary>« Toilettage débloqué »: the build has its activities (the bootstrap sets it) and Grooming's function is open.</summary>
+        private bool GroomingOpen => Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.Grooming);
 
         /// <summary>Each shipped template's eligibility now (section 2.3, plan § 1.6), with the services of this build.</summary>
         private bool IsEligible(in WishTemplate template)
@@ -1000,6 +1006,12 @@ namespace PocketWilds.Simulation
                     return CollectUpgrades() > 0;
                 case WishTemplateId.ExpandBiome:
                     return ExpansionWithinReach();
+                case WishTemplateId.GroomAnimal:
+                case WishTemplateId.GroomingStars:
+                case WishTemplateId.GroomingLeaves:
+                case WishTemplateId.GroomingBow:
+                    // « Toilettage débloqué » (the system's opening, checked by the draw).
+                    return GroomingOpen;
                 default:
                     return false;
             }
@@ -1642,6 +1654,60 @@ namespace PocketWilds.Simulation
             for (int i = Pending - 1; i >= 0; i--)
                 if (i < Pending && !wishes[i].IsDone && (WishTemplateId)wishes[i].Template == WishTemplateId.ExpandBiome)
                     Advance(i, 1);
+        }
+
+        /// <summary>
+        /// T38 (SYS-09, section 2.3): a grooming game ended. WISH-019 « Brosse {animal} »: a game finished with its animal,
+        /// practice included; WISH-020: the stars of a rewarded game (cumulated); WISH-021: the debris and burrs taken off,
+        /// in any game, even one left before its end (cumulated: the leaves were really picked off); WISH-022: a bow placed.
+        /// Allocation-free.
+        /// </summary>
+        public void OnGroomingGame(in GroomingGameSummary game)
+        {
+            var wishes = State.DailyVisit.Wishes;
+            for (int i = Pending - 1; i >= 0; i--)
+            {
+                if (i >= Pending || wishes[i].IsDone)
+                    continue;
+                switch ((WishTemplateId)wishes[i].Template)
+                {
+                    case WishTemplateId.GroomAnimal:
+                        if (game.Finished && game.Animal != 0 && wishes[i].Animal == game.Animal)
+                            Advance(i, 1);
+                        break;
+                    case WishTemplateId.GroomingStars:
+                        if (game.Finished && game.Rewarded && game.Stars > 0)
+                            Advance(i, game.Stars);
+                        break;
+                    case WishTemplateId.GroomingLeaves:
+                        if (game.DebrisRemoved > 0)
+                            Advance(i, game.DebrisRemoved);
+                        break;
+                    case WishTemplateId.GroomingBow:
+                        if (game.Finished && game.BowPlaced)
+                            Advance(i, 1);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The animal of a pending WISH-019 « Brosse {animal} », for the hub to feature it (false: none). Allocation-free.
+        /// </summary>
+        public bool GroomWishAnimal(out uint animal)
+        {
+            var wishes = State.DailyVisit.Wishes;
+            for (int i = 0; i < Pending; i++)
+            {
+                if (wishes[i].IsDone || (WishTemplateId)wishes[i].Template != WishTemplateId.GroomAnimal)
+                    continue;
+                if (!State.Collection.TryGetIndex(wishes[i].Animal, out _))
+                    continue;
+                animal = wishes[i].Animal;
+                return true;
+            }
+            animal = 0;
+            return false;
         }
 
         /// <summary>No wish of this build counts the rendez-vous themselves.</summary>

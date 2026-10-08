@@ -279,6 +279,19 @@ namespace PocketWilds.Editor.Audio
                 Def(AudioEventId.ActivityRecord, "SFX_Activity_Record", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
                 Def(AudioEventId.ActivityPause, "SFX_Activity_Pause", AudioGroup.UI, 1, 0.15f, 1, volumeJitter: 0.03f, pitchJitter: 0f),
                 Def(AudioEventId.ActivityStreak, "SFX_Activity_Streak", AudioGroup.Rewards, 2, 0.06f, 2, volumeJitter: 0.03f, pitchJitter: 0f),
+                // T38: the grooming (doc 01 Contenu, S-ACT-001 « Sons et effets »; GroomingAudio). The brush plays on every
+                // pass: 0.12 s and 3 voices make one steady soft texture while the finger slides (a pass sounds for about
+                // 0.35 s, so a fourth start only ever cuts a tail under -40 dB); level, pitch and its three strokes vary. The
+                // burr's taps and the clean steps are chosen by the stage (PlayVariant) and keep their pitch; 0.05 s lets
+                // zones cleaned in a quick run each sound their step.
+                Def(AudioEventId.GroomBrush, "SFX_Groom_Brush", AudioGroup.UI, 2, 0.12f, 3, 0.9f, volumeJitter: 0.12f, pitchJitter: 0.04f),
+                Def(AudioEventId.GroomDebris, "SFX_Groom_Debris", AudioGroup.Rewards, 2, 0.06f, 2, volumeJitter: 0.05f, pitchJitter: 0.03f),
+                Def(AudioEventId.GroomBurr, "SFX_Groom_Burr", AudioGroup.Rewards, 2, 0.06f, 2, volumeJitter: 0.03f, pitchJitter: 0.01f),
+                Def(AudioEventId.GroomZoneClean, "SFX_Groom_Clean", AudioGroup.Rewards, 2, 0.05f, 2, volumeJitter: 0.03f, pitchJitter: 0f),
+                Def(AudioEventId.GroomBow, "SFX_Groom_Bow", AudioGroup.Rewards, 2, 0.5f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                // T38 J-SFX-FEEL-020 (doc 05 Sensations, section 6.1: World, 1 voice, 0.3 s): the soap bubble's puff, played
+                // from the centre (the grooming close-up, later the animal sheet), not placed in the refuge.
+                Def(AudioEventId.BubblePuff, "SFX_World_BubblePuff", AudioGroup.World, 2, 0.3f, 1, volumeJitter: 0.04f, pitchJitter: 0.03f),
             };
             foreach (var (id, prefix) in new[]
                      {

@@ -47,9 +47,15 @@ namespace PocketWilds.Presentation
 
         /// <summary>The player left the activities: stages release their loaded content.</summary>
         void ReleaseAll();
+
+        /// <summary>The stage has a set for this biome theme (doc 01 section 12.0 « Thème par biome »); all by default.</summary>
+        bool SupportsTheme(ActivityId activity, PocketWilds.Core.ContentId theme) => true;
     }
 
-    /// <summary>What a stage may use in the scene: the services, the refuge (its animals), the camera rig, a root for its props.</summary>
+    /// <summary>
+    /// What a stage may use in the scene: the services, the refuge (its animals), the camera rig, a root for its props, the
+    /// activity HUD (tips, tutorial paws, picker, boost chip) and the texts.
+    /// </summary>
     public sealed class ActivityStageHost
     {
         public ActivityStageHost(GameContext context, RefugeController refuge, RefugeCameraRig cameraRig, Transform root)
@@ -64,6 +70,18 @@ namespace PocketWilds.Presentation
         public RefugeController Refuge { get; }
         public RefugeCameraRig CameraRig { get; }
         public Transform Root { get; }
+
+        /// <summary>The activity HUD (set by the presenter; null in headless tests).</summary>
+        public IActivityHudView Hud { get; set; }
+
+        /// <summary>Player-facing texts (never null once the presenter runs).</summary>
+        public PocketWilds.Core.ILocalization Text { get; set; }
+
+        /// <summary>The game is the free first one with its tutorial (doc 01 A15): the stage shows its gestures and tips.</summary>
+        public bool Tutorial { get; set; }
+
+        /// <summary>The refuge's world rendering is off while a stage shows its own set (the presenter turns it back on).</summary>
+        public System.Action<bool> SetWorldVisible { get; set; }
     }
 
     /// <summary>
@@ -77,6 +95,8 @@ namespace PocketWilds.Presentation
 
         private readonly Dictionary<ActivityId, IActivityStage> _built = new Dictionary<ActivityId, IActivityStage>();
 
+        private readonly Dictionary<ActivityId, PocketWilds.Core.ContentId[]> _themes = new Dictionary<ActivityId, PocketWilds.Core.ContentId[]>();
+
         public void Register(ActivityId activity, Func<ActivityStageHost, IActivityStage> factory)
         {
             _factories[activity] = factory ?? throw new ArgumentNullException(nameof(factory));
@@ -84,6 +104,16 @@ namespace PocketWilds.Presentation
         }
 
         public bool Has(ActivityId activity) => _factories.ContainsKey(activity);
+
+        /// <summary>The biome themes an activity's stage ships (the others open with their sets); none set: every theme.</summary>
+        public void SetThemes(ActivityId activity, params PocketWilds.Core.ContentId[] themes) => _themes[activity] = themes;
+
+        public bool SupportsTheme(ActivityId activity, PocketWilds.Core.ContentId theme)
+        {
+            if (!_themes.TryGetValue(activity, out var themes) || themes == null || themes.Length == 0)
+                return true;
+            return System.Array.IndexOf(themes, theme) >= 0;
+        }
 
         public IActivityStage Acquire(ActivityId activity, ActivityStageHost host)
         {

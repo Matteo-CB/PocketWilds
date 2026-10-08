@@ -394,20 +394,32 @@ namespace PocketWilds.Editor.UI
         private static readonly string[,] SheetTreatIcons = { { "treat.clover_crunch", "ICO_Treat_CloverCrunch" } };
 
         /// <summary>
-        /// T36 (doc 01 section 10.1): the « Friandise » button centered under the bond bar (the treat's icon, its name,
-        /// « ×n » owned, a small heart when the family prefers it), and four hearts that fly from it to the bar. Hidden
-        /// until the sheet gets its treat data.
+        /// The row under the bond bar (T36 treat, T38 « Brosser »): two buttons of the same look side by side across the card
+        /// (48 to 984), or a lone one centered under the bar (270 to 830). Card space, top-left anchor, button centers.
+        /// </summary>
+        public const float SheetRowY = -620f;
+        public const float SheetRowButtonWidth = 458f;
+        public const float SheetRowButtonHeight = 132f;
+        public static readonly Vector2 SheetRowSolo = new Vector2(550f, SheetRowY);
+        public static readonly Vector2 SheetRowLeft = new Vector2(48f + SheetRowButtonWidth * 0.5f, SheetRowY);
+        public static readonly Vector2 SheetRowRight = new Vector2(984f - SheetRowButtonWidth * 0.5f, SheetRowY);
+
+        /// <summary>
+        /// T36 (doc 01 section 10.1): the « Friandise » button under the bond bar (the treat's icon, its name with « ×n »
+        /// owned under it, a small heart when the family prefers it), and four hearts that fly from it to the bar. Hidden
+        /// until the sheet gets its treat data. T38: 458 units wide with its word and count stacked, so the « Brosser »
+        /// button (<see cref="AddSheetGroom"/>) fits beside it; « Friandise » 30 % longer still fits at the Button minimum.
         /// </summary>
         private static void AddSheetTreat(AnimalSheetScreen screen, RectTransform card, UiColorTokens tokens, Sprite buttonSprite)
         {
             var center = new Vector2(0.5f, 0.5f);
+            var left = new Vector2(0f, 0.5f);
             var treatSprite = Load(Icon("ICO_Treat"));
             var heartSprite = Load(Icon("ICO_Favorite_Heart"));
 
             var root = UiPipeline.Rect("Treat", card);
-            // Under the bond bar (270 to 830), same width: the treat fills the bar it sits under.
-            // Wide enough for « Friandise » 30 % longer at the Button minimum (Gate 12).
-            UiPipeline.Place(root, new Vector2(0f, 1f), center, new Vector2(550f, -620f), new Vector2(640f, 132f));
+            // Centered under the bond bar (270 to 830) when alone; the sheet moves it left when « Brosser » shows.
+            UiPipeline.Place(root, new Vector2(0f, 1f), center, SheetRowSolo, new Vector2(SheetRowButtonWidth, SheetRowButtonHeight));
             var back = UiPipeline.AddImage("Button", root, buttonSprite, tokens.panelSecondary, Image.Type.Sliced);
             back.pixelsPerUnitMultiplier = 1.3f;
             back.raycastTarget = true;
@@ -419,16 +431,17 @@ namespace PocketWilds.Editor.UI
             colors.disabledColor = Color.white;
             button.colors = colors;
             var icon = UiPipeline.AddImage("Icon", back.rectTransform, treatSprite, Color.white, Image.Type.Simple);
-            UiPipeline.Place(icon.rectTransform, new Vector2(0f, 0.5f), center, new Vector2(70f, 8f), new Vector2(96f, 96f));
+            UiPipeline.Place(icon.rectTransform, left, center, new Vector2(60f, 4f), new Vector2(88f, 88f));
             var preferred = UiPipeline.AddImage("Preferred", back.rectTransform, heartSprite, Color.white, Image.Type.Simple);
-            UiPipeline.Place(preferred.rectTransform, new Vector2(0f, 0.5f), center, new Vector2(114f, 46f), new Vector2(46f, 46f));
+            UiPipeline.Place(preferred.rectTransform, left, center, new Vector2(98f, 40f), new Vector2(42f, 42f));
             preferred.gameObject.SetActive(false);
-            var label = UiPipeline.AddText("Label", back.rectTransform, TextRole.Button, 50f, tokens.textPrimary, "Treat", 38f);
+            // Wide enough for « Friandise » 30 % longer at the Button minimum (Gate 12: 320 needed, box 330).
+            var label = UiPipeline.AddText("Label", back.rectTransform, TextRole.Button, 50f, tokens.textPrimary, "Treat", 44f);
             label.alignment = TextAlignmentOptions.MidlineLeft;
-            UiPipeline.Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(134f, 8f), new Vector2(340f, 90f));
-            var count = UiPipeline.AddText("Count", back.rectTransform, TextRole.NumberSmall, 46f, tokens.textPrimary, "×0", 36f);
-            count.alignment = TextAlignmentOptions.MidlineRight;
-            UiPipeline.Place(count.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-32f, 8f), new Vector2(118f, 70f));
+            UiPipeline.Place(label.rectTransform, left, left, new Vector2(114f, 24f), new Vector2(330f, 62f));
+            var count = UiPipeline.AddText("Count", back.rectTransform, TextRole.NumberSmall, 40f, tokens.textPrimary, "×0", 36f);
+            count.alignment = TextAlignmentOptions.MidlineLeft;
+            UiPipeline.Place(count.rectTransform, left, left, new Vector2(116f, -30f), new Vector2(200f, 46f));
             root.gameObject.SetActive(false);
 
             // Hearts that rise from the treat to the bar's end (same top-left anchor as the bar: one space for both).
@@ -450,6 +463,58 @@ namespace PocketWilds.Editor.UI
                 icons[i] = Load(Icon(SheetTreatIcons[i, 1]));
             }
             screen.SetTreatReferences(root, button, back, icon, label, count, preferred.gameObject, treatSprite, ids, icons, hearts, heartImages);
+            AddSheetGroom(screen, card, tokens, buttonSprite);
+        }
+
+        /// <summary>
+        /// T38 (doc 01 S-ACT-001: « Brosser » / « Groom » in the sheet): the treat's twin on the right of the row, with the
+        /// Grooming icon (ICO_Act_Grooming), its word, and under it « Gratuit » in a soft green tag (the free first game, doc
+        /// 01 A15) or a small ticket and « 1 ». Hidden until the sheet hears Grooming can start.
+        /// </summary>
+        private static void AddSheetGroom(AnimalSheetScreen screen, RectTransform card, UiColorTokens tokens, Sprite buttonSprite)
+        {
+            var center = new Vector2(0.5f, 0.5f);
+            var left = new Vector2(0f, 0.5f);
+            var groomSprite = AssetDatabase.LoadAssetAtPath<Sprite>(Icon(ActivityText.IconName(PocketWilds.Simulation.ActivityId.Grooming)))
+                              ?? AssetDatabase.LoadAssetAtPath<Sprite>(Icon("ICO_Play")) ?? Load(Icon("ICO_Paw"));
+            var ticketSprite = Load(Icon("ICO_Ticket"));
+
+            var root = UiPipeline.Rect("Groom", card);
+            UiPipeline.Place(root, new Vector2(0f, 1f), center, SheetRowRight, new Vector2(SheetRowButtonWidth, SheetRowButtonHeight));
+            var back = UiPipeline.AddImage("Button", root, buttonSprite, tokens.panelSecondary, Image.Type.Sliced);
+            back.pixelsPerUnitMultiplier = 1.3f;
+            back.raycastTarget = true;
+            UiPipeline.Stretch(back.rectTransform);
+            var button = back.gameObject.AddComponent<Button>();
+            UiPipeline.ConfigureButton(button, back);
+            var icon = UiPipeline.AddImage("Icon", back.rectTransform, groomSprite, Color.white, Image.Type.Simple);
+            UiPipeline.Place(icon.rectTransform, left, center, new Vector2(60f, 4f), new Vector2(88f, 88f));
+            // « Brosser » 30 % longer fits at the Button minimum (290 needed, box 330).
+            var label = UiPipeline.AddText("Label", back.rectTransform, TextRole.Button, 50f, tokens.textPrimary, "Groom", 44f);
+            label.alignment = TextAlignmentOptions.MidlineLeft;
+            UiPipeline.Place(label.rectTransform, left, left, new Vector2(114f, 24f), new Vector2(330f, 62f));
+
+            // « Gratuit »: a soft green tag like the hub card's (218 needed with 30 % more at the Label minimum, box 226).
+            var free = UiPipeline.AddImage("Free", back.rectTransform, Load(UiPipeline.PillPath), tokens.success, Image.Type.Sliced);
+            free.pixelsPerUnitMultiplier = 2.4f;
+            UiPipeline.Place(free.rectTransform, left, left, new Vector2(110f, -30f), new Vector2(246f, 50f));
+            var freeLabel = UiPipeline.AddText("Label", free.rectTransform, TextRole.Label, 36f, tokens.backgroundLight, "Free");
+            freeLabel.alignment = TextAlignmentOptions.Center;
+            UiPipeline.Place(freeLabel.rectTransform, center, center, new Vector2(0f, 2f), new Vector2(226f, 46f));
+            free.gameObject.SetActive(false);
+
+            // A game's cost: a small ticket and « 1 ».
+            var ticket = UiPipeline.Rect("Ticket", back.rectTransform);
+            UiPipeline.Place(ticket, left, left, new Vector2(112f, -30f), new Vector2(160f, 48f));
+            var ticketIcon = UiPipeline.AddImage("Icon", ticket, ticketSprite, Color.white, Image.Type.Simple);
+            UiPipeline.Place(ticketIcon.rectTransform, left, left, Vector2.zero, new Vector2(46f, 46f));
+            var cost = UiPipeline.AddText("Count", ticket, TextRole.NumberSmall, 40f, tokens.textPrimary, "1", 36f);
+            cost.alignment = TextAlignmentOptions.MidlineLeft;
+            UiPipeline.Place(cost.rectTransform, left, left, new Vector2(54f, 2f), new Vector2(100f, 46f));
+            ticket.gameObject.SetActive(false);
+            root.gameObject.SetActive(false);
+
+            screen.SetGroomReferences(root, button, label, free.gameObject, freeLabel, ticket.gameObject, SheetRowSolo, SheetRowLeft, SheetRowRight);
         }
 
         // ---------------- Modal ----------------

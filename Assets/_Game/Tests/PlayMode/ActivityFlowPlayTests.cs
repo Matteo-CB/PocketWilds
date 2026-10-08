@@ -62,10 +62,10 @@ namespace PocketWilds.Tests.PlayMode
             var state = context.State;
             var hud = Object.FindAnyObjectByType<RefugeHud>();
 
-            // T37 ships the framework only: no Play button in the real game.
+            // A new profile: Grooming exists (T38) but opens at refuge level 3 with 5 animals: no Play button yet.
             yield return new WaitForSecondsRealtime(0.6f);
-            Assert.IsFalse(presenter.PlayAvailable, "No activity in this build yet: no Play button.");
-            Assert.IsFalse(services.AnyShipped);
+            Assert.IsTrue(services.AnyShipped, "Grooming ships with T38.");
+            Assert.IsFalse(presenter.PlayAvailable, "No activity open yet: no Play button.");
 
             // The test registers the dummy activity (rules and stage), as an activity task registers its own.
             var stage = new DummyStage();
@@ -78,8 +78,11 @@ namespace PocketWilds.Tests.PlayMode
             presenter.OpenActivities();
             yield return null;
             Assert.IsTrue(presenter.HubOpen, "Play opens the hub.");
-            Assert.AreEqual(1, presenter.CardCount, "The hub lists the activities of this build.");
-            Assert.AreEqual(ActivityId.Test, presenter.Card(0).Activity);
+            Assert.AreEqual(2, presenter.CardCount, "The hub lists the activities of this build: the test one, and Grooming still closed.");
+            Assert.AreEqual(ActivityId.Test, presenter.Card(0).Activity, "The open ones first.");
+            Assert.AreEqual(ActivityId.Grooming, presenter.Card(1).Activity);
+            Assert.AreEqual(ActivityCardState.Locked, presenter.Card(1).State);
+            Assert.IsFalse(string.IsNullOrEmpty(presenter.Card(1).UnlockHint), "A closed card says what opens it.");
             Assert.AreEqual(ActivityCardState.New, presenter.Card(0).State, "Never played: « Nouveau ».");
             Assert.AreEqual(5, presenter.Tickets.Count, "The first use fills the reserve (doc 01 A15).");
             Assert.AreEqual(ActivityCatalog.ChallengesPerActivity, presenter.ChallengeCount);

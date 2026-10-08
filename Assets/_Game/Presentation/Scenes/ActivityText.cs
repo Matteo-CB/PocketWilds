@@ -81,6 +81,33 @@ namespace PocketWilds.Presentation
         public const string EmptyPacksUsed = "activity.tickets.empty.packs_used";
         public const string EmptyNeedGems = "activity.tickets.empty.need_gems";
 
+        // T38 Grooming (doc 01 Contenu S-ACT-001 and A15): the tips the HUD's bubble shows over the game (tutorial and first
+        // sightings), and the animal sheet's « Brosser » button. The 10 challenges' names and goals use the catalog's ids:
+        // see ChallengeNameKey and ChallengeGoalKey.
+        public const string GroomingTipBrush = "activity.grooming.tip.brush";
+        public const string GroomingTipLeaves = "activity.grooming.tip.leaves";
+        public const string GroomingTipBurr = "activity.grooming.tip.burr";
+        public const string GroomingTipBow = "activity.grooming.tip.bow";
+        public const string GroomingTipBubble = "activity.grooming.tip.bubble";
+        public const string SheetGroom = "activity.grooming.sheet_groom";
+
+        /// <summary>
+        /// « challenge.grooming.01.name »: a challenge's name (0 based), from <see cref="ActivityDefinition.ChallengeId"/>;
+        /// null for an activity outside the catalog. Builds a string: call it once per bind, never per frame.
+        /// </summary>
+        public static string ChallengeNameKey(ActivityId activity, int challenge) => ChallengeKey(activity, challenge, ".name");
+
+        /// <summary>« challenge.grooming.01.goal »: a challenge's goal in one short line (the hub's « Défi n : goal »).</summary>
+        public static string ChallengeGoalKey(ActivityId activity, int challenge) => ChallengeKey(activity, challenge, ".goal");
+
+        private static string ChallengeKey(ActivityId activity, int challenge, string suffix)
+        {
+            if (!ActivityCatalog.TryGet(activity, out var definition))
+                return null;
+            string id = definition.ChallengeId(challenge);
+            return string.IsNullOrEmpty(id) ? null : id + suffix;
+        }
+
         /// <summary>The result title by stars (0 to 3): « Joli essai », « Bien joué », « Très bien », « Parfait ! ».</summary>
         public static string ResultTitle(int stars) =>
             stars <= 0 ? ResultTitleNone : stars == 1 ? ResultTitleOne : stars == 2 ? ResultTitleTwo : ResultTitleThree;

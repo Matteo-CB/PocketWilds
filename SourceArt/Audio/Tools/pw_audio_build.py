@@ -40,7 +40,9 @@ def render_sfx(names=None):
         for v in range(variants):
             x = recipe(v)
             x = trim_tail(x, threshold_db=-54.0)
-            x = normalize_momentary(x, target, ceiling_db=-1.0)
+            # T38: a tuple gives each variant its own level (the burr's loosening tap sits under its double pop).
+            level = target[v] if isinstance(target, (tuple, list)) else target
+            x = normalize_momentary(x, level, ceiling_db=-1.0)
             file = f'{name}_{v + 1:02d}.wav'
             write_wav(MASTERS / 'SFX' / file, x, 24)
             write_wav(RUNTIME / 'SFX' / file, x, 16)

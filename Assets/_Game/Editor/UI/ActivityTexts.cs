@@ -6,7 +6,8 @@ namespace PocketWilds.Editor.UI
 {
     /// <summary>
     /// T37 shipped texts of the activities (doc « Mini-jeux & activités », doc 01 Contenu sections 0, A15 and 12; Writing
-    /// Guide: short, warm, no em dash, no pressure words, real time never a countdown). Columns: key, en, fr. Merged into
+    /// Guide: short, warm, no em dash, no pressure words, real time never a countdown), and T38's Grooming texts (its tips,
+    /// the sheet's « Brosser » and its 10 challenges, doc 01 S-ACT-001). Columns: key, en, fr. Merged into
     /// LOC_en / LOC_fr by <see cref="UiPipeline.EnsureLocalization"/>. Keys are <see cref="ActivityText"/>'s.
     /// <para>Counted texts come as three rows: « key.one » and « key.other », read by
     /// <see cref="PocketWilds.Core.ILocalization.GetPlural"/>, and the key itself (the usual plural) for a plain Get.</para>
@@ -119,6 +120,34 @@ namespace PocketWilds.Editor.UI
             Counted(ActivityText.EmptyPack, "{n} ticket", "{n} tickets", "{n} billet", "{n} billets");
             Plain(ActivityText.EmptyPacksUsed, "More packs tomorrow", "Les packs reviennent demain");
             Plain(ActivityText.EmptyNeedGems, "Not enough Gems yet", "Pas encore assez de Gemmes");
+
+            // T38 Grooming (doc 01 S-ACT-001 and A15): the HUD's tips, shown a few seconds over the game.
+            Plain(ActivityText.GroomingTipBrush, "Brush the fur", "Brosse le pelage");
+            Plain(ActivityText.GroomingTipLeaves, "Pick off the leaves", "Enlève les feuilles");
+            Plain(ActivityText.GroomingTipBurr, "Two little taps for burrs", "Deux petits coups pour les bardanes");
+            Plain(ActivityText.GroomingTipBow, "Pick a bow", "Choisis un nœud");
+            Plain(ActivityText.GroomingTipBubble, "Tap the bubble", "Touche la bulle");
+            // The animal sheet's button (doc 01 S-ACT-001: « Brosser » / « Groom »).
+            Plain(ActivityText.SheetGroom, "Groom", "Brosser");
+
+            // The 10 Grooming challenges (doc 01 S-ACT-001 « Défis »): the doc's names, and each goal in one short line
+            // for the hub's « Défi n : goal » (every goal fits one line of the hub at 40 units, two lines with 30 % more).
+            Challenge(1, "First Brush", "Premier coup de brosse", "Clean the whole coat", "Nettoie tout le pelage");
+            Challenge(2, "Gently Does It", "Tout doux", "Brush only the dusty spots", "Nettoie sans rebrosser");
+            Challenge(3, "Leaf Shower", "Pluie de feuilles", "Pick off lots of leaves", "Enlève plein de feuilles");
+            Challenge(4, "Quick and Neat", "Vite fait, bien fait", "Finish in 30 seconds", "Finis en 30" + Nbsp + "secondes");
+            Challenge(5, "Little Wiggler", "Petit agité", "Groom a wiggly animal", "Brosse un animal qui bouge");
+            Challenge(6, "Thick Coat", "Pelage épais", "Three strokes for each spot", "Trois coups de brosse par zone");
+            Challenge(7, "Big Buddy", "Grand gabarit", "Groom a big animal", "Brosse un grand animal");
+            Challenge(8, "Quick Finish", "Finition rapide", "Place the bow before 35 s", "Pose le nœud avant 35" + Nbsp + "s");
+            Challenge(9, "Stubborn Burrs", "Bardanes têtues", "Pick off all the burrs", "Enlève toutes les bardanes");
+            Challenge(10, "Grand Grooming", "Grand toilettage", "Everything at once", "Tout à la fois");
+
+            void Challenge(int number, string enName, string frName, string enGoal, string frGoal)
+            {
+                Plain(ActivityText.ChallengeNameKey(ActivityId.Grooming, number - 1), enName, frName);
+                Plain(ActivityText.ChallengeGoalKey(ActivityId.Grooming, number - 1), enGoal, frGoal);
+            }
 
             var table = new string[rows.Count, 3];
             for (int i = 0; i < rows.Count; i++)

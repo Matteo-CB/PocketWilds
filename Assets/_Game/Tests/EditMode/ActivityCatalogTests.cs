@@ -39,7 +39,8 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual("activity." + keys[slot] + ".name", definition.NameKey);
                 Assert.AreEqual("challenge." + keys[slot] + ".01", definition.ChallengeId(0));
                 Assert.AreEqual("challenge." + keys[slot] + ".10", definition.ChallengeId(9));
-                Assert.IsFalse(definition.ShippedInThisBuild, "T37 ships the framework only.");
+                // T37 shipped the framework alone; T38 ships Grooming, the others wait for their tasks.
+                Assert.AreEqual(definition.Id == ActivityId.Grooming, definition.ShippedInThisBuild, definition.Id + " shipped.");
             }
             Assert.AreEqual(ActivityCatalog.TestSlot, ActivityCatalog.SlotOf(ActivityId.Test));
             Assert.AreEqual(-1, ActivityCatalog.SlotOf(ActivityId.None));
@@ -225,13 +226,19 @@ namespace PocketWilds.Tests.EditMode
         public void Availability_NeedsTheBuild_TheFlags_TheRules_AndTheOpening()
         {
             var rig = ActivityTestRig.Create();
-            Assert.IsFalse(rig.S.IsAvailable(ActivityId.Grooming), "Not shipped in T37.");
+            // T38 ships Grooming, but the rig registers only the test activity's rules (never RegisterShipped).
+            Assert.IsTrue(rig.S.IsShipped(ActivityId.Grooming));
+            Assert.IsFalse(rig.S.IsAvailable(ActivityId.Grooming), "Shipped and open, but without its rules: not shown.");
             Assert.IsTrue(rig.S.IsAvailable(ActivityId.Test), "The test activity shows only once a test registered its rules (the rig does).");
             var bare = new ActivityServices(rig.State, new ActivityState(), rig.Registry, rig.Economy, rig.Hatch, rig.SpeciesMastery, rig.P,
                 rig.Bond, rig.Clock, null, new ActivityConfig());
             bare.RefreshUnlocks();
             Assert.IsFalse(bare.IsAvailable(ActivityId.Test), "Without its rules (the game), the test activity is never shown.");
-            Assert.IsFalse(bare.AnyShipped, "T37 ships the framework only: no Play button.");
+            Assert.IsFalse(bare.AnyShipped, "No rules registered: no Play button.");
+            ActivityRegistry.RegisterShipped(bare);
+            Assert.IsTrue(bare.AnyShipped, "T38: the boot registers Grooming, the Play button exists.");
+            Assert.IsTrue(bare.IsAvailable(ActivityId.Grooming), "Level 3 and 6 animals.");
+            Assert.IsFalse(bare.IsAvailable(ActivityId.Test), "Never the test activity in the game.");
             bare.Dispose();
             Assert.IsTrue(rig.Config.TryOverrideFlag("flags.activity.grooming", false));
             Assert.IsFalse(rig.Config.IsEnabled(ActivityId.Grooming));

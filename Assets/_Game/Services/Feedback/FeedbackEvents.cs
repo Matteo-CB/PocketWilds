@@ -121,7 +121,16 @@ namespace PocketWilds.Services.Feedback
         /// </summary>
         StarEarned = 42,
 
-        // 43 to 66 are reserved by doc 05 section 6.4 (Sticker to BubblePuff, then the 17 surprise sounds).
+        // 43 to 48 are reserved by doc 05 section 6.4 (Sticker, AlbumPage, ExpeditionReturn, Harvest, VisitorArrive, BondUp).
+
+        /// <summary>
+        /// T38 J-SFX-FEEL-020: a soft puff of bubbles (a breath of air, a small cluster of round bubbles popping around F).
+        /// Its slot in doc 05 section 6.4's order. The grooming's soap bubble: variant 0 when it is tapped (the full
+        /// puff), 1 when it appears (lighter); doc 05 also gives it to a bond level's change of look.
+        /// </summary>
+        BubblePuff = 49,
+
+        // 50 to 66 are reserved by doc 05 section 6.4 (the 17 surprise sounds, SurpriseButterfly to SurpriseBranchCarry).
 
         /// <summary>T36 J-SFX-CURRENCY-004: Gems land in the Gems chip (a rolled glass chord).</summary>
         CollectGems = 67,
@@ -145,6 +154,34 @@ namespace PocketWilds.Services.Feedback
         /// (0 to 7); past the eighth step it stays on the top.
         /// </summary>
         ActivityStreak = 72,
+
+        // T38: the grooming (doc 01 Contenu, S-ACT-001 « Sons et effets »; J-SFX-ACT-001-04 giggle and -07 content sigh
+        // are the species voices, AnimalHappy and AnimalSleep through IAudioService.PlayPitched). See GroomingAudio.
+
+        /// <summary>
+        /// T38 J-SFX-ACT-001-01: one pass of the brush (a soft felted whoosh, 3 variants). Played on every pass while the
+        /// finger slides; its cooldown and voices turn the passes into a steady soft texture.
+        /// </summary>
+        GroomBrush = 73,
+
+        /// <summary>T38 J-SFX-ACT-001-02: a debris picked off (a leaf pop, then the leaf flying away), 2 variants.</summary>
+        GroomDebris = 74,
+
+        /// <summary>
+        /// T38 J-SFX-ACT-001-03: a burr. Variant 0 the double pop when it comes off (second tap), 1 its first tap (a softer
+        /// pop, it loosens): GroomingAudio.BurrRemovedVariant and BurrLoosenedVariant.
+        /// </summary>
+        GroomBurr = 75,
+
+        /// <summary>
+        /// T38 J-SFX-ACT-001-05: a zone is clean: a small glass bead a semitone higher at each zone cleaned in a row. Play
+        /// variant streak - 1 (0 to 7, GroomingAudio.CleanVariant); past the eighth it stays on the top. Grooming's own
+        /// streak sound: the shared ActivityStreak does not play for it (ActivityAudio.HasOwnStreakSound).
+        /// </summary>
+        GroomZoneClean = 76,
+
+        /// <summary>T38 J-SFX-ACT-001-06: the bow is placed (a ribbon settles, two music box notes, C then F).</summary>
+        GroomBow = 77,
     }
 
     /// <summary>T37: the three activity musics (doc 01 Contenu, section 12.0, J-MUS-ACT-01 to 03). Stable values.</summary>
@@ -224,6 +261,117 @@ namespace PocketWilds.Services.Feedback
                     return null;
             }
         }
+
+        /// <summary>
+        /// T38: the activity sounds its own streak, so the shared ActivityStreak (J-SFX-ACT-000-06) does not play over it:
+        /// the grooming's clean zone climbs a semitone per zone in a row (J-SFX-ACT-001-05, GroomZoneClean).
+        /// </summary>
+        public static bool HasOwnStreakSound(PocketWilds.Simulation.ActivityId activity) =>
+            activity == PocketWilds.Simulation.ActivityId.Grooming;
+    }
+
+    /// <summary>
+    /// T38: how a grooming game sounds (doc 01 Contenu, S-ACT-001 « Sons et effets »; doc Audio, J-SFX-ACT-001-01 to 07).
+    /// The stage plays <see cref="Brush"/> on each pass of the finger and hands every drained grooming event to
+    /// <see cref="Play"/>; the content sigh (<see cref="Sigh"/>) comes when the animal closes its eyes at the end. The
+    /// giggle and the sigh are the animal's own voice (its species bank and pitch); everything else plays from the centre.
+    /// No allocation.
+    /// </summary>
+    public static class GroomingAudio
+    {
+        /// <summary>J-SFX-ACT-001-04: the giggle is the species' happy voice, 10 % higher.</summary>
+        public const float GigglePitch = 1.1f;
+
+        /// <summary>
+        /// J-SFX-ACT-001-07: the content sigh is the species' sleep voice, a touch lower than its sleep (relaxed, eyes
+        /// closed). Our default: the doc gives the bank, not the pitch.
+        /// </summary>
+        public const float SighPitch = 0.95f;
+
+        /// <summary>J-SFX-ACT-001-05: 8 glass steps (F up to C); past the eighth zone in a row the step stays on the top.</summary>
+        public const int CleanSteps = 8;
+
+        /// <summary>GroomBurr's clips: the double pop when the burr comes off (its second tap).</summary>
+        public const int BurrRemovedVariant = 0;
+
+        /// <summary>GroomBurr's clips: the burr's first tap, a softer pop (it loosens).</summary>
+        public const int BurrLoosenedVariant = 1;
+
+        /// <summary>BubblePuff's clips: the full puff of a soap bubble tapped.</summary>
+        public const int BubblePoppedVariant = 0;
+
+        /// <summary>BubblePuff's clips: the lighter puff of a soap bubble appearing on the coat.</summary>
+        public const int BubbleSpawnedVariant = 1;
+
+        /// <summary>The brush's pitch for a slow stroke and for a quick one (a quick stroke sounds a little brighter).</summary>
+        public const float BrushSlowPitch = 0.94f;
+
+        public const float BrushFastPitch = 1.08f;
+
+        /// <summary>The clean step of a zone cleaned with this streak (zones in a row, 1 for the first): 0 to 7.</summary>
+        public static int CleanVariant(int streak) => streak <= 1 ? 0 : streak >= CleanSteps ? CleanSteps - 1 : streak - 1;
+
+        /// <summary>
+        /// One pass of the brush (J-SFX-ACT-001-01), whatever the zone (dirty, clean, already brushed). Its cooldown and
+        /// voices (0.12 s, 3) make the passes of a sliding finger one steady soft texture; nothing plays when the finger
+        /// rests. speed01: the finger's speed over the coat, 0 slow to 1 quick.
+        /// </summary>
+        public static void Brush(IAudioService audio, float speed01)
+        {
+            float pitch = BrushSlowPitch + (BrushFastPitch - BrushSlowPitch) * Mathf.Clamp01(speed01);
+            audio.PlayPitched(AudioEventId.GroomBrush, Vector3.zero, ContentId.None, pitch);
+        }
+
+        /// <summary>
+        /// The sound of one grooming event (doc 01 S-ACT-001 « Sons et effets »). Passes are silent here (the stage plays
+        /// <see cref="Brush"/> for each); the game already spaces the rebrush giggles (one per 0.6 s at most). The golden
+        /// brush has no sound in the doc: our default is two small rising glass notes when it appears (ToggleOn) and the
+        /// soft reward chord when it is taken (Claim). A soap bubble's three zones play one clean step under its puff (the
+        /// step's cooldown keeps the first). species: the groomed animal's species; position: the animal.
+        /// </summary>
+        public static void Play(IAudioService audio, in PocketWilds.Simulation.GroomingEvent e, ContentId species, Vector3 position)
+        {
+            switch (e.Kind)
+            {
+                case PocketWilds.Simulation.GroomingEventKind.ZoneCleaned:
+                    audio.PlayVariant(AudioEventId.GroomZoneClean, CleanVariant(e.Streak));
+                    break;
+                case PocketWilds.Simulation.GroomingEventKind.Rebrush:
+                    audio.PlayPitched(AudioEventId.AnimalHappy, position, species, GigglePitch);
+                    break;
+                case PocketWilds.Simulation.GroomingEventKind.DebrisRemoved:
+                    audio.Play(AudioEventId.GroomDebris, position, ContentId.None);
+                    break;
+                case PocketWilds.Simulation.GroomingEventKind.BurrLoosened:
+                    audio.PlayVariant(AudioEventId.GroomBurr, BurrLoosenedVariant);
+                    break;
+                case PocketWilds.Simulation.GroomingEventKind.BurrRemoved:
+                    audio.PlayVariant(AudioEventId.GroomBurr, BurrRemovedVariant);
+                    break;
+                case PocketWilds.Simulation.GroomingEventKind.BubbleSpawned:
+                    audio.PlayVariant(AudioEventId.BubblePuff, BubbleSpawnedVariant);
+                    break;
+                case PocketWilds.Simulation.GroomingEventKind.BubblePopped:
+                    audio.PlayVariant(AudioEventId.BubblePuff, BubblePoppedVariant);
+                    break;
+                case PocketWilds.Simulation.GroomingEventKind.GoldenBrushOffered:
+                    audio.Play(AudioEventId.ToggleOn, position, ContentId.None);
+                    break;
+                case PocketWilds.Simulation.GroomingEventKind.GoldenBrushStart:
+                    audio.Play(AudioEventId.Claim, position, ContentId.None);
+                    break;
+                case PocketWilds.Simulation.GroomingEventKind.BowPlaced:
+                    audio.Play(AudioEventId.GroomBow, position, ContentId.None);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// J-SFX-ACT-001-07: the content sigh, the animal's own sleep voice at the end, when it closes its eyes under the
+        /// hearts (about 0.6 s after the bow, so it is not lost under the bow's notes and the end chord).
+        /// </summary>
+        public static void Sigh(IAudioService audio, ContentId species, Vector3 position) =>
+            audio.PlayPitched(AudioEventId.AnimalSleep, position, species, SighPitch);
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>
@@ -286,6 +434,19 @@ namespace PocketWilds.Services.Feedback
         void PlayVariant(AudioEventId id, int variant)
         {
             Play(id, Vector3.zero, ContentId.None);
+        }
+
+        /// <summary>
+        /// T38: plays a sound at a chosen pitch. An animal voice (AnimalHappy, AnimalChatter, AnimalSleep, AnimalEat) takes
+        /// its species' own clips and pitch, times pitchScale: the grooming giggle is AnimalHappy at 1.1 (doc 01 Contenu,
+        /// S-ACT-001, J-SFX-ACT-001-04), its content sigh AnimalSleep. Any other sound plays at pitchScale (the brush a
+        /// little brighter for a quick stroke). A close-up sound: the animal the camera frames, so it plays at full level
+        /// from the centre whatever the refuge's view, and the battery saver does not skip it. The default plays the sound
+        /// as usual.
+        /// </summary>
+        void PlayPitched(AudioEventId id, Vector3 position, ContentId context, float pitchScale)
+        {
+            Play(id, position, context);
         }
 
         /// <summary>
