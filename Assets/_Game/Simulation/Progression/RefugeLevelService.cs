@@ -246,7 +246,10 @@ namespace PocketWilds.Simulation
             if (rewards.Essence > 0)
             {
                 if (_state.World.RenewalCount > 0)
+                {
                     _state.Wallet.Essence += rewards.Essence;
+                    _state.Progression.Renewal.EssenceEarned += rewards.Essence;
+                }
                 else
                     refuge.PendingEssenceFromLevels += rewards.Essence;
             }

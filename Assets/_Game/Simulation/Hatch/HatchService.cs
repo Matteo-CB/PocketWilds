@@ -328,14 +328,21 @@ namespace PocketWilds.Simulation
             return misses >= egg.PityHardLimit ? 1.0 : SpeciesBonus(misses);
         }
 
-        public double SpeciesBonus(int misses) => Math.Min(_config.PitySpeciesCap, _config.PitySpeciesPerMiss * misses);
+        /// <summary>T35C: Keen Nose (Essence tree) adds this much to the new species protection per miss (same cap).</summary>
+        public double SpeciesPityBonusPerMiss { get; set; }
+
+        /// <summary>T35C: Color Eye (Essence tree) strengthens the new variant protection per miss; 1 without it.</summary>
+        public double VariantPityMultiplier { get; set; } = 1.0;
+
+        public double SpeciesBonus(int misses) =>
+            Math.Min(_config.PitySpeciesCap, (_config.PitySpeciesPerMiss + SpeciesPityBonusPerMiss) * misses);
 
         /// <summary>New variant bonus for a species given its misses and mastery milestones.</summary>
         public double VariantBonus(ContentId species, int misses)
         {
             int every = Math.Max(1, _config.MasteryMilestoneEvery);
             int milestones = _state.Mastery.GetLevel(species) / every;
-            double perMiss = _config.PityVariantPerMiss * (1.0 + _config.PityVariantMilestoneBoost * milestones);
+            double perMiss = _config.PityVariantPerMiss * (1.0 + _config.PityVariantMilestoneBoost * milestones) * VariantPityMultiplier;
             return Math.Min(_config.PityVariantCap, perMiss * misses);
         }
 

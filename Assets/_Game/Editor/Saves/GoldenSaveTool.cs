@@ -34,6 +34,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Analytics_v6", BuildAnalytics());
             created += WriteIfMissing("GoldenSave_Progression_v7", BuildProgression());
             created += WriteIfMissing("GoldenSave_Eggs_v8", BuildEggs());
+            created += WriteIfMissing("GoldenSave_Renewal_v9", BuildRenewal());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -83,6 +84,27 @@ namespace PocketWilds.Editor.Saves
         /// Schema 7 (T35A): two Prairie zones opened, Prairie mastery 4, Light upgrades, refuge level 5 with rewards
         /// claimed up to 3, two Cute Benches bought, a treat stand filled with one treat bought.
         /// </summary>
+        /// <summary>Schema 9 (T35C): one Renewal done, its memory, Essence in the wallet and three Essence nodes bought.</summary>
+        private static PlayerState BuildRenewal()
+        {
+            var state = BuildEggs();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-000000000071");
+            state.Meta.Revision = 260;
+            state.World.RenewalCount = 1;
+            state.Wallet.Essence = 7;
+            var renewal = state.Progression.Renewal;
+            renewal.EssenceFromLight = 18;
+            renewal.EssenceEarned = 41;
+            renewal.SpeciesAtLast = 3;
+            renewal.BiomesAtLast = 1;
+            renewal.MasteredAtLast = 0;
+            renewal.AlbumPagesAtLast = 0;
+            state.Progression.EssenceRanks[ContentId.FromSource("essence.economy.soft_light")] = 5;
+            state.Progression.EssenceRanks[ContentId.FromSource("essence.economy.morning_eggs")] = 2;
+            state.Progression.EssenceRanks[ContentId.FromSource("essence.offline.long_nap")] = 1;
+            return state;
+        }
+
         /// <summary>Schema 8: four Discovery eggs in stock and Focus eggs bought this cycle.</summary>
         private static PlayerState BuildEggs()
         {

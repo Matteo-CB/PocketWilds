@@ -104,8 +104,13 @@ namespace PocketWilds.Simulation
 
         public MasteryGain Add(ContentId species, MasteryReason reason) => AddXp(species, reason, XpFor(reason));
 
+        /// <summary>T35C: Fast Mastery (Essence tree) adds 25 % of species mastery XP; 1 without it.</summary>
+        public double XpMultiplier { get; set; } = 1.0;
+
         public MasteryGain AddXp(ContentId species, MasteryReason reason, int xp)
         {
+            if (XpMultiplier != 1.0 && xp > 0)
+                xp = (int)Math.Round(xp * XpMultiplier, MidpointRounding.AwayFromZero);
             var before = Get(species);
             if (xp <= 0)
                 return new MasteryGain(species, reason, 0, before, before, 0);

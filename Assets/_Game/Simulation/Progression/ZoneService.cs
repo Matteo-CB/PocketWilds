@@ -121,10 +121,14 @@ namespace PocketWilds.Simulation
         }
 
         /// <summary>Price of zone k: 25 x B x 2.15^(k - 1).</summary>
+        /// <summary>T35C: Easy Spaces (Essence tree) lowers every zone's price; 1 without it.</summary>
+        public double PriceMultiplier { get; set; } = 1.0;
+
         public BigValue Price(in ZoneDefinition zone) =>
             zone.Role != ZoneRole.Expansion
                 ? BigValue.Zero
-                : ProgressionMath.Price(_config.ZoneCostMult * _config.EggBase(zone.Biome), _config.ZoneGrowth, zone.ExpansionIndex - 1);
+                : ProgressionMath.Price(_config.ZoneCostMult * _config.EggBase(zone.Biome) * PriceMultiplier, _config.ZoneGrowth,
+                    zone.ExpansionIndex - 1);
 
         /// <summary>Biome mastery zone k needs: 3k - 2.</summary>
         public int RequiredMastery(in ZoneDefinition zone) =>

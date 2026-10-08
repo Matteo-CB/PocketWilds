@@ -29,6 +29,7 @@ namespace PocketWilds.Simulation
         Decoration = 12,
         Treat = 13,
         BiomeGate = 14,
+        EssenceNode = 15,
     }
 
     public readonly struct EconomyChange

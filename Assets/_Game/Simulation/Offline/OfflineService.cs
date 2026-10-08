@@ -88,6 +88,12 @@ namespace PocketWilds.Simulation
                 _state.Offline.HighWaterUtc = now;
         }
 
+        /// <summary>T35C: Long Nap's extra hours of full offline window (Essence tree).</summary>
+        public double ExtraFullSeconds { get; set; }
+
+        /// <summary>T35C: Gentle Wake's points added to the offline efficiency floor (Essence tree).</summary>
+        public double FloorBonus { get; set; }
+
         /// <summary>Pays the away time once. Call at boot and when the app comes back from the background.</summary>
         public OfflineReport ResolveReturn()
         {
@@ -103,7 +109,7 @@ namespace PocketWilds.Simulation
                 double away = Math.Max(0.0, (now - lastSave).TotalSeconds);
                 var start = lastSave > mark ? lastSave : mark;
                 double credited = Math.Min(Math.Max(0.0, (now - start).TotalSeconds), _config.OfflineMaxSeconds);
-                double effective = EffectiveSeconds(credited, _config);
+                double effective = EffectiveSeconds(credited, _config, ExtraFullSeconds, FloorBonus);
 
                 var rate = offline.HasRate ? offline.RateAtSave : _economy.GetLightPerSecond();
                 var gain = effective > 0.0 ? BigValue.Multiply(rate, effective) : BigValue.Zero;
@@ -139,15 +145,20 @@ namespace PocketWilds.Simulation
         /// Integral of the efficiency curve over [0, seconds]: 1 during the full window, then
         /// floor + (1 - floor) x exp(-t / decay). Closed form, O(1).
         /// </summary>
-        public static double EffectiveSeconds(double seconds, EconomyConfig config)
+        public static double EffectiveSeconds(double seconds, EconomyConfig config) => EffectiveSeconds(seconds, config, 0.0, 0.0);
+
+        /// <summary>
+        /// T35C: the same with Long Nap's extra hours of full window and Gentle Wake's higher floor (Essence tree).
+        /// </summary>
+        public static double EffectiveSeconds(double seconds, EconomyConfig config, double extraFullSeconds, double floorBonus)
         {
             if (seconds <= 0.0)
                 return 0.0;
-            double full = Math.Max(0.0, config.OfflineFullSeconds);
+            double full = Math.Max(0.0, config.OfflineFullSeconds + extraFullSeconds);
             if (seconds <= full)
                 return seconds;
             double beyond = seconds - full;
-            double floor = Math.Min(1.0, Math.Max(0.0, config.OfflineFloorEfficiency));
+            double floor = Math.Min(1.0, Math.Max(0.0, config.OfflineFloorEfficiency + floorBonus));
             double decay = config.OfflineDecaySeconds;
             double easing = decay > 0.0 ? (1.0 - floor) * decay * (1.0 - Math.Exp(-beyond / decay)) : 0.0;
             return full + floor * beyond + easing;

@@ -115,6 +115,9 @@ namespace PocketWilds.Simulation
 
         public event Action<BiomeOpening>? Opened;
 
+        /// <summary>T35C: Easy Spaces (Essence tree) lowers every gate's price; 1 without it.</summary>
+        public double PriceMultiplier { get; set; } = 1.0;
+
         /// <summary>The first biome still closed, in opening order (false when every biome is open).</summary>
         public bool TryGetNextLocked(out ContentId biome)
         {
@@ -161,7 +164,7 @@ namespace PocketWilds.Simulation
             int floorLeft = FloorLeft(gate);
             if (floorLeft <= 0)
                 met |= GateConditions.Floor;
-            var price = ProgressionMath.Price(_config.GateCostMult * gate.EggBase, 1.0, 0);
+            var price = ProgressionMath.Price(_config.GateCostMult * gate.EggBase * PriceMultiplier, 1.0, 0);
             if (_economy.CanSpend(CurrencyId.Light, price))
                 met |= GateConditions.Light;
             // A gate is only reachable from an open previous biome.

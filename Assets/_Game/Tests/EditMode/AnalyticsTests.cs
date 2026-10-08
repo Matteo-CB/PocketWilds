@@ -165,6 +165,7 @@ namespace PocketWilds.Tests.EditMode
                 (typeof(AnalyticsEventId), "TreatBuy", 29),
                 (typeof(AnalyticsEventId), "EggBuy", 33), (typeof(AnalyticsEventId), "MultiHatch", 34),
                 (typeof(AnalyticsEventId), "DiscoveryEggGain", 35), (typeof(AnalyticsEventId), "EggOddsOpen", 36),
+                (typeof(AnalyticsEventId), "Renewal", 37), (typeof(AnalyticsEventId), "EssenceNodeBuy", 38),
                 (typeof(DiscoverySource), "Debug", 0), (typeof(DiscoverySource), "Calendar", 1), (typeof(DiscoverySource), "WeeklyBook", 2),
                 (typeof(DiscoverySource), "Expedition", 3), (typeof(DiscoverySource), "EventTrack", 4), (typeof(DiscoverySource), "DailyGift", 5),
                 (typeof(DiscoverySource), "BiomeOpening", 6), (typeof(DiscoverySource), "Pass", 7), (typeof(DiscoverySource), "ReturnGift", 8),
@@ -411,6 +412,33 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual("2", gain[4]);
                 Assert.AreEqual("2", gain[5]);
                 Assert.AreEqual(1, Events(all, AnalyticsEventId.EggOddsOpen));
+            }
+        }
+
+        [Test]
+        public void Renewal_AndEssenceNodes_AreSent()
+        {
+            using (var rig = new Rig())
+            {
+                var progression = new ProgressionServices(rig.State, rig.Content, rig.Economy, rig.Hatch, rig.Clock, null,
+                    new ProgressionConfig { TimeZone = TimeZoneInfo.Utc });
+                rig.Analytics.AttachProgression(progression);
+                rig.Analytics.StartSession(0);
+                rig.Economy.Grant(CurrencyId.Light, BigValue.FromDouble(1e12), EconomyReason.Debug);
+                rig.State.Progression.Refuge.Level = 15;
+                rig.Clock.Set(TestUtil.T0 + TimeSpan.FromDays(5));
+                Assert.IsTrue(progression.Renewal.TryRenew(out var done));
+                Assert.IsTrue(progression.Essence.TryBuy(ContentId.FromSource("essence.economy.soft_light"), out _));
+                rig.Analytics.Flush();
+                string all = rig.Sink.All;
+                var renewal = Fields(all, AnalyticsEventId.Renewal);
+                Assert.AreEqual("1", renewal[3], "First Renewal.");
+                Assert.AreEqual(done.Gain.Total.ToString(), renewal[4]);
+                var node = Fields(all, AnalyticsEventId.EssenceNodeBuy);
+                Assert.AreEqual(ContentId.FromSource("essence.economy.soft_light").Value.ToString(), node[3]);
+                Assert.AreEqual("1", node[4]);
+                rig.Analytics.AttachProgression(null);
+                progression.Dispose();
             }
         }
 

@@ -519,6 +519,8 @@ namespace PocketWilds.Services.Analytics
         private Action<BiomeMasteryGain>? _onBiomeMastery;
         private Action<DecorationPurchase>? _onDecoration;
         private Action<TreatPurchase>? _onTreat;
+        private Action<RenewalDone>? _onRenewal;
+        private Action<EssencePurchase>? _onEssence;
 
         /// <summary>Upgrades, zones, biome gates, refuge level, biome mastery, Light decorations, treats (doc 02, section 14).</summary>
         public void AttachProgression(ProgressionServices? progression)
@@ -534,6 +536,8 @@ namespace PocketWilds.Services.Analytics
             _onBiomeMastery ??= OnBiomeMasteryUp;
             _onDecoration ??= OnDecorationBought;
             _onTreat ??= OnTreatBought;
+            _onRenewal ??= OnRenewal;
+            _onEssence ??= OnEssenceBought;
             progression.Upgrades.Purchased += _onUpgrade;
             progression.Zones.Opened += _onZone;
             progression.Gates.Opened += _onBiome;
@@ -541,6 +545,8 @@ namespace PocketWilds.Services.Analytics
             progression.Mastery.LeveledUp += _onBiomeMastery;
             progression.Decorations.Purchased += _onDecoration;
             progression.Treats.Purchased += _onTreat;
+            progression.Renewal.Renewed += _onRenewal;
+            progression.Essence.Purchased += _onEssence;
         }
 
         /// <summary>The first time the player sees a biome gate, with the conditions it shows met.</summary>
@@ -562,6 +568,8 @@ namespace PocketWilds.Services.Analytics
             p.Mastery.LeveledUp -= _onBiomeMastery;
             p.Decorations.Purchased -= _onDecoration;
             p.Treats.Purchased -= _onTreat;
+            p.Renewal.Renewed -= _onRenewal;
+            p.Essence.Purchased -= _onEssence;
             _progression = null;
         }
 
@@ -629,6 +637,25 @@ namespace PocketWilds.Services.Analytics
                 };
                 Record(ref m);
             }
+        }
+
+        private void OnRenewal(RenewalDone done)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.Renewal)
+            {
+                I0 = done.Count,
+                I1 = (int)Math.Min(int.MaxValue, done.Gain.Total),
+                D0 = CostLog10(_state.Wallet.LifetimeLight),
+                I2 = DaysSinceInstall,
+                I3 = _state.Progression.Refuge.Level,
+            };
+            Record(ref e);
+        }
+
+        private void OnEssenceBought(EssencePurchase purchase)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.EssenceNodeBuy) { U0 = purchase.Node.Value, I0 = purchase.Rank };
+            Record(ref e);
         }
 
         private void OnZoneOpened(ZoneOpening opening)

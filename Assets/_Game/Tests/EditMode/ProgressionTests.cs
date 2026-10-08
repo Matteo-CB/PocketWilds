@@ -558,7 +558,7 @@ namespace PocketWilds.Tests.EditMode
             rig.P.Zones.TryOpen(ContentId.FromSource("zone.grassland.meadow"), out _);
             int mastery = rig.P.Mastery.GetLevel(Grassland);
             long score = rig.P.Refuge.Score;
-            rig.P.OnRenewal();
+            rig.P.Upgrades.OnRenewal();
             Assert.AreEqual(0, rig.P.Upgrades.GetLevel(Grassland, UpgradeKind.Production));
             Assert.AreEqual(0, rig.P.Upgrades.GetLevel(Grassland, UpgradeKind.Nests));
             Assert.AreEqual(10, rig.P.Upgrades.GetLevel(Grassland, UpgradeKind.Curiosity));

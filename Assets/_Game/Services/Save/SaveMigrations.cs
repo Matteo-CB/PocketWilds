@@ -14,6 +14,7 @@ namespace PocketWilds.Services.Save
             new Migration0005AddAnalytics(),
             new Migration0006AddProgression(),
             new Migration0007AddDiscoveryEggs(),
+            new Migration0008AddRenewal(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -112,6 +113,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 7;
         public int ToVersion => 8;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 8 to 9 (T35C): the Progression section gains the Renewal's memory and the Essence tree. Nothing to convert:
+    /// a version 1 section reads as no Renewal yet and no node bought.
+    /// </summary>
+    public sealed class Migration0008AddRenewal : ISaveMigration
+    {
+        public int FromVersion => 8;
+        public int ToVersion => 9;
 
         public void Apply(SaveDocument document)
         {

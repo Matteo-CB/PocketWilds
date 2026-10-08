@@ -399,6 +399,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Analytics_v6")]
         [TestCase("GoldenSave_Progression_v7")]
         [TestCase("GoldenSave_Eggs_v8")]
+        [TestCase("GoldenSave_Renewal_v9")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -483,6 +484,19 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(0b001, state.Progression.TreatStand.BoughtMask);
                     Assert.AreEqual(1, state.Progression.Treats[ContentId.FromSource("treat.clover_crunch")]);
                     Assert.AreEqual(9, state.Analytics.Sessions);
+                    break;
+
+                case "GoldenSave_Renewal_v9":
+                    Assert.AreEqual(260, state.Meta.Revision);
+                    Assert.AreEqual(1, state.World.RenewalCount);
+                    Assert.AreEqual(7, state.Wallet.Essence);
+                    Assert.AreEqual(18, state.Progression.Renewal.EssenceFromLight);
+                    Assert.AreEqual(41, state.Progression.Renewal.EssenceEarned);
+                    Assert.AreEqual(3, state.Progression.Renewal.SpeciesAtLast);
+                    Assert.AreEqual(1, state.Progression.Renewal.BiomesAtLast);
+                    Assert.AreEqual(5, state.Progression.EssenceRanks[ContentId.FromSource("essence.economy.soft_light")]);
+                    Assert.AreEqual(2, state.Progression.EssenceRanks[ContentId.FromSource("essence.economy.morning_eggs")]);
+                    Assert.AreEqual(4, state.World.DiscoveryEggs, "Everything of schema 8 still there.");
                     break;
 
                 case "GoldenSave_Eggs_v8":

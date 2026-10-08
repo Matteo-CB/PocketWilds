@@ -218,7 +218,7 @@ namespace PocketWilds.Bootstrap
                 _offline = new OfflineService(_save.State, _economy, _clock);
                 _codex = new CodexService(_save.State, _content, _save, _mastery);
                 // T35A: upgrades, zones, biome mastery, refuge level, gates; plugs its multipliers into economy and hatch.
-                _progression = new ProgressionServices(_save.State, _content, _economy, _hatch, _clock, _save);
+                _progression = new ProgressionServices(_save.State, _content, _economy, _hatch, _clock, _save, null, _mastery, _offline);
                 _save.BeforeSerialize += _offline.CaptureSnapshot;
                 _grants = new GrantService(_content, _save.State, _save);
                 _offers = new OfferService(_content, _save.State, _grants, _save);

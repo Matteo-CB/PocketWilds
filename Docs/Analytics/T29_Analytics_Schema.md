@@ -71,6 +71,8 @@ s'ajoute à la fin d'un événement.
 | 34 | MultiHatch | œuf, quantité, résultats Rare ou mieux, nouveautés (espèces ou variantes). T35B |
 | 35 | DiscoveryEggGain | source (0 test, 1 calendrier, 2 carnet, 3 expédition, 4 parcours d'événement, 5 cadeau du jour, 6 ouverture de biome, 7 Pass, 8 cadeau de retour), œufs gagnés, stock après. T35B |
 | 36 | EggOddsOpen | œuf. T35B |
+| 37 | Renewal | numéro du Renouveau, Essence gagnée, log10 de la Lumière produite depuis toujours, jours depuis l'installation, niveau du refuge. T35C |
+| 38 | EssenceNodeBuy | nœud de l'arbre d'Essence, rang atteint. T35C |
 | 40 | ScreenView | écran |
 | 41 | OfferImpression | offre, emplacement. Une fois par offre et par session |
 | 42 | OfferClick | offre, emplacement |

@@ -108,8 +108,13 @@ namespace PocketWilds.Simulation
 
         public BiomeMasteryGain Add(ContentId biome, BiomeXpSource source, int count = 1) => AddXp(biome, (long)XpFor(source) * count);
 
+        /// <summary>T35C: Roots (Essence tree) adds 10 % of biome mastery XP per rank; 1 without it.</summary>
+        public double XpMultiplier { get; set; } = 1.0;
+
         public BiomeMasteryGain AddXp(ContentId biome, long xp)
         {
+            if (XpMultiplier != 1.0 && xp > 0)
+                xp = (long)Math.Round(xp * XpMultiplier, MidpointRounding.AwayFromZero);
             var progress = _store.Get(biome);
             int before = progress.MasteryLevel;
             if (xp <= 0)

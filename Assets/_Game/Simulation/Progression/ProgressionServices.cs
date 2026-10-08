@@ -17,10 +17,15 @@ namespace PocketWilds.Simulation
         private readonly EconomyService _economy;
         private readonly HatchService? _hatch;
         private readonly ISaveScheduler? _save;
+        private readonly MasteryService? _speciesMastery;
+        private readonly OfflineService? _offline;
 
         public ProgressionServices(PlayerState state, ContentRegistry content, EconomyService economy, HatchService? hatch, IGameClock clock,
-            ISaveScheduler? save, ProgressionConfig? config = null)
+            ISaveScheduler? save, ProgressionConfig? config = null, MasteryService? speciesMastery = null, OfflineService? offline = null,
+            RenewalConfig? renewal = null)
         {
+            _speciesMastery = speciesMastery;
+            _offline = offline;
             _state = state;
             _content = content;
             _economy = economy;
@@ -35,6 +40,9 @@ namespace PocketWilds.Simulation
             Gates = new BiomeGateService(state, content, Config, Store, economy, Refuge, Mastery, Zones, clock);
             Decorations = new DecorationShopService(state, Config, Store, economy, Refuge);
             Treats = new TreatStandService(state, content, Config, Store, economy, clock);
+            // T35C: the Essence tree and the Renewal (doc 02 Renouveau).
+            Essence = new EssenceService(state, economy);
+            Renewal = new RenewalService(state, content, economy, Essence, Store, Upgrades, Refuge, clock, Config, renewal);
 
             economy.SetModifiers(this);
             hatch?.SetModifiers(this);
@@ -45,6 +53,10 @@ namespace PocketWilds.Simulation
             Upgrades.Purchased += OnPurchase;
             Decorations.Purchased += OnPurchase;
             Treats.Purchased += OnPurchase;
+            Essence.Changed += ApplyEssence;
+            Essence.Purchased += OnPurchase;
+            Renewal.Renewed += OnRenewed;
+            ApplyEssence();
         }
 
         public ProgressionConfig Config { get; }
@@ -56,6 +68,8 @@ namespace PocketWilds.Simulation
         public BiomeGateService Gates { get; }
         public DecorationShopService Decorations { get; }
         public TreatStandService Treats { get; }
+        public EssenceService Essence { get; }
+        public RenewalService Renewal { get; }
 
         /// <summary>The biome the player starts in (zones and upgrades screens open on it by default).</summary>
         public ContentId FirstBiome => Config.Biomes[0].Id;
@@ -63,12 +77,11 @@ namespace PocketWilds.Simulation
         public double BiomeProductionMultiplier(ContentId biome) =>
             Upgrades.ProductionMultiplier(biome) * Zones.ProductionMultiplier(biome) * Mastery.ProductionMultiplier(biome);
 
-        public double EggPriceMultiplier(ContentId biome) => Upgrades.EggPriceMultiplier(biome);
+        /// <summary>Cozy Nests of the biome, then Morning Eggs of the Essence tree (Basic and Focus eggs).</summary>
+        public double EggPriceMultiplier(ContentId biome) => Upgrades.EggPriceMultiplier(biome) * Essence.EggPriceMultiplier;
 
         public double VariantChanceBonus(ContentId biome) => Upgrades.VariantChanceBonus(biome);
 
-        /// <summary>Renewal (doc 02 Renouveau): Production and Cozy Nests start over; zones, biomes, masteries and score stay.</summary>
-        public void OnRenewal() => Upgrades.OnRenewal();
 
         public void Dispose()
         {
@@ -83,6 +96,40 @@ namespace PocketWilds.Simulation
             Upgrades.Purchased -= OnPurchase;
             Decorations.Purchased -= OnPurchase;
             Treats.Purchased -= OnPurchase;
+            Essence.Changed -= ApplyEssence;
+            Essence.Purchased -= OnPurchase;
+            Renewal.Renewed -= OnRenewed;
+        }
+
+        /// <summary>
+        /// The Essence tree's effects reach their systems once per change (doc 02 Renouveau, section 2): total production,
+        /// zone and gate prices, biome and species mastery XP, the egg protections, the offline window and floor. Egg
+        /// prices read <see cref="EggPriceMultiplier"/> when they are computed.
+        /// </summary>
+        private void ApplyEssence()
+        {
+            _economy.SetGlobalMultiplier(BigValue.FromDouble(Essence.ProductionMultiplier));
+            Zones.PriceMultiplier = Essence.ZoneGatePriceMultiplier;
+            Gates.PriceMultiplier = Essence.ZoneGatePriceMultiplier;
+            Mastery.XpMultiplier = Essence.BiomeMasteryXpMultiplier;
+            if (_speciesMastery != null)
+                _speciesMastery.XpMultiplier = Essence.SpeciesMasteryXpMultiplier;
+            if (_hatch != null)
+            {
+                _hatch.SpeciesPityBonusPerMiss = Essence.NewSpeciesPityBonus;
+                _hatch.VariantPityMultiplier = Essence.VariantPityMultiplier;
+            }
+            if (_offline != null)
+            {
+                _offline.ExtraFullSeconds = Essence.OfflineExtraSeconds;
+                _offline.FloorBonus = Essence.OfflineFloorBonus;
+            }
+        }
+
+        private void OnRenewed(RenewalDone done)
+        {
+            Refuge.Recompute();
+            _save?.RequestSave(SaveUrgency.Priority);
         }
 
         /// <summary>

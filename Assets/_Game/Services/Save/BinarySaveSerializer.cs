@@ -36,7 +36,7 @@ namespace PocketWilds.Services.Save
         /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
         /// 8: Discovery egg stock (World 3).
         /// </summary>
-        public const int CurrentVersion = 8;
+        public const int CurrentVersion = 9;
     }
 
     /// <summary>
@@ -59,7 +59,7 @@ namespace PocketWilds.Services.Save
         private const ushort PityVersion = 1;
         private const ushort ShopVersion = 1;
         private const ushort AnalyticsVersion = 1;
-        private const ushort ProgressionVersion = 1;
+        private const ushort ProgressionVersion = 2;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -382,6 +382,15 @@ namespace PocketWilds.Services.Save
             output.WriteContentId(stand.Slot2);
             output.WriteInt32(stand.BoughtMask);
             WriteCounters(output, progression.Treats);
+            // Version 2 (schema 9, T35C): the Renewal's memory and the Essence tree.
+            var renewal = progression.Renewal;
+            output.WriteInt64(renewal.EssenceFromLight);
+            output.WriteInt64(renewal.EssenceEarned);
+            output.WriteInt32(renewal.SpeciesAtLast);
+            output.WriteInt32(renewal.BiomesAtLast);
+            output.WriteInt32(renewal.MasteredAtLast);
+            output.WriteInt32(renewal.AlbumPagesAtLast);
+            WriteCounters(output, progression.EssenceRanks);
         }
 
         private static void ReadProgression(SaveSection section, ProgressionState progression)
@@ -401,6 +410,16 @@ namespace PocketWilds.Services.Save
             stand.Slot2 = r.ReadContentId();
             stand.BoughtMask = r.ReadInt32();
             ReadCounters(ref r, progression.Treats);
+            if (section.Version < 2)
+                return;
+            var renewal = progression.Renewal;
+            renewal.EssenceFromLight = Math.Max(0L, r.ReadInt64());
+            renewal.EssenceEarned = Math.Max(0L, r.ReadInt64());
+            renewal.SpeciesAtLast = Math.Max(0, r.ReadInt32());
+            renewal.BiomesAtLast = Math.Max(0, r.ReadInt32());
+            renewal.MasteredAtLast = Math.Max(0, r.ReadInt32());
+            renewal.AlbumPagesAtLast = Math.Max(0, r.ReadInt32());
+            ReadCounters(ref r, progression.EssenceRanks);
         }
 
         private static void ReadCounters(ref ByteBufferReader r, System.Collections.Generic.Dictionary<ContentId, int> counters)

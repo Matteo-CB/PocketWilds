@@ -29,6 +29,9 @@ namespace PocketWilds.Services.Analytics
         MultiHatch = 34,
         DiscoveryEggGain = 35,
         EggOddsOpen = 36,
+        // T35C (doc 02 Renouveau, section 7).
+        Renewal = 37,
+        EssenceNodeBuy = 38,
         EconomySnapshot = 31,
         EconomyFlow = 32,
         ScreenView = 40,
@@ -117,6 +120,10 @@ namespace PocketWilds.Services.Analytics
             AnalyticsEventId.DiscoveryEggGain => new[] { Field.I(0), Field.I(1), Field.I(2) },
             // egg
             AnalyticsEventId.EggOddsOpen => new[] { Field.U(0) },
+            // T35C. count, Essence gained, lifetime Light log10, days since install, refuge level
+            AnalyticsEventId.Renewal => new[] { Field.I(0), Field.I(1), Field.D(0, 2), Field.I(2), Field.I(3) },
+            // node, rank
+            AnalyticsEventId.EssenceNodeBuy => new[] { Field.U(0), Field.I(0) },
             // T35A (doc 02 Améliorations, section 14). Costs travel as their log10 (no personal data, any size).
             // biome, kind, level from, level to, cost log10, quantity mode
             AnalyticsEventId.UpgradeBuy => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2), Field.D(0, 2), Field.I(3) },
