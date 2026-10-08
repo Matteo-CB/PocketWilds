@@ -141,6 +141,50 @@ namespace PocketWilds.Presentation
         /// <summary>The refuge's animals: insects fly around them, birds keep away from them.</summary>
         public void SetAnimals(AnimalScheduler animals) => _animals = animals;
 
+        /// <summary>T36: the wish bubbles above animals; fliers keep out of them like out of a crown (Collision rule).</summary>
+        public void SetBubbles(WishBubbleLayer bubbles) => _bubbles = bubbles;
+
+        private WishBubbleLayer _bubbles;
+
+        private bool InsideBubble(Vector3 p, float r)
+        {
+            if (_bubbles == null)
+                return false;
+            for (int i = 0; i < _bubbles.AirCount; i++)
+            {
+                _bubbles.GetAir(i, out var center, out float radius);
+                float min = radius + r;
+                if ((p - center).sqrMagnitude < min * min)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>Pushes a flier out of any bubble it entered and takes away the speed that carried it in.</summary>
+        private bool PushOutOfBubbles(ref Agent a, float r)
+        {
+            if (_bubbles == null)
+                return false;
+            bool hit = false;
+            for (int i = 0; i < _bubbles.AirCount; i++)
+            {
+                _bubbles.GetAir(i, out var center, out float radius);
+                var d = a.Position - center;
+                float min = radius + r;
+                float sq = d.sqrMagnitude;
+                if (sq >= min * min)
+                    continue;
+                float length = Mathf.Sqrt(sq);
+                var normal = length > 1e-4f ? d / length : Vector3.up;
+                a.Position = center + normal * (min + 0.002f);
+                float into = Vector3.Dot(a.Velocity, normal);
+                if (into < 0f)
+                    a.Velocity -= normal * into;
+                hit = true;
+            }
+            return hit;
+        }
+
         /// <summary>T34B2: who hears the birds fly off. Null: silent.</summary>
         public void SetListener(IAmbientLifeListener listener) => _listener = listener;
 
@@ -699,6 +743,8 @@ namespace PocketWilds.Presentation
         /// <summary>Inside a solid volume (inflated by r) near this agent. Fliers pass over water.</summary>
         private bool InsideVolume(ref Agent a, Vector3 p, float r)
         {
+            if (InsideBubble(p, r))
+                return true;
             var c = new Vector2(p.x, p.z);
             for (int k = 0; k < a.NearCount; k++)
             {
@@ -730,6 +776,7 @@ namespace PocketWilds.Presentation
         /// </summary>
         private void KeepOut(ref Agent a, float r)
         {
+            PushOutOfBubbles(ref a, r);
             for (int pass = 0; pass < 3; pass++)
             {
                 if (!PushOutAll(ref a, r, out _))

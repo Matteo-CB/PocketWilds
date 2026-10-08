@@ -313,8 +313,8 @@
     {
       "task": "T36",
       "title": "Rendez-vous du jour",
-      "status": "IN_PROGRESS",
-      "notes": "Step 1 done 2026-10-08 (simulation, save, analytics, no UI): DailyVisitServices facade (day key only moving forward, login days, touch caps reset, journal and wish draws at the day change, at refuge level up and at the welcome's end; game events forwarded to wishes and journal; Tick once a second; OnResume = day check then return gift), DailyRewardTables shared with the economy simulator, DailyGiftService (first gift a Discovery egg, a big gift at least every 15, daily.gift_big_every), CalendarService (28 boxes, 100 Gems and 2 eggs a cycle, cycle decorations), WelcomeGiftService (300 Gems over 3 login days), WishService and WishCatalog (83 templates, SYS-01 to 04 and 06 shipped, draw rules, tutorial wish ending the welcome, swaps, cumulative Gems cap), WeeklyJournalService and its catalog (52 goals, 13 shipped, first journal with head start, Monday carry-over), BondService (touch caps, treats with preferred family, Essence), ReturnGiftService (3 to 13 days and 14 or more, frequency rules, Warm Return; OfflineReport.UncappedSeconds), DailyRendezvous needs the welcome over, save schema 10 (DailyVisit and Inventory sections, golden save v10), analytics 45-55 and screens 7-8, 32 economy reasons, audio events WishDone 38, GiftOpen 39, PawStamp 40, CollectGems 67 with their handmade sounds, 20 handmade UI sprites (pw_ui_sprites_t36.py). Economy simulator on the game tables: 81/94 guardrails, 13 pending owner decisions, none out of bounds. Next: step 2 (wish bubbles in the world, HUD rail, tutorial A07-A12, treat feeding), step 3 (Today, journal and return gift screens)."
+      "status": "DONE",
+      "notes": "DONE 2026-10-08 (commit 4718dc3 for step 1, then steps 2 and 3). Step 1 done 2026-10-08 (simulation, save, analytics, no UI): DailyVisitServices facade (day key only moving forward, login days, touch caps reset, journal and wish draws at the day change, at refuge level up and at the welcome's end; game events forwarded to wishes and journal; Tick once a second; OnResume = day check then return gift), DailyRewardTables shared with the economy simulator, DailyGiftService (first gift a Discovery egg, a big gift at least every 15, daily.gift_big_every), CalendarService (28 boxes, 100 Gems and 2 eggs a cycle, cycle decorations), WelcomeGiftService (300 Gems over 3 login days), WishService and WishCatalog (83 templates, SYS-01 to 04 and 06 shipped, draw rules, tutorial wish ending the welcome, swaps, cumulative Gems cap), WeeklyJournalService and its catalog (52 goals, 13 shipped, first journal with head start, Monday carry-over), BondService (touch caps, treats with preferred family, Essence), ReturnGiftService (3 to 13 days and 14 or more, frequency rules, Warm Return; OfflineReport.UncappedSeconds), DailyRendezvous needs the welcome over, save schema 10 (DailyVisit and Inventory sections, golden save v10), analytics 45-55 and screens 7-8, 32 economy reasons, audio events WishDone 38, GiftOpen 39, PawStamp 40, CollectGems 67 with their handmade sounds, 20 handmade UI sprites (pw_ui_sprites_t36.py). Economy simulator on the game tables: 81/94 guardrails, 13 pending owner decisions, none out of bounds. Steps 2 and 3: DailyVisitPresenter (Today button and dot, Gems chip, wish card, Today and journal screens, welcome steps A08 to A12 with paws, return gift on the offline card, DailyVisitDone analytics), wish bubbles in the world (WishBubbleLayer, no-collision placement over 12 candidates, insects and birds keep out, SH_WishBubble, VFX_WishDone), screens PF_UI_Today and PF_UI_WeeklyJournal (DailyVisitUiPipeline, Atlas_Today), wish card and Today rail in the HUD, treat button on the animal sheet, 452 en/fr texts with plurals and a sentence formatter, edit-mode capture menu Pocket Wilds/Capture/Daily Visit (T36), design note Docs/Design/T36_Rendez_vous_du_jour.md. Layouts measured and fixed in both languages. Tests: EditMode 716/716, PlayMode 106 passed and 1 skipped, including the full flow (first wish to Today, a visit under two minutes, midnight during play, return gift, treat). Open: sprites and sounds in art review, cycle decoration models, owner decisions listed in the design note."
     },
     {
       "task": "T37",
@@ -15110,16 +15110,16 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/DailyVisitUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_Today.prefab",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). Doc 06 SCREEN 031."
+      "lastValidationVersion": "T36",
+      "lastValidationUtc": "2026-10-08T14:00:00Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). Doc 06 SCREEN 031. T36: PF_UI_Today built by DailyVisitUiPipeline (menu Pocket Wilds/UI/Build Daily Visit (T36)): welcome card, gift box (three layers, band tinted at opening), wish rows, 28-box calendar strip, journal row; Atlas_Today; reviewed in captures T36_today_*."
     },
     {
       "id": "I-SCR-032",
@@ -15129,16 +15129,16 @@
       "dependencies": [
         "I-KIT"
       ],
-      "status": "PLANNED",
-      "sourcePath": null,
-      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/UI/DailyVisitUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_WeeklyJournal.prefab",
       "validationGates": [
         "G12",
         "G13"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). Doc 06 SCREEN 032."
+      "lastValidationVersion": "T36",
+      "lastValidationUtc": "2026-10-08T14:00:00Z",
+      "notes": "Added 2026-10-05 (owner decisions, see Drive '00 — Décisions du propriétaire — 5 octobre 2026'). Doc 06 SCREEN 032. T36: PF_UI_WeeklyJournal: 7 goals, the reward of a goal said once in the header, completion chest, real days left; reviewed in captures T36_journal_*."
     },
     {
       "id": "I-SCR-033",
@@ -16827,6 +16827,158 @@
       "notes": "T35A: two soft wooden notes and a leafy rustle, about 0.8 s; with a calm HUD line \"Meadow mastery: level 2\".",
       "passedGates": [
         "G14"
+      ]
+    },
+    {
+      "id": "H-VFX-070",
+      "name": "VFX_WishDone",
+      "family": "VFX",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/Vfx/VfxPipeline.cs",
+      "runtimePath": "Assets/_Game/Content/Visuals/DEF_VfxCatalog.asset",
+      "validationGates": [
+        "G13"
+      ],
+      "lastValidationVersion": "T36",
+      "lastValidationUtc": "2026-10-08T14:00:00Z",
+      "notes": "T36: a wish bubble bursts: soft ring, 6 round bubbles, 4 hearts; 11 / 6 / 14 particles by tier, about 0.85 s; round tiles only.",
+      "passedGates": [
+        "G13"
+      ]
+    },
+    {
+      "id": "H-VFX-071",
+      "name": "UI burst: daily gift",
+      "family": "VFX",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/UI/Scripts/Common/UiBurst.cs",
+      "runtimePath": "Assets/_Game/UI/Scripts/Common/UiBurst.cs",
+      "validationGates": [
+        "G13"
+      ],
+      "lastValidationVersion": "T36",
+      "lastValidationUtc": "2026-10-08T14:00:00Z",
+      "notes": "T36: pooled UI burst of round dots, rings, five-point stars and hearts when the gift box opens (doc 05 sheet 18).",
+      "passedGates": [
+        "G13"
+      ]
+    },
+    {
+      "id": "H-VFX-072",
+      "name": "UI burst: calendar stamp",
+      "family": "VFX",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/UI/Scripts/Common/UiBurst.cs",
+      "runtimePath": "Assets/_Game/UI/Scripts/Common/UiBurst.cs",
+      "validationGates": [
+        "G13"
+      ],
+      "lastValidationVersion": "T36",
+      "lastValidationUtc": "2026-10-08T14:00:00Z",
+      "notes": "T36: brown ink dots and a rose ring when the paw stamp lands (doc 05 sheet 19); a bigger one on big boxes.",
+      "passedGates": [
+        "G13"
+      ]
+    },
+    {
+      "id": "J-SFX-FEEL-009",
+      "name": "WishDone",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/SFX_Reward_WishDone_01.wav",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T36",
+      "lastValidationUtc": "2026-10-08T14:00:00Z",
+      "notes": "T36: a bubble pops, then two warm glass notes rising (2 variants), -18 LUFS, 0.8 s.",
+      "passedGates": [
+        "G14"
+      ]
+    },
+    {
+      "id": "J-SFX-FEEL-010",
+      "name": "GiftOpen",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/SFX_Reward_GiftOpen_01.wav",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T36",
+      "lastValidationUtc": "2026-10-08T14:00:00Z",
+      "notes": "T36: a small wooden lid knock and glass notes rising F-A-C-F, -17 LUFS, 0.9 s.",
+      "passedGates": [
+        "G14"
+      ]
+    },
+    {
+      "id": "J-SFX-FEEL-011",
+      "name": "PawStamp",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/SFX_UI_PawStamp_01.wav",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T36",
+      "lastValidationUtc": "2026-10-08T14:00:00Z",
+      "notes": "T36: a soft felt stamp puff (2 variants), -21 LUFS, 0.3 s.",
+      "passedGates": [
+        "G14"
+      ]
+    },
+    {
+      "id": "W-WISH-BUBBLE",
+      "name": "Wish bubble (world)",
+      "family": "World",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "INTEGRATED",
+      "sourcePath": "Assets/_Game/Editor/World/WishBubblePipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/World/PF_World_WishBubble.prefab",
+      "validationGates": [
+        "G13"
+      ],
+      "lastValidationVersion": "T36",
+      "lastValidationUtc": "2026-10-08T14:00:00Z",
+      "notes": "T36: pooled bubble above an animal with a wish (UI_Bubble_Wish, UI_Bubble_Ring filled by angle in the handmade SH_WishBubble shader, icon by system, count); no-collision placement (WishBubblePlacement, AnimalScheduler.IsAirFree); reviewed in captures T36_refuge_bubbles_*.",
+      "passedGates": [
+        "G13"
+      ]
+    },
+    {
+      "id": "I-ICO-T36",
+      "name": "T36 icons and kit sprites",
+      "family": "UIIcon",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t36.py",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T36",
+      "lastValidationUtc": "2026-10-08T14:00:00Z",
+      "notes": "T36: 12 icons (ICO_Today, ICO_Gift, ICO_Wish, ICO_Wish_Done, ICO_Calendar_Days, ICO_WeeklyJournal, ICO_Ticket, ICO_Seed, ICO_Treat, ICO_Treat_CloverCrunch, ICO_Swap, ICO_Decoration) and 8 kit sprites (gift box layers, bubble and ring, calendar box, paw stamp, journal chest); review Docs/Captures/Review/T36_sprites_review.md.",
+      "passedGates": [
+        "G12"
       ]
     }
   ]

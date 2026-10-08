@@ -1,8 +1,10 @@
 using System;
 using System.IO;
 using PocketWilds.Content;
+using PocketWilds.Core;
 using PocketWilds.Editor.Import;
 using PocketWilds.Presentation;
+using PocketWilds.Simulation;
 using PocketWilds.UI;
 using TMPro;
 using UnityEditor;
@@ -230,6 +232,8 @@ namespace PocketWilds.Editor.UI
             BuildCodexPrefab(tokens);
             AssetDatabase.SaveAssets();
             SetupScene();
+            // T36: the Today and journal screens, the return gift block of the offline card (rebuilt above) and the atlases.
+            DailyVisitUiPipeline.Extend(tokens);
             Debug.Log("[UiPipeline] HUD and screens built and wired.");
         }
 
@@ -252,6 +256,10 @@ namespace PocketWilds.Editor.UI
                 table.languageCode = Languages[language];
                 for (int i = 0; i < Texts.GetLength(0); i++)
                     table.Set(Texts[i, 0], Texts[i, language + 1]);
+                // T36: the rendez-vous texts (wishes, journal, Today, gifts) keep their own table.
+                var daily = DailyVisitTexts.Texts;
+                for (int i = 0; i < daily.GetLength(0); i++)
+                    table.Set(daily[i, 0], daily[i, language + 1]);
                 EditorUtility.SetDirty(table);
                 if (!database.localization.Contains(table))
                     database.localization.Insert(Mathf.Min(language, database.localization.Count), table);
@@ -287,7 +295,8 @@ namespace PocketWilds.Editor.UI
                 EditorSettings.spritePackerMode = SpritePackerMode.SpriteAtlasV2;
             Directory.CreateDirectory(Path.GetDirectoryName(AtlasPath));
             var atlas = new SpriteAtlasAsset();
-            atlas.Add(new[] { AssetDatabase.LoadAssetAtPath<Object>(KitFolder), AssetDatabase.LoadAssetAtPath<Object>(IconFolder) });
+            // T36: the Today-only sprites (gift box, chest, calendar box, paw stamp) live in Atlas_Today, loaded with Today.
+            atlas.Add(DailyVisitUiPipeline.CommonAtlasPackables());
             SpriteAtlasAsset.Save(atlas, AtlasPath);
             AssetDatabase.ImportAsset(AtlasPath, ImportAssetOptions.ForceUpdate);
 
@@ -488,6 +497,9 @@ namespace PocketWilds.Editor.UI
                 noticeRoot.gameObject.SetActive(false);
                 hud.SetNoticeReferences(noticeRoot, noticeGroup, noticeLabel);
 
+                // T36 (doc 06 screen 002, doc 01 section 1.3): the right rail with Today, the Gems motes, the wish card. Built
+                // before the feedback parts: the reveal banner draws over the rail when they meet.
+                AddHudDaily(root, safe, gemsChip, gemsIcon.rectTransform, hud, tokens);
                 // T34A: reveal banner, toasts, tutorial hand, collect motes, egg odds button.
                 FeedbackUiPipeline.AddHudFeedback(root, safe, action, chip, chipIcon.rectTransform, hud, tokens);
                 // T35A: the Upgrades button and its dot, the refuge level badge, the touchable Light chip.
@@ -502,6 +514,288 @@ namespace PocketWilds.Editor.UI
             {
                 Object.DestroyImmediate(root);
             }
+        }
+
+        // ---------------- T36 HUD parts (rail, Today, Gems motes, wish card) ----------------
+
+        /// <summary>The wish card's canvas (plan section 7.4: Upgrades 21, Today 22, Journal 23, wish card 24, windows 34).</summary>
+        public const int WishCardSortingOrder = 24;
+
+        /// <summary>Gems motes fly above the Today and Journal sheets and the wish card, under the animal sheet (26).</summary>
+        public const int GemsMotesSortingOrder = 25;
+
+        /// <summary>The rail's buttons (48 dp is 124 units; the Codex and Shop shortcuts are 176).</summary>
+        public const float RailButtonSize = 168f;
+
+        public const float WishCardWidth = 880f;
+        public const float WishCardHeight = 364f;
+
+        /// <summary>The biome treats with their own icon (the others show ICO_Treat).</summary>
+        private static readonly string[,] TreatIcons = { { "treat.clover_crunch", "ICO_Treat_CloverCrunch" } };
+
+        private static Sprite IconSprite(string name)
+        {
+            string path = IconFolder + "/" + name + ".png";
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path)
+                   ?? throw new FileNotFoundException("Run SourceArt/UI/Tools/pw_ui_sprites.py (T36 sprites) first.", path);
+        }
+
+        private static Sprite KitSprite(string name)
+        {
+            string path = KitFolder + "/" + name + ".png";
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path)
+                   ?? throw new FileNotFoundException("Run SourceArt/UI/Tools/pw_ui_sprites.py first.", path);
+        }
+
+        private static CanvasGroup PassiveGroup(GameObject go)
+        {
+            var group = go.AddComponent<CanvasGroup>();
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            return group;
+        }
+
+        private static Button PlainButton(Image target)
+        {
+            var button = target.gameObject.AddComponent<Button>();
+            button.targetGraphic = target;
+            button.transition = Selectable.Transition.None;
+            var navigation = button.navigation;
+            navigation.mode = Navigation.Mode.None;
+            button.navigation = navigation;
+            return button;
+        }
+
+        /// <summary>
+        /// T36 (doc 06 screen 002, doc 01 sections 1.3 and A12): the contextual right rail (right edge, under the top bar and
+        /// the toast slot, in the Shop button's column; room for Play, Today and Event) with the Today button and its dot;
+        /// three Gems motes and a ring on the Gems chip (doc 05 sheet 17); the wish card (doc 01 A08).
+        /// </summary>
+        private static void AddHudDaily(GameObject root, RectTransform safe, RectTransform gemsChip, RectTransform gemsIcon, RefugeHud hud,
+            UiColorTokens tokens)
+        {
+            var circle = KitSprite("UI_Button_IconCircle");
+            var dot = KitSprite("UI_Dot");
+            var center = new Vector2(0.5f, 0.5f);
+
+            // Rail: own canvas and raycaster (the dot breathes without rebuilding anything else).
+            var rail = Rect("Rail", safe);
+            rail.gameObject.AddComponent<Canvas>();
+            rail.gameObject.AddComponent<GraphicRaycaster>();
+            Place(rail, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-52f, -324f), new Vector2(176f, RefugeHud.RailPitch * 3f));
+            var todayRoot = Rect("Today", rail);
+            Place(todayRoot, new Vector2(0.5f, 1f), center, new Vector2(0f, -RefugeHud.RailPitch * 0.5f), new Vector2(RailButtonSize, RailButtonSize));
+            var todayGroup = todayRoot.gameObject.AddComponent<CanvasGroup>();
+            var todayImage = AddImage("Button", todayRoot, circle, tokens.panelPrimary, Image.Type.Simple);
+            todayImage.raycastTarget = true;
+            Stretch(todayImage.rectTransform);
+            var todayButton = todayImage.gameObject.AddComponent<Button>();
+            ConfigureButton(todayButton, todayImage);
+            // The page nods around its lower part (pivot low), like a sheet tipped by a paw.
+            var todayIcon = AddImage("Icon", todayImage.rectTransform, IconSprite("ICO_Today"), Color.white, Image.Type.Simple);
+            Place(todayIcon.rectTransform, center, new Vector2(0.5f, 0.25f), new Vector2(0f, 6f - 0.25f * 112f), new Vector2(112f, 112f));
+            // The Codex and Upgrades dot (UI_Dot, errorSoft): a gift, a wish or the journal waits.
+            var todayDot = AddImage("Dot", todayRoot, dot, tokens.errorSoft, Image.Type.Simple);
+            Place(todayDot.rectTransform, new Vector2(1f, 1f), center, new Vector2(-24f, -24f), new Vector2(46f, 46f));
+            todayDot.gameObject.SetActive(false);
+            todayRoot.gameObject.SetActive(false);
+
+            // Gems motes (H-VFX-008 tinted Gems, doc 05 sheet 17: 3 motes), above the Today and Journal sheets.
+            var motesRoot = Rect("GemsMotes", root.transform);
+            var motesCanvas = motesRoot.gameObject.AddComponent<Canvas>();
+            motesCanvas.overrideSorting = true;
+            motesCanvas.sortingOrder = GemsMotesSortingOrder;
+            PassiveGroup(motesRoot.gameObject);
+            Stretch(motesRoot);
+            var gemsSprite = AssetDatabase.LoadAssetAtPath<Sprite>(GemsIconPath);
+            var motes = new RectTransform[3];
+            for (int i = 0; i < motes.Length; i++)
+            {
+                var mote = AddImage("Mote" + i, motesRoot, gemsSprite, Color.white, Image.Type.Simple);
+                Place(mote.rectTransform, center, center, Vector2.zero, new Vector2(80f, 80f));
+                mote.gameObject.SetActive(false);
+                motes[i] = mote.rectTransform;
+            }
+            var gems = tokens.currencyGems;
+            var landRing = AddImage("LandRing", gemsIcon, KitSprite("UI_Ring_Soft"), new Color(gems.r, gems.g, gems.b, 0f), Image.Type.Simple);
+            Place(landRing.rectTransform, center, center, Vector2.zero, new Vector2(150f, 150f));
+            var gemsCollect = motesRoot.gameObject.AddComponent<CollectMotes>();
+            gemsCollect.SetReferences(motesRoot, motes, gemsIcon, gemsChip, landRing);
+            motesRoot.gameObject.SetActive(false);
+
+            var card = BuildWishCard(root, tokens);
+            hud.SetDailyReferences(rail, new[] { todayRoot }, todayButton, todayRoot, todayGroup, todayIcon.rectTransform,
+                todayDot.rectTransform, gemsCollect, card);
+        }
+
+        /// <summary>
+        /// The wish card (doc 01 A08, doc 06 screen 002): full-screen space on its own canvas (sorting order 24) with an
+        /// invisible catcher (a touch beside the card closes it), two pointer dots and the card: icon in a soft disc and
+        /// sentence, progress bar and « n/target », up to 3 rewards (icon and amount), « Récupérer » or « Changer ».
+        /// Saved closed (canvas disabled, content inactive).
+        /// </summary>
+        private static WishCardView BuildWishCard(GameObject root, UiColorTokens tokens)
+        {
+            var panel = AssetDatabase.LoadAssetAtPath<Sprite>(PanelPath);
+            var pill = AssetDatabase.LoadAssetAtPath<Sprite>(PillPath);
+            var circle = AssetDatabase.LoadAssetAtPath<Sprite>(CirclePath);
+            var buttonSprite = AssetDatabase.LoadAssetAtPath<Sprite>(ButtonPrimaryPath);
+            var dot = KitSprite("UI_Dot");
+            var center = new Vector2(0.5f, 0.5f);
+
+            var space = Rect("WishCard", root.transform);
+            Stretch(space);
+            var canvas = space.gameObject.AddComponent<Canvas>();
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = WishCardSortingOrder;
+            space.gameObject.AddComponent<GraphicRaycaster>();
+            var view = space.gameObject.AddComponent<WishCardView>();
+
+            var content = Rect("Content", space);
+            Stretch(content);
+            var group = content.gameObject.AddComponent<CanvasGroup>();
+
+            // A touch beside the card closes it (A08): an invisible scrim over the screen, under the card. No dimming: the
+            // refuge stays the hero.
+            var scrim = Rect("Scrim", content).gameObject.AddComponent<Image>();
+            Stretch(scrim.rectTransform);
+            scrim.color = new Color(1f, 1f, 1f, 0f);
+            scrim.raycastTarget = true;
+            scrim.maskable = false;
+            var outside = PlainButton(scrim);
+
+            // The trail toward the bubble: a bigger dot at the card, a smaller one by the bubble (UI_Bubble_Wish's style:
+            // cream with the HUD's brown rim).
+            var dotFar = PointerDot(content, "DotFar", 38f, dot, tokens);
+            var dotNear = PointerDot(content, "DotNear", 24f, dot, tokens);
+
+            var card = Rect("Card", content);
+            Place(card, center, new Vector2(0.5f, 0f), Vector2.zero, new Vector2(WishCardWidth, WishCardHeight));
+            var back = AddImage("Background", card, panel, tokens.backgroundLight, Image.Type.Sliced);
+            Stretch(back.rectTransform);
+            // Touches on the card stay on the card; a fulfilled wish's card claims on a touch anywhere.
+            back.raycastTarget = true;
+            var body = PlainButton(back);
+
+            // Header: the wish's icon in a soft disc, its sentence on two lines at most.
+            var iconRoot = Rect("IconRoot", card);
+            Place(iconRoot, new Vector2(0f, 1f), center, new Vector2(88f, -88f), new Vector2(120f, 120f));
+            var disc = AddImage("Disc", iconRoot, circle, tokens.panelSecondary, Image.Type.Simple);
+            Stretch(disc.rectTransform);
+            var icon = AddImage("Icon", iconRoot, IconSprite("ICO_Wish"), Color.white, Image.Type.Simple);
+            Place(icon.rectTransform, center, center, new Vector2(0f, 4f), new Vector2(90f, 90f));
+            var text = AddText("Text", card, TextRole.Body, 44f, tokens.textPrimary, "", 36f);
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.alignment = TextAlignmentOptions.MidlineLeft;
+            Place(text.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(166f, -88f), new Vector2(WishCardWidth - 166f - 30f, 124f));
+
+            // Progress: a bar and « n/target ».
+            var bar = AddImage("Bar", card, pill, tokens.panelSecondary, Image.Type.Sliced);
+            bar.pixelsPerUnitMultiplier = 4.4f;
+            Place(bar.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(30f, -188f), new Vector2(500f, 30f));
+            var fill = AddImage("Fill", bar.rectTransform, pill, tokens.accentPrimary, Image.Type.Sliced);
+            fill.pixelsPerUnitMultiplier = 4.4f;
+            LeftFill(fill.rectTransform, 30f);
+            var progress = AddText("Progress", card, TextRole.NumberSmall, 44f, tokens.textPrimary, "0/1", 36f);
+            progress.alignment = TextAlignmentOptions.MidlineRight;
+            Place(progress.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(-30f, -186f), new Vector2(150f, 60f));
+
+            // Rewards: up to 3 cells (icon and amount), bottom left.
+            var cells = new RectTransform[WishCardView.MaxRewards];
+            var cellIcons = new Image[cells.Length];
+            var cellLabels = new TMP_Text[cells.Length];
+            var gemsSprite = AssetDatabase.LoadAssetAtPath<Sprite>(GemsIconPath);
+            for (int i = 0; i < cells.Length; i++)
+            {
+                var cell = Rect("Reward" + i, card);
+                Place(cell, Vector2.zero, Vector2.zero, new Vector2(26f + i * 136f, 26f), new Vector2(136f, 128f));
+                cellIcons[i] = AddImage("Icon", cell, gemsSprite, Color.white, Image.Type.Simple);
+                Place(cellIcons[i].rectTransform, new Vector2(0f, 0.5f), center, new Vector2(34f, 2f), new Vector2(64f, 64f));
+                var label = AddText("Amount", cell, TextRole.NumberSmall, 42f, tokens.textPrimary, "+3", 36f);
+                Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(68f, 2f), new Vector2(70f, 56f));
+                cellLabels[i] = label;
+                cells[i] = cell;
+                cell.gameObject.SetActive(false);
+            }
+
+            // « Récupérer » (primary) or « Changer » (secondary, two round arrows), bottom right; one at a time.
+            var claimImage = AddImage("Claim", card, buttonSprite, tokens.accentPrimary, Image.Type.Sliced);
+            claimImage.pixelsPerUnitMultiplier = 1.4f;
+            claimImage.raycastTarget = true;
+            // Gate 12: « Récupérer » and « Changer » 30 % longer still fit at the Button minimum (44).
+            Place(claimImage.rectTransform, new Vector2(1f, 0f), center, new Vector2(-26f - 190f, 26f + 64f), new Vector2(380f, 128f));
+            var claim = claimImage.gameObject.AddComponent<Button>();
+            ConfigureButton(claim, claimImage);
+            var claimLabel = AddText("Label", claimImage.rectTransform, TextRole.Button, 46f, tokens.textPrimary, "Claim", 36f);
+            claimLabel.alignment = TextAlignmentOptions.Center;
+            Place(claimLabel.rectTransform, center, center, new Vector2(0f, 6f), new Vector2(350f, 90f));
+            claimImage.gameObject.SetActive(false);
+
+            var swapImage = AddImage("Swap", card, buttonSprite, tokens.panelSecondary, Image.Type.Sliced);
+            swapImage.pixelsPerUnitMultiplier = 1.4f;
+            swapImage.raycastTarget = true;
+            Place(swapImage.rectTransform, new Vector2(1f, 0f), center, new Vector2(-26f - 190f, 26f + 64f), new Vector2(380f, 128f));
+            var swap = swapImage.gameObject.AddComponent<Button>();
+            ConfigureButton(swap, swapImage);
+            var swapIcon = AddImage("Icon", swapImage.rectTransform, IconSprite("ICO_Swap"), Color.white, Image.Type.Simple);
+            Place(swapIcon.rectTransform, new Vector2(0f, 0.5f), center, new Vector2(42f, 6f), new Vector2(52f, 52f));
+            var swapLabel = AddText("Label", swapImage.rectTransform, TextRole.Button, 42f, tokens.textPrimary, "Swap", 36f);
+            swapLabel.alignment = TextAlignmentOptions.MidlineLeft;
+            Place(swapLabel.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(76f, 6f), new Vector2(300f, 90f));
+            swapImage.gameObject.SetActive(false);
+
+            view.SetReferences(canvas, space, content.gameObject, group, outside, card, body, dotFar, dotNear, iconRoot, icon, text,
+                bar.rectTransform, fill.rectTransform, fill, progress, cells, cellIcons, cellLabels, claim, claimLabel, swap, swapLabel);
+
+            // Icons: by system (the shared WishIcons names), by reward kind, and per item (a biome's own treat).
+            int systems = 0;
+            foreach (WishSystem system in Enum.GetValues(typeof(WishSystem)))
+                systems = Mathf.Max(systems, (int)system + 1);
+            var systemIcons = new Sprite[systems];
+            for (int i = 0; i < systemIcons.Length; i++)
+            {
+                string name = WishIcons.SpriteName((WishSystem)i);
+                systemIcons[i] = AssetDatabase.LoadAssetAtPath<Sprite>(IconFolder + "/" + name + ".png");
+            }
+            int kinds = 0;
+            foreach (RewardKind kind in Enum.GetValues(typeof(RewardKind)))
+                kinds = Mathf.Max(kinds, (int)kind + 1);
+            var kindIcons = new Sprite[kinds];
+            kindIcons[(int)RewardKind.Gems] = gemsSprite;
+            kindIcons[(int)RewardKind.Light] = AssetDatabase.LoadAssetAtPath<Sprite>(LightIconPath);
+            kindIcons[(int)RewardKind.Ticket] = IconSprite("ICO_Ticket");
+            kindIcons[(int)RewardKind.Treat] = IconSprite("ICO_Treat");
+            kindIcons[(int)RewardKind.Seed] = IconSprite("ICO_Seed");
+            kindIcons[(int)RewardKind.DiscoveryEgg] = AssetDatabase.LoadAssetAtPath<Sprite>(EggIconPath);
+            kindIcons[(int)RewardKind.Decoration] = IconSprite("ICO_Decoration");
+            // No sticker or flower sugar icon yet (T44, T63): the gift box stands in.
+            kindIcons[(int)RewardKind.Sticker] = IconSprite("ICO_Gift");
+            kindIcons[(int)RewardKind.FlowerSugar] = IconSprite("ICO_Gift");
+            kindIcons[(int)RewardKind.Bond] = IconSprite("ICO_Favorite_Heart");
+            var itemIds = new uint[TreatIcons.GetLength(0)];
+            var itemIcons = new Sprite[itemIds.Length];
+            for (int i = 0; i < itemIds.Length; i++)
+            {
+                itemIds[i] = ContentId.FromSource(TreatIcons[i, 0]).Value;
+                itemIcons[i] = IconSprite(TreatIcons[i, 1]);
+            }
+            view.SetIcons(systemIcons, IconSprite("ICO_Wish"), IconSprite("ICO_Wish_Done"), kindIcons, itemIds, itemIcons,
+                tokens.accentPrimary, tokens.success);
+
+            content.gameObject.SetActive(false);
+            canvas.enabled = false;
+            return view;
+        }
+
+        /// <summary>One pointer dot: the HUD's brown rim under a cream disc.</summary>
+        private static RectTransform PointerDot(RectTransform parent, string name, float size, Sprite dot, UiColorTokens tokens)
+        {
+            var rim = AddImage(name, parent, dot, new Color(tokens.textPrimary.r, tokens.textPrimary.g, tokens.textPrimary.b, 0.85f),
+                Image.Type.Simple);
+            Place(rim.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size, size));
+            var fill = AddImage("Fill", rim.rectTransform, dot, tokens.backgroundLight, Image.Type.Simple);
+            Place(fill.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size - 8f, size - 8f));
+            return rim.rectTransform;
         }
 
         /// <summary>
@@ -960,6 +1254,10 @@ namespace PocketWilds.Editor.UI
             so.FindProperty("_codex").objectReferenceValue = codex;
             so.FindProperty("_hatchConfigKey").stringValue = "animals.hatch";
             so.FindProperty("_eggId").stringValue = "egg.grassland.basic";
+            // T36: the wish card travels inside the HUD (its own canvas, sorting order 24); the entry hands it to the presenter.
+            var wishCard = so.FindProperty("_wishCard");
+            if (wishCard != null)
+                wishCard.objectReferenceValue = hud.GetComponentInChildren<WishCardView>(true);
             so.ApplyModifiedPropertiesWithoutUndo();
 
             EditorSceneManager.MarkSceneDirty(scene);

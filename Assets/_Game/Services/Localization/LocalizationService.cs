@@ -46,6 +46,19 @@ namespace PocketWilds.Services.Localization
 
         public bool Has(string key) => _current.ContainsKey(key) || _fallback.ContainsKey(key);
 
+        /// <summary>
+        /// T36 plurals (see <see cref="ILocalization.GetPlural"/>): the form of the current language, else its plain key,
+        /// else the English form chosen by the English rule, else <see cref="Get"/>. No allocation after the first ask.
+        /// </summary>
+        public string GetPlural(string key, long n)
+        {
+            if (_current.TryGetValue(PluralForms.Key(key, PluralForms.IsOne(Language, n)), out var text) || _current.TryGetValue(key, out text))
+                return text;
+            if (_fallback.TryGetValue(PluralForms.Key(key, PluralForms.IsOne(Fallback, n)), out text))
+                return text;
+            return Get(key);
+        }
+
         public static string ResolveLanguage(IReadOnlyList<LocalizationTableAsset>? tables, string? savedLanguage, SystemLanguage deviceLanguage)
         {
             if (!string.IsNullOrEmpty(savedLanguage) && HasTable(tables, savedLanguage!))

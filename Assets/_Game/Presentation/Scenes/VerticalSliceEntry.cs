@@ -68,6 +68,15 @@ namespace PocketWilds.Presentation
         /// <summary>T35B: PF_UI_RewardSummary (screen 028), the card at the end of a multi hatch.</summary>
         [SerializeField] private MonoBehaviour _rewardSummary;
         [SerializeField] private MonoBehaviour _biomeGate;
+        [Header("T36 rendez-vous of the day (UI assembly)")]
+        /// <summary>PF_UI_Today (screen 031), implementing ITodayView.</summary>
+        [SerializeField] private MonoBehaviour _today;
+        /// <summary>PF_UI_WeeklyJournal (screen 032), implementing IJournalView.</summary>
+        [SerializeField] private MonoBehaviour _weeklyJournal;
+        /// <summary>The wish card of screen 002, implementing IWishCardView.</summary>
+        [SerializeField] private MonoBehaviour _wishCard;
+        /// <summary>PF_World_WishBubble: the pooled bubble above an animal with a wish (WishBubbleView).</summary>
+        [SerializeField] private GameObject _wishBubblePrefab;
 
         private GameContext _context;
         private RefugeController _refuge;
@@ -84,6 +93,8 @@ namespace PocketWilds.Presentation
         private AsyncOperationHandle<ZoneKit> _zoneKit;
         private RefugeZones _zones;
         private ProgressionPresenter _progressionPresenter;
+        private DailyVisitPresenter _dailyPresenter;
+        private WishBubbleLayer _bubbles;
 
         public bool HasContext => _context != null;
         public WorldChunkSet ChunkSet => _chunkSet;
@@ -106,6 +117,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>T35A: the Upgrades, zone, refuge level and gate screens (null without progression services).</summary>
         public ProgressionPresenter ProgressionScreens => _progressionPresenter;
+
+        /// <summary>T36: the rendez-vous of the day (null without daily services).</summary>
+        public DailyVisitPresenter DailyVisit => _dailyPresenter;
 
         public ZoneKit ZoneKit => _zoneKit.IsValid() && _zoneKit.Status == AsyncOperationStatus.Succeeded ? _zoneKit.Result : null;
 
@@ -232,6 +246,24 @@ namespace PocketWilds.Presentation
                         _levelReward as ILevelRewardView, _biomeGate as IBiomeGateView);
                     _refuge.Progression = _progressionPresenter;
                 }
+                if (context.Daily != null)
+                {
+                    // T36: the Today button, the wish card and bubbles, Today and the journal, the welcome's last steps.
+                    _dailyPresenter = new DailyVisitPresenter(context, _refuge, _progressionPresenter, _hud as IDailyHud, _today as ITodayView,
+                        _weeklyJournal as IJournalView, _wishCard as IWishCardView);
+                    _refuge.Daily = _dailyPresenter;
+                    if (_wishBubblePrefab != null)
+                    {
+                        // The 9 bubbles are built now, behind the loading screen.
+                        _bubbles = new WishBubbleLayer(_refuge.Scheduler, _wishBubblePrefab, transform, _cameraRig, _dailyPresenter);
+                        _bubbles.Prewarm();
+                        _bubbles.Listener = _dailyPresenter;
+                        _bubbles.ReduceMotion = context.State.Settings.ReduceMotion;
+                        _refuge.Bubbles = _bubbles;
+                        _dailyPresenter.Bubbles = _bubbles;
+                        _life?.SetBubbles(_bubbles);
+                    }
+                }
             }
             _onQuality = ApplyQuality;
             context.Quality.StateChanged += _onQuality;
@@ -249,8 +281,10 @@ namespace PocketWilds.Presentation
         /// <summary>T34A: the player's Reduce Motion setting reaches every screen of the scene.</summary>
         public void ApplyReduceMotion(bool reduce)
         {
+            if (_bubbles != null)
+                _bubbles.ReduceMotion = reduce;
             foreach (var screen in new[] { _hud, _offlineReturn, _codex, _shop, _offerModal, _animalSheet, _modal, _upgrades, _zoneOpen,
-                         _refugeLevel, _levelReward, _biomeGate, _rewardSummary })
+                         _refugeLevel, _levelReward, _biomeGate, _rewardSummary, _today, _weeklyJournal, _wishCard })
                 if (screen is IMotionSettings motion)
                     motion.ReduceMotion = reduce;
         }
@@ -290,6 +324,16 @@ namespace PocketWilds.Presentation
             _onQuality = null;
             _life?.SetAnimals(null);
             _life?.SetListener(null);
+            if (_refuge != null)
+            {
+                _refuge.Daily = null;
+                _refuge.Bubbles = null;
+            }
+            _life?.SetBubbles(null);
+            _bubbles?.Dispose();
+            _bubbles = null;
+            _dailyPresenter?.Dispose();
+            _dailyPresenter = null;
             _progressionPresenter?.Dispose();
             _progressionPresenter = null;
             if (_zones != null)
@@ -404,6 +448,7 @@ namespace PocketWilds.Presentation
             _refuge?.Tick(Time.time, Time.deltaTime);
             _zones?.Tick(Time.time);
             _progressionPresenter?.Tick(Time.time, Time.unscaledDeltaTime);
+            _dailyPresenter?.Tick(Time.time, Time.unscaledDeltaTime);
             _weather?.Tick(Time.unscaledTime);
             _atmosphere?.Tick(Time.unscaledTime);
             var camera = _cameraRig != null ? _cameraRig.Camera : null;

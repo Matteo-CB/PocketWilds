@@ -68,6 +68,8 @@ namespace PocketWilds.Editor.Vfx
                 Effect(VfxId.FavoriteHeart, Build("VFX_FavoriteHeart", material, ConfigureFavoriteHeart), 2, 3, 2),
                 Effect(VfxId.RareGlint, Build("VFX_RareGlint", material, ConfigureRareGlint), 2, 3, 2),
                 Effect(VfxId.ZoneOpen, Build("VFX_ZoneOpen", material, ConfigureZoneOpen), 1, 2, 1),
+                // T36: up to three wishes come true together (doc 05 sheet 17: 400 ms apart, three at most), all warmed.
+                Effect(VfxId.WishDone, Build("VFX_WishDone", material, ConfigureWishDone), 3, 3, 3),
             };
             catalog.effects = effects.ToArray();
             catalog.lowCountScale = 0.5f;
@@ -774,6 +776,38 @@ namespace PocketWilds.Editor.Vfx
             Bursts(motes, (0.05f, 6));
             Tile(motes, TileDot);
             Fade(motes, Color.white, 1f, 0.6f);
+        }
+
+        /// <summary>
+        /// H-VFX-070 (T36, doc 05 sheet 17, VFX table « bulle douce, cœur, anneau », soft pink and white): a wish comes
+        /// true. Where its bubble burst, a soft ring opens from the bubble's size, six soft bubbles drift up and out from its
+        /// skin and four hearts pop up (11 particles: 6 on Low, 14 on High; 0.9 s). Round shapes only, no four-point star.
+        /// Played at the bubble's center (WishBubbleLayer's burst).
+        /// </summary>
+        private static void ConfigureWishDone(GameObject root, Material material)
+        {
+            Ring(root, material, "Ring", true, WithAlpha(new Color(1f, 0.88f, 0.93f), 0.85f), 0.42f, 0.42f, 0.7f, 1.45f, flat: false);
+
+            var bubbles = AddSystem(root, "Bubbles", material, false);
+            Life(bubbles, 0.6f, 0.85f, 0.22f, 0.5f, 0.06f, 0.1f);
+            Colors(bubbles, Color.white, new Color(1f, 0.84f, 0.92f, 1f));
+            Gravity(bubbles, -0.06f);
+            var bubbleShape = Shape(bubbles, ParticleSystemShapeType.Sphere, 0.1f);
+            bubbleShape.radiusThickness = 0.25f;
+            Bursts(bubbles, (0f, 6));
+            Tile(bubbles, TileBubble);
+            Fade(bubbles, Color.white, 1f, 0.6f, 0.6f);
+
+            var hearts = AddSystem(root, "Hearts", material, false);
+            Life(hearts, 0.55f, 0.72f, 0.3f, 0.48f, 0.09f, 0.12f);
+            Colors(hearts, new Color(1f, 0.55f, 0.72f, 1f), new Color(1f, 0.72f, 0.84f, 1f));
+            var main = hearts.main;
+            main.startRotation = new ParticleSystem.MinMaxCurve(-0.25f, 0.25f);
+            Gravity(hearts, -0.08f);
+            Shape(hearts, ParticleSystemShapeType.Cone, 0.06f, up: true, angle: 35f);
+            Bursts(hearts, (0.04f, 4));
+            Tile(hearts, TileHeart);
+            Pop(hearts, new Color(1f, 0.88f, 0.93f));
         }
 
         // ---------------- Helpers ----------------

@@ -42,7 +42,8 @@ namespace PocketWilds.Presentation
     /// offline return screen; its Light counts up into the HUD when collected (T18).
     /// </summary>
     public sealed class RefugeController : IRefugeActions, IHatchListener, IOfflineReturnActions, ICodexActions, IAnimalSheetActions,
-        IModalActions, IAnimalVoiceListener, IEggChoiceActions, IMultiHatchListener, IRewardSummaryActions, IDisposable
+        IModalActions, IAnimalVoiceListener, IEggChoiceActions, IMultiHatchListener, IRewardSummaryActions, IAnimalSheetTreatActions,
+        IDisposable
     {
         private const float NextEggDelay = 0.45f;
         // Room around the egg spot no animal enters: the egg (0.33 m) or a giant newborn squirrel standing on it.
@@ -80,6 +81,7 @@ namespace PocketWilds.Presentation
         private readonly ICodexView _codexView;
         private readonly IAnimalSheetView _sheetView;
         private readonly IModalView _modalView;
+        private readonly RewardCell[] _returnCells = new RewardCell[RewardCells.Max];
         private readonly RefugeCameraInput _input;
         private ContentId _eggId;
         private EggDefinition _egg;
@@ -357,8 +359,17 @@ namespace PocketWilds.Presentation
 
         public bool ProgressionOpen => Progression != null && Progression.IsOpen;
 
+        /// <summary>T36: the rendez-vous of the day (Today, the journal, the wish card); null without daily services.</summary>
+        public DailyVisitPresenter Daily { get; set; }
+
+        public bool DailyOpen => Daily != null && Daily.IsOpen;
+
+        /// <summary>T36: the wish bubbles above animals (doc 06 screen 002); null without the prefab.</summary>
+        public WishBubbleLayer Bubbles { get; set; }
+
         /// <summary>A screen covers the refuge: world touches and hatching wait.</summary>
-        public bool ModalOpen => OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen || ProgressionOpen || SummaryOpen;
+        public bool ModalOpen =>
+            OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen || ProgressionOpen || SummaryOpen || DailyOpen;
 
         /// <summary>T35B: the summary card of a multi hatch (screen 028) is up.</summary>
         public bool SummaryOpen => _summaryView != null && _summaryView.IsOpen;
@@ -426,6 +437,8 @@ namespace PocketWilds.Presentation
                     _context.Audio.SetView(_rig.Focus, _rig.Camera.transform.right, _rig.Distance);
             }
             _scheduler.Tick(time, deltaTime);
+            // T36: bubbles follow their animals; hidden under a screen or a hatch (the wish card alone keeps its bubble).
+            Bubbles?.Tick(time, deltaTime, (ModalOpen && !(Daily != null && Daily.CardOnlyOpen)) || Hatching);
             _hatch.Tick(time, deltaTime);
             _multi.Tick(time, deltaTime);
             if (time >= _nextChoiceCheck)
@@ -515,6 +528,13 @@ namespace PocketWilds.Presentation
                 return;
             var ray = camera.ScreenPointToRay(screenPosition);
 
+            // T36: a wish bubble first (doc 01 A08, section 2.6), then the egg, then the animals.
+            if (Bubbles != null && Daily != null && Bubbles.TryHit(ray, out int bubble))
+            {
+                Daily.OnBubbleTapped(bubble);
+                return;
+            }
+
             if (_waitingEgg != null && HitsSphere(ray, _waitingEgg.VfxPoint.position, EggTapRadius))
             {
                 RequestHatch();
@@ -539,6 +559,13 @@ namespace PocketWilds.Presentation
             }
             if (bestView >= 0)
             {
+                // T36 (doc 01 A10, section 2.6): touching an animal whose wish is fulfilled claims it; any other touch
+                // counts for its bond (daily caps).
+                if (Daily != null && Daily.OnAnimalTapped(_views[bestView].OwnerInstanceId))
+                {
+                    _tappedView = -1;
+                    return;
+                }
                 // Doc 05: a touch first brings a reaction; touching the same animal again opens its sheet.
                 if (bestView == _tappedView && _time - _tappedTime <= SecondTapSeconds && _sheetView != null)
                 {
@@ -560,8 +587,55 @@ namespace PocketWilds.Presentation
             if (view == null || ModalOpen || !TryBuildSheet(view.OwnerInstanceId, out var data))
                 return;
             _sheetView.Open(data, _context.Localization, this);
+            RefreshSheetTreat(view.OwnerInstanceId);
             _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
             _context.Haptics.Play(HapticEventId.TapLight);
+        }
+
+        /// <summary>T36 (doc 01 section 10.1): the sheet's « Friandise » button, with the treat this animal would eat.</summary>
+        private void RefreshSheetTreat(uint instanceId)
+        {
+            if (!(_sheetView is IAnimalSheetTreatView treats) || _context.Daily == null)
+                return;
+            var bond = _context.Daily.Bond;
+            var treat = bond.BestTreatFor(instanceId);
+            int owned = treat != ContentId.None && _context.State.Progression.Treats.TryGetValue(treat, out int count) ? count : 0;
+            treats.SetTreat(new SheetTreatData
+            {
+                Available = owned > 0,
+                Treat = treat,
+                Owned = owned,
+                Preferred = owned > 0 && bond.IsPreferred(instanceId, treat),
+            });
+        }
+
+        /// <summary>T36: a treat eaten from the sheet: bond, hearts above the animal, its happy hop, the eat sound.</summary>
+        public void GiveTreat(uint instanceId)
+        {
+            var daily = _context.Daily;
+            if (daily == null || !daily.Bond.TryGiveTreat(instanceId, out _, out int points))
+            {
+                _context.Audio.Play(AudioEventId.ErrorSoft, Vector3.zero, default);
+                return;
+            }
+            int index = ViewIndexOf(instanceId);
+            if (index >= 0)
+            {
+                float scale = _views[index].transform.localScale.x;
+                var position = _scheduler.GetPosition(_agentByView[index]);
+                _vfx?.Play(VfxId.FavoriteHeart, position + new Vector3(0f, 0.2f * scale, 0f), _time);
+                _scheduler.Poke(_agentByView[index], _time);
+                _context.Audio.Play(AudioEventId.AnimalEat, position + new Vector3(0f, 0.2f, 0f), _views[index].Species);
+            }
+            else
+            {
+                _context.Audio.Play(AudioEventId.AnimalEat, Vector3.zero, default);
+            }
+            _context.Haptics.Play(HapticEventId.Confirm);
+            if (TryBuildSheet(instanceId, out var data))
+                _sheetView?.Refresh(data);
+            (_sheetView as IAnimalSheetTreatView)?.PlayTreatGiven(Mathf.Clamp01(points / (float)BondPointsPerLevel));
+            RefreshSheetTreat(instanceId);
         }
 
         /// <summary>Sheet data of a saved animal: names localized once here, never per frame.</summary>
@@ -753,6 +827,7 @@ namespace PocketWilds.Presentation
         {
             if (ModalOpen)
                 return;
+            Daily?.OnHatchRequested();
             if (_multi.IsPlaying)
             {
                 _multi.Skip();
@@ -870,9 +945,21 @@ namespace PocketWilds.Presentation
                 _input.Blocked = !visible;
         }
 
-        /// <summary>Collect button: the held Light counts up into the HUD counter.</summary>
+        /// <summary>T36 (doc 01 section 6): the return gift waiting for this card, or none.</summary>
+        private void SetReturnGift()
+        {
+            if (!(_offlineView is IOfflineReturnGiftView gift))
+                return;
+            if (Daily != null && Daily.TryBuildReturnGift(out var card, _returnCells, out int count))
+                gift.SetGift(card, _returnCells, count, _context.Localization);
+            else
+                gift.ClearGift();
+        }
+
+        /// <summary>Collect button: the held Light counts up into the HUD counter (and the return gift is taken).</summary>
         public void CollectOffline()
         {
+            Daily?.ClaimReturnGift();
             if (_heldLight.IsZero || _collectTime >= 0f)
                 return;
             _collectTime = 0f;
@@ -1522,6 +1609,7 @@ namespace PocketWilds.Presentation
             {
                 // Already in the wallet (saved at once); the HUD holds it back until Collect.
                 _heldLight = report.Light;
+                SetReturnGift();
                 _offlineView.Show(report.Light, _context.Localization, this);
                 _context.Analytics.ScreenView(ScreenId.OfflineReturn);
                 _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
@@ -1583,7 +1671,9 @@ namespace PocketWilds.Presentation
                 for (int i = collection.Count - 1; i >= 0 && VisibleAnimals < _visibleAllowance; i--)
                 {
                     ref readonly var animal = ref collection[i];
-                    if (animal.IsFavorite != (pass == 0) || IsVisible(animal.InstanceId))
+                    // T36: an animal with a pending wish is shown first too (its bubble is in the world, doc 06 screen 002).
+                    bool first = animal.IsFavorite || HasWish(animal.InstanceId);
+                    if (first != (pass == 0) || IsVisible(animal.InstanceId))
                         continue;
                     var position = area.PointAt(SeedHash.Unit(animal.Seed, 0x51A70001u) * 0.9f + 0.05f,
                         SeedHash.Unit(animal.Seed, 0x51A70002u) * 0.9f + 0.05f);
@@ -1594,6 +1684,110 @@ namespace PocketWilds.Presentation
                     AddToMeadow(view, animal.Species, animal.InstanceId, animal.Seed, RareGlow.KindOf(animal.Rarity, animal.TraitBits), emerging: false);
                 }
             }
+        }
+
+        private bool HasWish(uint instanceId) => _context.Daily != null && _context.Daily.Wishes.WishOf(instanceId, out _);
+
+        private int ViewIndexOf(uint instanceId)
+        {
+            for (int i = 0; i < _views.Length; i++)
+                if (_views[i] != null && _views[i].OwnerInstanceId == instanceId && _agentByView[i] != AnimalScheduler.InvalidHandle)
+                    return i;
+            return -1;
+        }
+
+        /// <summary>
+        /// T36: the animal of a new wish comes into view if it is in the reserve (its bubble must be seen): the oldest visible
+        /// animal without a wish steps back for it. Nothing when it is already visible or no room can be made.
+        /// </summary>
+        public void EnsureVisible(uint instanceId)
+        {
+            if (IsVisible(instanceId) || Hatching || !_context.State.Collection.TryGet(instanceId, out var animal))
+                return;
+            var area = _walkArea;
+            var position = area.PointAt(SeedHash.Unit(animal.Seed, 0x51A70001u) * 0.9f + 0.05f, SeedHash.Unit(animal.Seed, 0x51A70002u) * 0.9f + 0.05f);
+            if (!_context.Visuals.TryResolve(animal, position, SeedHash.Unit(animal.Seed, 0x51A70003u) * 360f, out var snapshot))
+                return;
+            if (!TryAcquire(snapshot, out var view))
+                return;
+            AddToMeadow(view, animal.Species, animal.InstanceId, animal.Seed, RareGlow.KindOf(animal.Rarity, animal.TraitBits), emerging: false);
+        }
+
+        /// <summary>T36: screen point just above an animal's head (the wish card, the tutorial paw); false when not on screen.</summary>
+        public bool TryGetAnimalScreenPoint(uint instanceId, out Vector2 screen)
+        {
+            screen = default;
+            int index = ViewIndexOf(instanceId);
+            var camera = _rig != null ? _rig.Camera : Camera.main;
+            if (index < 0 || camera == null)
+                return false;
+            float scale = _views[index].transform.localScale.x;
+            var point = camera.WorldToScreenPoint(_scheduler.GetPosition(_agentByView[index]) + new Vector3(0f, 0.45f * scale, 0f));
+            if (point.z <= 0f)
+                return false;
+            screen = new Vector2(point.x, point.y);
+            return true;
+        }
+
+        /// <summary>T36 (doc 05 sheet 17): a wish fulfilled in the world: the animal hops, a happy voice, hearts above it.</summary>
+        public void PlayWishDoneAt(uint instanceId, float time)
+        {
+            int index = ViewIndexOf(instanceId);
+            if (index < 0)
+                return;
+            float scale = _views[index].transform.localScale.x;
+            var position = _scheduler.GetPosition(_agentByView[index]);
+            _vfx?.Play(VfxId.FavoriteHeart, position + new Vector3(0f, 0.3f * scale, 0f), time);
+            _scheduler.Poke(_agentByView[index], time);
+            _context.Audio.Play(AudioEventId.AnimalHappy, position + new Vector3(0f, 0.2f, 0f), _views[index].Species);
+        }
+
+        /// <summary>T36 (doc 05 sheet 17, H-VFX-070): a wish bubble burst at its place: the effect, then the animal hops happily.</summary>
+        public void PlayWishBurst(uint instanceId, Vector3 point, float time)
+        {
+            _vfx?.Play(VfxId.WishDone, point, time);
+            int index = ViewIndexOf(instanceId);
+            if (index < 0)
+                return;
+            _scheduler.Poke(_agentByView[index], time);
+            _context.Audio.Play(AudioEventId.AnimalHappy, _scheduler.GetPosition(_agentByView[index]) + new Vector3(0f, 0.2f, 0f),
+                _views[index].Species);
+        }
+
+        public bool TryWorldToScreen(Vector3 world, out Vector2 screen)
+        {
+            screen = default;
+            var camera = _rig != null ? _rig.Camera : Camera.main;
+            if (camera == null)
+                return false;
+            var point = camera.WorldToScreenPoint(world);
+            if (point.z <= 0f)
+                return false;
+            screen = new Vector2(point.x, point.y);
+            return true;
+        }
+
+        /// <summary>T36: an egg won (a Discovery egg) waits on the hatch button, selected (« Gratuit »).</summary>
+        public void SelectEgg(ContentId egg)
+        {
+            _choice.Refresh();
+            for (int i = 0; i < _choice.Count; i++)
+            {
+                if (_choice[i] != egg)
+                    continue;
+                _choice.Select(i);
+                PushChoice(false);
+                return;
+            }
+        }
+
+        /// <summary>T36: an information card (the gift's odds), over Today if it is open.</summary>
+        public void ShowInfo(string title, string body)
+        {
+            if (_modalView == null || _modalView.IsOpen)
+                return;
+            _modalView.Show(ModalKind.Info, title, body, _context.Localization.Get(FeedbackText.ModalOkButton), null, this);
+            _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
         }
 
         private bool IsVisible(uint instanceId)
@@ -1731,14 +1925,24 @@ namespace PocketWilds.Presentation
             int slot = VisibleAnimals;
             if (VisibleAnimals >= _visibleAllowance || slot >= _views.Length)
             {
-                // Allowance reached: the oldest visible animal steps back into the reserve.
-                _scheduler.Unregister(_agentByView[0]);
-                _animals.Release(_views[0]);
+                // Allowance reached: the oldest visible animal steps back into the reserve; T36: one with a pending wish
+                // stays (its bubble is in the world), the next oldest goes instead.
+                int leave = 0;
+                for (int i = 0; i < VisibleAnimals; i++)
+                {
+                    if (_views[i] != null && !HasWish(_views[i].OwnerInstanceId) && _views[i].OwnerInstanceId != instanceId)
+                    {
+                        leave = i;
+                        break;
+                    }
+                }
+                _scheduler.Unregister(_agentByView[leave]);
+                _animals.Release(_views[leave]);
                 VisibleAnimals--;
                 int last = VisibleAnimals;
-                Array.Copy(_views, 1, _views, 0, last);
-                Array.Copy(_agentByView, 1, _agentByView, 0, last);
-                Array.Copy(_rareByView, 1, _rareByView, 0, last);
+                Array.Copy(_views, leave + 1, _views, leave, last - leave);
+                Array.Copy(_agentByView, leave + 1, _agentByView, leave, last - leave);
+                Array.Copy(_rareByView, leave + 1, _rareByView, leave, last - leave);
                 slot = last;
             }
             var transform = view.transform;

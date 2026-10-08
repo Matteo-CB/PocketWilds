@@ -11,9 +11,11 @@ namespace PocketWilds.UI
     /// PF_UI_HUD_Main (T17 scope): Light chip and the hatch action, numbers and icons only. The chip and
     /// the action sit on their own nested canvases so the ticking counter never rebuilds the button.
     /// States use color tokens and scale, not extra sprites. No Update: ticked by the scene controller.
+    /// T36 (doc 06 screen 002, doc 01 section 1.3): the contextual right rail with the Today button and its dot, the Gems
+    /// chip shown from the first Gem (split from the shop), Gems motes, and the wish card it carries for the presenter.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IMotionSettings
+    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IDailyHud, IMotionSettings
     {
         private const float PulseSeconds = 0.4f;
 
@@ -87,6 +89,17 @@ namespace PocketWilds.UI
         [SerializeField] private Image _costIcon;
         [SerializeField] private TMP_Text _priceWord;
 
+        [Header("T36 rendez-vous: right rail (Play, Today, Event), Gems motes, wish card")]
+        [SerializeField] private RectTransform _rail;
+        [SerializeField] private RectTransform[] _railItems = System.Array.Empty<RectTransform>();
+        [SerializeField] private Button _todayButton;
+        [SerializeField] private RectTransform _todayRoot;
+        [SerializeField] private CanvasGroup _todayGroup;
+        [SerializeField] private RectTransform _todayIcon;
+        [SerializeField] private RectTransform _todayDot;
+        [SerializeField] private CollectMotes _gemsCollect;
+        [SerializeField] private WishCardView _wishCard;
+
         private IRefugeActions _actions;
         private IProgressionHudActions _progressionActions;
         private bool _upgradeShown;
@@ -142,6 +155,8 @@ namespace PocketWilds.UI
                 if (_tapHint != null) _tapHint.ReduceMotion = value;
                 if (_collect != null) _collect.ReduceMotion = value;
                 if (_eggChoice != null) _eggChoice.ReduceMotion = value;
+                if (_gemsCollect != null) _gemsCollect.ReduceMotion = value;
+                if (_wishCard != null) _wishCard.ReduceMotion = value;
             }
         }
 
@@ -173,8 +188,17 @@ namespace PocketWilds.UI
             if (_shopButton != null)
             {
                 _shopButton.onClick.AddListener(OnShopPressed);
-                _gems = new BigValueText(_gemsLabel);
                 _shopShown = _shopRoot.gameObject.activeSelf;
+            }
+            if (_gemsLabel != null)
+            {
+                _gems = new BigValueText(_gemsLabel);
+                _gemsChipShown = _gemsChip.gameObject.activeSelf;
+            }
+            if (_todayRoot != null)
+            {
+                _todayShown = _todayRoot.gameObject.activeSelf;
+                _todayDotShown = _todayDot != null && _todayDot.gameObject.activeSelf;
             }
             _badgeShown = _codexBadge != null && _codexBadge.activeSelf;
             if (_upgradeRoot != null)
@@ -474,6 +498,7 @@ namespace PocketWilds.UI
         public bool ShopVisible => _shopShown;
         public string GemsText => _gemsLabel != null ? _gemsLabel.text : string.Empty;
 
+        /// <summary>The shop shortcut. The Gems chip shows when the shop or <see cref="SetGems"/> asks for it (T36 split).</summary>
         public void SetShop(bool unlocked, long gems)
         {
             if (!_bound || _shopRoot == null)
@@ -482,13 +507,270 @@ namespace PocketWilds.UI
             {
                 _shopShown = unlocked;
                 _shopRoot.gameObject.SetActive(unlocked);
-                _gemsChip.gameObject.SetActive(unlocked);
+                ApplyGemsChip();
             }
-            if (unlocked && gems != _gemsShown)
+            if (unlocked)
+                SetGemsValue(gems);
+        }
+
+        // ---------------- T36 rendez-vous (IDailyHud) ----------------
+
+        /// <summary>Distance between two rail buttons, top to bottom (Play, Today, Event; canvas units).</summary>
+        public const float RailPitch = 188f;
+        private const float AppearSeconds = 0.35f;
+        private const float DotBreathPeriod = 2.4f;
+        private const float NodPeriod = 5.2f;
+        private const float NodSeconds = 0.7f;
+
+        private IDailyHudActions _dailyActions;
+        private bool _todayShown;
+        private bool _todayDotShown;
+        private bool _todayHint;
+        private float _appearTime = -1f;
+        private float _todayIdle;
+        private bool _todayAtRest = true;
+        private bool _gemsWanted;
+        private bool _gemsChipShown;
+        private long _gemsTarget = -1;
+        private bool _gemsHold;
+
+        public bool TodayVisible => _todayShown;
+        public bool TodayDotVisible => _todayDotShown;
+        public bool TodayAppearing => _appearTime >= 0f;
+        public bool TodayHintShown => _todayHint && !_eggHint && !_upgradeHint && _todayShown;
+        public bool GemsChipVisible => _gemsChipShown;
+        public bool GemsCollectPlaying => _gemsCollect != null && _gemsCollect.Playing;
+        public Button TodayButton => _todayButton;
+        public RectTransform TodayRoot => _todayRoot;
+
+        /// <summary>The right rail (Play, Today, Event): later rail buttons go into its items, stacked by visibility.</summary>
+        public RectTransform Rail => _rail;
+        public CollectMotes GemsCollect => _gemsCollect;
+
+        /// <summary>The wish card the HUD carries on its own canvas (sorting order 24); the presenter opens and ticks it.</summary>
+        public WishCardView WishCard => _wishCard;
+
+        public Vector2 TodayScreenPosition => ScreenCenter(_todayRoot);
+
+        public Vector2 HatchScreenPosition => ScreenCenter(_hatchButton != null ? (RectTransform)_hatchButton.transform : _hatchRoot);
+
+        public void BindDaily(IDailyHudActions actions)
+        {
+            _dailyActions = actions;
+            if (_todayButton == null)
+                return;
+            _todayButton.onClick.RemoveListener(OnTodayPressed);
+            _todayButton.onClick.AddListener(OnTodayPressed);
+        }
+
+        /// <summary>The Today button on the right rail and its dot (doc 06 screen 002: dot when a wish or the gift waits).</summary>
+        public void SetToday(bool visible, bool dot)
+        {
+            if (_todayRoot == null)
+                return;
+            if (visible != _todayShown)
             {
-                _gemsShown = gems;
-                _gems.Set(BigValue.FromDouble(gems));
+                _todayShown = visible;
+                _todayRoot.gameObject.SetActive(visible);
+                LayoutRail();
+                if (!visible)
+                    _appearTime = -1f;
             }
+            bool showDot = visible && dot;
+            if (showDot != _todayDotShown && _todayDot != null)
+            {
+                _todayDotShown = showDot;
+                _todayDot.gameObject.SetActive(showDot);
+                _todayIdle = 0f;
+                RestToday();
+            }
+        }
+
+        /// <summary>A12: the button pops in once (0.35 s, a soft overshoot); with Reduce Motion it only fades in.</summary>
+        public void PlayTodayAppear()
+        {
+            if (_todayRoot == null)
+                return;
+            _appearTime = 0f;
+            ApplyAppear(0f);
+        }
+
+        /// <summary>A12: the tutorial paw taps on the Today button until the presenter takes it away.</summary>
+        public void SetTodayHint(bool visible)
+        {
+            if (visible == _todayHint)
+                return;
+            _todayHint = visible;
+            if (!visible && !_eggHint && !_upgradeHint)
+                _tapHint?.Set(false, default);
+        }
+
+        /// <summary>
+        /// The Gems chip from the first Gem (doc 01 A10), shop or not. While Gems motes fly, the counter waits and changes as
+        /// the first mote lands (doc 05 sheet 17: at 1 020 ms the motes arrive and the Gems counter pops).
+        /// </summary>
+        public void SetGems(bool visible, long gems)
+        {
+            if (!_bound || _gemsChip == null)
+                return;
+            if (visible != _gemsWanted)
+            {
+                _gemsWanted = visible;
+                ApplyGemsChip();
+            }
+            if (visible)
+                SetGemsValue(gems);
+        }
+
+        /// <summary>Doc 05 sheet 17: 3 Gem motes fly from a screen point into the Gems chip (H-VFX-008 tinted Gems), which pops.</summary>
+        public void PlayGemsCollect(Vector2 fromScreenPosition)
+        {
+            if (_gemsCollect == null)
+                return;
+            _gemsCollect.Play(fromScreenPosition);
+            _gemsHold = _gemsCollect.Playing;
+        }
+
+        private void ApplyGemsChip()
+        {
+            bool show = _shopShown || _gemsWanted;
+            if (show == _gemsChipShown || _gemsChip == null)
+                return;
+            _gemsChipShown = show;
+            _gemsChip.gameObject.SetActive(show);
+        }
+
+        private void SetGemsValue(long gems)
+        {
+            _gemsTarget = gems;
+            if (_gemsHold || gems == _gemsShown || _gems == null)
+                return;
+            _gemsShown = gems;
+            _gems.Set(BigValue.FromDouble(gems));
+        }
+
+        /// <summary>Stacks the visible rail buttons from the top (no layout group on the HUD). Only on a visibility change.</summary>
+        private void LayoutRail()
+        {
+            int row = 0;
+            for (int i = 0; i < _railItems.Length; i++)
+            {
+                var item = _railItems[i];
+                if (item == null || !item.gameObject.activeSelf)
+                    continue;
+                item.anchoredPosition = new Vector2(0f, -RailPitch * (row + 0.5f));
+                row++;
+            }
+        }
+
+        /// <summary>
+        /// The daily invitation stays alive without ever flashing: while the dot is on, the dot breathes slowly and the
+        /// page nods once every few seconds. Nothing moves with Reduce Motion or without the dot.
+        /// </summary>
+        private void TickToday(float dt)
+        {
+            if (_appearTime >= 0f && _todayShown)
+            {
+                _appearTime += dt;
+                float k = Mathf.Clamp01(_appearTime / AppearSeconds);
+                ApplyAppear(k);
+                if (k >= 1f)
+                    _appearTime = -1f;
+            }
+            if (!_todayShown || !_todayDotShown || ReduceMotion || _todayDot == null)
+            {
+                RestToday();
+                return;
+            }
+            _todayAtRest = false;
+            _todayIdle += dt;
+            float breath = 0.5f - 0.5f * Mathf.Cos(_todayIdle * (2f * Mathf.PI / DotBreathPeriod));
+            float dot = 1f + 0.14f * breath;
+            _todayDot.localScale = new Vector3(dot, dot, 1f);
+            if (_todayIcon == null)
+                return;
+            // A small happy nod of the page: tilt, settle back, rest.
+            float nod = Mathf.Repeat(_todayIdle, NodPeriod) - (NodPeriod - NodSeconds);
+            float angle = 0f;
+            if (nod > 0f)
+            {
+                float t = nod / NodSeconds;
+                angle = 7f * Mathf.Sin(t * Mathf.PI * 2f) * (1f - t);
+            }
+            _todayIcon.localRotation = Quaternion.Euler(0f, 0f, angle);
+        }
+
+        private void RestToday()
+        {
+            if (_todayAtRest)
+                return;
+            _todayAtRest = true;
+            if (_todayDot != null)
+                _todayDot.localScale = Vector3.one;
+            if (_todayIcon != null)
+                _todayIcon.localRotation = Quaternion.identity;
+        }
+
+        private void ApplyAppear(float k)
+        {
+            if (_todayGroup != null)
+                _todayGroup.alpha = ReduceMotion ? k : Mathf.Clamp01(k * 3f);
+            float s = ReduceMotion ? 1f : (k >= 1f ? 1f : EaseOutBack(k));
+            _todayRoot.localScale = new Vector3(s, s, 1f);
+        }
+
+        /// <summary>0 to 1 with a soft overshoot (about 1.1 at its peak).</summary>
+        private static float EaseOutBack(float t)
+        {
+            const float c1 = 1.70158f;
+            const float c3 = c1 + 1f;
+            float u = t - 1f;
+            return 1f + c3 * u * u * u + c1 * u * u;
+        }
+
+        private void TickTodayHint()
+        {
+            if (_tapHint == null || !_todayHint || _eggHint || _upgradeHint || !_todayShown)
+                return;
+            _tapHint.Set(true, TodayScreenPosition);
+        }
+
+        private void TickGemsCollect(float dt)
+        {
+            if (_gemsCollect == null)
+                return;
+            _gemsCollect.Tick(dt);
+            if (_gemsHold && (!_gemsCollect.Playing || _gemsCollect.Landed > 0))
+            {
+                _gemsHold = false;
+                if (_gemsTarget >= 0)
+                    SetGemsValue(_gemsTarget);
+            }
+        }
+
+        private static Vector2 ScreenCenter(RectTransform rect)
+        {
+            if (rect == null)
+                return default;
+            // Overlay canvas: no camera.
+            return RectTransformUtility.WorldToScreenPoint(null, rect.TransformPoint(rect.rect.center));
+        }
+
+        private void OnTodayPressed() => _dailyActions?.OpenToday();
+
+        /// <summary>Prefab builder hook for the T36 parts (Editor UiPipeline).</summary>
+        public void SetDailyReferences(RectTransform rail, RectTransform[] railItems, Button todayButton, RectTransform todayRoot,
+            CanvasGroup todayGroup, RectTransform todayIcon, RectTransform todayDot, CollectMotes gemsCollect, WishCardView wishCard)
+        {
+            _rail = rail;
+            _railItems = railItems;
+            _todayButton = todayButton;
+            _todayRoot = todayRoot;
+            _todayGroup = todayGroup;
+            _todayIcon = todayIcon;
+            _todayDot = todayDot;
+            _gemsCollect = gemsCollect;
+            _wishCard = wishCard;
         }
 
         public void Tick(float unscaledDeltaTime)
@@ -540,13 +822,16 @@ namespace PocketWilds.UI
                 _toasts.Tick(unscaledDeltaTime);
             }
             TickUpgradeHint();
+            TickTodayHint();
             TickLevelUp(unscaledDeltaTime);
+            TickToday(unscaledDeltaTime);
             if (_eggChoice != null)
                 _eggChoice.Tick(unscaledDeltaTime);
             if (_tapHint != null)
                 _tapHint.Tick(unscaledDeltaTime);
             if (_collect != null)
                 _collect.Tick(unscaledDeltaTime);
+            TickGemsCollect(unscaledDeltaTime);
         }
 
         /// <summary>
@@ -621,8 +906,11 @@ namespace PocketWilds.UI
             || (_upgradeShown && RectTransformUtility.RectangleContainsScreenPoint(_upgradeRoot, screenPosition, null))
             || (_levelRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_levelRoot, screenPosition, null))
             || (_eggChoice != null && _eggChoice.Contains(screenPosition))
-            || (_shopShown && (RectTransformUtility.RectangleContainsScreenPoint(_shopRoot, screenPosition, null)
-                               || RectTransformUtility.RectangleContainsScreenPoint(_gemsChip, screenPosition, null)));
+            || (_shopShown && RectTransformUtility.RectangleContainsScreenPoint(_shopRoot, screenPosition, null))
+            || (_gemsChipShown && RectTransformUtility.RectangleContainsScreenPoint(_gemsChip, screenPosition, null))
+            || (_todayShown && RectTransformUtility.RectangleContainsScreenPoint(_todayRoot, screenPosition, null))
+            // The wish card's touch catcher covers the screen: a touch beside it only closes it (doc 01 A08).
+            || (_wishCard != null && _wishCard.TakesTouch);
 
         // ---------------- T35B egg choice (IEggChoiceHud) ----------------
 
@@ -784,6 +1072,8 @@ namespace PocketWilds.UI
                 _levelButton.onClick.RemoveListener(OnLevelPressed);
             if (_lightButton != null)
                 _lightButton.onClick.RemoveListener(OnUpgradePressed);
+            if (_todayButton != null)
+                _todayButton.onClick.RemoveListener(OnTodayPressed);
         }
     }
 }

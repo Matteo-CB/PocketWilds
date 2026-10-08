@@ -504,7 +504,11 @@ namespace PocketWilds.Presentation
                 return;
             _upgrades.Close();
             _context.Audio.Play(AudioEventId.PanelClose, Vector3.zero, default);
+            UpgradesClosed?.Invoke();
         }
+
+        /// <summary>T36 (doc 01 A08): the Upgrades panel closed; the first wish appears then.</summary>
+        public event Action UpgradesClosed;
 
         private void OnPurchased(UpgradePurchase purchase)
         {

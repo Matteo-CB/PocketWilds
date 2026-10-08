@@ -141,6 +141,10 @@ namespace PocketWilds.Tests.EditMode
                 (FeedbackUiPipeline.SheetPrefabPath, "Content/SafeArea/Card/Details/Label", Longest(FeedbackText.SheetDetailsButton)),
                 (FeedbackUiPipeline.ModalPrefabPath, "Content/Card/Title", Longest(FeedbackText.EggOddsTitle)),
                 (FeedbackUiPipeline.ModalPrefabPath, "Content/Card/Confirm/Label", Longest(FeedbackText.ModalOkButton, FeedbackText.ModalCancelButton)),
+                // T36: the wish card's buttons and the sheet's treat button.
+                (UiPipeline.HudPrefabPath, "WishCard/Content/Card/Claim/Label", Longest(DailyVisitText.WishClaim)),
+                (UiPipeline.HudPrefabPath, "WishCard/Content/Card/Swap/Label", Longest(DailyVisitText.WishSwap)),
+                (FeedbackUiPipeline.SheetPrefabPath, "Content/SafeArea/Card/Treat/Button/Label", Longest(DailyVisitText.SheetTreat)),
             };
             var problems = new List<string>();
             foreach (var group in cases.GroupBy(c => c.prefab))

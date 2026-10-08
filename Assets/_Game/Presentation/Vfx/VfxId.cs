@@ -21,7 +21,10 @@ namespace PocketWilds.Presentation
 
         /// <summary>T35A H-VFX-102: a zone opens: petals and pale leaves lift off along the sinking hedge.</summary>
         ZoneOpen = 12,
-        Count = 13,
+
+        /// <summary>T36 H-VFX-070 (doc 05 sheet 17): a wish comes true: its bubble bursts into soft bubbles, hearts and a ring.</summary>
+        WishDone = 13,
+        Count = 14,
     }
 
     /// <summary>What a hatch brings that the player did not have: shown by its own effect and the reveal banner.</summary>

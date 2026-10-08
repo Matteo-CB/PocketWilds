@@ -31,6 +31,12 @@ namespace PocketWilds.Presentation
         /// <summary>Bodies may touch: an overlap under this (m) is a contact, not a collision (float rounding).</summary>
         public const float ContactTolerance = 0.002f;
 
+        /// <summary>T36: volumes above every walker (tree crowns, sails) kept for things in the air (wish bubbles).</summary>
+        public const int MaxHighObstacles = 256;
+
+        /// <summary>T36: for things in the air, the egg's room stands this high above its ground (the egg, a newborn on it).</summary>
+        public const float EggAirHeight = 0.6f;
+
         private const uint RngSalt = 0x5C4ED001u;
         private const uint TemperamentSalt = 0x7E3A0001u;
         private const float ArriveDistance = 0.04f;
@@ -117,6 +123,9 @@ namespace PocketWilds.Presentation
         private readonly float[] _obstacleReach = new float[MaxObstacles];
         private readonly Vector3[] _candidates = new Vector3[WanderCandidates];
         private readonly int[] _candidateCrowd = new int[WanderCandidates];
+        private readonly Obstacle[] _highObstacles = new Obstacle[MaxHighObstacles];
+        private int _highObstacleCount;
+        private float _eggGroundY;
 
         private SchedulerSettings _settings;
         private WanderArea _area;
@@ -223,13 +232,19 @@ namespace PocketWilds.Presentation
         public void SetObstacles(Obstacle[] obstacles)
         {
             _obstacleCount = 0;
+            _highObstacleCount = 0;
             if (obstacles == null)
                 return;
             foreach (var o in obstacles)
             {
-                // Volumes starting above any animal's head (tree crowns, sails) never block a walk.
+                // Volumes starting above any animal's head (tree crowns, sails) never block a walk. T36: they are kept
+                // apart for things in the air (IsAirFree).
                 if (o.kind == ObstacleKind.Solid && o.bottom > 1.5f)
+                {
+                    if (_highObstacleCount < MaxHighObstacles)
+                        _highObstacles[_highObstacleCount++] = o;
                     continue;
+                }
                 if (_obstacleCount == MaxObstacles)
                     break;
                 _obstacles[_obstacleCount] = o;
@@ -248,6 +263,7 @@ namespace PocketWilds.Presentation
         public void SetEggSpot(Vector3 center, float radius, float eggRadius, float apronRadius = 0f)
         {
             _eggSpot = new Vector2(center.x, center.z);
+            _eggGroundY = center.y;
             _eggRadius = radius;
             _eggBodyRadius = Mathf.Min(eggRadius, radius);
             _eggApron = Mathf.Max(apronRadius, radius);
@@ -480,6 +496,110 @@ namespace PocketWilds.Presentation
             radius = a.Radius;
             groundY = a.Position.y;
             height = a.Height;
+        }
+
+        /// <summary>T36: the handle of the registered animal with this instance id (wish bubbles find their animal).</summary>
+        public bool TryGetHandle(uint instanceId, out int handle)
+        {
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int slot = _active[i];
+                if (_agents[slot].InstanceId == instanceId)
+                {
+                    handle = slot;
+                    return true;
+                }
+            }
+            handle = InvalidHandle;
+            return false;
+        }
+
+        /// <summary>
+        /// T36 wish bubbles (no-collision rule, Docs/Design/Collision_Rule.md): a sphere in the air enters no solid volume
+        /// (tree crowns included; water and steep ground lie below, as for the insects), not the egg's room (its spot up
+        /// to <see cref="EggAirHeight"/>) and no animal's body column (its capsule from the ground to the top of its
+        /// body), <paramref name="ignoreHandle"/>'s excepted (<see cref="InvalidHandle"/>: none). The sphere is tested as
+        /// its bounding cylinder, like AmbientLife.InsideVolume. Touching is allowed: the caller adds the 2 mm tolerance
+        /// to <paramref name="radius"/>. Broad phase first, no allocation.
+        /// </summary>
+        public bool IsAirFree(Vector3 center, float radius, int ignoreHandle)
+        {
+            var c = new Vector2(center.x, center.z);
+            float low = center.y - radius, high = center.y + radius;
+            for (int i = 0; i < _obstacleCount; i++)
+            {
+                float span = radius + _obstacleReach[i];
+                if ((_obstacleCenter[i] - c).sqrMagnitude >= span * span)
+                    continue;
+                ref var o = ref _obstacles[i];
+                if (!o.IsSolid || high <= o.WorldBottom || low >= o.WorldTop)
+                    continue;
+                float min = o.radius + radius;
+                if (CollisionMath.PointSegmentDistanceSq(c, o.a, o.b) < min * min)
+                    return false;
+            }
+            for (int i = 0; i < _highObstacleCount; i++)
+            {
+                ref var o = ref _highObstacles[i];
+                if (high <= o.WorldBottom || low >= o.WorldTop)
+                    continue;
+                float min = o.radius + radius;
+                if (CollisionMath.PointSegmentDistanceSq(c, o.a, o.b) < min * min)
+                    return false;
+            }
+            if (_hasEggSpot && low < _eggGroundY + EggAirHeight)
+            {
+                float min = _eggRadius + radius;
+                if ((c - _eggSpot).sqrMagnitude < min * min)
+                    return false;
+            }
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int slot = _active[i];
+                if (slot == ignoreHandle)
+                    continue;
+                ref var a = ref _agents[slot];
+                if (low >= a.Position.y + a.Height || high <= a.Position.y)
+                    continue;
+                float span = radius + a.Reach;
+                if ((new Vector2(a.Position.x, a.Position.z) - c).sqrMagnitude >= span * span)
+                    continue;
+                float min = radius + a.Radius;
+                if (CollisionMath.PointSegmentDistanceSq(c, a.SegA, a.SegB) < min * min)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// T36 tests: the smallest free space (m, negative: overlap; at most <see cref="ClearanceHorizon"/>) between a
+        /// sphere in the air and what <see cref="IsAirFree"/> tests, among the volumes at its height.
+        /// </summary>
+        public float AirClearance(Vector3 center, float radius, int ignoreHandle)
+        {
+            var c = new Vector2(center.x, center.z);
+            float low = center.y - radius, high = center.y + radius;
+            float best = ClearanceHorizon;
+            for (int i = 0; i < _obstacleCount + _highObstacleCount; i++)
+            {
+                ref var o = ref i < _obstacleCount ? ref _obstacles[i] : ref _highObstacles[i - _obstacleCount];
+                if (!o.IsSolid || high <= o.WorldBottom || low >= o.WorldTop)
+                    continue;
+                best = Mathf.Min(best, Mathf.Sqrt(CollisionMath.PointSegmentDistanceSq(c, o.a, o.b)) - o.radius - radius);
+            }
+            if (_hasEggSpot && low < _eggGroundY + EggAirHeight)
+                best = Mathf.Min(best, (c - _eggSpot).magnitude - _eggRadius - radius);
+            for (int i = 0; i < _activeCount; i++)
+            {
+                int slot = _active[i];
+                if (slot == ignoreHandle)
+                    continue;
+                ref var a = ref _agents[slot];
+                if (low >= a.Position.y + a.Height || high <= a.Position.y)
+                    continue;
+                best = Mathf.Min(best, Mathf.Sqrt(CollisionMath.PointSegmentDistanceSq(c, a.SegA, a.SegB)) - a.Radius - radius);
+            }
+            return best;
         }
 
         /// <summary>Clearance never reports more than this (m): anything farther is skipped by a bounding test.</summary>

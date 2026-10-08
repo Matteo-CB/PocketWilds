@@ -288,7 +288,8 @@ namespace PocketWilds.Editor.UI
                 var safe = UiPipeline.Rect("SafeArea", content);
                 UiPipeline.Stretch(safe);
                 var card = UiPipeline.Rect("Card", safe);
-                UiPipeline.Place(card, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 24f), new Vector2(1032f, 860f));
+                // T36: 100 units taller for the « Friandise » row under the bond bar.
+                UiPipeline.Place(card, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 24f), new Vector2(1032f, SheetCardHeight));
                 var back = UiPipeline.AddImage("Background", card, panel, tokens.backgroundLight, Image.Type.Sliced);
                 UiPipeline.Stretch(back.rectTransform);
                 // Touches on the card stay on the card (they never close it through the scrim).
@@ -374,6 +375,7 @@ namespace PocketWilds.Editor.UI
                 var visuals = AssetDatabase.LoadAssetAtPath<CodexVisualCatalog>(CodexVisualsPath);
                 screen.SetReferences(canvas, content.gameObject, group, safe, card, scrim, close, portrait, frame, name, species, badge, rarityLabel,
                     stars, traits, bondLabel, bar.rectTransform, fill.rectTransform, bondLevel, favorite, heart, details, detailsLabel, rarity, tokens, visuals);
+                AddSheetTreat(screen, card, tokens, buttonSprite);
                 content.gameObject.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Path.GetDirectoryName(SheetPrefabPath));
@@ -383,6 +385,71 @@ namespace PocketWilds.Editor.UI
             {
                 Object.DestroyImmediate(root);
             }
+        }
+
+        /// <summary>The quick sheet's card height (T34A 860, + 100 in T36 for the treat row).</summary>
+        public const float SheetCardHeight = 960f;
+
+        /// <summary>The biome treats with their own icon on the sheet (the others show ICO_Treat).</summary>
+        private static readonly string[,] SheetTreatIcons = { { "treat.clover_crunch", "ICO_Treat_CloverCrunch" } };
+
+        /// <summary>
+        /// T36 (doc 01 section 10.1): the « Friandise » button centered under the bond bar (the treat's icon, its name,
+        /// « ×n » owned, a small heart when the family prefers it), and four hearts that fly from it to the bar. Hidden
+        /// until the sheet gets its treat data.
+        /// </summary>
+        private static void AddSheetTreat(AnimalSheetScreen screen, RectTransform card, UiColorTokens tokens, Sprite buttonSprite)
+        {
+            var center = new Vector2(0.5f, 0.5f);
+            var treatSprite = Load(Icon("ICO_Treat"));
+            var heartSprite = Load(Icon("ICO_Favorite_Heart"));
+
+            var root = UiPipeline.Rect("Treat", card);
+            // Under the bond bar (270 to 830), same width: the treat fills the bar it sits under.
+            // Wide enough for « Friandise » 30 % longer at the Button minimum (Gate 12).
+            UiPipeline.Place(root, new Vector2(0f, 1f), center, new Vector2(550f, -620f), new Vector2(640f, 132f));
+            var back = UiPipeline.AddImage("Button", root, buttonSprite, tokens.panelSecondary, Image.Type.Sliced);
+            back.pixelsPerUnitMultiplier = 1.3f;
+            back.raycastTarget = true;
+            UiPipeline.Stretch(back.rectTransform);
+            var button = back.gameObject.AddComponent<Button>();
+            UiPipeline.ConfigureButton(button, back);
+            // No treat: the sheet sets its own soft look (idle color, faded icon); the button adds no grey veil on top.
+            var colors = button.colors;
+            colors.disabledColor = Color.white;
+            button.colors = colors;
+            var icon = UiPipeline.AddImage("Icon", back.rectTransform, treatSprite, Color.white, Image.Type.Simple);
+            UiPipeline.Place(icon.rectTransform, new Vector2(0f, 0.5f), center, new Vector2(70f, 8f), new Vector2(96f, 96f));
+            var preferred = UiPipeline.AddImage("Preferred", back.rectTransform, heartSprite, Color.white, Image.Type.Simple);
+            UiPipeline.Place(preferred.rectTransform, new Vector2(0f, 0.5f), center, new Vector2(114f, 46f), new Vector2(46f, 46f));
+            preferred.gameObject.SetActive(false);
+            var label = UiPipeline.AddText("Label", back.rectTransform, TextRole.Button, 50f, tokens.textPrimary, "Treat", 38f);
+            label.alignment = TextAlignmentOptions.MidlineLeft;
+            UiPipeline.Place(label.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(134f, 8f), new Vector2(340f, 90f));
+            var count = UiPipeline.AddText("Count", back.rectTransform, TextRole.NumberSmall, 46f, tokens.textPrimary, "×0", 36f);
+            count.alignment = TextAlignmentOptions.MidlineRight;
+            UiPipeline.Place(count.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-32f, 8f), new Vector2(118f, 70f));
+            root.gameObject.SetActive(false);
+
+            // Hearts that rise from the treat to the bar's end (same top-left anchor as the bar: one space for both).
+            var hearts = new RectTransform[4];
+            var heartImages = new Image[hearts.Length];
+            for (int i = 0; i < hearts.Length; i++)
+            {
+                heartImages[i] = UiPipeline.AddImage("TreatHeart" + i, card, heartSprite, Color.white, Image.Type.Simple);
+                hearts[i] = heartImages[i].rectTransform;
+                UiPipeline.Place(hearts[i], new Vector2(0f, 1f), center, new Vector2(550f, -560f), new Vector2(52f, 52f));
+                hearts[i].gameObject.SetActive(false);
+            }
+
+            var ids = new uint[SheetTreatIcons.GetLength(0)];
+            var icons = new Sprite[ids.Length];
+            for (int i = 0; i < ids.Length; i++)
+            {
+                ids[i] = PocketWilds.Core.ContentId.FromSource(SheetTreatIcons[i, 0]).Value;
+                icons[i] = Load(Icon(SheetTreatIcons[i, 1]));
+            }
+            screen.SetTreatReferences(root, button, back, icon, label, count, preferred.gameObject, treatSprite, ids, icons, hearts, heartImages);
         }
 
         // ---------------- Modal ----------------

@@ -30,6 +30,7 @@ Le benchmark Windows relève l'écart minimal dans le jeu compilé : `overlapSam
 | Pente trop raide (> 32°) | Gélules, rangée par rangée | Carte du relief (`SteepObstacles`) |
 | Œuf | Disque réservé de 0,55 m ; l'œuf lui-même fait 0,36 m | `RefugeController.EggSpotRadius`, `EggBodyRadius` |
 | Papillon, abeille, oiseau | Sphère de rayon égal à l'envergure | Maillage de l'espèce × son échelle |
+| Bulle de souhait (T36) | Deux sphères : le cercle à sa plus grande échelle (pop 1,08, éclatement 1,15) et les deux petits points de la traîne, élargies du balancement et des 2 mm | `WishBubblePlacement`, `AnimalScheduler.IsAirFree` ; rayon tenu entre 4 et 5,8 % de la hauteur de l'écran |
 
 Chaque zone (`WorldChunk`) stocke ses obstacles et une carte du relief (grille de 0,25 m). Les animaux et les oiseaux
 posés au sol se tiennent sur ce relief, inclinés avec la pente (14° au plus). Sur le terrain praticable, l'erreur de
@@ -62,6 +63,12 @@ hauteur reste sous 2 cm (sous 5 mm dans le refuge).
   dehors. Fleurs, cailloux et champignons ne se chevauchent pas entre eux. L'herbe peut se mêler à l'herbe.
 - **Insectes.** Ils choisissent des points d'air libres, glissent le long des feuillages au lieu de les traverser,
   passent par-dessus quand ils sont coincés, s'écartent les uns des autres et contournent les animaux.
+- **Bulles de souhait (T36).** Une bulle se place au-dessus de son animal parmi 12 places (au-dessus, plus haut,
+  sur les côtés, en arrière), la plus proche d'abord. Une place est libre si la bulle n'y entre dans aucun décor, aucun
+  autre animal, la colonne de l'œuf ni une autre bulle, et si son cercle à l'écran ne cache pas le visage d'un autre
+  animal. Sans place libre, la bulle s'efface jusqu'à ce qu'une place se libère. Les places sont revues 10 fois par
+  seconde ; si quelque chose arrive entre deux passes, la bulle change de place ou s'efface tout de suite. Les insectes
+  et les oiseaux traitent les bulles affichées comme des couronnes d'arbre : ils les contournent.
 - **Oiseaux.** Ils ne sautillent et ne se posent que sur un sol libre : pas de décor, pas d'eau, pas d'animal, pas
   d'autre oiseau. Ils s'envolent quand un animal approche. Leur trajectoire de vol est choisie pour ne traverser
   aucune couronne d'arbre ni le moulin.
