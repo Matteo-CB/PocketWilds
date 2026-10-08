@@ -143,16 +143,27 @@ namespace PocketWilds.Simulation
         /// <summary>Recomputes the score after any discovery, zone, biome or mastery change. Raises LeveledUp once.</summary>
         public void Recompute() => Recompute(true);
 
+        private int _variantsCounted = -1;
+        private long _variantPoints;
+
         public RefugeScoreBreakdown Breakdown()
         {
             var b = new RefugeScoreBreakdown();
             var collection = _state.Collection;
             b.Species = (long)collection.DiscoveredSpecies.Count * _config.PointsSpecies;
-            foreach (var id in collection.DiscoveredVariants)
+            // Variants only change by discovery: their points are counted again only when the set grew (every hatch reads this).
+            if (collection.DiscoveredVariants.Count != _variantsCounted)
             {
-                bool secret = _content.Variants.TryGet(id, out var variant) && variant.IsSecret;
-                b.Variants += secret ? _config.PointsSecretVariant : _config.PointsVariant;
+                long points = 0;
+                foreach (var id in collection.DiscoveredVariants)
+                {
+                    bool secret = _content.Variants.TryGet(id, out var variant) && variant.IsSecret;
+                    points += secret ? _config.PointsSecretVariant : _config.PointsVariant;
+                }
+                _variantPoints = points;
+                _variantsCounted = collection.DiscoveredVariants.Count;
             }
+            b.Variants = _variantPoints;
             b.Traits = _traitPoints;
             int every = 5;
             foreach (var pair in _state.Mastery.Species)

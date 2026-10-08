@@ -241,9 +241,9 @@ namespace PocketWilds.Simulation
 
         /// <summary>
         /// Zones per biome, in opening order (section 4.2). Only biomes with built chunks are listed: a biome's zones
-        /// join this table with its content.
+        /// join this table with its content. The economy simulator (T35C) sets the planned zones of the other biomes.
         /// </summary>
-        public ZoneDefinition[] Zones { get; } =
+        public ZoneDefinition[] Zones { get; set; } =
         {
             new ZoneDefinition("grassland", "start", ZoneRole.Arrival, 0, 0),
             new ZoneDefinition("grassland", "meadow", ZoneRole.Expansion, 1, 1),

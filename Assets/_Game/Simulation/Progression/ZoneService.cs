@@ -120,10 +120,10 @@ namespace PocketWilds.Simulation
             return false;
         }
 
-        /// <summary>Price of zone k: 25 x B x 2.15^(k - 1).</summary>
         /// <summary>T35C: Easy Spaces (Essence tree) lowers every zone's price; 1 without it.</summary>
         public double PriceMultiplier { get; set; } = 1.0;
 
+        /// <summary>Price of zone k: 25 x B x 2.15^(k - 1), Easy Spaces applied.</summary>
         public BigValue Price(in ZoneDefinition zone) =>
             zone.Role != ZoneRole.Expansion
                 ? BigValue.Zero
