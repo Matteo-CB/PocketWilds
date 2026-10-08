@@ -30,6 +30,15 @@ namespace PocketWilds.Simulation
         Treat = 13,
         BiomeGate = 14,
         EssenceNode = 15,
+
+        // T36, the daily rendez-vous (doc 01 Contenu).
+        DailyGift = 16,
+        Wish = 17,
+        Calendar = 18,
+        WeeklyJournal = 19,
+        WelcomeGift = 20,
+        ReturnGift = 21,
+        Bond = 22,
     }
 
     public readonly struct EconomyChange

@@ -88,6 +88,46 @@ namespace PocketWilds.Tests.EditMode
             state.Settings.HapticsEnabled = false;
             state.Entitlements.Owned.Add(ContentId.FromSource("offer.starter.001"));
             state.Entitlements.ProcessedTransactions.Add("GPA.1");
+            var daily = state.DailyVisit;
+            daily.LastDayKey = 20261007;
+            daily.LoginDays = 4;
+            daily.OnboardingDone = true;
+            daily.TutorialStep = 3;
+            daily.WelcomeClaimed = 2;
+            daily.GiftsOpened = 3;
+            daily.GiftsSinceBig = 2;
+            daily.CalendarNext = 27;
+            daily.CalendarCycle = 2;
+            daily.CalendarStamps = 55;
+            daily.Wishes[0] = new WishRecord
+            {
+                Template = 7, Animal = 4, Param = ContentId.FromSource("species.rabbit"), ParamKind = 1, ParamExtra = 2, Target = 5,
+                Progress = 2, DrawnDay = 20261006, Flags = WishRecord.FlagTutorial,
+            };
+            daily.WishCount = 1;
+            daily.WishGemsTotal = 90;
+            daily.History[0] = new WishHistoryEntry { Template = 7, DayKey = 20261006 };
+            daily.HistoryCount = 1;
+            daily.HistoryNext = 1;
+            daily.SystemUnlockDay[3] = 5;
+            daily.TouchedForWish[0] = 4;
+            daily.TouchedForWish[1] = 6;
+            daily.TouchedCount = 2;
+            daily.Goals[0] = new JournalGoalRecord { Goal = 52, Slot = 4, Target = 9, Progress = 9, Claimed = true };
+            daily.GoalCount = 1;
+            daily.JournalCompleteClaimed = true;
+            daily.PreviousGoals[0] = 51;
+            daily.PreviousGoalCount = 1;
+            daily.CarryTickets = 2;
+            daily.CarryDiscovery = 1;
+            daily.LastBigReturnGiftDay = 30;
+            daily.PendingReturnGift = 2;
+            daily.PendingReturnDays = 15;
+            daily.TouchDayKey = 20261007;
+            daily.TouchesToday = 3;
+            daily.TouchesByAnimal[4] = 3;
+            state.Inventory.Tickets = 5;
+            state.Inventory.Add(ContentId.FromSource("plant.daisy"), 2);
             return state;
         }
 
@@ -151,6 +191,51 @@ namespace PocketWilds.Tests.EditMode
             Assert.IsFalse(loaded.Settings.HapticsEnabled);
             Assert.IsTrue(loaded.Entitlements.Owned.Contains(ContentId.FromSource("offer.starter.001")));
             Assert.IsTrue(loaded.Entitlements.ProcessedTransactions.Contains("GPA.1"));
+
+            var daily = loaded.DailyVisit;
+            Assert.AreEqual(20261007, daily.LastDayKey);
+            Assert.AreEqual(4, daily.LoginDays);
+            Assert.IsTrue(daily.OnboardingDone);
+            Assert.AreEqual(3, daily.TutorialStep);
+            Assert.AreEqual(2, daily.WelcomeClaimed);
+            Assert.AreEqual(3, daily.GiftsOpened);
+            Assert.AreEqual(2, daily.GiftsSinceBig);
+            Assert.AreEqual(27, daily.CalendarNext);
+            Assert.AreEqual(2, daily.CalendarCycle);
+            Assert.AreEqual(55, daily.CalendarStamps);
+            Assert.AreEqual(1, daily.WishCount);
+            var wish = daily.Wishes[0];
+            Assert.AreEqual(7, wish.Template);
+            Assert.AreEqual(4u, wish.Animal);
+            Assert.AreEqual(ContentId.FromSource("species.rabbit"), wish.Param);
+            Assert.AreEqual(1, wish.ParamKind);
+            Assert.AreEqual(2, wish.ParamExtra);
+            Assert.AreEqual(5, wish.Target);
+            Assert.AreEqual(2, wish.Progress);
+            Assert.AreEqual(20261006, wish.DrawnDay);
+            Assert.IsTrue(wish.IsTutorial);
+            Assert.AreEqual(90L, daily.WishGemsTotal);
+            Assert.AreEqual(1, daily.HistoryCount);
+            Assert.AreEqual(1, daily.HistoryNext);
+            Assert.AreEqual(7, daily.History[0].Template);
+            Assert.AreEqual(5, daily.SystemUnlockDay[3]);
+            Assert.AreEqual(2, daily.TouchedCount);
+            Assert.AreEqual(6u, daily.TouchedForWish[1]);
+            Assert.AreEqual(1, daily.GoalCount);
+            Assert.AreEqual(52, daily.Goals[0].Goal);
+            Assert.AreEqual(4, daily.Goals[0].Slot);
+            Assert.IsTrue(daily.Goals[0].Claimed);
+            Assert.IsTrue(daily.JournalCompleteClaimed);
+            Assert.AreEqual(51, daily.PreviousGoals[0]);
+            Assert.AreEqual(2, daily.CarryTickets);
+            Assert.AreEqual(1, daily.CarryDiscovery);
+            Assert.AreEqual(30, daily.LastBigReturnGiftDay);
+            Assert.AreEqual(2, daily.PendingReturnGift);
+            Assert.AreEqual(15, daily.PendingReturnDays);
+            Assert.AreEqual(3, daily.TouchesToday);
+            Assert.AreEqual(3, daily.TouchesByAnimal[4]);
+            Assert.AreEqual(5, loaded.Inventory.Tickets);
+            Assert.AreEqual(2, loaded.Inventory.Count(ContentId.FromSource("plant.daisy")));
         }
 
         [Test]
@@ -400,6 +485,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Progression_v7")]
         [TestCase("GoldenSave_Eggs_v8")]
         [TestCase("GoldenSave_Renewal_v9")]
+        [TestCase("GoldenSave_DailyVisit_v10")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -423,6 +509,12 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(0, state.Shop.Offers.Count + state.Shop.PaidPurchases, "Older saves start without shop history.");
             if (version < 8)
                 Assert.AreEqual(0, state.World.DiscoveryEggs, "Older saves start with no Discovery egg.");
+            if (version < 10)
+            {
+                Assert.AreEqual(state.Collection.Count >= 5, state.DailyVisit.OnboardingDone, "Five animals or more: the welcome is over.");
+                Assert.AreEqual(0, state.DailyVisit.WishCount + state.DailyVisit.LoginDays + state.Inventory.Tickets);
+                Assert.AreEqual(1, state.DailyVisit.CalendarCycle);
+            }
             if (version < 6)
             {
                 Assert.AreEqual(0, state.Analytics.Sessions, "Older saves start counting sessions now.");
@@ -497,6 +589,27 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(5, state.Progression.EssenceRanks[ContentId.FromSource("essence.economy.soft_light")]);
                     Assert.AreEqual(2, state.Progression.EssenceRanks[ContentId.FromSource("essence.economy.morning_eggs")]);
                     Assert.AreEqual(4, state.World.DiscoveryEggs, "Everything of schema 8 still there.");
+                    break;
+
+                case "GoldenSave_DailyVisit_v10":
+                    Assert.AreEqual(280, state.Meta.Revision);
+                    Assert.AreEqual(0, result.MigrationsApplied);
+                    var daily = state.DailyVisit;
+                    Assert.AreEqual(20261012, daily.LastDayKey);
+                    Assert.AreEqual(9, daily.LoginDays);
+                    Assert.IsTrue(daily.OnboardingDone);
+                    Assert.AreEqual(5, daily.CalendarNext);
+                    Assert.AreEqual(2, daily.WishCount);
+                    Assert.IsTrue(daily.Wishes[1].IsDone);
+                    Assert.AreEqual(ContentId.FromSource("biome.grassland"), daily.Wishes[1].Param);
+                    Assert.AreEqual(3, daily.GoalCount);
+                    Assert.IsTrue(daily.Goals[1].Claimed);
+                    Assert.AreEqual(10, daily.CarryGems);
+                    Assert.AreEqual(1, daily.PendingReturnGift);
+                    Assert.AreEqual(4, daily.TouchesByAnimal[1]);
+                    Assert.AreEqual(2, state.Inventory.Tickets);
+                    Assert.AreEqual(3, state.Inventory.Count(ContentId.FromSource("ingredient.flower_sugar")));
+                    Assert.AreEqual(1, state.World.RenewalCount, "Everything of schema 9 still there.");
                     break;
 
                 case "GoldenSave_Eggs_v8":

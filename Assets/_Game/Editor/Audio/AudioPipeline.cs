@@ -250,6 +250,11 @@ namespace PocketWilds.Editor.Audio
                 Def(AudioEventId.ZoneOpen, "SFX_Reward_ZoneOpen", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
                 Def(AudioEventId.RefugeLevelUp, "SFX_Reward_RefugeLevel", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
                 Def(AudioEventId.BiomeMasteryUp, "SFX_Reward_BiomeMastery", AudioGroup.Rewards, 2, 0.5f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                // T36: the rendez-vous of the day (doc 05 Sensations, sheets 17 to 19, section 6.1; doc 08 J-SFX-CURRENCY-004).
+                Def(AudioEventId.WishDone, "SFX_Reward_WishDone", AudioGroup.Rewards, 2, 0.4f, 2, volumeJitter: 0.03f, pitchJitter: 0.02f),
+                Def(AudioEventId.GiftOpen, "SFX_Reward_GiftOpen", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                Def(AudioEventId.PawStamp, "SFX_UI_PawStamp", AudioGroup.UI, 1, 0.3f, 1, pitchJitter: 0.03f),
+                Def(AudioEventId.CollectGems, "SFX_Currency_Gems", AudioGroup.Rewards, 2, 0.3f, 1, 0.9f, volumeJitter: 0.03f, pitchJitter: 0.01f),
             };
             foreach (var (id, prefix) in new[]
                      {

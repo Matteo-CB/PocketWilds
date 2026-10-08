@@ -196,7 +196,8 @@ namespace PocketWilds.Simulation
                 case RefugeFeature.Codex: return level >= 1 && animals >= 2;
                 case RefugeFeature.UpgradeButton: return level >= 1 && animals >= 3;
                 case RefugeFeature.ZoneSigns: return level >= 2;
-                case RefugeFeature.DailyRendezvous: return level >= 2;
+                // T36 (doc 01 Contenu, section 0): level 2 and the welcome over (tutorial wish done or 5 animals).
+                case RefugeFeature.DailyRendezvous: return level >= 2 && _state.IsOnboardingDone;
                 case RefugeFeature.Shop: return level >= 2 && animals >= 5 && species >= 2;
                 case RefugeFeature.DecorationMode: return level >= 2;
                 case RefugeFeature.Achievements: return level >= 3;

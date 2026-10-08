@@ -96,6 +96,20 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>T35A J-SFX-REWARD-007: a biome's mastery levels up (two wooden notes and leaves).</summary>
         BiomeMasteryUp = 33,
+
+        // 34 to 37 are reserved by doc 05 section 6.4 (secret reveal, new species, new variant, mastery milestone).
+
+        /// <summary>T36 J-SFX-FEEL-009: a wish fulfilled (a bubble pops, two warm glass notes).</summary>
+        WishDone = 38,
+
+        /// <summary>T36 J-SFX-FEEL-010: the daily gift opens (a wooden lid knock, rising glass notes).</summary>
+        GiftOpen = 39,
+
+        /// <summary>T36 J-SFX-FEEL-011: the paw stamp lands on a calendar box (a soft felt puff).</summary>
+        PawStamp = 40,
+
+        /// <summary>T36 J-SFX-CURRENCY-004: Gems land in the Gems chip (a rolled glass chord).</summary>
+        CollectGems = 67,
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>

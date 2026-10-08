@@ -20,9 +20,16 @@ namespace PocketWilds.Simulation
         public readonly BigValue Light;
         public readonly bool ClockRolledBack;
 
+        /// <summary>
+        /// Time since the later of the last save and the high-water mark, without the max cap (T36 return gifts count the
+        /// days of a long absence). Equals <see cref="CreditedSeconds"/> when not given.
+        /// </summary>
+        public readonly double UncappedSeconds;
+
         public OfflineReport(double awaySeconds, double creditedSeconds, double effectiveSeconds, BigValue ratePerSecond,
-            BigValue light, bool clockRolledBack)
+            BigValue light, bool clockRolledBack, double uncappedSeconds = -1.0)
         {
+            UncappedSeconds = uncappedSeconds >= 0.0 ? uncappedSeconds : creditedSeconds;
             AwaySeconds = awaySeconds;
             CreditedSeconds = creditedSeconds;
             EffectiveSeconds = effectiveSeconds;
@@ -108,7 +115,8 @@ namespace PocketWilds.Simulation
                 bool rolledBack = (mark - now).TotalSeconds > tolerance || (lastSave - now).TotalSeconds > tolerance;
                 double away = Math.Max(0.0, (now - lastSave).TotalSeconds);
                 var start = lastSave > mark ? lastSave : mark;
-                double credited = Math.Min(Math.Max(0.0, (now - start).TotalSeconds), _config.OfflineMaxSeconds);
+                double unseen = Math.Max(0.0, (now - start).TotalSeconds);
+                double credited = Math.Min(unseen, _config.OfflineMaxSeconds);
                 double effective = EffectiveSeconds(credited, _config, ExtraFullSeconds, FloorBonus);
 
                 var rate = offline.HasRate ? offline.RateAtSave : _economy.GetLightPerSecond();
@@ -120,7 +128,7 @@ namespace PocketWilds.Simulation
                 if (now > offline.HighWaterUtc)
                     offline.HighWaterUtc = now;
 
-                var report = new OfflineReport(away, credited, effective, rate, gain, rolledBack);
+                var report = new OfflineReport(away, credited, effective, rate, gain, rolledBack, unseen);
                 LastReport = report;
                 if (report.HasGain && credited >= _config.OfflineScreenMinSeconds)
                 {

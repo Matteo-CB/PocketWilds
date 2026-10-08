@@ -34,9 +34,9 @@ namespace PocketWilds.Services.Save
         /// <summary>
         /// 2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids). 4: Pity counters.
         /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
-        /// 8: Discovery egg stock (World 3).
+        /// 8: Discovery egg stock (World 3). 9: Renewal memory and Essence tree. 10: daily rendez-vous and inventory (T36).
         /// </summary>
-        public const int CurrentVersion = 9;
+        public const int CurrentVersion = 10;
     }
 
     /// <summary>
@@ -60,6 +60,8 @@ namespace PocketWilds.Services.Save
         private const ushort ShopVersion = 1;
         private const ushort AnalyticsVersion = 1;
         private const ushort ProgressionVersion = 2;
+        private const ushort DailyVisitVersion = 1;
+        private const ushort InventoryVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -164,6 +166,14 @@ namespace PocketWilds.Services.Save
 
             mark = BeginSection(output, SaveSectionId.Progression, ProgressionVersion);
             WriteProgression(output, state.Progression);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.DailyVisit, DailyVisitVersion);
+            WriteDailyVisit(output, state.DailyVisit);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Inventory, InventoryVersion);
+            WriteInventory(output, state.Inventory);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -329,6 +339,14 @@ namespace PocketWilds.Services.Save
                 // Saves older than schema 7 have no Progression section: the refuge level is computed on load.
                 if (document.TryGetSection(SaveSectionId.Progression, out var progression))
                     ReadProgression(progression, state.Progression);
+                // Saves older than schema 10 have no rendez-vous: a profile that already holds 5 animals skips the welcome
+                // (doc 01 Contenu, section 1.1); the first day check counts a login day.
+                if (document.TryGetSection(SaveSectionId.DailyVisit, out var daily))
+                    ReadDailyVisit(daily, state.DailyVisit);
+                else
+                    state.DailyVisit.OnboardingDone = state.Collection.Count >= 5;
+                if (document.TryGetSection(SaveSectionId.Inventory, out var inventory))
+                    ReadInventory(inventory, state.Inventory);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -420,6 +438,224 @@ namespace PocketWilds.Services.Save
             renewal.MasteredAtLast = Math.Max(0, r.ReadInt32());
             renewal.AlbumPagesAtLast = Math.Max(0, r.ReadInt32());
             ReadCounters(ref r, progression.EssenceRanks);
+        }
+
+        private static void WriteDailyVisit(ByteBufferWriter output, DailyVisitState d)
+        {
+            output.WriteInt32(d.LastDayKey);
+            output.WriteInt32(d.LoginDays);
+            output.WriteBool(d.OnboardingDone);
+            output.WriteByte(d.TutorialStep);
+            output.WriteByte(d.WelcomeClaimed);
+            output.WriteInt32(d.WelcomeDayKey);
+            output.WriteInt32(d.GiftDayKey);
+            output.WriteInt32(d.GiftsOpened);
+            output.WriteInt32(d.GiftsSinceBig);
+            output.WriteByte(d.LastGiftLot);
+            output.WriteByte(d.CalendarNext);
+            output.WriteInt32(d.CalendarCycle);
+            output.WriteInt32(d.CalendarDayKey);
+            output.WriteInt32(d.CalendarStamps);
+
+            output.WriteInt32(d.WishCount);
+            for (int i = 0; i < d.WishCount; i++)
+            {
+                ref readonly var w = ref d.Wishes[i];
+                output.WriteUInt16(w.Template);
+                output.WriteUInt32(w.Animal);
+                output.WriteContentId(w.Param);
+                output.WriteByte(w.ParamKind);
+                output.WriteByte(w.ParamExtra);
+                output.WriteInt32(w.Target);
+                output.WriteInt32(w.Progress);
+                output.WriteInt32(w.DrawnDay);
+                output.WriteByte(w.Flags);
+            }
+            output.WriteInt32(d.WishDrawDayKey);
+            output.WriteInt32(d.SwapDayKey);
+            output.WriteByte(d.SwapsUsed);
+            output.WriteInt64(d.WishGemsTotal);
+            output.WriteInt32(d.WishesCompleted);
+            output.WriteInt32(d.HistoryCount);
+            output.WriteInt32(d.HistoryNext);
+            for (int i = 0; i < d.HistoryCount; i++)
+            {
+                output.WriteUInt16(d.History[i].Template);
+                output.WriteInt32(d.History[i].DayKey);
+            }
+            output.WriteInt32(d.SystemUnlockDay.Length);
+            for (int i = 0; i < d.SystemUnlockDay.Length; i++)
+                output.WriteInt32(d.SystemUnlockDay[i]);
+            output.WriteByte(d.TouchedCount);
+            for (int i = 0; i < d.TouchedCount; i++)
+                output.WriteUInt32(d.TouchedForWish[i]);
+
+            output.WriteInt32(d.JournalStartKey);
+            output.WriteInt32(d.JournalEndKey);
+            output.WriteBool(d.FirstJournalDone);
+            output.WriteByte(d.GoalCount);
+            for (int i = 0; i < d.GoalCount; i++)
+            {
+                ref readonly var g = ref d.Goals[i];
+                output.WriteUInt16(g.Goal);
+                output.WriteByte(g.Slot);
+                output.WriteInt32(g.Target);
+                output.WriteInt32(g.Progress);
+                output.WriteBool(g.Claimed);
+            }
+            output.WriteBool(d.JournalCompleteClaimed);
+            output.WriteByte(d.PreviousGoalCount);
+            for (int i = 0; i < d.PreviousGoalCount; i++)
+                output.WriteUInt16(d.PreviousGoals[i]);
+            output.WriteInt32(d.CarryGems);
+            output.WriteInt32(d.CarryTickets);
+            output.WriteInt32(d.CarryDiscovery);
+
+            output.WriteInt32(d.LastReturnGiftDay);
+            output.WriteInt32(d.LastBigReturnGiftDay);
+            output.WriteByte(d.PendingReturnGift);
+            output.WriteInt32(d.PendingReturnDays);
+
+            output.WriteInt32(d.TouchDayKey);
+            output.WriteInt32(d.TouchesToday);
+            output.WriteInt32(d.TouchesByAnimal.Count);
+            foreach (var pair in d.TouchesByAnimal)
+            {
+                output.WriteUInt32(pair.Key);
+                output.WriteByte(pair.Value);
+            }
+        }
+
+        private static void ReadDailyVisit(SaveSection section, DailyVisitState d)
+        {
+            RequireVersion(section, DailyVisitVersion);
+            var r = section.CreateReader();
+            d.LastDayKey = r.ReadInt32();
+            d.LoginDays = Math.Max(0, r.ReadInt32());
+            d.OnboardingDone = r.ReadBool();
+            d.TutorialStep = r.ReadByte();
+            d.WelcomeClaimed = (byte)Math.Min(3, (int)r.ReadByte());
+            d.WelcomeDayKey = r.ReadInt32();
+            d.GiftDayKey = r.ReadInt32();
+            d.GiftsOpened = Math.Max(0, r.ReadInt32());
+            d.GiftsSinceBig = Math.Max(0, r.ReadInt32());
+            d.LastGiftLot = r.ReadByte();
+            d.CalendarNext = (byte)(r.ReadByte() % 28);
+            d.CalendarCycle = Math.Max(1, r.ReadInt32());
+            d.CalendarDayKey = r.ReadInt32();
+            d.CalendarStamps = Math.Max(0, r.ReadInt32());
+
+            int wishes = ReadCount(ref r);
+            d.WishCount = 0;
+            for (int i = 0; i < wishes; i++)
+            {
+                var w = new WishRecord
+                {
+                    Template = r.ReadUInt16(),
+                    Animal = r.ReadUInt32(),
+                    Param = r.ReadContentId(),
+                    ParamKind = r.ReadByte(),
+                    ParamExtra = r.ReadByte(),
+                    Target = Math.Max(1, r.ReadInt32()),
+                    Progress = Math.Max(0, r.ReadInt32()),
+                    DrawnDay = r.ReadInt32(),
+                    Flags = r.ReadByte(),
+                };
+                if (d.WishCount < DailyVisitState.MaxWishStock)
+                    d.Wishes[d.WishCount++] = w;
+            }
+            d.WishDrawDayKey = r.ReadInt32();
+            d.SwapDayKey = r.ReadInt32();
+            d.SwapsUsed = r.ReadByte();
+            d.WishGemsTotal = Math.Max(0L, r.ReadInt64());
+            d.WishesCompleted = Math.Max(0, r.ReadInt32());
+            int history = ReadCount(ref r);
+            d.HistoryNext = r.ReadInt32();
+            d.HistoryCount = 0;
+            for (int i = 0; i < history; i++)
+            {
+                var entry = new WishHistoryEntry { Template = r.ReadUInt16(), DayKey = r.ReadInt32() };
+                if (d.HistoryCount < DailyVisitState.HistorySize)
+                    d.History[d.HistoryCount++] = entry;
+            }
+            d.HistoryNext = d.HistoryCount == 0 ? 0 : ((d.HistoryNext % DailyVisitState.HistorySize) + DailyVisitState.HistorySize) % DailyVisitState.HistorySize;
+            int systems = ReadCount(ref r);
+            for (int i = 0; i < systems; i++)
+            {
+                int day = r.ReadInt32();
+                if (i < d.SystemUnlockDay.Length)
+                    d.SystemUnlockDay[i] = Math.Max(0, day);
+            }
+            int touched = r.ReadByte();
+            d.TouchedCount = 0;
+            for (int i = 0; i < touched; i++)
+            {
+                uint animal = r.ReadUInt32();
+                if (d.TouchedCount < DailyVisitState.TouchedForWishSize)
+                    d.TouchedForWish[d.TouchedCount++] = animal;
+            }
+
+            d.JournalStartKey = r.ReadInt32();
+            d.JournalEndKey = r.ReadInt32();
+            d.FirstJournalDone = r.ReadBool();
+            int goals = r.ReadByte();
+            d.GoalCount = 0;
+            for (int i = 0; i < goals; i++)
+            {
+                var g = new JournalGoalRecord
+                {
+                    Goal = r.ReadUInt16(),
+                    Slot = r.ReadByte(),
+                    Target = Math.Max(1, r.ReadInt32()),
+                    Progress = Math.Max(0, r.ReadInt32()),
+                    Claimed = r.ReadBool(),
+                };
+                if (d.GoalCount < DailyVisitState.MaxJournalGoals)
+                    d.Goals[d.GoalCount++] = g;
+            }
+            d.JournalCompleteClaimed = r.ReadBool();
+            int previous = r.ReadByte();
+            d.PreviousGoalCount = 0;
+            for (int i = 0; i < previous; i++)
+            {
+                ushort goal = r.ReadUInt16();
+                if (d.PreviousGoalCount < DailyVisitState.MaxJournalGoals)
+                    d.PreviousGoals[d.PreviousGoalCount++] = goal;
+            }
+            d.CarryGems = Math.Max(0, r.ReadInt32());
+            d.CarryTickets = Math.Max(0, r.ReadInt32());
+            d.CarryDiscovery = Math.Max(0, r.ReadInt32());
+
+            d.LastReturnGiftDay = r.ReadInt32();
+            d.LastBigReturnGiftDay = r.ReadInt32();
+            d.PendingReturnGift = (byte)Math.Min(2, (int)r.ReadByte());
+            d.PendingReturnDays = Math.Max(0, r.ReadInt32());
+
+            d.TouchDayKey = r.ReadInt32();
+            d.TouchesToday = Math.Max(0, r.ReadInt32());
+            int touches = ReadCount(ref r);
+            d.TouchesByAnimal.Clear();
+            for (int i = 0; i < touches; i++)
+            {
+                uint animal = r.ReadUInt32();
+                d.TouchesByAnimal[animal] = r.ReadByte();
+            }
+        }
+
+        private static void WriteInventory(ByteBufferWriter output, InventoryState inventory)
+        {
+            output.WriteInt32(inventory.Tickets);
+            output.WriteInt32(inventory.PendingStickers);
+            WriteCounters(output, inventory.Items);
+        }
+
+        private static void ReadInventory(SaveSection section, InventoryState inventory)
+        {
+            RequireVersion(section, InventoryVersion);
+            var r = section.CreateReader();
+            inventory.Tickets = Math.Max(0, r.ReadInt32());
+            inventory.PendingStickers = Math.Max(0, r.ReadInt32());
+            ReadCounters(ref r, inventory.Items);
         }
 
         private static void ReadCounters(ref ByteBufferReader r, System.Collections.Generic.Dictionary<ContentId, int> counters)

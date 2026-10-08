@@ -31,6 +31,14 @@ namespace PocketWilds.Services.Analytics
         void EggOddsOpened(ContentId egg)
         {
         }
+
+        /// <summary>
+        /// T36: everything claimable in Today was claimed: seconds from Today opened to the last claim, taps on the way,
+        /// items claimed (the « under two minutes » criterion measured in the field).
+        /// </summary>
+        void DailyVisitDone(double seconds, int taps, int items)
+        {
+        }
     }
 
     public sealed class NullAnalytics : IAnalytics

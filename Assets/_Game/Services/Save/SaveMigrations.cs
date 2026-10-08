@@ -15,6 +15,7 @@ namespace PocketWilds.Services.Save
             new Migration0006AddProgression(),
             new Migration0007AddDiscoveryEggs(),
             new Migration0008AddRenewal(),
+            new Migration0009AddDailyVisit(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -127,6 +128,21 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 8;
         public int ToVersion => 9;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 9 to 10 (T36): the DailyVisit and Inventory sections. Nothing to convert: without a DailyVisit section the
+    /// loader marks the welcome as done when the collection already holds 5 animals (doc 01 Contenu, section 1.1), and
+    /// every rendez-vous starts on the next day check; an empty inventory holds nothing.
+    /// </summary>
+    public sealed class Migration0009AddDailyVisit : ISaveMigration
+    {
+        public int FromVersion => 9;
+        public int ToVersion => 10;
 
         public void Apply(SaveDocument document)
         {

@@ -10,6 +10,9 @@ namespace PocketWilds.Simulation
         NewVariant = 1,
         Discovery = 2,
         Birth = 3,
+
+        /// <summary>T36: a wish fulfilled by an animal of the species (doc 08 econ.mastery_xp.wish).</summary>
+        Wish = 4,
     }
 
     /// <summary>Where a species stands: level, XP inside the level, XP needed for the next one.</summary>
@@ -134,8 +137,14 @@ namespace PocketWilds.Simulation
             _state.Mastery.Species[species] = new SpeciesMastery { Level = level, Xp = (int)pool };
             if (level != before.Level)
                 _economy?.MarkProductionDirty();
-            return new MasteryGain(species, reason, xp, before, new MasteryProgress(level, (int)pool, XpForNext(level)), milestone);
+            var gain = new MasteryGain(species, reason, xp, before, new MasteryProgress(level, (int)pool, XpForNext(level)), milestone);
+            if (level != before.Level)
+                LeveledUp?.Invoke(gain);
+            return gain;
         }
+
+        /// <summary>T36: a species gained one level or more (wishes and the weekly journal count them).</summary>
+        public event Action<MasteryGain>? LeveledUp;
 
         public static bool IsMilestone(int level, int every) => level > 0 && every > 0 && level % every == 0;
     }

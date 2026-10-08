@@ -34,9 +34,11 @@ namespace PocketWilds.Presentation
             CodexService codex = null,
             StoreService store = null,
             IAnalytics analytics = null,
-            ProgressionServices progression = null)
+            ProgressionServices progression = null,
+            DailyVisitServices daily = null)
         {
             Progression = progression;
+            Daily = daily;
             Clock = clock;
             Content = content;
             Save = save;
@@ -94,6 +96,9 @@ namespace PocketWilds.Presentation
         /// Null in headless tests that do not need it.
         /// </summary>
         public ProgressionServices Progression { get; }
+
+        /// <summary>T36: the rendez-vous of the day (null in scenes started without it).</summary>
+        public DailyVisitServices Daily { get; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

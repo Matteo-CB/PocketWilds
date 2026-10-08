@@ -35,6 +35,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Progression_v7", BuildProgression());
             created += WriteIfMissing("GoldenSave_Eggs_v8", BuildEggs());
             created += WriteIfMissing("GoldenSave_Renewal_v9", BuildRenewal());
+            created += WriteIfMissing("GoldenSave_DailyVisit_v10", BuildDailyVisit());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -84,6 +85,77 @@ namespace PocketWilds.Editor.Saves
         /// Schema 7 (T35A): two Prairie zones opened, Prairie mastery 4, Light upgrades, refuge level 5 with rewards
         /// claimed up to 3, two Cute Benches bought, a treat stand filled with one treat bought.
         /// </summary>
+        /// <summary>
+        /// Schema 10 (T36): the welcome over, a gift opened today, 5 calendar boxes stamped, two pending wishes (one done),
+        /// a journal with three goals, a pending return gift, today's touches and an inventory.
+        /// </summary>
+        private static PlayerState BuildDailyVisit()
+        {
+            var state = BuildRenewal();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-000000000081");
+            state.Meta.Revision = 280;
+            var d = state.DailyVisit;
+            d.LastDayKey = 20261012;
+            d.LoginDays = 9;
+            d.OnboardingDone = true;
+            d.TutorialStep = 3;
+            d.WelcomeClaimed = 3;
+            d.WelcomeDayKey = 20261006;
+            d.GiftDayKey = 20261012;
+            d.GiftsOpened = 6;
+            d.GiftsSinceBig = 4;
+            d.LastGiftLot = 7;
+            d.CalendarNext = 5;
+            d.CalendarCycle = 1;
+            d.CalendarDayKey = 20261012;
+            d.CalendarStamps = 5;
+            d.Wishes[0] = new WishRecord
+            {
+                Template = 3, Animal = 2, Param = ContentId.FromSource("species.rabbit"), ParamKind = 1, Target = 2, Progress = 1,
+                DrawnDay = 20261011,
+            };
+            d.Wishes[1] = new WishRecord
+            {
+                Template = 11, Animal = 1, Param = ContentId.FromSource("biome.grassland"), ParamKind = 2, ParamExtra = 1, Target = 3,
+                Progress = 3, DrawnDay = 20261012, Flags = WishRecord.FlagDone,
+            };
+            d.WishCount = 2;
+            d.WishDrawDayKey = 20261012;
+            d.SwapDayKey = 20261012;
+            d.SwapsUsed = 1;
+            d.WishGemsTotal = 54;
+            d.WishesCompleted = 12;
+            d.History[0] = new WishHistoryEntry { Template = 3, DayKey = 20261011 };
+            d.History[1] = new WishHistoryEntry { Template = 11, DayKey = 20261012 };
+            d.HistoryCount = 2;
+            d.HistoryNext = 2;
+            d.SystemUnlockDay[1] = 2;
+            d.SystemUnlockDay[4] = 3;
+            d.TouchedForWish[0] = 1;
+            d.TouchedCount = 1;
+            d.JournalStartKey = 20261012;
+            d.JournalEndKey = 20261019;
+            d.FirstJournalDone = true;
+            d.Goals[0] = new JournalGoalRecord { Goal = 1, Slot = 0, Target = 20, Progress = 7 };
+            d.Goals[1] = new JournalGoalRecord { Goal = 14, Slot = 1, Target = 5, Progress = 5, Claimed = true };
+            d.Goals[2] = new JournalGoalRecord { Goal = 30, Slot = 2, Target = 3, Progress = 0 };
+            d.GoalCount = 3;
+            d.PreviousGoals[0] = 2;
+            d.PreviousGoalCount = 1;
+            d.CarryGems = 10;
+            d.LastReturnGiftDay = 4;
+            d.PendingReturnGift = 1;
+            d.PendingReturnDays = 4;
+            d.TouchDayKey = 20261012;
+            d.TouchesToday = 6;
+            d.TouchesByAnimal[1] = 4;
+            d.TouchesByAnimal[2] = 2;
+            state.Inventory.Tickets = 2;
+            state.Inventory.PendingStickers = 1;
+            state.Inventory.Add(ContentId.FromSource("ingredient.flower_sugar"), 3);
+            return state;
+        }
+
         /// <summary>Schema 9 (T35C): one Renewal done, its memory, Essence in the wallet and three Essence nodes bought.</summary>
         private static PlayerState BuildRenewal()
         {

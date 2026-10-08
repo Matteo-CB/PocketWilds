@@ -39,6 +39,17 @@ namespace PocketWilds.Services.Analytics
         OfferClick = 42,
         PurchaseResult = 43,
         Restore = 44,
+        // T36 (doc 01 Contenu, sections 1 to 6: the rendez-vous of the day).
+        DailyGiftOpen = 45,
+        WishDrawn = 46,
+        WishDone = 47,
+        WishSwap = 48,
+        CalendarClaim = 49,
+        JournalGoal = 51,
+        ReturnGift = 52,
+        WelcomeGift = 53,
+        DailyVisitDone = 54,
+        TreatGive = 55,
         PerfSample = 50,
         OfflineReturn = 60,
     }
@@ -52,6 +63,8 @@ namespace PocketWilds.Services.Analytics
         Shop = 4,
         OfferModal = 5,
         OfflineReturn = 6,
+        Today = 7,
+        WeeklyJournal = 8,
     }
 
     /// <summary>
@@ -124,6 +137,26 @@ namespace PocketWilds.Services.Analytics
             AnalyticsEventId.Renewal => new[] { Field.I(0), Field.I(1), Field.D(0, 2), Field.I(2), Field.I(3) },
             // node, rank
             AnalyticsEventId.EssenceNodeBuy => new[] { Field.U(0), Field.I(0) },
+            // T36. lot, size, flags (1 forced big, 2 first fixed gift, 4 substituted), gifts since big before, Gems
+            AnalyticsEventId.DailyGiftOpen => new[] { Field.I(0), Field.I(1), Field.I(2), Field.I(3), Field.D(0, 0) },
+            // template, system, tier, pending after
+            AnalyticsEventId.WishDrawn => new[] { Field.I(0), Field.I(1), Field.I(2), Field.I(3) },
+            // template, claim path (0 bubble, 1 animal, 2 Today row, 3 claim all, 4 auto), Gems, pending after, minutes from draw
+            AnalyticsEventId.WishDone => new[] { Field.I(0), Field.I(1), Field.I(2), Field.I(3), Field.D(0, 0) },
+            // old template, new template
+            AnalyticsEventId.WishSwap => new[] { Field.I(0), Field.I(1) },
+            // box, cycle, substituted
+            AnalyticsEventId.CalendarClaim => new[] { Field.I(0), Field.I(1), Field.I(2) },
+            // goal (0: the completed journal), slot, week index, carried over
+            AnalyticsEventId.JournalGoal => new[] { Field.I(0), Field.I(1), Field.I(2), Field.I(3) },
+            // kind (1 short, 2 big), warm return, days away
+            AnalyticsEventId.ReturnGift => new[] { Field.I(0), Field.I(1), Field.D(0, 0) },
+            // index (1 to 3)
+            AnalyticsEventId.WelcomeGift => new[] { Field.I(0) },
+            // seconds from Today opened to the last claim, taps, items claimed
+            AnalyticsEventId.DailyVisitDone => new[] { Field.D(0, 0), Field.I(0), Field.I(1) },
+            // treat, species, bond added, preferred family
+            AnalyticsEventId.TreatGive => new[] { Field.U(0), Field.U(1), Field.I(0), Field.I(1) },
             // T35A (doc 02 Améliorations, section 14). Costs travel as their log10 (no personal data, any size).
             // biome, kind, level from, level to, cost log10, quantity mode
             AnalyticsEventId.UpgradeBuy => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2), Field.D(0, 2), Field.I(3) },

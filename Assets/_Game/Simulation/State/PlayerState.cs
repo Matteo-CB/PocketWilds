@@ -23,6 +23,15 @@ namespace PocketWilds.Simulation
         public AnalyticsState Analytics { get; } = new AnalyticsState();
         public ProgressionState Progression { get; } = new ProgressionState();
 
+        /// <summary>T36: the daily rendez-vous (welcome, gift, calendar, wishes, journal, return gifts).</summary>
+        public DailyVisitState DailyVisit { get; } = new DailyVisitState();
+
+        /// <summary>T36: tickets, seeds, ingredients, decorations and stickers won before their systems open.</summary>
+        public InventoryState Inventory { get; } = new InventoryState();
+
+        /// <summary>The welcome is over: the tutorial wish was done, or the save already holds 5 animals (doc 01, section 1.1).</summary>
+        public bool IsOnboardingDone => DailyVisit.OnboardingDone || Collection.Count >= 5;
+
         public static PlayerState CreateNew(DateTimeOffset utcNow)
         {
             var state = new PlayerState();

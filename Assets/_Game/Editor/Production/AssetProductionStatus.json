@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-08T00:30:00Z",
+  "updatedUtc": "2026-10-08T12:00:00Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -313,8 +313,8 @@
     {
       "task": "T36",
       "title": "Rendez-vous du jour",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "IN_PROGRESS",
+      "notes": "Step 1 done 2026-10-08 (simulation, save, analytics, no UI): DailyVisitServices facade (day key only moving forward, login days, touch caps reset, journal and wish draws at the day change, at refuge level up and at the welcome's end; game events forwarded to wishes and journal; Tick once a second; OnResume = day check then return gift), DailyRewardTables shared with the economy simulator, DailyGiftService (first gift a Discovery egg, a big gift at least every 15, daily.gift_big_every), CalendarService (28 boxes, 100 Gems and 2 eggs a cycle, cycle decorations), WelcomeGiftService (300 Gems over 3 login days), WishService and WishCatalog (83 templates, SYS-01 to 04 and 06 shipped, draw rules, tutorial wish ending the welcome, swaps, cumulative Gems cap), WeeklyJournalService and its catalog (52 goals, 13 shipped, first journal with head start, Monday carry-over), BondService (touch caps, treats with preferred family, Essence), ReturnGiftService (3 to 13 days and 14 or more, frequency rules, Warm Return; OfflineReport.UncappedSeconds), DailyRendezvous needs the welcome over, save schema 10 (DailyVisit and Inventory sections, golden save v10), analytics 45-55 and screens 7-8, 32 economy reasons, audio events WishDone 38, GiftOpen 39, PawStamp 40, CollectGems 67 with their handmade sounds, 20 handmade UI sprites (pw_ui_sprites_t36.py). Economy simulator on the game tables: 81/94 guardrails, 13 pending owner decisions, none out of bounds. Next: step 2 (wish bubbles in the world, HUD rail, tutorial A07-A12, treat feeding), step 3 (Today, journal and return gift screens)."
     },
     {
       "task": "T37",
@@ -7278,15 +7278,15 @@
       "family": "Audio",
       "releaseScope": "SoftLaunch",
       "dependencies": [],
-      "status": "PLANNED",
-      "sourcePath": "SourceArt/Audio/",
-      "runtimePath": "Assets/_Game/Art/Audio/",
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
       "validationGates": [
         "G14"
       ],
-      "lastValidationVersion": null,
-      "lastValidationUtc": null,
-      "notes": ""
+      "lastValidationVersion": "T36",
+      "lastValidationUtc": "2026-10-08T12:00:00Z",
+      "notes": "T36: SFX_Currency_Gems_01 (rolled glass chord in F, -19 LUFS, 0.72 s), AudioEventId.CollectGems = 67. Level chosen between Collect Light and WishDone: to confirm by ear in the game (Docs/Captures/Review/T36_sounds_review.md)."
     },
     {
       "id": "J-SFX-REWARD-001",

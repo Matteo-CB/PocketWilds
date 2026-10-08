@@ -67,11 +67,13 @@ namespace PocketWilds.Editor.Economy
                 + "cibles des Codex (100 à 120 jours pour le lancement) : il faudrait des couleurs plus rares, une décision de contenu.",
                 "G5.target.regular.codex.grassland", "G5.target.casual.codex.grassland", "G5.target.regular.codex.softlaunch",
                 "G5.target.casual.codex.softlaunch", "G5.target.club_pass_packs.codex.softlaunch", "G4.payer.speed");
-            Add("Point 7 : le joueur vise la couleur de maîtrise la plus proche, son espèce préférée atteint la maîtrise 30 vers le "
-                + "jour 30 (35 à 45 visé).",
-                "G5.target.regular.mastery30");
+            Add("Point 7 : la maîtrise 30 dépend de la couleur que le joueur vise. Depuis T36, chaque souhait donne aussi 5 XP à "
+                + "l'espèce de l'animal (doc 08 econ.mastery_xp.wish), surtout dans le biome où il joue : le régulier répartit son XP "
+                + "et arrive plus tard que visé (jours 35 à 45), l'occasionnel un peu plus tôt (jour 60 visé). Réglable par Remote "
+                + "Config sans mise à jour.",
+                "G5.target.regular.mastery30", "G5.target.casual.mastery30");
             Add("Point 8 : un jour de plus que la limite, sur un seul profil ; ces écarts bougent d'un réglage à l'autre.",
-                "G5.goals.club_pass_packs", "G5.discovery.early.collector");
+                "G5.goals.club_pass_packs", "G5.discovery.early.collector", "G5.discovery.late.club");
             return pending;
         }
 

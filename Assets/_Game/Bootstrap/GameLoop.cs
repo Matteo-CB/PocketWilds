@@ -62,6 +62,9 @@ namespace PocketWilds.Bootstrap
                     _economyAccumulator = 0.0;
                 }
 
+                // T36: the day boundary is checked once a second inside (no time-zone math per frame).
+                _context.Daily?.Tick(delta);
+
                 _context.Save.Tick();
             }
         }

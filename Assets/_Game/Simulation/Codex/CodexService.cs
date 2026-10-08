@@ -280,6 +280,9 @@ namespace PocketWilds.Simulation
             return Array.IndexOf(_speciesOrder, s);
         }
 
+        /// <summary>T36: a species page was opened (the « look at {species} in the Codex » wish).</summary>
+        public event Action<ContentId>? SpeciesPageOpened;
+
         /// <summary>The species sheet was opened: its discoveries stop being "New".</summary>
         public void MarkSeen(int codexIndex)
         {
@@ -288,6 +291,7 @@ namespace PocketWilds.Simulation
             var collection = _state.Collection;
             bool changed = false;
             var id = _content.Species[s].Id;
+            SpeciesPageOpened?.Invoke(id);
             if (collection.DiscoveredSpecies.Contains(id))
                 changed |= codex.SeenSpecies.Add(id);
             for (int k = 0; k < _variantCount[s]; k++)

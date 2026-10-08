@@ -37,7 +37,7 @@ namespace PocketWilds.Services.Analytics
     public sealed class AnalyticsService : IAnalytics, IDisposable
     {
         private const int CurrencySlots = 4;
-        private const int ReasonSlots = 16;
+        private const int ReasonSlots = 32;
         private const int MaxSeenOffers = 32;
 
         private readonly PlayerState _state;
@@ -731,8 +731,158 @@ namespace PocketWilds.Services.Analytics
             _store = null;
         }
 
+        // ------------------------------------------------------------------ T36: the rendez-vous of the day
+
+        private DailyVisitServices? _daily;
+        private Action<GiftOpening>? _onGift;
+        private Action<CalendarClaim>? _onCalendar;
+        private Action<int, GrantedRewards>? _onWelcome;
+        private Action<ReturnGift>? _onReturnGift;
+        private Action<int, GrantedRewards>? _onJournal;
+        private Action<uint, ContentId, int>? _onTreatGiven;
+        private Action<WishDraw>? _onWishDrawn;
+        private Action<WishClaim>? _onWishClaimed;
+        private Action<WishSwapInfo>? _onWishSwapped;
+
+        /// <summary>Gift, calendar, welcome and return gifts, wishes, journal goals, treats given (doc 01 Contenu; T36).</summary>
+        public void AttachDaily(DailyVisitServices? daily)
+        {
+            DetachDaily();
+            _daily = daily;
+            if (daily == null)
+                return;
+            _onGift ??= OnGiftOpened;
+            _onCalendar ??= OnCalendarClaimed;
+            _onWelcome ??= OnWelcomeClaimed;
+            _onReturnGift ??= OnReturnGift;
+            _onJournal ??= OnJournalClaimed;
+            _onTreatGiven ??= OnTreatGiven;
+            _onWishDrawn ??= OnWishDrawn;
+            _onWishClaimed ??= OnWishClaimed;
+            _onWishSwapped ??= OnWishSwapped;
+            daily.Gift.Opened += _onGift;
+            daily.Calendar.Claimed += _onCalendar;
+            daily.Welcome.Claimed += _onWelcome;
+            daily.Returns.Granted += _onReturnGift;
+            daily.Journal.Claimed += _onJournal;
+            daily.Bond.TreatGiven += _onTreatGiven;
+            daily.Wishes.Drawn += _onWishDrawn;
+            daily.Wishes.Claimed += _onWishClaimed;
+            daily.Wishes.Swapped += _onWishSwapped;
+        }
+
+        /// <summary>
+        /// Everything claimable in Today was claimed (doc 01, section 0: the visit under two minutes): seconds from Today
+        /// opened to the last claim, taps on the way, items claimed.
+        /// </summary>
+        public void DailyVisitDone(double seconds, int taps, int items)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.DailyVisitDone) { D0 = seconds, I0 = taps, I1 = items };
+            Record(ref e);
+        }
+
+        private void DetachDaily()
+        {
+            var d = _daily;
+            if (d == null)
+                return;
+            d.Gift.Opened -= _onGift;
+            d.Calendar.Claimed -= _onCalendar;
+            d.Welcome.Claimed -= _onWelcome;
+            d.Returns.Granted -= _onReturnGift;
+            d.Journal.Claimed -= _onJournal;
+            d.Bond.TreatGiven -= _onTreatGiven;
+            d.Wishes.Drawn -= _onWishDrawn;
+            d.Wishes.Claimed -= _onWishClaimed;
+            d.Wishes.Swapped -= _onWishSwapped;
+            _daily = null;
+        }
+
+        private void OnGiftOpened(GiftOpening opening)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.DailyGiftOpen)
+            {
+                I0 = (int)opening.Lot, I1 = (int)opening.Size, I2 = opening.Flags, I3 = opening.SinceBigBefore, D0 = opening.Granted.Bundle.Gems,
+            };
+            Record(ref e);
+        }
+
+        private void OnCalendarClaimed(CalendarClaim claim)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.CalendarClaim) { I0 = claim.Number, I1 = claim.Cycle, I2 = claim.Substituted ? 1 : 0 };
+            Record(ref e);
+        }
+
+        private void OnWelcomeClaimed(int index, GrantedRewards granted)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.WelcomeGift) { I0 = index + 1 };
+            Record(ref e);
+        }
+
+        private void OnReturnGift(ReturnGift gift)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.ReturnGift) { I0 = gift.Kind, I1 = gift.Warm ? 1 : 0, D0 = gift.DaysAway };
+            Record(ref e);
+        }
+
+        private void OnJournalClaimed(int goal, GrantedRewards granted)
+        {
+            int slot = WeeklyJournalCatalog.TryGet((JournalGoalId)Math.Max(0, goal), out var definition) ? (int)definition.Slot : -1;
+            var e = new AnalyticsEvent(AnalyticsEventId.JournalGoal)
+            {
+                I0 = Math.Max(0, goal),
+                I1 = goal > 0 ? slot : -1,
+                I2 = WeekIndex(),
+                I3 = goal == WeeklyJournalService.CarryClaimId ? 1 : 0,
+            };
+            Record(ref e);
+        }
+
+        /// <summary>Weeks since install, from 1 (a time-zone conversion, once per claim).</summary>
+        private int WeekIndex()
+        {
+            var zone = _progression?.Config.TimeZone ?? TimeZoneInfo.Local;
+            return (ProgressionMath.DayNumber(_state, _clock.UtcNow, zone) - 1) / 7 + 1;
+        }
+
+        private void OnTreatGiven(uint animal, ContentId treat, int points)
+        {
+            var species = _state.Collection.TryGet(animal, out var instance) ? instance.Species : ContentId.None;
+            bool preferred = _daily != null && _daily.Bond.IsPreferred(animal, treat);
+            var e = new AnalyticsEvent(AnalyticsEventId.TreatGive) { U0 = treat.Value, U1 = species.Value, I0 = points, I1 = preferred ? 1 : 0 };
+            Record(ref e);
+        }
+
+        private void OnWishDrawn(WishDraw draw)
+        {
+            // A swap has its own event (WishSwap).
+            if (draw.IsSwap)
+                return;
+            var e = new AnalyticsEvent(AnalyticsEventId.WishDrawn)
+            {
+                I0 = draw.Template, I1 = (int)draw.System, I2 = draw.Tier, I3 = draw.PendingAfter,
+            };
+            Record(ref e);
+        }
+
+        private void OnWishClaimed(WishClaim claim)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.WishDone)
+            {
+                I0 = claim.Template, I1 = (int)claim.Path, I2 = (int)claim.Gems, I3 = claim.PendingAfter, D0 = claim.MinutesFromDraw,
+            };
+            Record(ref e);
+        }
+
+        private void OnWishSwapped(WishSwapInfo swap)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.WishSwap) { I0 = swap.OldTemplate, I1 = swap.NewTemplate };
+            Record(ref e);
+        }
+
         public void Dispose()
         {
+            DetachDaily();
             DetachProgression();
             Detach();
             _sink?.Dispose();

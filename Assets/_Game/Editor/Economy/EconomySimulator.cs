@@ -227,6 +227,11 @@ namespace PocketWilds.Editor.Economy
             private DateTimeOffset _lastEnd;
             private int _loginDays;
             private int _giftsWithoutBig;
+            private int _giftsOpened;
+            private int _welcomeClaimed;
+            private int _calendarStamps;
+            private DeterministicRandom _giftRng;
+            private readonly DailyVisitConfig _daily = new DailyVisitConfig();
             private int _longExpeditionsWithoutEgg;
             private readonly List<(DateTimeOffset end, double hours)> _expeditions = new List<(DateTimeOffset, double)>();
             private int _expeditionsToday;
@@ -274,6 +279,7 @@ namespace PocketWilds.Editor.Economy
                 tune?.Invoke(_config, _economyConfig, renewal);
                 _content = SimContent.Build(shipped, _config, out _);
                 _random = new Random(1000 + (int)profile.Kind);
+                _giftRng = new DeterministicRandom(SeedHash.Mix(0x7035C000u + (uint)profile.Kind, DailyGiftService.RollSalt));
 
                 _state = PlayerState.CreateNew(Install);
                 // A fixed profile id per profile: the hatch draws derive from it (a new save draws a random one).
@@ -363,28 +369,36 @@ namespace PocketWilds.Editor.Economy
             private void Login(int day)
             {
                 _loginDays++;
-                if (day <= 3)
-                    EarnGems(100); // welcome gifts, 300 in all
                 if (_profile.Club)
                     EarnGems(day == 1 ? 340 : 40);
                 if (_profile.GemsBoughtPerMonth > 0 && (day - 1) % 30 == 0)
                     EarnGems(_profile.GemsBoughtPerMonth);
 
+                // The welcome is over within the first session (5 animals): the rendez-vous opens on day 1.
                 bool rendezvous = day == 1 || _p.Refuge.IsFeatureUnlocked(RefugeFeature.DailyRendezvous);
                 if (rendezvous)
                 {
-                    DailyGift(day);
+                    // The game's own tables (T36): welcome gifts, the daily gift and the calendar box, with the substitutions.
+                    if (_welcomeClaimed < DailyRewardTables.WelcomeCount)
+                        Grant(DailyRewardTables.Welcome(_welcomeClaimed++, SimRewards(), _daily), DiscoverySource.DailyGift);
+                    DailyGift();
                     Calendar();
                     if (_profile.WatchesBonusAd || _profile.Club)
                         EarnGems(5);
                 }
                 if (_p.Refuge.IsFeatureUnlocked(RefugeFeature.DailyRendezvous))
                 {
-                    int wishes = Math.Min(3, _profile.WishesPerDay);
-                    EarnGems(3 * wishes);
-                    // A wish is fulfilled by an animal: biome mastery XP 10 for its biome (open biomes in turn).
+                    int wishes = Math.Min(_daily.WishesPerDay, _profile.WishesPerDay);
+                    EarnGems(Math.Min(_daily.WishGemCapPerDay, _daily.WishGems * wishes));
+                    // A wish is fulfilled by an animal: biome mastery XP for its biome (open biomes in turn) and species
+                    // mastery XP for its species.
                     for (int w = 0; w < wishes; w++)
+                    {
                         _p.Mastery.Add(NextWishBiome(), BiomeXpSource.Wish);
+                        var species = WishSpecies();
+                        if (species != ContentId.None)
+                            _mastery.AddXp(species, MasteryReason.Wish, _daily.WishSpeciesXp);
+                    }
                 }
                 if (_p.Refuge.IsFeatureUnlocked(RefugeFeature.RareVisitors) && _random.NextDouble() < VisitorContactsPerDay)
                     VisitorContact();
@@ -419,54 +433,75 @@ namespace PocketWilds.Editor.Economy
                 SpendGems();
             }
 
-            /// <summary>Doc 01 Contenu, section 3: the first gift is a Discovery egg; then the table with a big gift every 15 days.</summary>
-            private void DailyGift(int day)
+            /// <summary>Doc 01 Contenu, section 3, through the game's table: the first gift is a Discovery egg, a big one every 15.</summary>
+            private void DailyGift()
             {
-                if (day == 1)
-                {
-                    _hatch.GrantDiscoveryEggs(1, DiscoverySource.DailyGift);
-                    return;
-                }
-                bool forceBig = _giftsWithoutBig >= 14;
-                double roll = _random.NextDouble() * (forceBig ? 12.0 : 100.0);
-                if (forceBig)
-                {
-                    _giftsWithoutBig = 0;
-                    if (roll < 6.0) EarnGems(10);
-                    else if (roll < 10.0) EarnGems(15);
-                    else _hatch.GrantDiscoveryEggs(1, DiscoverySource.DailyGift);
-                    return;
-                }
-                _giftsWithoutBig++;
-                if ((roll -= 21) < 0) EarnGems(3);
-                else if ((roll -= 19) < 0) EarnGems(5);
-                else if ((roll -= 6) < 0) { EarnGems(10); _giftsWithoutBig = 0; }
-                else if ((roll -= 4) < 0) { EarnGems(15); _giftsWithoutBig = 0; }
-                else if ((roll -= 5) < 0) { GrantMinutes(15); EarnGems(1); }
-                else if ((roll -= 13) < 0) GrantMinutes(30);
-                else if ((roll -= 6) < 0) GrantMinutes(60);
-                else if ((roll -= 9) < 0) { }
-                else if ((roll -= 7) < 0) { }
-                else if ((roll -= 5) < 0) { }
-                else if ((roll -= 3) < 0) Sticker();
-                else { _hatch.GrantDiscoveryEggs(1, DiscoverySource.DailyGift); _giftsWithoutBig = 0; }
+                var lot = _giftsOpened == 0
+                    ? GiftLot.Egg
+                    : DailyGiftService.Roll(ref _giftRng, DailyRewardTables.MustForceBig(_giftsWithoutBig, _daily.GiftBigEvery));
+                _giftsOpened++;
+                _giftsWithoutBig = DailyRewardTables.IsBig(lot) ? 0 : _giftsWithoutBig + 1;
+                Grant(DailyRewardTables.Gift(lot, SimRewards()), DiscoverySource.DailyGift);
             }
 
-            /// <summary>Doc 01 Contenu, section 4: one box per login day; Light, Gems (100 a cycle) and two Discovery eggs.</summary>
+            /// <summary>Doc 01 Contenu, section 4, through the game's table: one box per day the rendez-vous is open.</summary>
             private void Calendar()
             {
-                int box = (_loginDays - 1) % 28 + 1;
-                switch (box)
+                int box = _calendarStamps % DailyRewardTables.CalendarBoxCount;
+                int cycle = _calendarStamps / DailyRewardTables.CalendarBoxCount + 1;
+                _calendarStamps++;
+                Grant(DailyRewardTables.CalendarBox(box, cycle, SimRewards(), _daily), DiscoverySource.Calendar);
+            }
+
+            /// <summary>The substitutions as the game makes them: tickets become Light before the activities, stickers treats before the albums.</summary>
+            private RewardContext SimRewards() => new RewardContext(
+                _p.Refuge.IsFeatureUnlocked(RefugeFeature.Grooming),
+                _p.Refuge.IsFeatureUnlocked(RefugeFeature.Garden),
+                _p.Refuge.IsFeatureUnlocked(RefugeFeature.Albums),
+                false,
+                ContentId.None,
+                _daily.TicketLightMinutes);
+
+            /// <summary>
+            /// A rendez-vous bundle in the simulation: Gems, Light minutes, Discovery eggs, stickers into the albums and the
+            /// cycle decoration placed at once. Tickets, seeds and treats feed systems the simulation counts elsewhere.
+            /// </summary>
+            private void Grant(in RewardBundle bundle, DiscoverySource source)
+            {
+                EarnGems(bundle.Gems);
+                if (bundle.LightMinutes > 0.0)
+                    GrantMinutes(bundle.LightMinutes);
+                if (bundle.DiscoveryEggs > 0)
+                    _hatch.GrantDiscoveryEggs(bundle.DiscoveryEggs, source);
+                for (int i = 0; i < bundle.Stickers; i++)
+                    Sticker();
+                if (bundle.Decoration != ContentId.None)
                 {
-                    case 1: case 8: GrantMinutes(30); break;
-                    case 5: case 15: case 22: GrantMinutes(45); break;
-                    case 11: case 20: GrantMinutes(60); break;
-                    case 26: GrantMinutes(90); break;
-                    case 7: case 14: case 21: EarnGems(20); break;
-                    case 28: EarnGems(40); break;
-                    case 16: case 27: _hatch.GrantDiscoveryEggs(1, DiscoverySource.Calendar); break;
-                    case 6: case 13: case 24: Sticker(); break;
+                    _decorationsPlaced++;
+                    _plannedScore += 2;
+                    _p.Mastery.Add(_p.Store.MostAdvancedUnlocked(), BiomeXpSource.Decoration);
                 }
+            }
+
+            /// <summary>
+            /// The species of the animal that expresses the wish: wishes go to visible animals first (doc 01 Contenu, section
+            /// 2.4), and the player looks at the biome they play in, the newest one; a random animal of it (any animal when
+            /// it has none yet).
+            /// </summary>
+            private ContentId WishSpecies()
+            {
+                int count = _state.Collection.Count;
+                if (count == 0)
+                    return ContentId.None;
+                var biome = _p.Store.MostAdvancedUnlocked();
+                int start = _random.Next(count);
+                for (int k = 0; k < count; k++)
+                {
+                    var species = _state.Collection[(start + k) % count].Species;
+                    if (_content.Species.TryGet(species, out var definition) && definition.Biome == biome)
+                        return species;
+                }
+                return _state.Collection[start].Species;
             }
 
             private void GrantMinutes(double minutes)

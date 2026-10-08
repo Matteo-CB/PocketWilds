@@ -6,7 +6,7 @@ Each recipe returns a mono float array at 48 kHz; pw_audio_build normalizes it t
 """
 import numpy as np
 
-from pw_audio_dsp import (SR, attack_curve, band_noise, bandpass, chain, convolve, damped_sine, db, env_ad, env_asr,
+from pw_audio_dsp import (SR, attack_curve, band_noise, bandpass, chain, convolve, damped_sine, db, env_ad, env_asr, fade,
                           fft_filter, fm_bell, formant_voice, glide, highpass, hz, lowpass, partials, peak, phase_of,
                           reverb_ir, samples, t_axis, white)
 
@@ -575,6 +575,108 @@ def biome_mastery_up():
     return wet(y, ROOM, 0.16)
 
 
+# ---------------------------------------------------------------- T36: daily visit (wish, gift box, calendar, Gems)
+
+def _soft_start(x, seconds=0.0015):
+    """A 1.5 ms fade-in: the zero-phase filters leave a few samples before the attack, and the clip must start on 0."""
+    return fade(x, seconds, 0.0)
+
+
+def _glass_note(f, seconds, vel, tau):
+    """The house glass note, damped sooner (tau): a short cue keeps its strike and loses the long music-box ring."""
+    return glass(f, seconds, vel) * np.exp(-t_axis(seconds) / tau)
+
+
+def _tine_under(f, seconds, vel, tau, rng):
+    """A quiet tine under a glass note: the warm body that keeps the glass from sounding thin on a phone."""
+    return tine(f, seconds, vel, rng) * np.exp(-t_axis(seconds) / tau)
+
+
+def _bubble(f_start, f_end, rng, seconds=0.12):
+    """A soft bubble pop: a round sine whose pitch rises as the bubble closes, a hint of its film. No click."""
+    t = t_axis(seconds)
+    f = glide(t, f_start, f_end, 0.014)
+    ph = phase_of(f)
+    body = np.sin(ph) * env_ad(t, 0.0025, 0.03) + 0.12 * np.sin(2.0 * ph) * env_ad(t, 0.0025, 0.014)
+    film = band_noise(len(t), 900.0, 3000.0, rng) * env_ad(t, 0.0008, 0.004) * 0.05
+    return body + film
+
+
+def _wood_knock(f, rng, cavity=0.0, seconds=0.25):
+    """A knock on a small round box of light wood: a hollow note that settles a hair lower, two short wood partials,
+    the air of the box under them (cavity, Hz) and a soft contact. Rounded: no metallic click."""
+    t = t_axis(seconds)
+    fb = f * (1.0 + 0.05 * np.exp(-t / 0.012))
+    body = np.sin(phase_of(fb)) * np.exp(-t / 0.045)
+    body += 0.28 * np.sin(2.0 * np.pi * f * 2.32 * t) * np.exp(-t / 0.018)
+    body += 0.07 * np.sin(2.0 * np.pi * f * 4.1 * t) * np.exp(-t / 0.008)
+    if cavity > 0.0:
+        body += 0.45 * np.sin(2.0 * np.pi * cavity * t) * env_ad(t, 0.002, 0.035)
+    contact = fft_filter(white(len(t), rng) * env_ad(t, 0.0003, 0.0015), bandpass(700.0, 3000.0)) * 0.3
+    return (body + contact) * np.clip(t / 0.0008, 0.0, 1.0)
+
+
+def wish_done(v):
+    """J-SFX-FEEL-009: a wish comes true: a soft bubble pops (its pitch rises to F), then two warm glass notes rise over
+    quiet tines an octave below: A to C, or A to D for the second variant (a fourth, its bubble starting a little
+    higher, its notes a touch sooner), so a run of wishes does not repeat one sound. About 0.7 s."""
+    rng = np.random.default_rng(1700 + v)
+    out = np.zeros(samples(0.9))
+    place(out, _bubble((400.0, 430.0)[v], hz('F5'), rng) * 0.42, 0.0, release=0.02)
+    second = ('C6', 'D6')[v]
+    for note, at, vel, level in (('A5', (0.085, 0.08)[v], 0.4, 0.42), (second, (0.19, 0.18)[v], 0.48, 0.5)):
+        place(out, _glass_note(hz(note), 0.6, vel, 0.2) * level, at)
+        place(out, _tine_under(hz(note) / 2.0, 0.5, 0.45, 0.15, rng) * level * 0.3, at)
+    x = fft_filter(out, chain(lowpass(8000.0, 2), highpass(160.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.14))
+
+
+def gift_open():
+    """J-SFX-FEEL-010: the daily gift box opens: a hollow knock of its wooden lid with a small puff of air, small glass
+    notes rising on F major (F, A, C, F), and the lid set down beside the box. About 0.8 s."""
+    rng = np.random.default_rng(1710)
+    out = np.zeros(samples(1.0))
+    place(out, _wood_knock(hz('A4'), rng, cavity=hz('C4')) * 0.5, 0.0, release=0.03)
+    place(out, _puff(0.08, 300.0, 1400.0, 0.004, 0.025, rng) * 0.07, 0.004)
+    place(out, _tine_under(hz('F4'), 0.6, 0.5, 0.2, rng) * 0.18, 0.07)
+    for i, (note, at) in enumerate((('F5', 0.07), ('A5', 0.13), ('C6', 0.19), ('F6', 0.25))):
+        place(out, _glass_note(hz(note), 0.6, 0.38 + 0.05 * i, 0.16 + 0.03 * i) * (0.3 + 0.03 * i), at)
+    place(out, _wood_knock(hz('D5'), rng) * 0.1, 0.21, release=0.03)
+    x = fft_filter(out, chain(lowpass(8000.0, 2), highpass(140.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.16))
+
+
+def paw_stamp(v):
+    """J-SFX-FEEL-011: the paw stamp of the calendar: a felt pad pressed on card (the puff of the felt, a short soft
+    thump, a faint touch of the card), then the inked felt lets go. Two variants of pad and press. About 0.3 s."""
+    rng = np.random.default_rng(1720 + v)
+    out = np.zeros(samples(0.36))
+    t = t_axis(0.14)
+    thump = np.sin(phase_of(glide(t, (420.0, 390.0)[v], (330.0, 300.0)[v], 0.015))) * env_ad(t, 0.004, 0.024)
+    felt = band_noise(len(t), (320.0, 280.0)[v], (1300.0, 1100.0)[v], rng) * env_ad(t, 0.006, 0.034) * 0.6
+    card = damped_sine(t, (640.0, 580.0)[v], 0.012) * np.clip(t / 0.002, 0.0, 1.0) * 0.18
+    place(out, thump * 0.45 + felt + card, 0.0, release=0.03)
+    lt = t_axis(0.06)
+    lift = band_noise(len(lt), 800.0, 2200.0, rng) * env_ad(lt, 0.005, 0.012) * 0.05
+    lift += damped_sine(lt, 700.0, 0.004) * np.clip(lt / 0.0015, 0.0, 1.0) * 0.03
+    place(out, lift, (0.15, 0.17)[v], release=0.01)
+    x = fft_filter(out, chain(lowpass(3200.0, 2), highpass(180.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.05))
+
+
+def gems_collect():
+    """J-SFX-CURRENCY-004: Gems arrive at the counter: a clear rounded chime, glass C and F rolled together over a tine,
+    a softer A just after (an F major chord). A pearl of glass, never coins. About 0.5 s."""
+    rng = np.random.default_rng(1730)
+    out = np.zeros(samples(0.8))
+    place(out, _tine_under(hz('F5'), 0.6, 0.4, 0.2, rng) * 0.3, 0.0)
+    place(out, _glass_note(hz('C6'), 0.6, 0.45, 0.2) * 0.32, 0.0)
+    place(out, _glass_note(hz('F6'), 0.6, 0.5, 0.2) * 0.4, 0.012)
+    place(out, _glass_note(hz('A6'), 0.55, 0.4, 0.17) * 0.26, 0.07)
+    x = fft_filter(out, chain(lowpass(8000.0, 2), highpass(200.0, 2), peak(3000.0, -2.0, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.14))
+
+
 # ---------------------------------------------------------------- catalog
 
 # name: (recipe, variants, loudness target (loudest 200 ms, K-weighted, LUFS scale), group)
@@ -615,4 +717,9 @@ SFX = {
     'SFX_Reward_ZoneOpen': (lambda v: zone_open(), 1, -16.0, 'Rewards'),
     'SFX_Reward_RefugeLevel': (lambda v: refuge_level_up(), 1, -16.0, 'Rewards'),
     'SFX_Reward_BiomeMastery': (lambda v: biome_mastery_up(), 1, -18.0, 'Rewards'),
+    # T36 (doc 05 Sensations, section 6.1; doc 08 J-SFX-CURRENCY-004)
+    'SFX_Reward_WishDone': (wish_done, 2, -18.0, 'Rewards'),
+    'SFX_Reward_GiftOpen': (lambda v: gift_open(), 1, -17.0, 'Rewards'),
+    'SFX_UI_PawStamp': (paw_stamp, 2, -21.0, 'UI'),
+    'SFX_Currency_Gems': (lambda v: gems_collect(), 1, -19.0, 'Rewards'),
 }

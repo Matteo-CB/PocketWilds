@@ -78,6 +78,16 @@ s'ajoute à la fin d'un événement.
 | 42 | OfferClick | offre, emplacement |
 | 43 | PurchaseResult | offre, produit, statut, prix de référence (centimes), Gemmes (+ reçues, - dépensées), achats de cette offre, achats réels, drapeaux (1 restauré, 2 nouvel octroi) |
 | 44 | Restore | achats rendus |
+| 45 | DailyGiftOpen | lot, taille (0 petit, 1 moyen, 2 gros), drapeaux (1 gros forcé par la garantie, 2 premier cadeau fixe, 4 lot remplacé), cadeaux depuis le dernier gros avant l'ouverture, Gemmes. T36 |
+| 46 | WishDrawn | modèle de souhait, système, palier, souhaits en attente après le tirage. T36 |
+| 47 | WishDone | modèle, chemin de récupération (0 bulle, 1 fiche de l'animal, 2 ligne d'Aujourd'hui, 3 tout récupérer, 4 automatique), Gemmes données, souhaits en attente après, minutes entre le tirage et l'accomplissement. T36 |
+| 48 | WishSwap | ancien modèle, nouveau modèle. T36 |
+| 49 | CalendarClaim | case (1 à 28), cycle, lot remplacé. T36 |
+| 51 | JournalGoal | objectif (0 : carnet complet), emplacement, numéro de semaine, reporté à la semaine suivante. T36 |
+| 52 | ReturnGift | sorte (1 court, 2 grand), retour chaleureux (nœud d'Essence), jours d'absence. T36 |
+| 53 | WelcomeGift | rang du cadeau de bienvenue (1 à 3). T36 |
+| 54 | DailyVisitDone | secondes entre l'ouverture d'Aujourd'hui et la dernière récupération, touchers, éléments récupérés. Mesure le critère des deux minutes. T36 |
+| 55 | TreatGive | friandise, espèce, lien ajouté, famille préférée. T36 |
 | 50 | PerfSample | frames, moyenne (ms), p95 (ms), frames lentes (> 33,4 ms), max (ms), mémoire (Mo), palier qualité, économie batterie. Une par minute de jeu, après 3 s de chauffe |
 | 60 | OfflineReturn | secondes d'absence, Lumière gagnée (mantisse, exposant). Seulement si un gain réel |
 
@@ -87,7 +97,11 @@ Funnel (doc 09, une fois par profil, enregistré dans la sauvegarde) : 0 Tutoria
 12 SecondPurchase. BiomeUnlock, FirstUpgrade et FirstRewardedAd sont prêts mais n'ont pas encore de fonction de jeu
 qui les déclenche (pas de deuxième biome, d'amélioration ni de pub récompensée dans la tranche).
 
-Écrans : 1 Refuge, 2 Codex, 3 Fiche Codex, 4 Boutique, 5 Offre, 6 Retour hors ligne.
+Écrans : 1 Refuge, 2 Codex, 3 Fiche Codex, 4 Boutique, 5 Offre, 6 Retour hors ligne, 7 Aujourd'hui, 8 Carnet de la
+semaine (T36).
+
+Raisons d'économie ajoutées par T36 : 16 cadeau du jour, 17 souhait, 18 calendrier, 19 carnet de la semaine,
+20 cadeau de bienvenue, 21 cadeau de retour, 22 lien. Les flux Lumière et Essence sont résumés sur 32 raisons.
 
 ## Sauvegarde
 

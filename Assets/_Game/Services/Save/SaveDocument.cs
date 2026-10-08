@@ -21,6 +21,12 @@ namespace PocketWilds.Services.Save
         Shop = 12,
         Analytics = 13,
         Progression = 14,
+
+        /// <summary>T36: the daily rendez-vous (schema 10).</summary>
+        DailyVisit = 15,
+
+        /// <summary>T36: tickets, seeds, ingredients, decorations, stickers (schema 10).</summary>
+        Inventory = 16,
     }
 
     public sealed class SaveSection

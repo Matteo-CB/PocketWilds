@@ -77,6 +77,25 @@ récompense donc la collection plutôt que l'optimisation, ce que veut le jeu.
 8. **Deux écarts d'un jour** (un jour sans objectif de plus que la limite pour le payeur Club + Pass, un jour sans découverte
    de plus pour le grand collectionneur) : ils bougent d'un réglage à l'autre.
 
+## Depuis T36 (8 octobre 2026)
+
+Le simulateur donne maintenant les récompenses des rendez-vous avec les tables du jeu (`DailyRewardTables`) : cadeaux de
+bienvenue, cadeau du jour (premier œuf Découverte, un gros cadeau au moins tous les 15), case du calendrier, avec les
+remplacements tant que les activités, le Jardin et les albums ne sont pas ouverts (un ticket vaut 15 minutes de Lumière).
+Chaque souhait donne aussi 5 XP à l'espèce de l'animal (doc 08, `econ.mastery_xp.wish`) ; les souhaits vont d'abord aux
+animaux visibles, donc au biome où le joueur joue.
+
+Résultat : **81 garde-fous sur 94 respectés**, 13 en attente d'une décision, aucun hors bornes. La part des œufs et l'écart
+du payeur reviennent dans leurs bandes. Ce qui bouge :
+
+- Point 7 : le régulier atteint la maîtrise 30 au jour 58 environ (il répartit son XP entre les espèces du biome où il
+  joue), l'occasionnel au jour 54 (60 visé). Réglable par Remote Config sans mise à jour.
+- Point 8 : le payeur Club finit les 120 jours sur 4 jours sans découverte (3 au plus visé), un écart de bord de course.
+
+Note sur le simulateur : donner l'XP des souhaits à un animal tiré dans toute la collection faisait viser au joueur simulé
+les espèces des anciens biomes (les plus nombreuses) et retardait ses biomes de 8 à 12 jours. Le modèle suit maintenant la
+règle du jeu (animaux visibles d'abord).
+
 ## Pour rejouer
 
 Menu Pocket Wilds/Economy/Run Simulator, ou le test `EconomySimulatorTests` (6 profils sur 120 jours en 7 secondes environ ;
