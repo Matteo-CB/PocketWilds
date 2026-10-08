@@ -11,7 +11,10 @@ namespace PocketWilds.Simulation
         Gems = 3,
     }
 
-    /// <summary>Source/sink reasons for analytics and debugging. Stable values, append only.</summary>
+    /// <summary>
+    /// Source/sink reasons for analytics and debugging, the values of doc 08 section 9.5. Stable from the first build that
+    /// sends data, append only.
+    /// </summary>
     public enum EconomyReason : ushort
     {
         Unknown = 0,
@@ -26,19 +29,36 @@ namespace PocketWilds.Simulation
         Event = 9,
         Migration = 10,
         Debug = 11,
-        Decoration = 12,
-        Treat = 13,
-        BiomeGate = 14,
-        EssenceNode = 15,
 
-        // T36, the daily rendez-vous (doc 01 Contenu).
-        DailyGift = 16,
-        Wish = 17,
-        Calendar = 18,
-        WeeklyJournal = 19,
-        WelcomeGift = 20,
-        ReturnGift = 21,
-        Bond = 22,
+        // Doc 08 section 9.5 (realigned in T37, before any data was sent).
+        Wish = 12,
+        DailyGift = 13,
+        Calendar = 14,
+        WeeklyJournal = 15,
+
+        /// <summary>T37: the rewards of an activity game.</summary>
+        Activity = 16,
+
+        /// <summary>T37: a challenge's first 3 stars (5 Gems, once).</summary>
+        ActivityChallenge = 17,
+
+        WelcomeGift = 32,
+
+        /// <summary>T37: ticket packs bought with Gems (« Achat de billets »).</summary>
+        TicketPack = 37,
+
+        BiomeGate = 43,
+        ReturnGift = 47,
+        EssenceNode = 51,
+
+        /// <summary>A common decoration bought with Light.</summary>
+        Decoration = 54,
+
+        /// <summary>The treat stand (« Épicerie »).</summary>
+        Treat = 55,
+
+        /// <summary>Bond rewards (T36; not in the doc's list, appended after it).</summary>
+        Bond = 58,
     }
 
     public readonly struct EconomyChange

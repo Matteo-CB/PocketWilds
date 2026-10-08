@@ -128,6 +128,26 @@ namespace PocketWilds.Tests.EditMode
             daily.TouchesByAnimal[4] = 3;
             state.Inventory.Tickets = 5;
             state.Inventory.Add(ContentId.FromSource("plant.daisy"), 2);
+            var activities = state.Activities;
+            activities.TicketsStarted = true;
+            activities.FreeTickets = 6;
+            activities.PaidTickets = 1;
+            activities.RefillAnchorUnixMs = 1_791_000_000_123L;
+            activities.PackDayKey = 20261007;
+            activities.PacksToday = 2;
+            activities.GemsDayKey = 20261007;
+            activities.GemsToday = 6;
+            activities.ChallengesThreeStars = 11;
+            activities.ChallengeDecorations = 2;
+            activities.GamesStarted = 140;
+            activities.Records[(int)ActivityId.HideAndSeek - 1] = new ActivityRecord
+            {
+                Unlocked = true, Best = 9, BestStars = 3, Difficulty = 10, ZeroStarStreak = 1, ThreeStarStreak = 2, GamesPlayed = 70,
+                RewardedGames = 41, FreeGameUsed = true, ThreeStarGemsDayKey = 20261006, LastTheme = ContentId.FromSource("biome.lake"),
+                PaidStickerPoints = 95,
+            };
+            activities.ChallengeStars[ActivityState.ChallengeIndex((int)ActivityId.GrandContest - 1, 9)] = 2;
+            activities.ChallengeAttempts[ActivityState.ChallengeIndex((int)ActivityId.GrandContest - 1, 9)] = 65_000;
             return state;
         }
 
@@ -236,6 +256,33 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual(3, daily.TouchesByAnimal[4]);
             Assert.AreEqual(5, loaded.Inventory.Tickets);
             Assert.AreEqual(2, loaded.Inventory.Count(ContentId.FromSource("plant.daisy")));
+
+            var act = loaded.Activities;
+            Assert.IsTrue(act.TicketsStarted);
+            Assert.AreEqual(6, act.FreeTickets);
+            Assert.AreEqual(1, act.PaidTickets);
+            Assert.AreEqual(1_791_000_000_123L, act.RefillAnchorUnixMs);
+            Assert.AreEqual(20261007, act.PackDayKey);
+            Assert.AreEqual(2, act.PacksToday);
+            Assert.AreEqual(20261007, act.GemsDayKey);
+            Assert.AreEqual(6, act.GemsToday);
+            Assert.AreEqual(11, act.ChallengesThreeStars);
+            Assert.AreEqual(2, act.ChallengeDecorations);
+            Assert.AreEqual(140, act.GamesStarted);
+            var hide = act.Records[(int)ActivityId.HideAndSeek - 1];
+            Assert.IsTrue(hide.Unlocked && hide.FreeGameUsed);
+            Assert.AreEqual(9, hide.Best);
+            Assert.AreEqual(3, hide.BestStars);
+            Assert.AreEqual(10, hide.Difficulty);
+            Assert.AreEqual(1, hide.ZeroStarStreak);
+            Assert.AreEqual(2, hide.ThreeStarStreak);
+            Assert.AreEqual(70, hide.GamesPlayed);
+            Assert.AreEqual(41, hide.RewardedGames);
+            Assert.AreEqual(20261006, hide.ThreeStarGemsDayKey);
+            Assert.AreEqual(ContentId.FromSource("biome.lake"), hide.LastTheme);
+            Assert.AreEqual(95, hide.PaidStickerPoints);
+            Assert.AreEqual(2, act.ChallengeStars[ActivityState.ChallengeIndex((int)ActivityId.GrandContest - 1, 9)]);
+            Assert.AreEqual(65_000, act.ChallengeAttempts[ActivityState.ChallengeIndex((int)ActivityId.GrandContest - 1, 9)]);
         }
 
         [Test]
@@ -486,6 +533,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Eggs_v8")]
         [TestCase("GoldenSave_Renewal_v9")]
         [TestCase("GoldenSave_DailyVisit_v10")]
+        [TestCase("GoldenSave_Activities_v11")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -509,6 +557,8 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(0, state.Shop.Offers.Count + state.Shop.PaidPurchases, "Older saves start without shop history.");
             if (version < 8)
                 Assert.AreEqual(0, state.World.DiscoveryEggs, "Older saves start with no Discovery egg.");
+            if (version < 11)
+                Assert.IsFalse(state.Activities.TicketsStarted, "Older saves start the ticket pool on first use.");
             if (version < 10)
             {
                 Assert.AreEqual(state.Collection.Count >= 5, state.DailyVisit.OnboardingDone, "Five animals or more: the welcome is over.");
@@ -591,9 +641,34 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(4, state.World.DiscoveryEggs, "Everything of schema 8 still there.");
                     break;
 
+                case "GoldenSave_Activities_v11":
+                    Assert.AreEqual(300, state.Meta.Revision);
+                    Assert.AreEqual(SaveSchema.CurrentVersion - 11, result.MigrationsApplied);
+                    var activities = state.Activities;
+                    Assert.IsTrue(activities.TicketsStarted);
+                    Assert.AreEqual(3, activities.FreeTickets);
+                    Assert.AreEqual(2, activities.PaidTickets);
+                    Assert.AreEqual(new DateTimeOffset(2026, 10, 12, 9, 30, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(), activities.RefillAnchorUnixMs);
+                    Assert.AreEqual(1, activities.PacksToday);
+                    Assert.AreEqual(4, activities.GemsToday);
+                    Assert.AreEqual(6, activities.ChallengesThreeStars);
+                    Assert.AreEqual(23, activities.GamesStarted);
+                    var groom = activities.Records[(int)ActivityId.Grooming - 1];
+                    Assert.IsTrue(groom.Unlocked && groom.FreeGameUsed);
+                    Assert.AreEqual(1840, groom.Best);
+                    Assert.AreEqual(3, groom.BestStars);
+                    Assert.AreEqual(5, groom.Difficulty);
+                    Assert.AreEqual(ContentId.FromSource("biome.grassland"), groom.LastTheme);
+                    Assert.AreEqual(45, groom.PaidStickerPoints);
+                    Assert.AreEqual(2, activities.Records[(int)ActivityId.NutRain - 1].BestStars);
+                    Assert.AreEqual(6, activities.ChallengesDone((int)ActivityId.Grooming - 1));
+                    Assert.AreEqual(4, activities.ChallengeAttempts[ActivityState.ChallengeIndex((int)ActivityId.Grooming - 1, 6)]);
+                    Assert.AreEqual(20261012, state.DailyVisit.LastDayKey, "Everything of schema 10 still there.");
+                    break;
+
                 case "GoldenSave_DailyVisit_v10":
                     Assert.AreEqual(280, state.Meta.Revision);
-                    Assert.AreEqual(0, result.MigrationsApplied);
+                    Assert.AreEqual(SaveSchema.CurrentVersion - 10, result.MigrationsApplied);
                     var daily = state.DailyVisit;
                     Assert.AreEqual(20261012, daily.LastDayKey);
                     Assert.AreEqual(9, daily.LoginDays);

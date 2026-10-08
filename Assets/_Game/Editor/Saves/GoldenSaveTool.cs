@@ -36,6 +36,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Eggs_v8", BuildEggs());
             created += WriteIfMissing("GoldenSave_Renewal_v9", BuildRenewal());
             created += WriteIfMissing("GoldenSave_DailyVisit_v10", BuildDailyVisit());
+            created += WriteIfMissing("GoldenSave_Activities_v11", BuildActivities());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -153,6 +154,47 @@ namespace PocketWilds.Editor.Saves
             state.Inventory.Tickets = 2;
             state.Inventory.PendingStickers = 1;
             state.Inventory.Add(ContentId.FromSource("ingredient.flower_sugar"), 3);
+            return state;
+        }
+
+        /// <summary>
+        /// Schema 11 (T37): the activities: tickets bought and free, a refill anchor, packs and Gems of the day, records,
+        /// adaptive difficulty, challenges with stars and attempts, the free first game used, a theme, the paid sticker counter.
+        /// </summary>
+        private static PlayerState BuildActivities()
+        {
+            var state = BuildDailyVisit();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-000000000091");
+            state.Meta.Revision = 300;
+            var a = state.Activities;
+            a.TicketsStarted = true;
+            a.FreeTickets = 3;
+            a.PaidTickets = 2;
+            a.RefillAnchorUnixMs = new DateTimeOffset(2026, 10, 12, 9, 30, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+            a.PackDayKey = 20261012;
+            a.PacksToday = 1;
+            a.GemsDayKey = 20261012;
+            a.GemsToday = 4;
+            a.ChallengesThreeStars = 6;
+            a.ChallengeDecorations = 1;
+            a.GamesStarted = 23;
+            int grooming = (int)ActivityId.Grooming - 1;
+            a.Records[grooming] = new ActivityRecord
+            {
+                Unlocked = true, Best = 1840, BestStars = 3, Difficulty = 5, ThreeStarStreak = 1, GamesPlayed = 17, RewardedGames = 12,
+                FreeGameUsed = true, ThreeStarGemsDayKey = 20261012, LastTheme = ContentId.FromSource("biome.grassland"),
+                PaidStickerPoints = 45,
+            };
+            int nuts = (int)ActivityId.NutRain - 1;
+            a.Records[nuts] = new ActivityRecord { Unlocked = true, Best = 37, BestStars = 2, Difficulty = 2, ZeroStarStreak = 1, GamesPlayed = 6, RewardedGames = 4 };
+            for (int i = 0; i < 6; i++)
+            {
+                a.ChallengeStars[ActivityState.ChallengeIndex(grooming, i)] = 3;
+                a.ChallengeAttempts[ActivityState.ChallengeIndex(grooming, i)] = (ushort)(i + 1);
+            }
+            a.ChallengeStars[ActivityState.ChallengeIndex(grooming, 6)] = 1;
+            a.ChallengeAttempts[ActivityState.ChallengeIndex(grooming, 6)] = 4;
+            state.Inventory.Tickets = 0;
             return state;
         }
 

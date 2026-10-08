@@ -149,6 +149,9 @@ namespace PocketWilds.Editor.UI
                         continue;
                     if (Array.IndexOf(TodayAtlasSprites, Path.GetFileNameWithoutExtension(path)) >= 0)
                         continue;
+                    // T37: the activity screens' art has its own atlas (Atlas_Activities).
+                    if (ActivityUiPipeline.IsAtlasSprite(Path.GetFileNameWithoutExtension(path)))
+                        continue;
                     var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                     if (texture != null)
                         list.Add(texture);

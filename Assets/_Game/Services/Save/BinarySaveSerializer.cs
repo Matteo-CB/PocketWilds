@@ -36,7 +36,7 @@ namespace PocketWilds.Services.Save
         /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
         /// 8: Discovery egg stock (World 3). 9: Renewal memory and Essence tree. 10: daily rendez-vous and inventory (T36).
         /// </summary>
-        public const int CurrentVersion = 10;
+        public const int CurrentVersion = 11;
     }
 
     /// <summary>
@@ -62,6 +62,7 @@ namespace PocketWilds.Services.Save
         private const ushort ProgressionVersion = 2;
         private const ushort DailyVisitVersion = 1;
         private const ushort InventoryVersion = 1;
+        private const ushort ActivitiesVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -174,6 +175,10 @@ namespace PocketWilds.Services.Save
 
             mark = BeginSection(output, SaveSectionId.Inventory, InventoryVersion);
             WriteInventory(output, state.Inventory);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Activities, ActivitiesVersion);
+            WriteActivities(output, state.Activities);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -347,6 +352,10 @@ namespace PocketWilds.Services.Save
                     state.DailyVisit.OnboardingDone = state.Collection.Count >= 5;
                 if (document.TryGetSection(SaveSectionId.Inventory, out var inventory))
                     ReadInventory(inventory, state.Inventory);
+                // Saves older than schema 11 have no activities: the first use fills the ticket reserve and takes in the
+                // tickets kept in the inventory (T37).
+                if (document.TryGetSection(SaveSectionId.Activities, out var activities))
+                    ReadActivities(activities, state.Activities);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -656,6 +665,106 @@ namespace PocketWilds.Services.Save
             inventory.Tickets = Math.Max(0, r.ReadInt32());
             inventory.PendingStickers = Math.Max(0, r.ReadInt32());
             ReadCounters(ref r, inventory.Items);
+        }
+
+        /// <summary>
+        /// T37: the activities. The 18 activity records are written with their count (the test activity's slot never is),
+        /// then the stars and attempts of their 10 challenges.
+        /// </summary>
+        private static void WriteActivities(ByteBufferWriter output, ActivityState a)
+        {
+            output.WriteBool(a.TicketsStarted);
+            output.WriteInt32(a.FreeTickets);
+            output.WriteInt32(a.PaidTickets);
+            output.WriteInt64(a.RefillAnchorUnixMs);
+            output.WriteInt32(a.PackDayKey);
+            output.WriteInt32(a.PacksToday);
+            output.WriteInt32(a.GemsDayKey);
+            output.WriteInt32(a.GemsToday);
+            output.WriteInt32(a.ChallengesThreeStars);
+            output.WriteInt32(a.ChallengeDecorations);
+            output.WriteInt32(a.GamesStarted);
+            const int count = ActivityCatalog.ActivityCount;
+            const int challenges = ActivityState.ChallengesPerActivity;
+            output.WriteInt32(count);
+            for (int i = 0; i < count; i++)
+            {
+                ref var record = ref a.Records[i];
+                output.WriteBool(record.Unlocked);
+                output.WriteInt32(record.Best);
+                output.WriteByte(record.BestStars);
+                output.WriteByte(record.Difficulty);
+                output.WriteByte(record.ZeroStarStreak);
+                output.WriteByte(record.ThreeStarStreak);
+                output.WriteInt32(record.GamesPlayed);
+                output.WriteInt32(record.RewardedGames);
+                output.WriteBool(record.FreeGameUsed);
+                output.WriteInt32(record.ThreeStarGemsDayKey);
+                output.WriteContentId(record.LastTheme);
+                output.WriteInt32(record.PaidStickerPoints);
+            }
+            output.WriteInt32(challenges);
+            for (int i = 0; i < count * challenges; i++)
+                output.WriteByte(a.ChallengeStars[i]);
+            for (int i = 0; i < count * challenges; i++)
+                output.WriteUInt16(a.ChallengeAttempts[i]);
+        }
+
+        private static void ReadActivities(SaveSection section, ActivityState a)
+        {
+            RequireVersion(section, ActivitiesVersion);
+            var r = section.CreateReader();
+            a.TicketsStarted = r.ReadBool();
+            a.FreeTickets = Math.Max(0, r.ReadInt32());
+            a.PaidTickets = Math.Max(0, r.ReadInt32());
+            a.RefillAnchorUnixMs = r.ReadInt64();
+            a.PackDayKey = r.ReadInt32();
+            a.PacksToday = Math.Max(0, r.ReadInt32());
+            a.GemsDayKey = r.ReadInt32();
+            a.GemsToday = Math.Max(0, r.ReadInt32());
+            a.ChallengesThreeStars = Math.Max(0, r.ReadInt32());
+            a.ChallengeDecorations = Math.Max(0, r.ReadInt32());
+            a.GamesStarted = Math.Max(0, r.ReadInt32());
+            int count = ReadCount(ref r);
+            for (int i = 0; i < count; i++)
+            {
+                var record = new ActivityRecord
+                {
+                    Unlocked = r.ReadBool(),
+                    Best = Math.Max(0, r.ReadInt32()),
+                    BestStars = (byte)Math.Min(3, (int)r.ReadByte()),
+                    Difficulty = (byte)Math.Min(10, (int)r.ReadByte()),
+                    ZeroStarStreak = r.ReadByte(),
+                    ThreeStarStreak = r.ReadByte(),
+                    GamesPlayed = Math.Max(0, r.ReadInt32()),
+                    RewardedGames = Math.Max(0, r.ReadInt32()),
+                    FreeGameUsed = r.ReadBool(),
+                    ThreeStarGemsDayKey = r.ReadInt32(),
+                    LastTheme = r.ReadContentId(),
+                    PaidStickerPoints = Math.Max(0, r.ReadInt32()),
+                };
+                // A newer build may know more activities: their records are read and dropped.
+                if (i < ActivityCatalog.ActivityCount)
+                    a.Records[i] = record;
+            }
+            int challenges = ReadCount(ref r);
+            int cells = count * challenges;
+            for (int i = 0; i < cells; i++)
+            {
+                byte stars = (byte)Math.Min(3, (int)r.ReadByte());
+                int slot = i / Math.Max(1, challenges);
+                int challenge = i % Math.Max(1, challenges);
+                if (slot < ActivityCatalog.ActivityCount && challenge < ActivityState.ChallengesPerActivity)
+                    a.ChallengeStars[ActivityState.ChallengeIndex(slot, challenge)] = stars;
+            }
+            for (int i = 0; i < cells; i++)
+            {
+                ushort attempts = r.ReadUInt16();
+                int slot = i / Math.Max(1, challenges);
+                int challenge = i % Math.Max(1, challenges);
+                if (slot < ActivityCatalog.ActivityCount && challenge < ActivityState.ChallengesPerActivity)
+                    a.ChallengeAttempts[ActivityState.ChallengeIndex(slot, challenge)] = attempts;
+            }
         }
 
         private static void ReadCounters(ref ByteBufferReader r, System.Collections.Generic.Dictionary<ContentId, int> counters)

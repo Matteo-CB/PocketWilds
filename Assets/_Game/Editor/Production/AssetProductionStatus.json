@@ -26,7 +26,7 @@
     "Future"
   ],
   "gates": "Gate numbers refer to '12 - VALIDATION, REVIEW & BENCHMARK PROMPTS' (G00-G35).",
-  "updatedUtc": "2026-10-08T12:00:00Z",
+  "updatedUtc": "2026-10-08T19:00:00Z",
   "productionQueue": [
     {
       "task": "T00",
@@ -319,8 +319,8 @@
     {
       "task": "T37",
       "title": "Cadre des activités",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "DONE 2026-10-08. Activity framework (doc Mini-jeux sections 1, 2, 5, 6; doc 01 sections 0, A15, 12.0): ActivityServices facade (tickets 5 max, +1 every 120 min from timestamps, gifts kept up to 10 then waiting in the inventory, packs 3 for 30 Gems twice a day, paid tickets used last; adaptive difficulty d 1 to 10 from 3; 10 challenges per activity opening in order; practice free and unlimited; reward service with Light 5/10/20 min, bond, species and biome mastery, Gems 2 per first 3 stars a day (6 a day), 5 per challenge once, a challenge decoration every 5, stickers 10/20/35 % or a fixed counter for bought tickets, 3 treats before the albums; runner with quit refund in 3 s; unlocks from the refuge level service and the doc 01 table; Remote Config keys and flags), ActivityState and save schema 11 (golden save v11), analytics realigned on the doc 08/09 catalogue (events, screens, economy reasons) with events 110 to 114, 120 and 131, ActivityPresenter (Play button, hub, game with its stage and HUD, pause, result beats, no-ticket card, activity music with the biome ambience at -6 dB), screens PF_UI_ActivityHub, PF_UI_ActivityHud, PF_UI_ActivityResult, PF_UI_TicketsEmpty, 24 sounds and 3 musics, 27 sprites, economy simulator on the reward table (81/94, 13 pending, 0 out). EditMode 773/773, PlayMode 121 passed 1 skipped; the dummy activity goes through the whole cycle in the real game. No activity ships yet: the Play button stays hidden and a ticket stays worth 15 min of Light until T38. Docs/Design/T37_Cadre_des_activites.md."
     },
     {
       "task": "T38",
@@ -16980,6 +16980,220 @@
       "passedGates": [
         "G12"
       ]
+    },
+    {
+      "id": "J-SFX-ACT-000-01",
+      "name": "ActivityStart",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37: SFX_Activity_Start_01, a small glass chime (-20 LUFS); AudioEventId.ActivityStart = 68. Review Docs/Captures/Review/T37_sounds_review.md."
+    },
+    {
+      "id": "J-SFX-ACT-000-02",
+      "name": "ActivityEnd",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37: SFX_Activity_End_01, a soft kalimba chord rolled downward (-18 LUFS); AudioEventId.ActivityEnd = 69; the music steps back 5 dB under the result."
+    },
+    {
+      "id": "J-SFX-ACT-000-04",
+      "name": "ActivityRecord",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37: SFX_Activity_Record_01, a four-note music box motif an octave lower than first drawn (-17 LUFS); AudioEventId.ActivityRecord = 70."
+    },
+    {
+      "id": "J-SFX-ACT-000-05",
+      "name": "ActivityPause",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37: SFX_Activity_Pause_01..02, soft wooden clicks (pause D, resume F; -25 LUFS); AudioEventId.ActivityPause = 71."
+    },
+    {
+      "id": "J-SFX-ACT-000-06",
+      "name": "ActivityStreak",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37: SFX_Activity_Streak_01..08, the star's tine a semitone higher at each step, then it stays (-22 LUFS); AudioEventId.ActivityStreak = 72."
+    },
+    {
+      "id": "J-SFX-FEEL-013",
+      "name": "StarEarned",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37: SFX_Reward_Star_01..03, a kalimba tine with its glass octave at F, A, C (-19 LUFS), one per result star (doc 05 sheet 20); AudioEventId.StarEarned = 42 (doc 05 section 6.4 order); also J-SFX-ACT-000-03."
+    },
+    {
+      "id": "J-SFX-FEEL-012",
+      "name": "CardFlip",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_sfx.py",
+      "runtimePath": "Assets/_Game/Art/Audio/SFX/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37: SFX_UI_CardFlip_01..05, paper and a small wooden note climbing F, G, A, C, D (-23 LUFS), one per reward card; AudioEventId.CardFlip = 41."
+    },
+    {
+      "id": "J-MUS-ACT-01",
+      "name": "Little Game",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_music.py",
+      "runtimePath": "Assets/_Game/Art/Audio/Music/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37: MUS_Activity_LittleGame, calm, 84 BPM, F major, kalimba, marimba and glass chime, an 80 s seamless loop at -20 LUFS; Addressables audio.activity.little_game (Audio_Activities, streamed)."
+    },
+    {
+      "id": "J-MUS-ACT-02",
+      "name": "Hurried Paws",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_music.py",
+      "runtimePath": "Assets/_Game/Art/Audio/Music/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37: MUS_Activity_HurriedPaws, lively, 112 BPM, F major with a soft shaker, a 120 s seamless loop at -20 LUFS; Addressables audio.activity.hurried_paws."
+    },
+    {
+      "id": "J-MUS-ACT-03",
+      "name": "Hug Streak",
+      "family": "Audio",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/Audio/Tools/pw_audio_music.py",
+      "runtimePath": "Assets/_Game/Art/Audio/Music/",
+      "validationGates": [
+        "G14"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37: MUS_Activity_HugStreak, puzzle, 96 BPM, D minor moving to F major, a 100 s seamless loop at -20 LUFS; Addressables audio.activity.hug_streak."
+    },
+    {
+      "id": "I-ICO-T37",
+      "name": "T37 activity icons and result stars",
+      "family": "UIIcon",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [],
+      "status": "ART_REVIEW",
+      "sourcePath": "SourceArt/UI/Tools/pw_ui_sprites_t37.py",
+      "runtimePath": "Assets/_Game/Art/UI/Icons/",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37: 25 icons (ICO_Play, ICO_Practice, ICO_Challenge, ICO_Record, ICO_Timer, ICO_Lock, ICO_Pause and one ICO_Act_<Name> per activity) and 2 kit sprites (UI_Star_Result_Empty, UI_Star_Result_Full); Atlas_Activities; review Docs/Captures/Review/T37_sprites_review.md and T37_sprites_sheet.png."
+    },
+    {
+      "id": "U-SCR-029",
+      "name": "PF_UI_ActivityHub",
+      "family": "UIScreen",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "I-ICO-T37"
+      ],
+      "status": "ART_REVIEW",
+      "sourcePath": "Assets/_Game/Editor/UI/ActivityUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/PF_UI_ActivityHub.prefab",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37 screen 029: bottom sheet, ticket chip, carousel of 8 recycled cards, themes, 10 challenges, practice toggle, Play with its cost. Captures TestResults/Captures/T37_hub_*."
+    },
+    {
+      "id": "U-SCR-030",
+      "name": "PF_UI_ActivityHud and PF_UI_ActivityResult",
+      "family": "UIScreen",
+      "releaseScope": "SoftLaunch",
+      "dependencies": [
+        "I-ICO-T37",
+        "J-SFX-FEEL-012",
+        "J-SFX-FEEL-013"
+      ],
+      "status": "ART_REVIEW",
+      "sourcePath": "Assets/_Game/Editor/UI/ActivityUiPipeline.cs",
+      "runtimePath": "Assets/_Game/Prefabs/UI/Screens/",
+      "validationGates": [
+        "G12"
+      ],
+      "lastValidationVersion": "T37",
+      "lastValidationUtc": "2026-10-08T18:00:00Z",
+      "notes": "T37 screen 030: game HUD (score bar with star marks, soft time ring, streak, pause card) and result card (doc 05 sheet 20 timings, record ribbon, rewards one by one, quick reveal), plus PF_UI_TicketsEmpty. Captures TestResults/Captures/T37_game_*, T37_result_*, T37_tickets_empty_*."
     }
   ]
 }

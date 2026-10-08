@@ -64,6 +64,8 @@ namespace PocketWilds.Bootstrap
 
                 // T36: the day boundary is checked once a second inside (no time-zone math per frame).
                 _context.Daily?.Tick(delta);
+                // T37: ticket refill, day boundary and openings, once a second inside. Games are ticked by their presenter.
+                _context.Activities?.Tick(delta);
 
                 _context.Save.Tick();
             }

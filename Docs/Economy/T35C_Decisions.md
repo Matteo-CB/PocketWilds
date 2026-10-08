@@ -96,6 +96,28 @@ Note sur le simulateur : donner l'XP des souhaits à un animal tiré dans toute 
 les espèces des anciens biomes (les plus nombreuses) et retardait ses biomes de 8 à 12 jours. Le modèle suit maintenant la
 règle du jeu (animaux visibles d'abord).
 
+## Depuis T37 (8 octobre 2026)
+
+Le simulateur suit maintenant la table de récompenses des activités du jeu (`ActivityConfig`, doc Mini-jeux section 2).
+
+- **Ce qui ne change pas.**
+  - La Lumière d'une partie reste la moyenne du profil (10, 13 et 16 minutes, soit 2 étoiles et un peu de 3 étoiles).
+  - Les 2 Gemmes des premières 3 étoiles du jour, 6 par jour au plus.
+- **Ce qui s'ajoute.**
+  - La chance d'autocollant selon les étoiles : 10, 20 et 35 % au lieu de 15 % fixes.
+  - Les défis réussis à 3 étoiles : 0,5 par semaine pour l'occasionnel, 2 pour le régulier, 4 pour le passionné. Chacun
+    rapporte 5 Gemmes une fois, et une décoration de défi arrive tous les 5 défis.
+
+Résultat : **81 garde-fous sur 94 respectés**, 13 en attente d'une décision, aucun hors bornes.
+
+- Point 8 : le passionné finit sur 4 jours sans découverte vers le jour 92 (3 au plus visés). C'est le même écart d'un
+  jour que le payeur Club, qui bouge d'un réglage à l'autre.
+
+Note sur le simulateur : un autocollant d'activité vient de la page de l'activité (doc Mini-jeux, section 2), pas d'un
+album de biome. Le ranger dans l'album du biome le moins avancé donnait son XP de maîtrise aux anciens biomes. Le joueur
+simulé visait alors ces biomes, et les Champignons et les Îles des nuages arrivaient 7 à 13 jours plus tard. Le modèle
+suit maintenant la règle du jeu : page de l'activité, XP au biome où l'on joue.
+
 ## Pour rejouer
 
 Menu Pocket Wilds/Economy/Run Simulator, ou le test `EconomySimulatorTests` (6 profils sur 120 jours en 7 secondes environ ;

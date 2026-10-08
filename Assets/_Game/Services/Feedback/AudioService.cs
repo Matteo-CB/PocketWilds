@@ -239,6 +239,14 @@ namespace PocketWilds.Services.Feedback
         private float _appliedMusicDb = float.NaN;
         private float _appliedSfxDb = float.NaN;
 
+        /// <summary>T37: bed trims move at most this many dB per second (-5 dB in about 0.4 s).</summary>
+        private const float TrimSpeedDb = 12f;
+        private float _musicTrimDb;
+        private float _ambienceTrimDb;
+        private float _musicTrimTarget;
+        private float _ambienceTrimTarget;
+        private float _appliedAmbienceDb = float.NaN;
+
         /// <param name="listener">
         /// Adds the game's only AudioListener on the audio root (every sound is 2D: it never needs to follow a camera),
         /// so boot, scene changes and screens never run without one.
@@ -377,6 +385,8 @@ namespace PocketWilds.Services.Feedback
             _rain.StopNow();
             _eveningMix = _rainMix = 0f;
             _dayGain = 1f;
+            // The next place starts as mastered.
+            _musicTrimDb = _ambienceTrimDb = _musicTrimTarget = _ambienceTrimTarget = 0f;
         }
 
         public void SetAmbienceLayers(AudioClip evening, AudioClip rain)
@@ -392,6 +402,43 @@ namespace PocketWilds.Services.Feedback
             _eveningMix = Mathf.Clamp01(evening);
             _rainMix = Mathf.Clamp01(rain);
         }
+
+        /// <summary>T37: one chosen variant (a star's pitch, a streak step, a card); past the last, the last.</summary>
+        public void PlayVariant(AudioEventId id, int variant)
+        {
+            int index = (int)id;
+            if (index <= 0 || index >= _byId.Length)
+                return;
+            var def = _byId[index];
+            if (def == null || _sfxLevel <= 0f || _root == null || def.clips == null || def.clips.Length == 0)
+                return;
+            if (_time - _lastStart[index] < def.cooldown)
+            {
+                Dropped++;
+                return;
+            }
+            int pick = variant < 0 ? 0 : variant >= def.clips.Length ? def.clips.Length - 1 : variant;
+            var clip = def.clips[pick];
+            if (clip == null)
+                return;
+            if (StartVoice(def, clip, Jitter(def.pitchJitter), def.volume * Jitter(def.volumeJitter), 0f))
+            {
+                _lastStart[index] = _time;
+                _lastVariant[index] = pick;
+                if (def.duckMusic)
+                    _duckUntil = _time + DuckHold;
+            }
+        }
+
+        /// <summary>T37: bed trims in dB (0 as mastered, never above), smoothed in Tick, applied through the mixer.</summary>
+        public void SetBedLevels(float musicDb, float ambienceDb)
+        {
+            _musicTrimTarget = Mathf.Clamp(musicDb, SilentDb, 0f);
+            _ambienceTrimTarget = Mathf.Clamp(ambienceDb, SilentDb, 0f);
+        }
+
+        public float MusicTrimDb => _musicTrimDb;
+        public float AmbienceTrimDb => _ambienceTrimDb;
 
         public void Play(AudioEventId id, Vector3 position, ContentId context)
         {
@@ -485,6 +532,8 @@ namespace PocketWilds.Services.Feedback
 
             float duckTarget = _time < _duckUntil ? DuckDb : 0f;
             _duck = Mathf.MoveTowards(_duck, duckTarget, (duckTarget < _duck ? 30f : 6f) * deltaTime);
+            _musicTrimDb = Mathf.MoveTowards(_musicTrimDb, _musicTrimTarget, TrimSpeedDb * deltaTime);
+            _ambienceTrimDb = Mathf.MoveTowards(_ambienceTrimDb, _ambienceTrimTarget, TrimSpeedDb * deltaTime);
             ApplyMixer(false);
         }
 
@@ -627,8 +676,9 @@ namespace PocketWilds.Services.Feedback
             var mixer = _catalog != null ? _catalog.mixer : null;
             if (mixer == null)
                 return;
-            float musicDb = ToDb(_musicLevel) + _duck;
+            float musicDb = Mathf.Max(SilentDb, ToDb(_musicLevel) + _duck + _musicTrimDb);
             float sfxDb = ToDb(_sfxLevel);
+            float ambienceDb = Mathf.Max(SilentDb, sfxDb + _ambienceTrimDb);
             if (force || Mathf.Abs(musicDb - _appliedMusicDb) > 0.05f || float.IsNaN(_appliedMusicDb))
             {
                 mixer.SetFloat(MusicParameter, musicDb);
@@ -637,9 +687,14 @@ namespace PocketWilds.Services.Feedback
             if (force || Mathf.Abs(sfxDb - _appliedSfxDb) > 0.05f || float.IsNaN(_appliedSfxDb))
             {
                 mixer.SetFloat(SfxParameter, sfxDb);
-                // The ambience follows the sounds setting: with the music off, the place still breathes.
-                mixer.SetFloat(AmbienceParameter, sfxDb);
                 _appliedSfxDb = sfxDb;
+            }
+            if (force || Mathf.Abs(ambienceDb - _appliedAmbienceDb) > 0.05f || float.IsNaN(_appliedAmbienceDb))
+            {
+                // The ambience follows the sounds setting (with the music off, the place still breathes), minus the
+                // activity trim (doc 01 Contenu, section 12.0: the theme biome's ambience at -6 dB under the music).
+                mixer.SetFloat(AmbienceParameter, ambienceDb);
+                _appliedAmbienceDb = ambienceDb;
             }
         }
 

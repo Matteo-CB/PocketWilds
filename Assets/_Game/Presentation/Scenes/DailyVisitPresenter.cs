@@ -167,6 +167,9 @@ namespace PocketWilds.Presentation
         /// <summary>The wish bubbles in the world (null without the prefab).</summary>
         public WishBubbleLayer Bubbles { get; set; }
 
+        /// <summary>T37: the activities (the hub steps aside when Today opens).</summary>
+        public ActivityPresenter Activities { get; set; }
+
         /// <summary>Only the wish card is open: its bubble stays shown under it.</summary>
         public bool CardOnlyOpen => CardOpen && !ScreenOpen;
 
@@ -521,6 +524,10 @@ namespace PocketWilds.Presentation
         {
             if (_today == null || _today.IsOpen || !_daily.TodayUnlocked || _refuge.Hatching)
                 return;
+            if (Activities != null && Activities.InGame)
+                return;
+            // T37: Today and the activity hub never show together.
+            Activities?.CloseHubQuietly();
             _card?.Close();
             _daily.CheckDay();
             _todayOpenedAt = _time;
@@ -535,6 +542,7 @@ namespace PocketWilds.Presentation
             RebuildBoxes();
             _today.Open(this, _text, this);
             _context.Analytics.ScreenView(ScreenId.Today);
+            _context.Analytics.TodayOpen(_daily.Wishes.PendingCount, _daily.Gift.CanOpen, _daily.Calendar.NextBox + 1);
             _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
             _context.Haptics.Play(HapticEventId.TapLight);
             if (_hint == HintTarget.Today)

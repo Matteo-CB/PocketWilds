@@ -29,6 +29,9 @@ namespace PocketWilds.Simulation
         /// <summary>T36: tickets, seeds, ingredients, decorations and stickers won before their systems open.</summary>
         public InventoryState Inventory { get; } = new InventoryState();
 
+        /// <summary>T37: the activities (tickets, records, challenges, adaptive difficulty, daily Gems).</summary>
+        public ActivityState Activities { get; } = new ActivityState();
+
         /// <summary>The welcome is over: the tutorial wish was done, or the save already holds 5 animals (doc 01, section 1.1).</summary>
         public bool IsOnboardingDone => DailyVisit.OnboardingDone || Collection.Count >= 5;
 
@@ -212,6 +215,10 @@ namespace PocketWilds.Simulation
         FirstOfferImpression = 10,
         FirstPurchase = 11,
         SecondPurchase = 12,
+
+        // Doc 08 section 9.5 (T37).
+        FirstWish = 13,
+        FirstActivity = 14,
     }
 
     /// <summary>Analytics bookkeeping that follows the profile (T29): reached milestones, session count.</summary>

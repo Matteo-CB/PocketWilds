@@ -2,6 +2,7 @@
 Pocket Wilds audio build (T34B).
 
     python pw_audio_build.py sfx|ambience|music|all     render masters (48 kHz 24-bit) and runtime clips
+    python pw_audio_build.py sfx|music <names...>       render only these catalog entries (T37)
     python pw_audio_build.py review <out.png> [names]   waveform and spectrogram sheet of the runtime clips
     python pw_audio_build.py report                     levels, peaks, lengths, loop seams (JSON on stdout)
 
@@ -30,10 +31,12 @@ MUSIC_LUFS = -20.0
 AMBIENCE_LUFS = -27.0
 
 
-def render_sfx():
+def render_sfx(names=None):
     from pw_audio_sfx import SFX
     out = {}
     for name, (recipe, variants, target, group) in SFX.items():
+        if names and name not in names:
+            continue
         for v in range(variants):
             x = recipe(v)
             x = trim_tail(x, threshold_db=-54.0)
@@ -60,13 +63,20 @@ def render_ambience():
     return out
 
 
-def render_music():
-    from pw_audio_music import refuge_theme
-    x = normalize_integrated(refuge_theme(), MUSIC_LUFS)
-    write_wav(MASTERS / 'Music' / 'MUS_RefugeTheme.wav', x, 24)
-    write_wav(RUNTIME / 'Music' / 'MUS_RefugeTheme.wav', x, 16)
-    return {'MUS_RefugeTheme.wav': {'seconds': len(x) / SR, 'lufs': round(integrated_lufs(x), 1),
-                                    'peakDb': round(peak_db(x), 1), 'seam': round(seam_jump(x), 3)}}
+def render_music(names=None):
+    """The refuge theme and, from T37, the three activity musics (pw_audio_music.MUSIC), all at the same level so the
+    cross-fade between the refuge and an activity keeps its loudness."""
+    from pw_audio_music import MUSIC
+    out = {}
+    for name, recipe in MUSIC.items():
+        if names and name not in names:
+            continue
+        x = normalize_integrated(recipe(), MUSIC_LUFS)
+        write_wav(MASTERS / 'Music' / (name + '.wav'), x, 24)
+        write_wav(RUNTIME / 'Music' / (name + '.wav'), x, 16)
+        out[name + '.wav'] = {'seconds': len(x) / SR, 'lufs': round(integrated_lufs(x), 1), 'peakDb': round(peak_db(x), 1),
+                              'seam': round(seam_jump(x), 3)}
+    return out
 
 
 def report():
@@ -144,15 +154,16 @@ def review(out_png, names=None):
 
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else 'all'
+    only = sys.argv[2:] if cmd in ('sfx', 'music') else None
     for folder in ('SFX', 'Ambience', 'Music'):
         (MASTERS / folder).mkdir(parents=True, exist_ok=True)
         (RUNTIME / folder).mkdir(parents=True, exist_ok=True)
     if cmd in ('sfx', 'all'):
-        print(json.dumps(render_sfx(), indent=1))
+        print(json.dumps(render_sfx(only), indent=1))
     if cmd in ('ambience', 'all'):
         print(json.dumps(render_ambience(), indent=1))
     if cmd in ('music', 'all'):
-        print(json.dumps(render_music(), indent=1))
+        print(json.dumps(render_music(only), indent=1))
     if cmd == 'report':
         print(json.dumps(report(), indent=1))
     if cmd == 'review':

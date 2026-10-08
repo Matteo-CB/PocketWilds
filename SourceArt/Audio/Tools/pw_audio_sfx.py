@@ -677,6 +677,123 @@ def gems_collect():
     return _soft_start(wet(x, ROOM, 0.14))
 
 
+# ---------------------------------------------------------------- T37: activities (doc 01 Contenu, section 12.0;
+# doc 05 Sensations, sheet 20 and section 6.1). Same house family: F major, kalimba tines, wooden bars, glass of the
+# music box. Soft attacks, short tails, nothing that hurries the player.
+
+STREAK_STEPS = 8
+CARD_STEPS = ('F5', 'G5', 'A5', 'C6', 'D6')
+
+
+def _small_chime(f, seconds, vel, tau):
+    """A small glass chime: the house glass note with the faint inharmonic partial of a little cup of glass (x2.76),
+    damped sooner (tau) so it rings short."""
+    t = t_axis(seconds)
+    x = glass(f, seconds, vel)
+    x += 0.12 * vel * np.sin(2.0 * np.pi * f * 2.76 * t) * np.exp(-t / 0.09) * np.clip(t / 0.003, 0.0, 1.0)
+    return x * np.exp(-t / tau)
+
+
+def activity_start():
+    """J-SFX-ACT-000-01: a game begins: one small glass chime on F, a warm tine an octave below it, and the music comes
+    in after it (the presenter). One strike, no countdown, nothing that hurries. About 0.9 s."""
+    rng = np.random.default_rng(1800)
+    out = np.zeros(samples(1.1))
+    place(out, _tine_under(hz('F5'), 0.9, 0.45, 0.32, rng) * 0.24, 0.0)
+    place(out, _small_chime(hz('F6'), 1.0, 0.55, 0.34) * 0.46, 0.006)
+    x = fft_filter(out, chain(lowpass(8500.0, 2), highpass(180.0, 2), peak(3000.0, -2.0, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.16))
+
+
+def activity_end():
+    """J-SFX-ACT-000-02: the game is over: a soft kalimba chord rolled downward (C, A, F, then C and F below), the
+    hands coming to rest; the presenter lowers the music by 5 dB at the same moment. Distinct from the Claim chord,
+    which rolls upward. About 1.3 s."""
+    rng = np.random.default_rng(1810)
+    out = np.zeros(samples(1.7))
+    for i, (note, vel) in enumerate((('C6', 0.48), ('A5', 0.52), ('F5', 0.58), ('C5', 0.6), ('F4', 0.62))):
+        place(out, _tine_under(hz(note), 1.4, vel, 0.55, rng) * 0.34, 0.04 * i)
+    place(out, swell([hz('C4'), hz('F4'), hz('A4')], 1.2, 0.18, 0.7, 0.06), 0.12, release=0.3)
+    x = fft_filter(out, chain(lowpass(8000.0, 2), highpass(110.0, 2)))
+    return _soft_start(wet(x, HALL, 0.14))
+
+
+def result_star(v):
+    """J-SFX-FEEL-013 and J-SFX-ACT-000-03: a result star lands: one kalimba tine with its glass note an octave above,
+    F, A then C for the first, second and third star, so the three stars spell an F major chord. The third one rests
+    on a quiet low F (the chord is complete). About 0.35 s, then a short ring."""
+    rng = np.random.default_rng(1820 + v)
+    note = hz(('F5', 'A5', 'C6')[v])
+    out = np.zeros(samples(0.8))
+    place(out, _tine_under(note, 0.75, 0.75, 0.24, rng) * 0.55, 0.0)
+    place(out, _glass_note(note * 2.0, 0.6, 0.42, 0.15) * 0.2 * (hz('F5') / note) ** 1.5, 0.004)
+    if v == 2:
+        place(out, _tine_under(hz('F4'), 0.75, 0.5, 0.3, rng) * 0.18, 0.0)
+    x = fft_filter(out, chain(lowpass(7000.0, 2), highpass(160.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.12))
+
+
+def card_flip(v):
+    """J-SFX-FEEL-012: a reward card turns over: the air of the paper as it turns (a soft swish whose band rises), the
+    card laid flat (a light paper tap) and, with the tap, a small muted wooden note that climbs with each card: F, G,
+    A, C, D (F major pentatonic). A bounded run of five (doc 05, section 6.4): past the fifth card, no sound per card.
+    About 0.22 s."""
+    rng = np.random.default_rng(1830 + v)
+    out = np.zeros(samples(0.36))
+    n = samples(0.13)
+    t = np.arange(n) / SR
+    rise = np.clip(t / 0.13, 0.0, 1.0)
+    swish = band_noise(n, 600.0, 1900.0, rng) * (1.0 - rise) + band_noise(n, 1200.0, 3600.0, rng) * rise * 0.5
+    place(out, swish * np.sin(np.pi * rise) ** 2 * 0.16, 0.0, release=0.02)
+    tt = t_axis(0.08)
+    tap = damped_sine(tt, (390.0, 405.0, 420.0, 440.0, 455.0)[v], 0.011) * np.clip(tt / 0.0015, 0.0, 1.0) * 0.32
+    tap += fft_filter(white(len(tt), rng) * env_ad(tt, 0.0006, 0.004), bandpass(1000.0, 3600.0)) * 0.1
+    place(out, tap, 0.11, release=0.02)
+    place(out, mallet(hz(CARD_STEPS[v]), 0.22, 0.55, damp=0.35) * 0.32, 0.112)
+    x = fft_filter(out, chain(lowpass(6000.0, 2), highpass(200.0, 2), peak(3200.0, -3.0, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.06))
+
+
+def activity_record():
+    """J-SFX-ACT-000-04: a new record: a four-note music box motif, F up to A, a step down to G, then the C left to ring
+    over a soft tine fifth (F and C), its octave a whisper above. In the middle octave of a music box: higher, the
+    glass sat in the 2 to 5 kHz band and pierced. Proud and light, never a fanfare. About 1 s."""
+    rng = np.random.default_rng(1840)
+    out = np.zeros(samples(1.5))
+    for note, at, vel, seconds, tau, level in (('F5', 0.0, 0.5, 0.5, 0.16, 0.3), ('A5', 0.1, 0.55, 0.5, 0.16, 0.32),
+                                              ('G5', 0.2, 0.48, 0.5, 0.15, 0.28), ('C6', 0.33, 0.6, 1.1, 0.45, 0.36)):
+        place(out, _glass_note(hz(note), seconds, vel, tau) * level, at)
+    place(out, _glass_note(hz('C7'), 0.8, 0.3, 0.25) * 0.05, 0.345)
+    place(out, _tine_under(hz('F4'), 1.0, 0.5, 0.4, rng) * 0.2, 0.33)
+    place(out, _tine_under(hz('C5'), 1.0, 0.45, 0.36, rng) * 0.15, 0.345)
+    x = fft_filter(out, chain(lowpass(8000.0, 2), highpass(140.0, 2), peak(3000.0, -2.5, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.18))
+
+
+def activity_pause(v):
+    """J-SFX-ACT-000-05: pause (variant 1) and resume (variant 2): a soft wooden click, a fingertip on a small box of
+    light wood. The pause sits a little lower (D), the resume a third higher (F). About 0.15 s."""
+    rng = np.random.default_rng(1850 + v)
+    out = np.zeros(samples(0.22))
+    knock = _wood_knock(hz(('D5', 'F5')[v]), rng, seconds=0.18)
+    place(out, fade(knock, 0.0015, 0.0) * 0.5, 0.0, release=0.03)
+    x = fft_filter(out, chain(lowpass(3600.0, 2), highpass(200.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.04))
+
+
+def activity_streak(v):
+    """J-SFX-ACT-000-06: a streak climbs: the result star's tine, one semitone higher at each of the 8 steps (F up to C),
+    lighter and shorter than the star so it can repeat during play. Past step 8 the presenter stays on the top. About
+    0.3 s."""
+    rng = np.random.default_rng(1860 + v)
+    f = hz('F5') * 2.0 ** (v / 12.0)
+    out = np.zeros(samples(0.55))
+    place(out, _tine_under(f, 0.5, 0.65, 0.15, rng) * 0.55, 0.0)
+    place(out, _glass_note(f * 2.0, 0.4, 0.34, 0.09) * 0.13 * (hz('F5') / f) ** 1.5, 0.003)
+    x = fft_filter(out, chain(lowpass(7000.0, 2), highpass(180.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.08))
+
+
 # ---------------------------------------------------------------- catalog
 
 # name: (recipe, variants, loudness target (loudest 200 ms, K-weighted, LUFS scale), group)
@@ -722,4 +839,12 @@ SFX = {
     'SFX_Reward_GiftOpen': (lambda v: gift_open(), 1, -17.0, 'Rewards'),
     'SFX_UI_PawStamp': (paw_stamp, 2, -21.0, 'UI'),
     'SFX_Currency_Gems': (lambda v: gems_collect(), 1, -19.0, 'Rewards'),
+    # T37 activities (doc 01 Contenu, section 12.0; doc 05 Sensations, sheet 20 and section 6.1 for the star and card)
+    'SFX_Activity_Start': (lambda v: activity_start(), 1, -20.0, 'UI'),
+    'SFX_Activity_End': (lambda v: activity_end(), 1, -18.0, 'Rewards'),
+    'SFX_Reward_Star': (result_star, 3, -19.0, 'Rewards'),
+    'SFX_UI_CardFlip': (card_flip, len(CARD_STEPS), -23.0, 'UI'),
+    'SFX_Activity_Record': (lambda v: activity_record(), 1, -17.0, 'Rewards'),
+    'SFX_Activity_Pause': (activity_pause, 2, -25.0, 'UI'),
+    'SFX_Activity_Streak': (activity_streak, STREAK_STEPS, -22.0, 'Rewards'),
 }

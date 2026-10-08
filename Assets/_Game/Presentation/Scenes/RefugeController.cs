@@ -364,12 +364,18 @@ namespace PocketWilds.Presentation
 
         public bool DailyOpen => Daily != null && Daily.IsOpen;
 
+        /// <summary>T37: the activities (hub, games, result); null without activity services.</summary>
+        public ActivityPresenter Activities { get; set; }
+
+        public bool ActivitiesOpen => Activities != null && Activities.IsOpen;
+
         /// <summary>T36: the wish bubbles above animals (doc 06 screen 002); null without the prefab.</summary>
         public WishBubbleLayer Bubbles { get; set; }
 
         /// <summary>A screen covers the refuge: world touches and hatching wait.</summary>
         public bool ModalOpen =>
-            OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen || ProgressionOpen || SummaryOpen || DailyOpen;
+            OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen || ProgressionOpen || SummaryOpen || DailyOpen
+            || ActivitiesOpen;
 
         /// <summary>T35B: the summary card of a multi hatch (screen 028) is up.</summary>
         public bool SummaryOpen => _summaryView != null && _summaryView.IsOpen;

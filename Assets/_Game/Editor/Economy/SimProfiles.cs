@@ -42,6 +42,12 @@ namespace PocketWilds.Editor.Economy
         /// <summary>Games a day that reach 3 stars for the first time that day (2 Gems each, 3 a day at most).</summary>
         public int ThreeStarGamesPerDay;
 
+        /// <summary>
+        /// T37: activity challenges completed at 3 stars a week (5 Gems each, once; a challenge decoration every 5), up to
+        /// the 10 challenges of each open activity (doc Mini-jeux, section 2).
+        /// </summary>
+        public double ChallengesPerWeek;
+
         /// <summary>Wishes fulfilled a day (3 Gems each, 3 a day at most).</summary>
         public int WishesPerDay;
 
@@ -78,7 +84,7 @@ namespace PocketWilds.Editor.Economy
                     Kind = SimProfileKind.Casual, Id = "casual", Label = "Occasionnel",
                     FirstDayHours = new[] { 12.0, 20.0 }, FirstDayMinutes = new[] { 18.0, 10.0 },
                     DayHours = new[] { 12.5, 20.5 }, OddDayHours = new[] { 19.0 }, SessionMinutes = 7.0,
-                    ActivitiesPerDay = 1, ActivityMinutes = 10.0, ThreeStarGamesPerDay = 0, WishesPerDay = 2, ExpeditionsPerDay = 1,
+                    ActivitiesPerDay = 1, ActivityMinutes = 10.0, ThreeStarGamesPerDay = 0, ChallengesPerWeek = 0.5, WishesPerDay = 2, ExpeditionsPerDay = 1,
                     WatchesBonusAd = false, WeeklyBookShare = 0.5, EventShare = 0.6, DecorationMinutes = 8.0,
                 },
                 new SimProfile
@@ -86,7 +92,7 @@ namespace PocketWilds.Editor.Economy
                     Kind = SimProfileKind.Regular, Id = "regular", Label = "Régulier",
                     FirstDayHours = new[] { 12.0, 15.0, 18.0, 21.5 }, FirstDayMinutes = new[] { 25.0, 10.0, 10.0, 10.0 },
                     DayHours = new[] { 8.5, 12.5, 18.0, 21.5 }, SessionMinutes = 8.0,
-                    ActivitiesPerDay = 3, ActivityMinutes = 13.0, ThreeStarGamesPerDay = 2, WishesPerDay = 3, ExpeditionsPerDay = 2,
+                    ActivitiesPerDay = 3, ActivityMinutes = 13.0, ThreeStarGamesPerDay = 2, ChallengesPerWeek = 2.0, WishesPerDay = 3, ExpeditionsPerDay = 2,
                     WatchesBonusAd = true, WeeklyBookShare = 1.0, EventShare = 1.0, DecorationMinutes = 10.0,
                 },
                 new SimProfile
@@ -94,7 +100,7 @@ namespace PocketWilds.Editor.Economy
                     Kind = SimProfileKind.Passionate, Id = "passionate", Label = "Passionné",
                     FirstDayHours = new[] { 12.0, 14.0, 16.0, 18.0, 20.0, 22.0 }, FirstDayMinutes = new[] { 40.0, 15.0, 15.0, 15.0, 15.0, 10.0 },
                     DayHours = new[] { 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0 }, SessionMinutes = 10.0,
-                    ActivitiesPerDay = 5, ActivityMinutes = 16.0, ThreeStarGamesPerDay = 3, WishesPerDay = 3, ExpeditionsPerDay = 3,
+                    ActivitiesPerDay = 5, ActivityMinutes = 16.0, ThreeStarGamesPerDay = 3, ChallengesPerWeek = 4.0, WishesPerDay = 3, ExpeditionsPerDay = 3,
                     WatchesBonusAd = true, WeeklyBookShare = 1.0, EventShare = 1.0, DecorationMinutes = 15.0,
                 },
                 Regularish(SimProfileKind.Club, "club", "Payeur Club", club: true, pass: false, packs: false, bought: 0),
@@ -110,7 +116,7 @@ namespace PocketWilds.Editor.Economy
                 Kind = kind, Id = id, Label = label,
                 FirstDayHours = new[] { 12.0, 15.0, 18.0, 21.5 }, FirstDayMinutes = new[] { 25.0, 10.0, 10.0, 10.0 },
                 DayHours = new[] { 8.5, 12.5, 18.0, 21.5 }, SessionMinutes = 8.0,
-                ActivitiesPerDay = club ? 4 : 3, ActivityMinutes = 13.0, ThreeStarGamesPerDay = 2, WishesPerDay = 3, ExpeditionsPerDay = club ? 3 : 2,
+                ActivitiesPerDay = club ? 4 : 3, ActivityMinutes = 13.0, ThreeStarGamesPerDay = 2, ChallengesPerWeek = 2.0, WishesPerDay = 3, ExpeditionsPerDay = club ? 3 : 2,
                 WatchesBonusAd = true, WeeklyBookShare = 1.0, EventShare = 1.0, Club = club, Pass = pass, BiomePacks = packs,
                 GemsBoughtPerMonth = bought, CosmeticPrice = bought > 0 ? 450 : 350, DecorationMinutes = 10.0,
             };

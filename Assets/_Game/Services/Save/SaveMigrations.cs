@@ -16,6 +16,7 @@ namespace PocketWilds.Services.Save
             new Migration0007AddDiscoveryEggs(),
             new Migration0008AddRenewal(),
             new Migration0009AddDailyVisit(),
+            new Migration0010AddActivities(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -143,6 +144,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 9;
         public int ToVersion => 10;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 10 to 11 (T37): the Activities section. Nothing to convert: without it the first use fills the ticket reserve
+    /// (5) and takes in the tickets the rendez-vous kept in the inventory; records, challenges and difficulty start fresh.
+    /// </summary>
+    public sealed class Migration0010AddActivities : ISaveMigration
+    {
+        public int FromVersion => 10;
+        public int ToVersion => 11;
 
         public void Apply(SaveDocument document)
         {

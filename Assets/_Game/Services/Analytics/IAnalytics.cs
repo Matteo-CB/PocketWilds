@@ -39,6 +39,19 @@ namespace PocketWilds.Services.Analytics
         void DailyVisitDone(double seconds, int taps, int items)
         {
         }
+
+        /// <summary>T37 (doc 08, today_open): Today opened, with the wishes pending, the gift ready and the calendar's day.</summary>
+        void TodayOpen(int wishesPending, bool giftReady, int calendarDay)
+        {
+        }
+
+        /// <summary>
+        /// T37 (doc 08, tickets_empty): the « no ticket » card closed, with the choice made (0 closed, 1 wait (practice
+        /// instead), 2 an ad, 3 a pack for Gems) and the seconds left before the next free ticket.
+        /// </summary>
+        void TicketsEmpty(int choice, double refillSeconds)
+        {
+        }
     }
 
     public sealed class NullAnalytics : IAnalytics

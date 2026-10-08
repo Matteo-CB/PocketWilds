@@ -23,6 +23,8 @@ namespace PocketWilds.Editor.Audio
     ///   AmbienceVolume, SfxVolume;
     /// - DEF_AudioEvents (every AudioEventId, species voices), DEF_HapticProfiles (every HapticEventId);
     /// - DEF_BiomeAudio_Grassland in the Addressables group Audio_Grassland (address audio.grassland);
+    /// - T37: the three activity musics in the Addressables group Audio_Activities (one bundle each, addresses from
+    ///   ActivityAudio.Address);
     /// - SC_Bootstrap wired.
     /// Clips come from SourceArt/Audio/Tools/pw_audio_build.py (render first). Idempotent.
     /// </summary>
@@ -44,6 +46,17 @@ namespace PocketWilds.Editor.Audio
         public const string EveningClip = AmbienceFolder + "/AMB_Grassland_Evening.wav";
         public const string RainClip = AmbienceFolder + "/AMB_Rain_Light.wav";
         public const string BootstrapScenePath = "Assets/_Game/Scenes/SC_Bootstrap.unity";
+
+        /// <summary>T37: the activity musics' Addressables group (one bundle per music: a game loads only its own).</summary>
+        public const string ActivitiesGroup = "Audio_Activities";
+
+        /// <summary>T37: J-MUS-ACT-01 to 03 (doc 01 Contenu, section 12.0), rendered by pw_audio_build.py music.</summary>
+        public static readonly (ActivityMusicId music, string path, float seconds)[] ActivityMusics =
+        {
+            (ActivityMusicId.LittleGame, MusicFolder + "/MUS_Activity_LittleGame.wav", 80f),
+            (ActivityMusicId.HurriedPaws, MusicFolder + "/MUS_Activity_HurriedPaws.wav", 120f),
+            (ActivityMusicId.HugStreak, MusicFolder + "/MUS_Activity_HugStreak.wav", 100f),
+        };
 
         /// <summary>Mixer groups in AudioGroup order, with their parent.</summary>
         public static readonly (string name, string parent)[] Groups =
@@ -67,10 +80,11 @@ namespace PocketWilds.Editor.Audio
             var catalog = EnsureCatalog(mixer);
             var haptics = EnsureHaptics();
             EnsureGrasslandBeds();
+            int musics = EnsureActivityMusics();
             WireBootstrap(catalog, haptics);
             AssetDatabase.SaveAssets();
             return $"{clips} clips imported, {catalog.events.Length} sounds, {catalog.species.Length} species voices, " +
-                   $"{haptics.profiles.Length} haptic patterns, beds in {GrasslandGroup}.";
+                   $"{haptics.profiles.Length} haptic patterns, beds in {GrasslandGroup}, {musics} activity musics in {ActivitiesGroup}.";
         }
 
         // ---------------------------------------------------------------- import settings
@@ -255,6 +269,16 @@ namespace PocketWilds.Editor.Audio
                 Def(AudioEventId.GiftOpen, "SFX_Reward_GiftOpen", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
                 Def(AudioEventId.PawStamp, "SFX_UI_PawStamp", AudioGroup.UI, 1, 0.3f, 1, pitchJitter: 0.03f),
                 Def(AudioEventId.CollectGems, "SFX_Currency_Gems", AudioGroup.Rewards, 2, 0.3f, 1, 0.9f, volumeJitter: 0.03f, pitchJitter: 0.01f),
+                // T37: the activities (doc 01 Contenu, section 12.0; doc 05 Sensations, sheet 20 and section 6.1 for the
+                // card and the star: 2 voices, 0.08 s and 0.1 s). Pitched variants are chosen by the presenter
+                // (PlayVariant) and keep their pitch: no pitch jitter on the star and the streak.
+                Def(AudioEventId.CardFlip, "SFX_UI_CardFlip", AudioGroup.UI, 1, 0.08f, 2, volumeJitter: 0.04f, pitchJitter: 0.005f),
+                Def(AudioEventId.StarEarned, "SFX_Reward_Star", AudioGroup.Rewards, 2, 0.1f, 2, volumeJitter: 0.02f, pitchJitter: 0f),
+                Def(AudioEventId.ActivityStart, "SFX_Activity_Start", AudioGroup.UI, 1, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                Def(AudioEventId.ActivityEnd, "SFX_Activity_End", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                Def(AudioEventId.ActivityRecord, "SFX_Activity_Record", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                Def(AudioEventId.ActivityPause, "SFX_Activity_Pause", AudioGroup.UI, 1, 0.15f, 1, volumeJitter: 0.03f, pitchJitter: 0f),
+                Def(AudioEventId.ActivityStreak, "SFX_Activity_Streak", AudioGroup.Rewards, 2, 0.06f, 2, volumeJitter: 0.03f, pitchJitter: 0f),
             };
             foreach (var (id, prefix) in new[]
                      {
@@ -424,6 +448,37 @@ namespace PocketWilds.Editor.Audio
             EditorUtility.SetDirty(group);
             EditorUtility.SetDirty(settings);
             return beds;
+        }
+
+        /// <summary>
+        /// T37: the three activity musics as Addressables clips (doc 01 Contenu, section 12.0). They import like the
+        /// theme (streamed Vorbis, ConfigureImporters); packed one bundle each (LZ4: streamed from the bundle file), so
+        /// a game opens only its own music. The presenter loads ActivityAudio.Address(ActivityAudio.MusicOf(activity)).
+        /// </summary>
+        public static int EnsureActivityMusics()
+        {
+            var settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
+            var group = settings.FindGroup(ActivitiesGroup) ?? settings.CreateGroup(ActivitiesGroup, false, false, true, null,
+                typeof(BundledAssetGroupSchema), typeof(ContentUpdateGroupSchema));
+            var bundled = group.GetSchema<BundledAssetGroupSchema>();
+            bundled.BundleMode = BundledAssetGroupSchema.BundlePackingMode.PackSeparately;
+            bundled.Compression = BundledAssetGroupSchema.BundleCompressionMode.LZ4;
+            bundled.IncludeInBuild = true;
+            bundled.BuildPath.SetVariableByName(settings, AddressableAssetSettings.kLocalBuildPath);
+            bundled.LoadPath.SetVariableByName(settings, AddressableAssetSettings.kLocalLoadPath);
+            group.GetSchema<ContentUpdateGroupSchema>().StaticContent = true;
+            int count = 0;
+            foreach (var (music, path, _) in ActivityMusics)
+            {
+                if (AssetDatabase.LoadAssetAtPath<AudioClip>(path) == null)
+                    throw new InvalidOperationException("Missing " + path + ": run SourceArt/Audio/Tools/pw_audio_build.py music.");
+                var entry = settings.CreateOrMoveEntry(AssetDatabase.AssetPathToGUID(path), group, false, false);
+                entry.address = ActivityAudio.Address(music);
+                count++;
+            }
+            EditorUtility.SetDirty(group);
+            EditorUtility.SetDirty(settings);
+            return count;
         }
 
         // ---------------------------------------------------------------- scene

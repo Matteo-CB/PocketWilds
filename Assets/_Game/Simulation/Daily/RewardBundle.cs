@@ -81,6 +81,12 @@ namespace PocketWilds.Simulation
         }
     }
 
+    /// <summary>T37: where rewarded tickets go (the activity ticket pool, <see cref="TicketService"/>).</summary>
+    public interface ITicketSink
+    {
+        void Grant(int count, TicketSource source);
+    }
+
     /// <summary>
     /// Gives a bundle (doc 01 Contenu, section 0): Gems through the economy (with its reason, for analytics), Light as
     /// minutes of the current production (at least 1), Discovery eggs into the hatch stock, treats into the treat stock,
@@ -103,6 +109,22 @@ namespace PocketWilds.Simulation
             _hatch = hatch;
             _save = save;
         }
+
+        /// <summary>T37: the activity ticket pool; null before it exists (tickets then wait in the inventory).</summary>
+        public ITicketSink? Tickets { get; set; }
+
+        /// <summary>Where a rendez-vous ticket comes from, for analytics 114 (doc 08).</summary>
+        public static TicketSource TicketSourceOf(EconomyReason reason) => reason switch
+        {
+            EconomyReason.DailyGift => TicketSource.DailyGift,
+            EconomyReason.Calendar => TicketSource.Calendar,
+            EconomyReason.WeeklyJournal => TicketSource.WeeklyJournal,
+            EconomyReason.WelcomeGift => TicketSource.WelcomeGift,
+            EconomyReason.ReturnGift => TicketSource.ReturnGift,
+            EconomyReason.Wish => TicketSource.Wish,
+            EconomyReason.Event => TicketSource.Event,
+            _ => TicketSource.Debug,
+        };
 
         public GrantedRewards Grant(in RewardBundle bundle, EconomyReason reason, DiscoverySource source)
         {
@@ -130,7 +152,14 @@ namespace PocketWilds.Simulation
                 treats[bundle.Treat] = owned + bundle.Treats;
             }
             var inventory = _state.Inventory;
-            inventory.Tickets += Math.Max(0, bundle.Tickets);
+            if (bundle.Tickets > 0)
+            {
+                // T37: tickets go straight into the activity pool (with their source for analytics) once it exists.
+                if (Tickets != null)
+                    Tickets.Grant(bundle.Tickets, TicketSourceOf(reason));
+                else
+                    inventory.Tickets += bundle.Tickets;
+            }
             inventory.PendingStickers += Math.Max(0, bundle.Stickers);
             if (bundle.Seeds > 0)
                 inventory.Add(bundle.SeedPlant, bundle.Seeds);

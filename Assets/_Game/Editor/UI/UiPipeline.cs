@@ -234,6 +234,7 @@ namespace PocketWilds.Editor.UI
             SetupScene();
             // T36: the Today and journal screens, the return gift block of the offline card (rebuilt above) and the atlases.
             DailyVisitUiPipeline.Extend(tokens);
+            ActivityUiPipeline.Extend(tokens);
             Debug.Log("[UiPipeline] HUD and screens built and wired.");
         }
 
@@ -260,6 +261,10 @@ namespace PocketWilds.Editor.UI
                 var daily = DailyVisitTexts.Texts;
                 for (int i = 0; i < daily.GetLength(0); i++)
                     table.Set(daily[i, 0], daily[i, language + 1]);
+                // T37: the activities' texts (hub, HUD, result, tickets, the 18 activity names).
+                var activities = ActivityTexts.Texts;
+                for (int i = 0; i < activities.GetLength(0); i++)
+                    table.Set(activities[i, 0], activities[i, language + 1]);
                 EditorUtility.SetDirty(table);
                 if (!database.localization.Contains(table))
                     database.localization.Insert(Mathf.Min(language, database.localization.Count), table);
@@ -349,6 +354,8 @@ namespace PocketWilds.Editor.UI
                 scaler.matchWidthOrHeight = 0.5f;
                 scaler.referencePixelsPerUnit = 100f;
                 var hud = root.AddComponent<RefugeHud>();
+                // T37: while a game plays the whole HUD fades out and takes no touch (IPlayHud.SetPlaying).
+                var rootGroup = root.AddComponent<CanvasGroup>();
 
                 var safe = Rect("SafeArea", root.transform);
                 Stretch(safe);
@@ -499,7 +506,7 @@ namespace PocketWilds.Editor.UI
 
                 // T36 (doc 06 screen 002, doc 01 section 1.3): the right rail with Today, the Gems motes, the wish card. Built
                 // before the feedback parts: the reveal banner draws over the rail when they meet.
-                AddHudDaily(root, safe, gemsChip, gemsIcon.rectTransform, hud, tokens);
+                AddHudDaily(root, safe, gemsChip, gemsIcon.rectTransform, hud, tokens, rootGroup);
                 // T34A: reveal banner, toasts, tutorial hand, collect motes, egg odds button.
                 FeedbackUiPipeline.AddHudFeedback(root, safe, action, chip, chipIcon.rectTransform, hud, tokens);
                 // T35A: the Upgrades button and its dot, the refuge level badge, the touchable Light chip.
@@ -572,7 +579,7 @@ namespace PocketWilds.Editor.UI
         /// three Gems motes and a ring on the Gems chip (doc 05 sheet 17); the wish card (doc 01 A08).
         /// </summary>
         private static void AddHudDaily(GameObject root, RectTransform safe, RectTransform gemsChip, RectTransform gemsIcon, RefugeHud hud,
-            UiColorTokens tokens)
+            UiColorTokens tokens, CanvasGroup rootGroup)
         {
             var circle = KitSprite("UI_Button_IconCircle");
             var dot = KitSprite("UI_Dot");
@@ -583,6 +590,8 @@ namespace PocketWilds.Editor.UI
             rail.gameObject.AddComponent<Canvas>();
             rail.gameObject.AddComponent<GraphicRaycaster>();
             Place(rail, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-52f, -324f), new Vector2(176f, RefugeHud.RailPitch * 3f));
+            // T37: Play goes above Today (doc 01 section 1.3: the rail keeps Play, Today and Event, in that order).
+            var playRoot = AddHudPlay(rail, hud, tokens, rootGroup);
             var todayRoot = Rect("Today", rail);
             Place(todayRoot, new Vector2(0.5f, 1f), center, new Vector2(0f, -RefugeHud.RailPitch * 0.5f), new Vector2(RailButtonSize, RailButtonSize));
             var todayGroup = todayRoot.gameObject.AddComponent<CanvasGroup>();
@@ -624,8 +633,56 @@ namespace PocketWilds.Editor.UI
             motesRoot.gameObject.SetActive(false);
 
             var card = BuildWishCard(root, tokens);
-            hud.SetDailyReferences(rail, new[] { todayRoot }, todayButton, todayRoot, todayGroup, todayIcon.rectTransform,
+            hud.SetDailyReferences(rail, new[] { playRoot, todayRoot }, todayButton, todayRoot, todayGroup, todayIcon.rectTransform,
                 todayDot.rectTransform, gemsCollect, card);
+        }
+
+        /// <summary>
+        /// T37 (doc 01 A15 and section 1.3, doc « Mini-jeux & activités » section 2): the Play button at the top of the rail,
+        /// in Today's style (cream circle, 168 units, one touch target): ICO_Play, the tickets owned in a small round badge
+        /// at its foot (orange disc with a cream rim, the number in the HUD's brown), the dot of something new. Saved hidden.
+        /// </summary>
+        private static RectTransform AddHudPlay(RectTransform rail, RefugeHud hud, UiColorTokens tokens, CanvasGroup rootGroup)
+        {
+            var circle = KitSprite("UI_Button_IconCircle");
+            var dot = KitSprite("UI_Dot");
+            var center = new Vector2(0.5f, 0.5f);
+            var playRoot = Rect("Play", rail);
+            Place(playRoot, new Vector2(0.5f, 1f), center, new Vector2(0f, -RefugeHud.RailPitch * 0.5f), new Vector2(RailButtonSize, RailButtonSize));
+            var playGroup = playRoot.gameObject.AddComponent<CanvasGroup>();
+            var playImage = AddImage("Button", playRoot, circle, tokens.panelPrimary, Image.Type.Simple);
+            playImage.raycastTarget = true;
+            Stretch(playImage.rectTransform);
+            var playButton = playImage.gameObject.AddComponent<Button>();
+            ConfigureButton(playButton, playImage);
+            var playIcon = AddImage("Icon", playImage.rectTransform, PlayIcon(), Color.white, Image.Type.Simple);
+            Place(playIcon.rectTransform, center, center, new Vector2(0f, 6f), new Vector2(112f, 112f));
+
+            // The tickets owned (A15: « avec le nombre de billets »): a round badge at the foot, never red.
+            var badge = AddImage("Badge", playRoot, circle, tokens.backgroundLight, Image.Type.Simple);
+            Place(badge.rectTransform, new Vector2(1f, 0f), center, new Vector2(-22f, 24f), new Vector2(76f, 76f));
+            var badgeDisc = AddImage("Disc", badge.rectTransform, circle, tokens.accentPrimary, Image.Type.Simple);
+            Place(badgeDisc.rectTransform, center, center, Vector2.zero, new Vector2(64f, 64f));
+            var count = AddText("Count", badge.rectTransform, TextRole.NumberSmall, 40f, tokens.textPrimary, "5");
+            count.alignment = TextAlignmentOptions.Center;
+            Place(count.rectTransform, center, center, new Vector2(0f, 2f), new Vector2(64f, 52f));
+
+            var playDot = AddImage("Dot", playRoot, dot, tokens.errorSoft, Image.Type.Simple);
+            Place(playDot.rectTransform, new Vector2(1f, 1f), center, new Vector2(-24f, -24f), new Vector2(46f, 46f));
+            playDot.gameObject.SetActive(false);
+            playRoot.gameObject.SetActive(false);
+            hud.SetPlayReferences(playButton, playRoot, playGroup, playIcon.rectTransform, badge.rectTransform, count, playDot.rectTransform, rootGroup);
+            return playRoot;
+        }
+
+        /// <summary>ICO_Play (doc 06 icon inventory, T37 icons); the paw stands in until it is drawn.</summary>
+        internal static Sprite PlayIcon()
+        {
+            var play = AssetDatabase.LoadAssetAtPath<Sprite>(IconFolder + "/ICO_Play.png");
+            if (play != null)
+                return play;
+            Debug.LogWarning("[UiPipeline] ICO_Play.png is missing in " + IconFolder + ": the Play button shows ICO_Paw until it is drawn.");
+            return IconSprite("ICO_Paw");
         }
 
         /// <summary>

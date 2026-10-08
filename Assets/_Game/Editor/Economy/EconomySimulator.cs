@@ -259,7 +259,15 @@ namespace PocketWilds.Editor.Economy
             private const double VisitorContactsPerDay = 0.5;
             private const int StickersPerPage = 9;
             private const int PagesPerAlbum = 5;
-            private const double ActivityStickerChance = 0.15;
+            /// <summary>T37: the activity reward table (doc Mini-jeux, section 2), the game's own numbers.</summary>
+            private static readonly ActivityConfig ActivityTable = ActivityConfig.Default;
+
+            // T37: challenges completed at 3 stars, and the share of the week's challenges not played yet.
+            private int _challengesDone;
+            private int _activityStickers;
+            private const int ActivityStickersPerPage = 12;
+            private double _challengeCredit;
+            private int _challengeDay;
 
             public readonly SimRun Result;
 
@@ -589,11 +597,31 @@ namespace PocketWilds.Editor.Economy
                 _lastRefugeLevel = Math.Max(_lastRefugeLevel, level);
             }
 
-            /// <summary>Activities (doc 01 Mini-jeux): Light in minutes of production, a few Gems, biome mastery XP.</summary>
+            /// <summary>
+            /// Activities (doc Mini-jeux, section 2, with the game's reward table): Light in minutes of production (the
+            /// profile's average game), 2 Gems for the first 3 stars of the day in each activity (6 a day), a sticker chance
+            /// by stars (10, 20, 35 %), biome mastery XP; a challenge completed at 3 stars pays 5 Gems once, and every 5 a
+            /// challenge decoration joins the refuge.
+            /// </summary>
             private void Activities(int sessionsLeft)
             {
                 if (!_p.Refuge.IsFeatureUnlocked(RefugeFeature.Grooming))
                     return;
+                int day = (int)Today;
+                if (day != _challengeDay)
+                {
+                    _challengeDay = day;
+                    _challengeCredit += _profile.ChallengesPerWeek / 7.0;
+                    int open = 10 * OpenActivities();
+                    while (_challengeCredit >= 1.0 && _challengesDone < open)
+                    {
+                        _challengeCredit -= 1.0;
+                        _challengesDone++;
+                        EarnGems(ActivityTable.GemsChallenge);
+                        if (_challengesDone % ActivityTable.ChallengeDecorationEvery == 0)
+                            _decorationsPlaced++;
+                    }
+                }
                 int tickets = _profile.Club ? 7 : 5;
                 int wanted = Math.Min(_profile.ActivitiesPerDay, tickets);
                 int left = wanted - _activitiesToday;
@@ -602,14 +630,26 @@ namespace PocketWilds.Editor.Economy
                 int now = (left + sessionsLeft - 1) / Math.Max(1, sessionsLeft);
                 for (int i = 0; i < now; i++)
                 {
+                    bool three = _activitiesToday < _profile.ThreeStarGamesPerDay;
                     GrantMinutes(_profile.ActivityMinutes * _p.Essence.ActivityLightMultiplier);
                     _p.Mastery.Add(_p.Store.MostAdvancedUnlocked(), BiomeXpSource.Activity);
-                    if (_random.NextDouble() < ActivityStickerChance)
-                        Sticker();
-                    if (_activitiesToday < Math.Min(3, _profile.ThreeStarGamesPerDay))
-                        EarnGems(2);
+                    if (_random.NextDouble() < ActivityTable.StickerChance(three ? 3 : 2))
+                        ActivitySticker();
+                    if (three && _activitiesToday * ActivityTable.GemsFirstThreeStars < ActivityTable.GemsDailyCap)
+                        EarnGems(ActivityTable.GemsFirstThreeStars);
                     _activitiesToday++;
                 }
+            }
+
+            /// <summary>The ticket activities open with the refuge's features (wave 1; the others follow their biomes).</summary>
+            private int OpenActivities()
+            {
+                int open = 0;
+                foreach (var feature in new[] { RefugeFeature.Grooming, RefugeFeature.HideAndSeek, RefugeFeature.NutRain, RefugeFeature.PawMemory,
+                             RefugeFeature.PhotoSafari, RefugeFeature.TilePuzzle, RefugeFeature.BurrowMaze })
+                    if (_p.Refuge.IsFeatureUnlocked(feature))
+                        open++;
+                return open;
             }
 
             /// <summary>Expeditions (doc 01 Contenu, section 7): back ones pay, free slots leave; the last of the day is 8 h.</summary>
@@ -1337,6 +1377,23 @@ namespace PocketWilds.Editor.Economy
                 if (_albumStickers[pick] == StickersPerPage * PagesPerAlbum)
                     _p.Renewal.GrantEssence(5);
                 _p.Mastery.Add(_config.Biomes[pick].Id, BiomeXpSource.Sticker);
+            }
+
+            /// <summary>
+            /// T37: an activity's sticker goes to the activity's own album page (doc Mini-jeux, section 2: « de la page de
+            /// l'activité »), not to a biome album: its refuge points (1, and 10 a full page of 12), and its biome mastery
+            /// XP to the biome the games are played in (the newest one), never to an old biome's album.
+            /// </summary>
+            private void ActivitySticker()
+            {
+                if (!_p.Refuge.IsFeatureUnlocked(RefugeFeature.Albums))
+                    return;
+                _activityStickers++;
+                _today.Stickers++;
+                _plannedScore += 1;
+                if (_activityStickers % ActivityStickersPerPage == 0)
+                    _plannedScore += 10;
+                _p.Mastery.Add(_p.Store.MostAdvancedUnlocked(), BiomeXpSource.Sticker);
             }
 
             private ContentId NextWishBiome()

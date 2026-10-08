@@ -108,8 +108,122 @@ namespace PocketWilds.Services.Feedback
         /// <summary>T36 J-SFX-FEEL-011: the paw stamp lands on a calendar box (a soft felt puff).</summary>
         PawStamp = 40,
 
+        /// <summary>
+        /// T37 J-SFX-FEEL-012: a reward card turns over (paper, and a small wooden note climbing F, G, A, C, D). Its
+        /// slot in doc 05 section 6.4's order. Cards 1 to 5 play variants 0 to 4; past the fifth card, no sound per
+        /// card (doc 05 section 6.4: a bounded rising run, never one sound per item beyond 5).
+        /// </summary>
+        CardFlip = 41,
+
+        /// <summary>
+        /// T37 J-SFX-FEEL-013 and J-SFX-ACT-000-03: a result star lands (a kalimba tine with its glass octave). Its slot
+        /// in doc 05 section 6.4's order. Play variant 0, 1, 2 for the first, second, third star: F, A, C.
+        /// </summary>
+        StarEarned = 42,
+
+        // 43 to 66 are reserved by doc 05 section 6.4 (Sticker to BubblePuff, then the 17 surprise sounds).
+
         /// <summary>T36 J-SFX-CURRENCY-004: Gems land in the Gems chip (a rolled glass chord).</summary>
         CollectGems = 67,
+
+        // T37: the shared activity sounds (doc 01 Contenu, section 12.0), after the doc 05 list and CollectGems.
+
+        /// <summary>T37 J-SFX-ACT-000-01: a game starts (one small glass chime; the music comes in after it).</summary>
+        ActivityStart = 68,
+
+        /// <summary>T37 J-SFX-ACT-000-02: the game is over (a soft kalimba chord rolled downward).</summary>
+        ActivityEnd = 69,
+
+        /// <summary>T37 J-SFX-ACT-000-04: a new record (a four-note music box motif).</summary>
+        ActivityRecord = 70,
+
+        /// <summary>T37 J-SFX-ACT-000-05: pause (variant 0) and resume (variant 1), a soft wooden click.</summary>
+        ActivityPause = 71,
+
+        /// <summary>
+        /// T37 J-SFX-ACT-000-06: a streak step: the star's tine a semitone higher at each step. Play variant step - 1
+        /// (0 to 7); past the eighth step it stays on the top.
+        /// </summary>
+        ActivityStreak = 72,
+    }
+
+    /// <summary>T37: the three activity musics (doc 01 Contenu, section 12.0, J-MUS-ACT-01 to 03). Stable values.</summary>
+    public enum ActivityMusicId : byte
+    {
+        /// <summary>The activity keeps the biome's music (Expeditions, Garden) or plays its own tracks (Firefly Rhythm).</summary>
+        None = 0,
+
+        /// <summary>J-MUS-ACT-01 « Petite partie » (Little Game): calm, 84 BPM, F major, an 80 s loop.</summary>
+        LittleGame = 1,
+
+        /// <summary>J-MUS-ACT-02 « Pattes pressées » (Hurried Paws): lively, 112 BPM, F major, soft shaker, a 120 s loop.</summary>
+        HurriedPaws = 2,
+
+        /// <summary>J-MUS-ACT-03 « Câlins en série » (Hug Streak): puzzle, 96 BPM, D minor moving to F major, a 100 s loop.</summary>
+        HugStreak = 3,
+    }
+
+    /// <summary>
+    /// T37: how an activity sounds (doc 01 Contenu, section 12.0; doc 04 Biomes tardifs). Its music, with the theme
+    /// biome's ambience under it at -6 dB; the music 5 dB lower from the end of a game until the result closes. The
+    /// music clips are Addressables (group Audio_Activities, one bundle each, streamed), loaded when a game is chosen
+    /// and released once the refuge's music is back.
+    /// </summary>
+    public static class ActivityAudio
+    {
+        /// <summary>The theme biome's ambience under an activity's music (doc 01 Contenu, section 12.0).</summary>
+        public const float AmbienceTrimDb = -6f;
+
+        /// <summary>J-SFX-ACT-000-02: the music lowers by 5 dB at the end of a game, under the result.</summary>
+        public const float ResultMusicTrimDb = -5f;
+
+        /// <summary>The activity's music comes in after the start chime (J-SFX-ACT-000-01): a short cross-fade.</summary>
+        public const float MusicFadeSeconds = 1f;
+
+        /// <summary>The music of an activity (doc 01 Contenu, section 12.0); None keeps the biome's beds.</summary>
+        public static ActivityMusicId MusicOf(PocketWilds.Simulation.ActivityId activity)
+        {
+            switch (activity)
+            {
+                case PocketWilds.Simulation.ActivityId.Grooming:
+                case PocketWilds.Simulation.ActivityId.PawMemory:
+                case PocketWilds.Simulation.ActivityId.Bakery:
+                case PocketWilds.Simulation.ActivityId.Constellations:
+                case PocketWilds.Simulation.ActivityId.TilePuzzle:
+                case PocketWilds.Simulation.ActivityId.PhotoSafari:
+                case PocketWilds.Simulation.ActivityId.Test:
+                    return ActivityMusicId.LittleGame;
+                case PocketWilds.Simulation.ActivityId.HideAndSeek:
+                case PocketWilds.Simulation.ActivityId.NutRain:
+                case PocketWilds.Simulation.ActivityId.TreasureFishing:
+                case PocketWilds.Simulation.ActivityId.LilyHop:
+                case PocketWilds.Simulation.ActivityId.Slide:
+                case PocketWilds.Simulation.ActivityId.Bubbles:
+                case PocketWilds.Simulation.ActivityId.BurrowMaze:
+                    return ActivityMusicId.HurriedPaws;
+                case PocketWilds.Simulation.ActivityId.CuddleMatch:
+                case PocketWilds.Simulation.ActivityId.GrandContest:
+                    return ActivityMusicId.HugStreak;
+                default:
+                    return ActivityMusicId.None;
+            }
+        }
+
+        /// <summary>Addressables address of a music clip (null for None).</summary>
+        public static string Address(ActivityMusicId music)
+        {
+            switch (music)
+            {
+                case ActivityMusicId.LittleGame:
+                    return "audio.activity.little_game";
+                case ActivityMusicId.HurriedPaws:
+                    return "audio.activity.hurried_paws";
+                case ActivityMusicId.HugStreak:
+                    return "audio.activity.hug_streak";
+                default:
+                    return null;
+            }
+        }
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>
@@ -160,6 +274,27 @@ namespace PocketWilds.Services.Feedback
         /// the place; the service smooths the changes.
         /// </summary>
         void SetAmbienceMix(float evening, float rain)
+        {
+        }
+
+        /// <summary>
+        /// T37: plays one chosen variant of a sound instead of a random one: a result star's pitch (StarEarned 0 F, 1 A,
+        /// 2 C), a reward card (CardFlip 0 to 4), a streak step (ActivityStreak 0 to 7), pause or resume (ActivityPause
+        /// 0, 1). A variant past the last plays the last: the streak stays at the top (doc 01 Contenu, section 12.0) and
+        /// a run of cards never climbs past five notes (doc 05 Sensations, section 6.4). The default plays any variant.
+        /// </summary>
+        void PlayVariant(AudioEventId id, int variant)
+        {
+            Play(id, Vector3.zero, ContentId.None);
+        }
+
+        /// <summary>
+        /// T37: trims of the beds in dB (0: as mastered; never above 0), smoothed by the service. An activity plays its
+        /// music with the theme biome's ambience at ActivityAudio.AmbienceTrimDb, lowers its music by
+        /// ActivityAudio.ResultMusicTrimDb from the end of a game until the result closes, and sets both back to 0 when
+        /// the player returns to the refuge.
+        /// </summary>
+        void SetBedLevels(float musicDb, float ambienceDb)
         {
         }
     }

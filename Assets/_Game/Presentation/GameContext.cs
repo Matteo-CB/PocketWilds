@@ -35,10 +35,12 @@ namespace PocketWilds.Presentation
             StoreService store = null,
             IAnalytics analytics = null,
             ProgressionServices progression = null,
-            DailyVisitServices daily = null)
+            DailyVisitServices daily = null,
+            ActivityServices activities = null)
         {
             Progression = progression;
             Daily = daily;
+            Activities = activities;
             Clock = clock;
             Content = content;
             Save = save;
@@ -99,6 +101,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>T36: the rendez-vous of the day (null in scenes started without it).</summary>
         public DailyVisitServices Daily { get; }
+
+        /// <summary>T37: the activities: tickets, rules, the runner, rewards (null in scenes started without them).</summary>
+        public ActivityServices Activities { get; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

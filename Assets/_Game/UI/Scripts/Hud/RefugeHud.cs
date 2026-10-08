@@ -13,9 +13,11 @@ namespace PocketWilds.UI
     /// States use color tokens and scale, not extra sprites. No Update: ticked by the scene controller.
     /// T36 (doc 06 screen 002, doc 01 section 1.3): the contextual right rail with the Today button and its dot, the Gems
     /// chip shown from the first Gem (split from the shop), Gems motes, and the wish card it carries for the presenter.
+    /// T37 (doc 01 A15, doc « Mini-jeux & activités » section 2): the Play button above Today on the rail, with the tickets
+    /// owned in a small round badge and its dot; while a game plays the whole HUD fades out and catches no touch.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IDailyHud, IMotionSettings
+    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IDailyHud, IPlayHud, IMotionSettings
     {
         private const float PulseSeconds = 0.4f;
 
@@ -99,6 +101,16 @@ namespace PocketWilds.UI
         [SerializeField] private RectTransform _todayDot;
         [SerializeField] private CollectMotes _gemsCollect;
         [SerializeField] private WishCardView _wishCard;
+
+        [Header("T37 activities: the Play button on the rail, the HUD hidden while a game plays")]
+        [SerializeField] private Button _playButton;
+        [SerializeField] private RectTransform _playRoot;
+        [SerializeField] private CanvasGroup _playGroup;
+        [SerializeField] private RectTransform _playIcon;
+        [SerializeField] private RectTransform _playBadge;
+        [SerializeField] private TMP_Text _playCount;
+        [SerializeField] private RectTransform _playDot;
+        [SerializeField] private CanvasGroup _rootGroup;
 
         private IRefugeActions _actions;
         private IProgressionHudActions _progressionActions;
@@ -199,6 +211,13 @@ namespace PocketWilds.UI
             {
                 _todayShown = _todayRoot.gameObject.activeSelf;
                 _todayDotShown = _todayDot != null && _todayDot.gameObject.activeSelf;
+            }
+            if (_playRoot != null)
+            {
+                _playShown = _playRoot.gameObject.activeSelf;
+                _playDotShown = _playDot != null && _playDot.gameObject.activeSelf;
+                if (_playIcon != null)
+                    _playIconHome = _playIcon.anchoredPosition;
             }
             _badgeShown = _codexBadge != null && _codexBadge.activeSelf;
             if (_upgradeRoot != null)
@@ -773,6 +792,225 @@ namespace PocketWilds.UI
             _wishCard = wishCard;
         }
 
+        // ---------------- T37 activities (IPlayHud) ----------------
+
+        private const float PlayingFadeSeconds = 0.15f;
+        private const float HopPeriod = 5.2f;
+        private const float HopSeconds = 0.45f;
+
+        private IPlayHudActions _playActions;
+        private readonly UiNumberText _playCountText = new UiNumberText();
+        private bool _playShown;
+        private bool _playDotShown;
+        private bool _playHint;
+        private int _ticketsShown = -1;
+        private float _playAppearTime = -1f;
+        private float _playIdle;
+        private bool _playAtRest = true;
+        private Vector2 _playIconHome;
+        private bool _playing;
+        private float _playingAlpha = 1f;
+        private Canvas _rootCanvas;
+
+        public bool PlayVisible => _playShown;
+        public bool PlayDotVisible => _playDotShown;
+        public bool PlayAppearing => _playAppearTime >= 0f;
+        public bool PlayHintShown => _playHint && !_eggHint && !_upgradeHint && !(_todayHint && _todayShown) && _playShown;
+        public string PlayCountText => _playCount != null ? _playCount.text : string.Empty;
+        public Button PlayButton => _playButton;
+        public RectTransform PlayRoot => _playRoot;
+        public RectTransform PlayBadge => _playBadge;
+
+        /// <summary>A game plays: the HUD is faded out and takes no touch (<see cref="SetPlaying"/>).</summary>
+        public bool Playing => _playing;
+
+        /// <summary>True between SetPlaying(true) and SetPlaying(false): the refuge HUD faded out and not raycast.</summary>
+        public bool PlayingMode => _playing;
+
+        /// <summary>The HUD's opacity as a game starts or ends (0 while a game plays, 1 otherwise).</summary>
+        public float PlayingAlpha => _playingAlpha;
+
+        public CanvasGroup RootGroup => _rootGroup;
+
+        public Vector2 PlayScreenPosition => ScreenCenter(_playRoot);
+
+        public void BindPlay(IPlayHudActions actions)
+        {
+            _playActions = actions;
+            if (_playButton == null)
+                return;
+            _playButton.onClick.RemoveListener(OnPlayPressed);
+            _playButton.onClick.AddListener(OnPlayPressed);
+        }
+
+        /// <summary>
+        /// The Play button on the rail, above Today (doc 01 A15: refuge level 3 and 5 animals), the tickets owned in its round
+        /// badge, its dot (a free game, a new activity, a challenge to try). Touches nothing when nothing changed.
+        /// </summary>
+        public void SetPlay(bool visible, int tickets, bool dot)
+        {
+            if (_playRoot == null)
+                return;
+            if (visible != _playShown)
+            {
+                _playShown = visible;
+                _playRoot.gameObject.SetActive(visible);
+                LayoutRail();
+                if (!visible)
+                    _playAppearTime = -1f;
+            }
+            if (tickets != _ticketsShown && _playCount != null)
+            {
+                _ticketsShown = tickets;
+                _playCountText.SetCount(_playCount, Mathf.Max(0, tickets));
+            }
+            bool showDot = visible && dot;
+            if (showDot != _playDotShown && _playDot != null)
+            {
+                _playDotShown = showDot;
+                _playDot.gameObject.SetActive(showDot);
+                _playIdle = 0f;
+                RestPlay();
+            }
+        }
+
+        /// <summary>A15: the button pops in once (0.35 s, a soft overshoot); with Reduce Motion it only fades in.</summary>
+        public void PlayPlayAppear()
+        {
+            if (_playRoot == null)
+                return;
+            _playAppearTime = 0f;
+            ApplyPlayAppear(0f);
+        }
+
+        /// <summary>A15: the tutorial paw taps on Play until the presenter takes it away (Today's paw goes first).</summary>
+        public void SetPlayHint(bool visible)
+        {
+            if (visible == _playHint)
+                return;
+            _playHint = visible;
+            if (!visible && !_eggHint && !_upgradeHint && !_todayHint)
+                _tapHint?.Set(false, default);
+        }
+
+        /// <summary>
+        /// A game plays: the whole refuge HUD (chips, egg button, rails, toasts, hints, the wish card) fades out in 150 ms
+        /// (at once with Reduce Motion) and catches no touch; its canvas turns off once faded. The game's end brings it back
+        /// the same way. No allocation.
+        /// </summary>
+        public void SetPlaying(bool playing)
+        {
+            if (playing == _playing)
+                return;
+            _playing = playing;
+            if (_rootGroup == null)
+                _rootGroup = GetComponent<CanvasGroup>();
+            if (_rootCanvas == null)
+                _rootCanvas = GetComponent<Canvas>();
+            if (_rootGroup != null)
+            {
+                _rootGroup.blocksRaycasts = !playing;
+                _rootGroup.interactable = !playing;
+            }
+            if (!playing && _rootCanvas != null && !_rootCanvas.enabled)
+                _rootCanvas.enabled = true;
+            if (ReduceMotion || !_bound)
+                ApplyPlaying(playing ? 0f : 1f);
+        }
+
+        private void TickPlaying(float dt)
+        {
+            float target = _playing ? 0f : 1f;
+            if (_playingAlpha == target)
+                return;
+            ApplyPlaying(ReduceMotion ? target : Mathf.MoveTowards(_playingAlpha, target, dt / PlayingFadeSeconds));
+        }
+
+        private void ApplyPlaying(float alpha)
+        {
+            _playingAlpha = alpha;
+            if (_rootGroup != null)
+                _rootGroup.alpha = alpha;
+            // Faded out: nothing left to draw.
+            if (_rootCanvas != null && _playing && alpha <= 0f && _rootCanvas.enabled)
+                _rootCanvas.enabled = false;
+        }
+
+        /// <summary>
+        /// The invitation stays alive without flashing: while the dot is on, the dot breathes slowly and the play icon hops
+        /// once every few seconds. Nothing moves with Reduce Motion or without the dot.
+        /// </summary>
+        private void TickPlay(float dt)
+        {
+            if (_playRoot == null)
+                return;
+            if (_playAppearTime >= 0f && _playShown)
+            {
+                _playAppearTime += dt;
+                float k = Mathf.Clamp01(_playAppearTime / AppearSeconds);
+                ApplyPlayAppear(k);
+                if (k >= 1f)
+                    _playAppearTime = -1f;
+            }
+            if (!_playShown || !_playDotShown || ReduceMotion || _playDot == null)
+            {
+                RestPlay();
+                return;
+            }
+            _playAtRest = false;
+            _playIdle += dt;
+            float breath = 0.5f - 0.5f * Mathf.Cos(_playIdle * (2f * Mathf.PI / DotBreathPeriod));
+            float scale = 1f + 0.14f * breath;
+            _playDot.localScale = new Vector3(scale, scale, 1f);
+            if (_playIcon == null)
+                return;
+            float hop = Mathf.Repeat(_playIdle, HopPeriod) - (HopPeriod - HopSeconds);
+            float lift = hop > 0f ? 12f * Mathf.Sin(hop / HopSeconds * Mathf.PI) : 0f;
+            _playIcon.anchoredPosition = _playIconHome + new Vector2(0f, lift);
+        }
+
+        private void RestPlay()
+        {
+            if (_playAtRest)
+                return;
+            _playAtRest = true;
+            if (_playDot != null)
+                _playDot.localScale = Vector3.one;
+            if (_playIcon != null)
+                _playIcon.anchoredPosition = _playIconHome;
+        }
+
+        private void ApplyPlayAppear(float k)
+        {
+            if (_playGroup != null)
+                _playGroup.alpha = ReduceMotion ? k : Mathf.Clamp01(k * 3f);
+            float s = ReduceMotion ? 1f : (k >= 1f ? 1f : EaseOutBack(k));
+            _playRoot.localScale = new Vector3(s, s, 1f);
+        }
+
+        private void TickPlayHint()
+        {
+            if (_tapHint == null || !_playHint || _eggHint || _upgradeHint || (_todayHint && _todayShown) || !_playShown)
+                return;
+            _tapHint.Set(true, PlayScreenPosition);
+        }
+
+        private void OnPlayPressed() => _playActions?.OpenActivities();
+
+        /// <summary>Prefab builder hook for the T37 parts (Editor UiPipeline).</summary>
+        public void SetPlayReferences(Button playButton, RectTransform playRoot, CanvasGroup playGroup, RectTransform playIcon, RectTransform playBadge,
+            TMP_Text playCount, RectTransform playDot, CanvasGroup rootGroup)
+        {
+            _playButton = playButton;
+            _playRoot = playRoot;
+            _playGroup = playGroup;
+            _playIcon = playIcon;
+            _playBadge = playBadge;
+            _playCount = playCount;
+            _playDot = playDot;
+            _rootGroup = rootGroup;
+        }
+
         public void Tick(float unscaledDeltaTime)
         {
             if (!_bound)
@@ -823,6 +1061,9 @@ namespace PocketWilds.UI
             }
             TickUpgradeHint();
             TickTodayHint();
+            TickPlayHint();
+            TickPlay(unscaledDeltaTime);
+            TickPlaying(unscaledDeltaTime);
             TickLevelUp(unscaledDeltaTime);
             TickToday(unscaledDeltaTime);
             if (_eggChoice != null)
@@ -899,7 +1140,7 @@ namespace PocketWilds.UI
         }
 
         public bool IsOverUi(Vector2 screenPosition) =>
-            RectTransformUtility.RectangleContainsScreenPoint(_hatchRoot, screenPosition, null)
+            !_playing && (RectTransformUtility.RectangleContainsScreenPoint(_hatchRoot, screenPosition, null)
             || RectTransformUtility.RectangleContainsScreenPoint(_lightChip, screenPosition, null)
             || (_codexRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_codexRoot, screenPosition, null))
             || (_infoRoot != null && RectTransformUtility.RectangleContainsScreenPoint(_infoRoot, screenPosition, null))
@@ -909,8 +1150,9 @@ namespace PocketWilds.UI
             || (_shopShown && RectTransformUtility.RectangleContainsScreenPoint(_shopRoot, screenPosition, null))
             || (_gemsChipShown && RectTransformUtility.RectangleContainsScreenPoint(_gemsChip, screenPosition, null))
             || (_todayShown && RectTransformUtility.RectangleContainsScreenPoint(_todayRoot, screenPosition, null))
+            || (_playShown && RectTransformUtility.RectangleContainsScreenPoint(_playRoot, screenPosition, null))
             // The wish card's touch catcher covers the screen: a touch beside it only closes it (doc 01 A08).
-            || (_wishCard != null && _wishCard.TakesTouch);
+            || (_wishCard != null && _wishCard.TakesTouch));
 
         // ---------------- T35B egg choice (IEggChoiceHud) ----------------
 
@@ -1074,6 +1316,8 @@ namespace PocketWilds.UI
                 _lightButton.onClick.RemoveListener(OnUpgradePressed);
             if (_todayButton != null)
                 _todayButton.onClick.RemoveListener(OnTodayPressed);
+            if (_playButton != null)
+                _playButton.onClick.RemoveListener(OnPlayPressed);
         }
     }
 }

@@ -145,6 +145,20 @@ namespace PocketWilds.Tests.EditMode
                 (UiPipeline.HudPrefabPath, "WishCard/Content/Card/Claim/Label", Longest(DailyVisitText.WishClaim)),
                 (UiPipeline.HudPrefabPath, "WishCard/Content/Card/Swap/Label", Longest(DailyVisitText.WishSwap)),
                 (FeedbackUiPipeline.SheetPrefabPath, "Content/SafeArea/Card/Treat/Button/Label", Longest(DailyVisitText.SheetTreat)),
+                // T37: the activity screens' one-line labels (found by the end of their path).
+                (ActivityUiPipeline.HubPath, "Play/Label", Longest(ActivityText.HubPlay)),
+                (ActivityUiPipeline.HubPath, "Practice/Label", Longest(ActivityText.Practice)),
+                (ActivityUiPipeline.HubPath, "Details/Name", Longest(ActivityNames())),
+                (ActivityUiPipeline.HudPath, "Resume/Label", Longest(ActivityText.PauseResume)),
+                (ActivityUiPipeline.HudPath, "Quit/Label", Longest(ActivityText.PauseQuit)),
+                (ActivityUiPipeline.HudPath, "Streak/Label", Longest(ActivityText.HudStreak)),
+                (ActivityUiPipeline.ResultPath, "Replay/Label", Longest(ActivityText.ResultReplay)),
+                (ActivityUiPipeline.ResultPath, "Back/Label", Longest(ActivityText.ResultBack)),
+                (ActivityUiPipeline.ResultPath, "Record/Label", Longest(ActivityText.ResultRecord)),
+                (ActivityUiPipeline.ResultPath, "Card/Title", Longest(ActivityText.ResultTitleNone, ActivityText.ResultTitleOne,
+                    ActivityText.ResultTitleTwo, ActivityText.ResultTitleThree)),
+                (ActivityUiPipeline.TicketsEmptyPath, "Practice/Label", Longest(ActivityText.EmptyPractice)),
+                (ActivityUiPipeline.TicketsEmptyPath, "Card/Title", Longest(ActivityText.EmptyTitle)),
             };
             var problems = new List<string>();
             foreach (var group in cases.GroupBy(c => c.prefab))
@@ -154,7 +168,7 @@ namespace PocketWilds.Tests.EditMode
                 {
                     foreach (var c in group)
                     {
-                        var label = instance.transform.Find(c.label)?.GetComponent<TMP_Text>();
+                        var label = instance.transform.Find(c.label)?.GetComponent<TMP_Text>() ?? FindByPathEnd(instance.transform, c.label);
                         if (label == null)
                         {
                             problems.Add(c.label + ": missing");
@@ -177,6 +191,29 @@ namespace PocketWilds.Tests.EditMode
                 }
             }
             Assert.IsEmpty(problems, string.Join("\n", problems));
+        }
+
+        /// <summary>The 18 activity names' keys (the hub's details title shows the selected one).</summary>
+        private static string[] ActivityNames()
+        {
+            var keys = new string[PocketWilds.Simulation.ActivityCatalog.ActivityCount];
+            for (int i = 0; i < keys.Length; i++)
+                keys[i] = ActivityText.NameKey(PocketWilds.Simulation.ActivityCatalog.IdOfSlot(i));
+            return keys;
+        }
+
+        /// <summary>The first label whose path ends with <paramref name="end"/> (« Play/Label »), inactive ones included.</summary>
+        private static TMP_Text FindByPathEnd(Transform root, string end)
+        {
+            foreach (var text in root.GetComponentsInChildren<TMP_Text>(true))
+            {
+                string path = text.name;
+                for (var t = text.transform.parent; t != null && t != root; t = t.parent)
+                    path = t.name + "/" + path;
+                if (path == end || path.EndsWith("/" + end, System.StringComparison.Ordinal))
+                    return text;
+            }
+            return null;
         }
     }
 }

@@ -71,6 +71,9 @@ namespace PocketWilds.Editor.Analytics
             AddEnum<PurchaseFlowStatus>(rows, "purchase_status");
             AddEnum<OfferPlacement>(rows, "offer_placement");
             AddEnum<AnalyticsConsent>(rows, "consent");
+            AddEnum<ActivityId>(rows, "activity");
+            AddEnum<ActivityMode>(rows, "activity_mode");
+            AddEnum<TicketSource>(rows, "ticket_source");
             AddTable(rows, "species", content.Species);
             AddTable(rows, "variant", content.Variants);
             AddTable(rows, "egg", content.Eggs);

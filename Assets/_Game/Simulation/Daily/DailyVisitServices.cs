@@ -145,6 +145,18 @@ namespace PocketWilds.Simulation
         }
 
         /// <summary>
+        /// T37: a game ended. A rewarded game's stars and a challenge passed (its first star) count for the weekly journal;
+        /// practice and abandoned games never do (doc 01, section 5).
+        /// </summary>
+        public void OnActivityEnded(in ActivityGameResult result)
+        {
+            if (!result.Rewarded || result.Abandoned)
+                return;
+            bool passed = result.Challenge >= 0 && result.ChallengeStarsBefore == 0 && result.Stars >= 1;
+            Journal.OnActivityGame(result.Stars, passed);
+        }
+
+        /// <summary>
         /// At boot (after the offline resolution) and when the app comes back: the day check first, then the return gift of
         /// this absence (doc 01, section 6).
         /// </summary>

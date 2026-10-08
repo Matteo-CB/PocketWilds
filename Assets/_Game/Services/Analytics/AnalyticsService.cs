@@ -36,8 +36,13 @@ namespace PocketWilds.Services.Analytics
     /// </summary>
     public sealed class AnalyticsService : IAnalytics, IDisposable
     {
-        private const int CurrencySlots = 4;
-        private const int ReasonSlots = 32;
+        /// <summary>Doc 08 currencies: 1 Light, 2 Essence, 3 Gems, 4 event currency, 5 tickets, 6 album stars.</summary>
+        private const int CurrencySlots = 7;
+
+        /// <summary>Doc 08: the tickets currency and the automatic refill reason (summed in economy_flow).</summary>
+        private const int TicketCurrency = 5;
+        private const int TicketRefillReason = 52;
+        private const int ReasonSlots = 64;
         private const int MaxSeenOffers = 32;
 
         private readonly PlayerState _state;
@@ -800,7 +805,7 @@ namespace PocketWilds.Services.Analytics
 
         private void OnGiftOpened(GiftOpening opening)
         {
-            var e = new AnalyticsEvent(AnalyticsEventId.DailyGiftOpen)
+            var e = new AnalyticsEvent(AnalyticsEventId.DailyGift)
             {
                 I0 = (int)opening.Lot, I1 = (int)opening.Size, I2 = opening.Flags, I3 = opening.SinceBigBefore, D0 = opening.Granted.Bundle.Gems,
             };
@@ -809,7 +814,7 @@ namespace PocketWilds.Services.Analytics
 
         private void OnCalendarClaimed(CalendarClaim claim)
         {
-            var e = new AnalyticsEvent(AnalyticsEventId.CalendarClaim) { I0 = claim.Number, I1 = claim.Cycle, I2 = claim.Substituted ? 1 : 0 };
+            var e = new AnalyticsEvent(AnalyticsEventId.CalendarDay) { I0 = claim.Number, I1 = claim.Cycle, I2 = claim.Substituted ? 1 : 0 };
             Record(ref e);
         }
 
@@ -827,6 +832,13 @@ namespace PocketWilds.Services.Analytics
 
         private void OnJournalClaimed(int goal, GrantedRewards granted)
         {
+            if (goal == 0)
+            {
+                // The completed journal's chest (doc 08: journal_complete, week and day of the week).
+                var done = new AnalyticsEvent(AnalyticsEventId.JournalComplete) { I0 = WeekIndex(), I1 = DayOfWeek() };
+                Record(ref done);
+                return;
+            }
             int slot = WeeklyJournalCatalog.TryGet((JournalGoalId)Math.Max(0, goal), out var definition) ? (int)definition.Slot : -1;
             var e = new AnalyticsEvent(AnalyticsEventId.JournalGoal)
             {
@@ -835,6 +847,28 @@ namespace PocketWilds.Services.Analytics
                 I2 = WeekIndex(),
                 I3 = goal == WeeklyJournalService.CarryClaimId ? 1 : 0,
             };
+            Record(ref e);
+        }
+
+        /// <summary>Day of the week in the player's time zone, 1 Monday to 7 Sunday.</summary>
+        private int DayOfWeek()
+        {
+            var zone = _progression?.Config.TimeZone ?? TimeZoneInfo.Local;
+            var local = TimeZoneInfo.ConvertTime(_clock.UtcNow, zone);
+            return local.DayOfWeek == System.DayOfWeek.Sunday ? 7 : (int)local.DayOfWeek;
+        }
+
+        /// <summary>The « no ticket » card closed (doc 08, tickets_empty): the choice made, seconds to the next free ticket.</summary>
+        public void TicketsEmpty(int choice, double refillSeconds)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.TicketsEmpty) { I0 = choice, D0 = Math.Max(0.0, refillSeconds) };
+            Record(ref e);
+        }
+
+        /// <summary>Today opened (doc 08, today_open): wishes pending, the gift ready, the calendar's day.</summary>
+        public void TodayOpen(int wishesPending, bool giftReady, int calendarDay)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.TodayOpen) { I0 = wishesPending, I1 = giftReady ? 1 : 0, I2 = calendarDay };
             Record(ref e);
         }
 
@@ -855,7 +889,7 @@ namespace PocketWilds.Services.Analytics
 
         private void OnWishDrawn(WishDraw draw)
         {
-            // A swap has its own event (WishSwap).
+            // A swap has its own event (WishReroll).
             if (draw.IsSwap)
                 return;
             var e = new AnalyticsEvent(AnalyticsEventId.WishDrawn)
@@ -867,6 +901,7 @@ namespace PocketWilds.Services.Analytics
 
         private void OnWishClaimed(WishClaim claim)
         {
+            Milestone(FunnelMilestone.FirstWish);
             var e = new AnalyticsEvent(AnalyticsEventId.WishDone)
             {
                 I0 = claim.Template, I1 = (int)claim.Path, I2 = (int)claim.Gems, I3 = claim.PendingAfter, D0 = claim.MinutesFromDraw,
@@ -876,12 +911,108 @@ namespace PocketWilds.Services.Analytics
 
         private void OnWishSwapped(WishSwapInfo swap)
         {
-            var e = new AnalyticsEvent(AnalyticsEventId.WishSwap) { I0 = swap.OldTemplate, I1 = swap.NewTemplate };
+            var e = new AnalyticsEvent(AnalyticsEventId.WishReroll) { I0 = swap.OldTemplate, I1 = swap.NewTemplate };
             Record(ref e);
+        }
+
+        // ------------------------------------------------------------------ T37: the activities (doc 08, block 110)
+
+        private ActivityServices? _activities;
+        private ActivityStartedHandler? _onActivityStarted;
+        private ActivityEndedHandler? _onActivityEnded;
+        private Action<ActivityId, int, int, int>? _onChallengeImproved;
+        private Action<TicketSource, int, int>? _onTicketsGained;
+        private Action<int, int>? _onTicketsRefilled;
+
+        /// <summary>Games started and ended, challenges improved, tickets received and refilled (doc 08 events 110 to 114).</summary>
+        public void AttachActivities(ActivityServices? activities)
+        {
+            DetachActivities();
+            _activities = activities;
+            if (activities == null)
+                return;
+            _onActivityStarted ??= OnActivityStarted;
+            _onActivityEnded ??= OnActivityEnded;
+            _onChallengeImproved ??= OnChallengeImproved;
+            _onTicketsGained ??= OnTicketsGained;
+            _onTicketsRefilled ??= OnTicketsRefilled;
+            activities.Runner.Started += _onActivityStarted;
+            activities.Runner.Ended += _onActivityEnded;
+            activities.Runner.ChallengeImproved += _onChallengeImproved;
+            activities.Tickets.TicketsGained += _onTicketsGained;
+            activities.Tickets.Refilled += _onTicketsRefilled;
+        }
+
+        private void DetachActivities()
+        {
+            var a = _activities;
+            if (a == null)
+                return;
+            a.Runner.Started -= _onActivityStarted;
+            a.Runner.Ended -= _onActivityEnded;
+            a.Runner.ChallengeImproved -= _onChallengeImproved;
+            a.Tickets.TicketsGained -= _onTicketsGained;
+            a.Tickets.Refilled -= _onTicketsRefilled;
+            _activities = null;
+        }
+
+        private static uint ActivityContentId(ActivityId activity) =>
+            ActivityCatalog.TryGet(activity, out var definition) ? definition.ContentId.Value : (uint)activity;
+
+        private void OnActivityStarted(in ActivityStartInfo info)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.ActivityStart)
+            {
+                U0 = ActivityContentId(info.Activity), I0 = info.AnalyticsMode, I1 = info.Difficulty, I2 = info.Tickets, I3 = info.Featured ? 1 : 0,
+            };
+            Record(ref e);
+        }
+
+        private void OnActivityEnded(in ActivityGameResult result)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.ActivityEnd)
+            {
+                U0 = ActivityContentId(result.Activity),
+                I0 = result.AnalyticsMode,
+                I1 = result.Stars,
+                I2 = result.AnalyticsFlags,
+                I3 = result.Challenge >= 0 ? result.Challenge + 1 : 0,
+                D0 = result.Score,
+                D1 = result.Seconds,
+            };
+            Record(ref e);
+            if (!result.Abandoned && result.Activity != ActivityId.Test)
+                Milestone(FunnelMilestone.FirstActivity);
+        }
+
+        private void OnChallengeImproved(ActivityId activity, int challenge, int stars, int attempts)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.ActivityChallenge)
+            {
+                U0 = ActivityContentId(activity), I0 = challenge + 1, I1 = stars, I2 = attempts,
+            };
+            Record(ref e);
+        }
+
+        private void OnTicketsGained(TicketSource source, int amount, int balance)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.TicketsGain) { I0 = ActivityAnalytics.TicketSourceCode(source), I1 = amount, I2 = balance };
+            Record(ref e);
+        }
+
+        /// <summary>The automatic refill is not an event of its own: it is summed in economy_flow (doc 08, event 114).</summary>
+        private void OnTicketsRefilled(int count, int balance)
+        {
+            if (_consent == AnalyticsConsent.Denied || count <= 0)
+                return;
+            int slot = TicketCurrency * ReasonSlots + TicketRefillReason;
+            _flowCounts[slot]++;
+            _flowSums[slot] = BigValue.Add(_flowSums[slot], BigValue.FromDouble(count));
         }
 
         public void Dispose()
         {
+            DetachActivities();
             DetachDaily();
             DetachProgression();
             Detach();

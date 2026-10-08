@@ -77,6 +77,15 @@ namespace PocketWilds.Presentation
         [SerializeField] private MonoBehaviour _wishCard;
         /// <summary>PF_World_WishBubble: the pooled bubble above an animal with a wish (WishBubbleView).</summary>
         [SerializeField] private GameObject _wishBubblePrefab;
+        [Header("T37 activities (UI assembly)")]
+        /// <summary>PF_UI_ActivityHub (screen 029), implementing IActivityHubView.</summary>
+        [SerializeField] private MonoBehaviour _activityHub;
+        /// <summary>PF_UI_ActivityHud (screen 030), implementing IActivityHudView.</summary>
+        [SerializeField] private MonoBehaviour _activityHud;
+        /// <summary>PF_UI_ActivityResult (screen 030), implementing IActivityResultView.</summary>
+        [SerializeField] private MonoBehaviour _activityResult;
+        /// <summary>The « no ticket » card, implementing ITicketsEmptyView.</summary>
+        [SerializeField] private MonoBehaviour _ticketsEmpty;
 
         private GameContext _context;
         private RefugeController _refuge;
@@ -94,6 +103,7 @@ namespace PocketWilds.Presentation
         private RefugeZones _zones;
         private ProgressionPresenter _progressionPresenter;
         private DailyVisitPresenter _dailyPresenter;
+        private ActivityPresenter _activityPresenter;
         private WishBubbleLayer _bubbles;
 
         public bool HasContext => _context != null;
@@ -120,6 +130,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>T36: the rendez-vous of the day (null without daily services).</summary>
         public DailyVisitPresenter DailyVisit => _dailyPresenter;
+
+        /// <summary>T37: the Play button, the hub, games and their result (null without activity services).</summary>
+        public ActivityPresenter Activities => _activityPresenter;
 
         public ZoneKit ZoneKit => _zoneKit.IsValid() && _zoneKit.Status == AsyncOperationStatus.Succeeded ? _zoneKit.Result : null;
 
@@ -264,6 +277,17 @@ namespace PocketWilds.Presentation
                         _life?.SetBubbles(_bubbles);
                     }
                 }
+                if (context.Activities != null)
+                {
+                    // T37: the Play button, the hub, the activity HUD, the result card and the « no ticket » card.
+                    var host = new ActivityStageHost(context, _refuge, _cameraRig, transform);
+                    _activityPresenter = new ActivityPresenter(context, _hud as IPlayHud, _activityHub as IActivityHubView,
+                        _activityHud as IActivityHudView, _activityResult as IActivityResultView, _ticketsEmpty as ITicketsEmptyView, host);
+                    _activityPresenter.Daily = _dailyPresenter;
+                    _refuge.Activities = _activityPresenter;
+                    if (_dailyPresenter != null)
+                        _dailyPresenter.Activities = _activityPresenter;
+                }
             }
             _onQuality = ApplyQuality;
             context.Quality.StateChanged += _onQuality;
@@ -274,6 +298,8 @@ namespace PocketWilds.Presentation
                 context.Audio.SetAmbienceLayers(beds.ambienceEvening, beds.rain);
                 UpdateAmbienceMix();
             }
+            if (_activityPresenter != null)
+                _activityPresenter.RefugeBeds = beds;
             _life?.SetListener(this);
             GameLog.Info(LogCategory.Presentation, "Vertical slice entered.");
         }
@@ -284,7 +310,8 @@ namespace PocketWilds.Presentation
             if (_bubbles != null)
                 _bubbles.ReduceMotion = reduce;
             foreach (var screen in new[] { _hud, _offlineReturn, _codex, _shop, _offerModal, _animalSheet, _modal, _upgrades, _zoneOpen,
-                         _refugeLevel, _levelReward, _biomeGate, _rewardSummary, _today, _weeklyJournal, _wishCard })
+                         _refugeLevel, _levelReward, _biomeGate, _rewardSummary, _today, _weeklyJournal, _wishCard, _activityHub, _activityHud,
+                         _activityResult, _ticketsEmpty })
                 if (screen is IMotionSettings motion)
                     motion.ReduceMotion = reduce;
         }
@@ -327,8 +354,11 @@ namespace PocketWilds.Presentation
             if (_refuge != null)
             {
                 _refuge.Daily = null;
+                _refuge.Activities = null;
                 _refuge.Bubbles = null;
             }
+            _activityPresenter?.Dispose();
+            _activityPresenter = null;
             _life?.SetBubbles(null);
             _bubbles?.Dispose();
             _bubbles = null;
@@ -440,6 +470,9 @@ namespace PocketWilds.Presentation
             return WorldStreamer.GroundFootprint(camera, _footprintMaxDistance);
         }
 
+        /// <summary>T37: the app leaves mid-game: the game pauses (the pause card waits on return).</summary>
+        private void OnApplicationPause(bool paused) => _activityPresenter?.OnApplicationPause(paused);
+
         private void Update()
         {
             // PrepareAsync ticks the streamer itself until Enter.
@@ -449,6 +482,7 @@ namespace PocketWilds.Presentation
             _zones?.Tick(Time.time);
             _progressionPresenter?.Tick(Time.time, Time.unscaledDeltaTime);
             _dailyPresenter?.Tick(Time.time, Time.unscaledDeltaTime);
+            _activityPresenter?.Tick(Time.deltaTime, Time.unscaledDeltaTime);
             _weather?.Tick(Time.unscaledTime);
             _atmosphere?.Tick(Time.unscaledTime);
             var camera = _cameraRig != null ? _cameraRig.Camera : null;

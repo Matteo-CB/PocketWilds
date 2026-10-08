@@ -73,7 +73,7 @@ namespace PocketWilds.Editor.Economy
                 + "Config sans mise à jour.",
                 "G5.target.regular.mastery30", "G5.target.casual.mastery30");
             Add("Point 8 : un jour de plus que la limite, sur un seul profil ; ces écarts bougent d'un réglage à l'autre.",
-                "G5.goals.club_pass_packs", "G5.discovery.early.collector", "G5.discovery.late.club");
+                "G5.goals.club_pass_packs", "G5.discovery.early.collector", "G5.discovery.late.club", "G5.discovery.late.passionate");
             return pending;
         }
 

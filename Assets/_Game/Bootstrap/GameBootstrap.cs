@@ -70,6 +70,7 @@ namespace PocketWilds.Bootstrap
         private CodexService _codex;
         private ProgressionServices _progression;
         private DailyVisitServices _daily;
+        private ActivityServices _activities;
         private GrantService _grants;
         private OfferService _offers;
         private StoreService _store;
@@ -222,6 +223,17 @@ namespace PocketWilds.Bootstrap
                 _progression = new ProgressionServices(_save.State, _content, _economy, _hatch, _clock, _save, null, _mastery, _offline);
                 // T36: the rendez-vous of the day (welcome, gift, calendar, wishes, journal, return gifts, bond).
                 _daily = new DailyVisitServices(_save.State, _content, _economy, _hatch, _mastery, _codex, _progression, _clock, _save);
+                // T37: the activities (tickets, rules, runner, rewards). Rendez-vous tickets go to their pool once an
+                // activity exists in this build; before that a ticket stays worth Light (doc 01, section 0).
+                _activities = new ActivityServices(_save.State, _save.State.Activities, _content, _economy, _hatch, _mastery, _progression,
+                    _daily.Bond, _clock, _save, null, _daily.Context);
+                ActivityRegistry.RegisterShipped(_activities);
+                _activities.Runner.Ended += _daily.OnActivityEnded;
+                if (_activities.AnyShipped)
+                {
+                    _daily.Config.ActivitiesAvailable = true;
+                    _daily.Context.Granter.Tickets = _activities.Tickets;
+                }
                 _save.BeforeSerialize += _offline.CaptureSnapshot;
                 _grants = new GrantService(_content, _save.State, _save);
                 _offers = new OfferService(_content, _save.State, _grants, _save);
@@ -252,6 +264,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.Attach(_economy, _hatch, _store);
                 _analytics.AttachProgression(_progression);
                 _analytics.AttachDaily(_daily);
+                _analytics.AttachActivities(_activities);
                 _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
             });
 
@@ -264,6 +277,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.StartSession(OfflineAtBoot.CreditedSeconds);
                 _analytics.OfflineReturn(OfflineAtBoot);
                 _daily.OnResume(OfflineAtBoot);
+                _activities.OnResume();
                 if (OfflineAtBoot.CreditedSeconds > 0.0)
                     GameLog.Info(LogCategory.Save, $"Offline {OfflineAtBoot.CreditedSeconds:F0} s, +{BigValueFormatter.ToDebugString(OfflineAtBoot.Light)} Light");
             });
@@ -319,7 +333,7 @@ namespace PocketWilds.Bootstrap
                 var catalog = _options.VisualCatalogOverride != null ? _options.VisualCatalogOverride
                     : _animalCatalog.IsValid() && _animalCatalog.Status == AsyncOperationStatus.Succeeded ? _animalCatalog.Result : null;
                 Context = new GameContext(_clock, _content, _save, _economy, _hatch, _quality, _frameRate, _palettes, visuals, catalog,
-                    _audio, _haptics, _offline, _localization, _codex, _store, _analytics, _progression, _daily);
+                    _audio, _haptics, _offline, _localization, _codex, _store, _analytics, _progression, _daily, _activities);
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);
@@ -406,6 +420,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.StartSession(report.CreditedSeconds);
                 _analytics.OfflineReturn(report);
                 _daily.OnResume(report);
+                _activities.OnResume();
                 _loop.ResetAccumulators();
             }
         }
@@ -451,6 +466,8 @@ namespace PocketWilds.Bootstrap
                 AudioListener.volume = 1f;
             _analytics?.Dispose();
             _analytics = null;
+            _activities?.Dispose();
+            _activities = null;
             _daily?.Dispose();
             _daily = null;
             _store?.Dispose();

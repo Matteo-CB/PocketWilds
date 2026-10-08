@@ -147,7 +147,8 @@ namespace PocketWilds.Tests.EditMode
         [Test]
         public void WireIds_AreStable()
         {
-            // Values already sent can never change: renumbering breaks every dashboard and older data.
+            // Values already sent can never change: renumbering breaks every dashboard and older data. Aligned on the
+            // catalogue of doc 08 and doc 09 in T37, before any data was sent.
             var expected = new (Type type, string name, int value)[]
             {
                 (typeof(AnalyticsEventId), "SessionStart", 1), (typeof(AnalyticsEventId), "SessionEnd", 2),
@@ -157,24 +158,32 @@ namespace PocketWilds.Tests.EditMode
                 (typeof(AnalyticsEventId), "ScreenView", 40), (typeof(AnalyticsEventId), "OfferImpression", 41),
                 (typeof(AnalyticsEventId), "OfferClick", 42), (typeof(AnalyticsEventId), "PurchaseResult", 43),
                 (typeof(AnalyticsEventId), "Restore", 44), (typeof(AnalyticsEventId), "PerfSample", 50),
-                (typeof(AnalyticsEventId), "OfflineReturn", 60),
-                (typeof(AnalyticsEventId), "UpgradeBuy", 21), (typeof(AnalyticsEventId), "UpgradeMilestone", 22),
-                (typeof(AnalyticsEventId), "ZoneOpen", 23), (typeof(AnalyticsEventId), "BiomeUnlock", 24),
-                (typeof(AnalyticsEventId), "BiomeGateSeen", 25), (typeof(AnalyticsEventId), "RefugeLevelUp", 26),
-                (typeof(AnalyticsEventId), "BiomeMasteryUp", 27), (typeof(AnalyticsEventId), "DecorationBuyLight", 28),
-                (typeof(AnalyticsEventId), "TreatBuy", 29),
-                (typeof(AnalyticsEventId), "EggBuy", 33), (typeof(AnalyticsEventId), "MultiHatch", 34),
-                (typeof(AnalyticsEventId), "DiscoveryEggGain", 35), (typeof(AnalyticsEventId), "EggOddsOpen", 36),
-                (typeof(AnalyticsEventId), "Renewal", 37), (typeof(AnalyticsEventId), "EssenceNodeBuy", 38),
-                (typeof(AnalyticsEventId), "DailyGiftOpen", 45), (typeof(AnalyticsEventId), "WishDrawn", 46),
-                (typeof(AnalyticsEventId), "WishDone", 47), (typeof(AnalyticsEventId), "WishSwap", 48),
-                (typeof(AnalyticsEventId), "CalendarClaim", 49), (typeof(AnalyticsEventId), "JournalGoal", 51),
-                (typeof(AnalyticsEventId), "ReturnGift", 52), (typeof(AnalyticsEventId), "WelcomeGift", 53),
-                (typeof(AnalyticsEventId), "DailyVisitDone", 54), (typeof(AnalyticsEventId), "TreatGive", 55),
-                (typeof(ScreenId), "Today", 7), (typeof(ScreenId), "WeeklyJournal", 8),
-                (typeof(EconomyReason), "DailyGift", 16), (typeof(EconomyReason), "Wish", 17), (typeof(EconomyReason), "Calendar", 18),
-                (typeof(EconomyReason), "WeeklyJournal", 19), (typeof(EconomyReason), "WelcomeGift", 20),
-                (typeof(EconomyReason), "ReturnGift", 21), (typeof(EconomyReason), "Bond", 22),
+                (typeof(AnalyticsEventId), "OfflineReturn", 60), (typeof(AnalyticsEventId), "ReturnGift", 61),
+                (typeof(AnalyticsEventId), "UpgradeBuy", 70), (typeof(AnalyticsEventId), "UpgradeMilestone", 71),
+                (typeof(AnalyticsEventId), "ZoneOpen", 72), (typeof(AnalyticsEventId), "BiomeUnlock", 73),
+                (typeof(AnalyticsEventId), "BiomeGateSeen", 74), (typeof(AnalyticsEventId), "RefugeLevelUp", 75),
+                (typeof(AnalyticsEventId), "BiomeMasteryUp", 76), (typeof(AnalyticsEventId), "DecorationBuyLight", 77),
+                (typeof(AnalyticsEventId), "TreatBuy", 78), (typeof(AnalyticsEventId), "TreatGive", 79),
+                (typeof(AnalyticsEventId), "Renewal", 80), (typeof(AnalyticsEventId), "EssenceNodeBuy", 81),
+                (typeof(AnalyticsEventId), "EggBuy", 90), (typeof(AnalyticsEventId), "MultiHatch", 91),
+                (typeof(AnalyticsEventId), "DiscoveryEggGain", 92), (typeof(AnalyticsEventId), "EggOddsOpen", 93),
+                (typeof(AnalyticsEventId), "ActivityStart", 110), (typeof(AnalyticsEventId), "ActivityEnd", 111),
+                (typeof(AnalyticsEventId), "ActivityChallenge", 112), (typeof(AnalyticsEventId), "TicketsEmpty", 113),
+                (typeof(AnalyticsEventId), "TicketsGain", 114),
+                (typeof(AnalyticsEventId), "TodayOpen", 120), (typeof(AnalyticsEventId), "DailyGift", 121),
+                (typeof(AnalyticsEventId), "WishDone", 122), (typeof(AnalyticsEventId), "WishReroll", 123),
+                (typeof(AnalyticsEventId), "CalendarDay", 124), (typeof(AnalyticsEventId), "WishDrawn", 125),
+                (typeof(AnalyticsEventId), "WelcomeGift", 126), (typeof(AnalyticsEventId), "DailyVisitDone", 127),
+                (typeof(AnalyticsEventId), "JournalGoal", 130), (typeof(AnalyticsEventId), "JournalComplete", 131),
+                (typeof(EconomyReason), "Activity", 16), (typeof(EconomyReason), "TicketPack", 37),
+                (typeof(MasteryReason), "Activity", 5),
+                (typeof(ScreenId), "Today", 26), (typeof(ScreenId), "WeeklyJournal", 27),
+                (typeof(ScreenId), "ActivityHub", 24), (typeof(ScreenId), "ActivityResult", 25),
+                (typeof(EconomyReason), "Wish", 12), (typeof(EconomyReason), "DailyGift", 13), (typeof(EconomyReason), "Calendar", 14),
+                (typeof(EconomyReason), "WeeklyJournal", 15), (typeof(EconomyReason), "WelcomeGift", 32),
+                (typeof(EconomyReason), "ReturnGift", 47), (typeof(EconomyReason), "Bond", 58),
+                (typeof(EconomyReason), "ActivityChallenge", 17), (typeof(EconomyReason), "EssenceNode", 51),
+                (typeof(FunnelMilestone), "FirstWish", 13), (typeof(FunnelMilestone), "FirstActivity", 14),
                 (typeof(MasteryReason), "Wish", 4),
                 (typeof(WishSystem), "Hatching", 1), (typeof(WishSystem), "Expansions", 6), (typeof(WishSystem), "GrandContest", 28),
                 (typeof(WishSystem), "Rendezvous", 29), (typeof(WishFamily), "Collection", 0), (typeof(WishFamily), "Travels", 4),
@@ -186,7 +195,7 @@ namespace PocketWilds.Tests.EditMode
                 (typeof(DiscoveryRule), "None", 0), (typeof(DiscoveryRule), "NewSpecies", 1), (typeof(DiscoveryRule), "NewVariant", 2),
                 (typeof(DiscoveryRule), "RareOrBetter", 3),
                 (typeof(EconomyReason), "Upgrade", 4), (typeof(EconomyReason), "Expansion", 5),
-                (typeof(EconomyReason), "Decoration", 12), (typeof(EconomyReason), "Treat", 13), (typeof(EconomyReason), "BiomeGate", 14),
+                (typeof(EconomyReason), "Decoration", 54), (typeof(EconomyReason), "Treat", 55), (typeof(EconomyReason), "BiomeGate", 43),
                 (typeof(UpgradeKind), "Production", 0), (typeof(UpgradeKind), "Nests", 1), (typeof(UpgradeKind), "Curiosity", 2),
                 (typeof(PurchaseQty), "One", 0), (typeof(PurchaseQty), "Ten", 1), (typeof(PurchaseQty), "Max", 2),
                 (typeof(FunnelMilestone), "TutorialStart", 0), (typeof(FunnelMilestone), "FirstHatch", 1),
@@ -453,6 +462,63 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual("1", node[4]);
                 rig.Analytics.AttachProgression(null);
                 progression.Dispose();
+            }
+        }
+
+        [Test]
+        public void ActivityEvents_FollowTheDoc08Codes()
+        {
+            using (var rig = new Rig())
+            {
+                rig.State.Progression.Refuge.Level = 3;
+                var activities = new ActivityServices(rig.State, rig.State.Activities, rig.Content, rig.Economy, rig.Hatch, null, null, null,
+                    rig.Clock, null);
+                activities.Rules.Register(ActivityTestRig.TestRules(ActivityId.Test));
+                activities.OnResume();
+                activities.RefreshUnlocks();
+                rig.Analytics.AttachActivities(activities);
+                rig.Analytics.StartSession(0);
+                uint id = ActivityCatalog.Get(ActivityId.Test).ContentId.Value;
+
+                var game = new DummyActivityController { NextScore = 320 };
+                Assert.AreEqual(ActivityStartResult.Started, activities.Runner.TryStart(ActivityRequest.Free(ActivityId.Test), game));
+                activities.Runner.Tick(0.5f);
+                activities.Runner.Finish();
+                var challenge = new DummyActivityController { NextScore = 160 };
+                Assert.AreEqual(ActivityStartResult.Started, activities.Runner.TryStart(ActivityRequest.ChallengeGame(ActivityId.Test, 0), challenge));
+                activities.Runner.Tick(0.5f);
+                activities.Runner.Finish();
+                activities.Tickets.Grant(2, TicketSource.Calendar);
+                rig.Analytics.TodayOpen(2, true, 5);
+                rig.Analytics.TicketsEmpty(3, 4321.0);
+                rig.Analytics.Flush();
+                string all = rig.Sink.All;
+
+                Assert.AreEqual(2, Events(all, AnalyticsEventId.ActivityStart));
+                var start = Fields(all, AnalyticsEventId.ActivityStart);
+                Assert.AreEqual(id.ToString(), start[3], "The activity travels as its content id.");
+                Assert.AreEqual("1", start[4], "Mode 1: rewarded (doc 08, section 9.5).");
+                Assert.AreEqual("4", start[6], "Tickets after the start.");
+                var end = Fields(all, AnalyticsEventId.ActivityEnd);
+                Assert.AreEqual("1", end[4]);
+                Assert.AreEqual("3", end[5], "Three stars.");
+                Assert.AreEqual("0", end[7], "Free mode: challenge 0.");
+                Assert.AreEqual("320", end[8]);
+                var improved = Fields(all, AnalyticsEventId.ActivityChallenge);
+                Assert.AreEqual("1", improved[4], "Challenges travel from 1.");
+                Assert.AreEqual("3", improved[5]);
+                Assert.AreEqual("1", improved[6], "First attempt.");
+                var gain = Fields(all, AnalyticsEventId.TicketsGain);
+                Assert.AreEqual("13", gain[3], "The calendar, appended after the doc's sources.");
+                Assert.AreEqual("2", gain[4]);
+                var today = Fields(all, AnalyticsEventId.TodayOpen);
+                Assert.AreEqual(new[] { "2", "1", "5" }, new[] { today[3], today[4], today[5] });
+                var empty = Fields(all, AnalyticsEventId.TicketsEmpty);
+                Assert.AreEqual("3", empty[3], "Choice 3: Gems.");
+                Assert.AreEqual("4321", empty[4]);
+                Assert.IsFalse(rig.State.Analytics.Has(FunnelMilestone.FirstActivity), "The framework's test activity is not a player's first activity.");
+                rig.Analytics.AttachActivities(null);
+                activities.Dispose();
             }
         }
 

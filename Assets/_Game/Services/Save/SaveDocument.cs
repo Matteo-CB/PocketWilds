@@ -27,6 +27,9 @@ namespace PocketWilds.Services.Save
 
         /// <summary>T36: tickets, seeds, ingredients, decorations, stickers (schema 10).</summary>
         Inventory = 16,
+
+        /// <summary>T37: the activities: tickets, records, challenges, adaptive difficulty (schema 11).</summary>
+        Activities = 17,
     }
 
     public sealed class SaveSection

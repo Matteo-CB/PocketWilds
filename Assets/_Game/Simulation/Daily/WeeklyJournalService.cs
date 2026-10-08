@@ -737,6 +737,14 @@ namespace PocketWilds.Simulation
 
         public void OnCalendarStamped() => AddProgress(JournalGoalId.CalendarDays, 1);
 
+        /// <summary>T37: the stars of a rewarded activity game, and a challenge passed (its first star).</summary>
+        public void OnActivityGame(int stars, bool challengePassed)
+        {
+            AddProgress(JournalGoalId.ActivityStars, stars);
+            if (challengePassed)
+                AddProgress(JournalGoalId.ActivityChallenges, 1);
+        }
+
         /// <summary>Adds to every goal of this kind while its week runs, up to its target.</summary>
         private void AddProgress(JournalGoalId id, int amount)
         {
