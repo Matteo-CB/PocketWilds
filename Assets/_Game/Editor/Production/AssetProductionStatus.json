@@ -307,8 +307,8 @@
     {
       "task": "T35C",
       "title": "Simulateur d'économie (étendu aux améliorations, zones, portes, niveau du refuge, Renouveau, Essence)",
-      "status": "PLANNED",
-      "notes": "Replaces the former T35."
+      "status": "REVIEW",
+      "notes": "Replaces the former T35. 2026-10-08: step 1 (96cc04d) Renewal and Essence tree in the simulation; step 2 economy simulator (Editor/Economy: EconomySimulator, SimContent, SimProfiles, SimGuardrails, SimReport, menu Pocket Wilds/Economy/Run Simulator): 6 profiles x 120 days in about 4 s on the real services, deterministic, guided player (HUD advice, 10 min patience) and optimizer sensitivity, planned systems counted as their docs say, CSV + report in Docs/Economy; EconomySimulatorTests (time, determinism, guardrails). Result with the docs' values: 42/96 guardrails pass; the other 54 contradict the docs' own formulas (8 owner decisions in Docs/Economy/T35C_Decisions.md: hatch pace, Renewal egg counters, zone and decoration shares, gate levels and refuge curve with a stall from day 3 to 21, first Renewal Essence reading, species mastery 30, Codex too early, days without news). No calibration within Remote Config bounds passes all; best measured 51/96 (refuge curve 15, zone mastery step 2, biome mastery 20). Game values unchanged until the owner decides; then one calibration pass, econ.egg.growth wired, Drive docs and progression tests updated."
     },
     {
       "task": "T36",
