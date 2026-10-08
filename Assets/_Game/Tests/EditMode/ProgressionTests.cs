@@ -243,6 +243,7 @@ namespace PocketWilds.Tests.EditMode
             Assert.IsTrue(zones.TryGetNext(Grassland, out var first));
             Assert.AreEqual("zone.grassland.meadow", first.SourceId);
             Assert.AreEqual(250.0, zones.Price(first).ToDoubleClamped());
+            // T35C calibration: zone k asks biome mastery 2k - 2, at least 1.
             Assert.AreEqual(1, zones.RequiredMastery(first));
             rig.Give(1e9);
             Assert.AreEqual(ZoneState.NeedsMastery, zones.GetState(first));
@@ -254,7 +255,11 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual(ZoneState.Later, zones.GetState(second), "One zone at a time, in order.");
             Assert.IsTrue(zones.TryOpen(first.Id, out var opening));
             Assert.AreEqual(250.0, opening.Cost.ToDoubleClamped());
-            Assert.AreEqual(ZoneState.NeedsMastery, zones.GetState(second), "Zone 2 needs mastery 4.");
+            Assert.AreEqual(2, zones.RequiredMastery(second));
+            Assert.AreEqual(2, rig.P.Mastery.GetLevel(Grassland), "The first zone's 60 XP give biome mastery 2.");
+            Assert.AreEqual(ZoneState.Available, zones.GetState(second), "So the second zone follows (two zones in the first hour).");
+            Assert.IsTrue(zones.TryGet(ContentId.FromSource("zone.grassland.orchard"), out var third));
+            Assert.AreEqual(4, zones.RequiredMastery(third));
             Assert.AreEqual(537.5, zones.Price(second).ToDoubleClamped(), 0.5);
             Assert.AreEqual(1, zones.ExpansionsOpen(Grassland));
             Assert.AreEqual(3, zones.VisibleAnimalBonus(Grassland));
@@ -281,11 +286,13 @@ namespace PocketWilds.Tests.EditMode
             rig.Give(250);
             long score = rig.P.Refuge.Score;
             long xp = rig.State.World.Biomes.Find(b => b.Biome == Grassland).MasteryXp;
+            int level = rig.P.Mastery.GetLevel(Grassland);
             double rate = rig.Economy.GetLightPerSecond().ToDoubleClamped();
             Assert.IsTrue(rig.P.Zones.TryOpen(ContentId.FromSource("zone.grassland.meadow"), out var opening));
             Assert.AreEqual(rate * 600.0, opening.Gift.ToDoubleClamped(), 1e-6, "Ten minutes of production.");
             Assert.AreEqual(xp + 60, rig.State.World.Biomes.Find(b => b.Biome == Grassland).MasteryXp);
-            Assert.AreEqual(score + 12, rig.P.Refuge.Score, "Zone 12 (its 60 XP stay inside mastery level 1).");
+            int gained = rig.P.Mastery.GetLevel(Grassland) - level;
+            Assert.AreEqual(score + 12 + 5 * gained, rig.P.Refuge.Score, "Zone 12, and 5 for each biome mastery level its 60 XP give.");
         }
 
         // ---------------- Biome gates (section 5) ----------------
@@ -344,11 +351,11 @@ namespace PocketWilds.Tests.EditMode
                 rig.State.Meta.TotalPlaySeconds = 31 * 60;
             if (missing != GateConditions.Light)
                 rig.Give(6_000);
-            // Four species with one variant each and mastery 3 make 67 points: level 3, one short of the gate.
+            // Four species with one variant each and the Prairie's mastery make 72 points: level 2, short of the gate's 4.
             if (missing != GateConditions.RefugeLevel)
                 ReachLevel(rig, 4);
             else
-                Assert.AreEqual(3, rig.P.Refuge.Level);
+                Assert.Less(rig.P.Refuge.Level, 4);
             var status = rig.P.Gates.GetStatus(Forest);
             Assert.AreEqual(GateConditions.All & ~missing, status.Met, $"{missing} alone missing");
             Assert.IsFalse(rig.P.Gates.TryOpen(Forest, out _));
@@ -393,16 +400,17 @@ namespace PocketWilds.Tests.EditMode
 
         // ---------------- Refuge level (section 6) ----------------
 
+        // T35C calibration: S(L) = 50 x (L - 1)^1.10.
         [TestCase(1, 0)]
-        [TestCase(2, 20)]
-        [TestCase(3, 55)]
-        [TestCase(4, 98)]
-        [TestCase(10, 484)]
-        [TestCase(15, 918)]
-        [TestCase(30, 2_639)]
-        [TestCase(50, 5_647)]
-        [TestCase(100, 15_657)]
-        [TestCase(200, 43_089)]
+        [TestCase(2, 50)]
+        [TestCase(3, 107)]
+        [TestCase(4, 167)]
+        [TestCase(10, 561)]
+        [TestCase(15, 911)]
+        [TestCase(30, 2_031)]
+        [TestCase(50, 3_616)]
+        [TestCase(100, 7_837)]
+        [TestCase(200, 16_893)]
         public void RefugeCurve_MatchesTheDocTable(int level, long score)
         {
             var config = new ProgressionConfig();
@@ -412,12 +420,13 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(level - 1, ProgressionMath.RefugeLevelForScore(config, score - 1));
         }
 
-        [TestCase(1, 40, 40)]
-        [TestCase(2, 98, 138)]
-        [TestCase(5, 324, 872)]
-        [TestCase(10, 798, 3_876)]
-        [TestCase(20, 1_965, 18_079)]
-        [TestCase(40, 4_839, 86_582)]
+        // T35C calibration: 18 x L^1.3 XP for level L.
+        [TestCase(1, 18, 18)]
+        [TestCase(2, 44, 62)]
+        [TestCase(5, 146, 392)]
+        [TestCase(10, 359, 1_744)]
+        [TestCase(20, 884, 8_135)]
+        [TestCase(40, 2_177, 38_962)]
         public void BiomeMasteryCurve_MatchesTheDocTable(int level, long xpForLevel, long cumulative)
         {
             var config = new ProgressionConfig();
@@ -458,7 +467,7 @@ namespace PocketWilds.Tests.EditMode
             rig.P.Refuge.LeveledUp += _ => levelUps++;
             foreach (var name in new[] { "rabbit", "squirrel", "hedgehog", "mole", "duckling" })
                 Discover(rig, name, 3);
-            rig.P.Mastery.AddXp(Grassland, 3_876);
+            rig.P.Mastery.AddXp(Grassland, 8_135); // Prairie mastery 20
             Assert.GreaterOrEqual(rig.P.Refuge.Level, 4);
             var pending = rig.P.Refuge.PendingRewards();
             Assert.AreEqual(1, pending.FromLevel);
@@ -496,7 +505,7 @@ namespace PocketWilds.Tests.EditMode
             Assert.IsFalse(rig.P.Refuge.IsFeatureUnlocked(RefugeFeature.ZoneSigns), "Level 2.");
             Discover(rig, "rabbit", 2);
             Assert.GreaterOrEqual(rig.P.Refuge.Level, 1);
-            rig.State.Progression.Refuge.Score = 20;
+            rig.State.Progression.Refuge.Score = ProgressionMath.RefugeScoreForLevel(rig.Config, 2);
             rig.P.Refuge.Recompute();
             Assert.IsTrue(rig.P.Refuge.IsFeatureUnlocked(RefugeFeature.ZoneSigns));
         }
@@ -510,7 +519,7 @@ namespace PocketWilds.Tests.EditMode
             var bench = ContentId.FromSource("decor.bench_cute");
             rig.Give(1e9);
             Assert.IsFalse(rig.P.Decorations.TryBuy(bench, out _), "The Cute Bench comes with level 2.");
-            rig.State.Progression.Refuge.Score = 20;
+            rig.State.Progression.Refuge.Score = ProgressionMath.RefugeScoreForLevel(rig.Config, 2);
             rig.P.Refuge.Recompute();
             Assert.AreEqual(300.0, rig.P.Decorations.NextPrice(bench).ToDoubleClamped(), "30 x B of the Prairie.");
             for (int i = 0; i < 10; i++)
@@ -574,11 +583,45 @@ namespace PocketWilds.Tests.EditMode
             rig.State.Collection.Add(new AnimalInstance { Species = ContentId.FromSource("species.rabbit"), Rarity = RarityTier.Common });
             rig.Economy.RebuildAggregates();
             double baseRate = rig.Economy.GetLightPerSecond().ToDoubleClamped();
-            rig.P.Mastery.AddXp(Grassland, 3_876); // level 10: x 1.20
+            rig.P.Mastery.AddXp(Grassland, 1_744); // level 10: x 1.20
             rig.Give(1e9);
             rig.P.Upgrades.TryBuy(Grassland, UpgradeKind.Production, PurchaseQty.Ten, out _); // x 2.0
             rig.P.Zones.TryOpen(ContentId.FromSource("zone.grassland.meadow"), out _); // x 1.25
             Assert.AreEqual(baseRate * 1.20 * 2.0 * 1.25, rig.Economy.GetLightPerSecond().ToDoubleClamped(), 1e-9);
+        }
+
+        [Test]
+        public void EggPriceCap_FifteenMinutesTheFirstWeek_FortyFiveAfter()
+        {
+            var rig = Create();
+            Assert.IsTrue(rig.P.EggPriceCap().IsZero, "Nothing produces yet: no cap.");
+            rig.State.Collection.Add(new AnimalInstance { Species = ContentId.FromSource("species.rabbit"), Rarity = RarityTier.Common });
+            rig.Economy.RebuildAggregates();
+            double rate = rig.Economy.GetLightPerSecond().ToDoubleClamped();
+            Assert.AreEqual(rate * 15.0 * 60.0, rig.P.EggPriceCap().ToDoubleClamped(), 1e-6, "Day 1.");
+            rig.Clock.Set(TestUtil.T0.AddDays(8));
+            Assert.AreEqual(rate * 45.0 * 60.0, rig.P.EggPriceCap().ToDoubleClamped(), 1e-6, "Day 9.");
+        }
+
+        [Test]
+        public void RemoteConfig_GateAndEggKeys_InBoundsOnly()
+        {
+            var config = new ProgressionConfig();
+            Assert.IsTrue(config.TryOverride("econ.gate.lunar.refuge_level", 60));
+            Assert.AreEqual(60, config.Biomes[10].GateRefugeLevel);
+            Assert.AreEqual(10, config.Biomes[10].GateMastery, "The other conditions stay.");
+            Assert.IsFalse(config.TryOverride("econ.gate.lunar.refuge_level", 0));
+            Assert.IsFalse(config.TryOverride("econ.gate.lunar.species", 7));
+            Assert.IsFalse(config.TryOverride("econ.gate.atlantis.mastery", 5), "Unknown biome.");
+            Assert.IsTrue(config.TryOverride("econ.gate.snow.day_floor", 7));
+            Assert.AreEqual(7, config.Biomes[4].FloorValue);
+            Assert.IsFalse(config.TryOverride("econ.gate.forest.day_floor", 1), "The Forest's floor counts minutes of play.");
+            Assert.IsTrue(config.TryOverride("econ.egg.growth", 1.6));
+            Assert.AreEqual(1.6, config.EggGrowth);
+            Assert.IsFalse(config.TryOverride("econ.egg.growth", 2.5));
+            Assert.IsTrue(config.TryOverride("econ.egg.cap_minutes", 60));
+            Assert.AreEqual(60.0, config.EggCapMinutes);
+            Assert.AreEqual(66, new ProgressionConfig().Biomes[10].GateRefugeLevel, "A new config keeps the default.");
         }
 
         [Test]

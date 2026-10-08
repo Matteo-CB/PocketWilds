@@ -37,8 +37,10 @@ namespace PocketWilds.Tests.EditMode
         private sealed class Modifiers : IHatchModifiers
         {
             public double Curiosity;
+            public BigValue Cap;
             public double EggPriceMultiplier(ContentId biome) => 1.0;
             public double VariantChanceBonus(ContentId biome) => Curiosity;
+            public BigValue EggPriceCap() => Cap;
         }
 
         private sealed class World
@@ -120,6 +122,53 @@ namespace PocketWilds.Tests.EditMode
                 if (variants[i].Species == species && !variants[i].IsSecret && !world.State.Collection.DiscoveredVariants.Contains(variants[i].Id))
                     return true;
             return false;
+        }
+
+        // ------------------------------------------------------------------------------------------- prices (T35C)
+
+        [Test]
+        public void BasicAndFocus_ShareTheBiomeCounter_FocusStaysFourTimesTheBasic()
+        {
+            var world = Create();
+            world.State.Collection.Add(new AnimalInstance { Species = G(0) }); // past the free tutorial egg
+            Assert.AreEqual(10.0, world.Hatch.GetCost(Basic).ToDoubleClamped());
+            Assert.AreEqual(40.0, world.Hatch.GetCost(Focus).ToDoubleClamped());
+            for (int i = 0; i < 3; i++)
+                Assert.AreEqual(HatchStatus.Hatched, world.Hatch.Hatch(Basic).Status);
+            Assert.AreEqual(3, world.Hatch.BoughtInCycle(Focus), "The Focus reads the Basic's counter.");
+            Assert.AreEqual(4.0 * world.Hatch.GetCost(Basic).ToDoubleClamped(), world.Hatch.GetCost(Focus).ToDoubleClamped(), 2.5,
+                "Four times the Basic of the moment (whole Light rounding apart).");
+            Assert.AreEqual(HatchStatus.Hatched, world.Hatch.Hatch(Focus).Status);
+            Assert.AreEqual(4, world.Hatch.BoughtInCycle(Basic), "A Focus advances the biome's counter too.");
+            Assert.AreEqual(0, world.Hatch.BoughtInCycle(ForestBasic), "Each biome has its own counter.");
+        }
+
+        [Test]
+        public void GrowthOverride_PricesEveryBiomeEgg()
+        {
+            var world = Create();
+            world.State.Collection.Add(new AnimalInstance { Species = G(0) });
+            world.Hatch.GrowthOverride = 1.45;
+            world.Hatch.Hatch(Basic);
+            world.Hatch.Hatch(Basic);
+            Assert.AreEqual(21.0, world.Hatch.GetCost(Basic).ToDoubleClamped(), "round(10 x 1.45^2)");
+            Assert.AreEqual(84.0, world.Hatch.GetCost(Focus).ToDoubleClamped(), "round(40 x 1.45^2)");
+            world.Hatch.GrowthOverride = 0.0;
+            Assert.AreEqual(14.0, world.Hatch.GetCost(Basic).ToDoubleClamped(), "0: the egg's own growth (1.18).");
+        }
+
+        [Test]
+        public void PriceCap_NoEggCostsMoreThanTheCap()
+        {
+            var world = Create();
+            world.State.Collection.Add(new AnimalInstance { Species = G(0) });
+            world.Hatch.SetModifiers(new Modifiers { Cap = BigValue.FromDouble(25.0) });
+            Assert.AreEqual(10.0, world.Hatch.GetCost(Basic).ToDoubleClamped(), "Under the cap: its own price.");
+            Assert.AreEqual(25.0, world.Hatch.GetCost(Focus).ToDoubleClamped(), "40 capped at 25.");
+            for (int i = 0; i < 12; i++)
+                world.Hatch.Hatch(Basic);
+            Assert.AreEqual(25.0, world.Hatch.GetCost(Basic).ToDoubleClamped(), "10 x 1.18^12 = 73, capped.");
+            Assert.AreEqual(75.0, world.Hatch.GetCost(Basic, 3).ToDoubleClamped(), "A multi hatch pays the cap for each egg.");
         }
 
         // ------------------------------------------------------------------------------------------- tables

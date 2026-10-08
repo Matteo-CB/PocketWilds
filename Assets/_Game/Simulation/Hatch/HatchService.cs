@@ -43,6 +43,12 @@ namespace PocketWilds.Simulation
     {
         double EggPriceMultiplier(ContentId biome);
         double VariantChanceBonus(ContentId biome);
+
+        /// <summary>
+        /// The most an egg may cost now, in Light: a number of minutes of the current production (doc 02 Formules, « jamais
+        /// plus de 15 minutes de production la première semaine, ni plus de 45 ensuite », a rule since T35C). Zero: no cap.
+        /// </summary>
+        BigValue EggPriceCap();
     }
 
     /// <summary>Immutable outcome handed to presentation. The animal is already saved in the collection.</summary>
@@ -103,7 +109,8 @@ namespace PocketWilds.Simulation
     /// a deterministic RNG, applies the pity, creates the AnimalInstance, updates discoveries, mastery,
     /// economy and save, then returns an immutable result for the presentation. Traits (T26) plug in here.
     /// <list type="bullet">
-    /// <item>Cost(n) = round(BaseCost x CostGrowth^n), n = eggs of this type bought this cycle (doc 02).</item>
+    /// <item>Cost(n) = round(BaseCost x CostGrowth^n), n = eggs of the biome bought this cycle: the Basic and the Focus of a
+    /// biome share one counter, so the Focus always costs its multiple of the Basic of the moment (doc 02 Œufs, T35C).</item>
     /// <item>The very first hatch of a profile is free: the tutorial egg needs a single touch. When the egg
     /// names a starter species, that hatch gives it (rarity tier still rolled).</item>
     /// <item>The roll seed is derived from the profile and the next instance id: reproducible from the save,
@@ -143,6 +150,9 @@ namespace PocketWilds.Simulation
         private readonly int[] _candidates;
         private readonly ContentId[] _species;
         private readonly double[] _weights;
+
+        // The counter each egg's price reads and advances: the Basic egg of its biome for Basic and Focus (T35C).
+        private readonly Dictionary<ContentId, ContentId> _counterKey = new Dictionary<ContentId, ContentId>();
 
         public HatchService(PlayerState state, ContentRegistry content, EconomyService economy, IGameClock clock, ISaveScheduler? save,
             MasteryService? mastery = null)
@@ -200,7 +210,34 @@ namespace PocketWilds.Simulation
                     break;
                 }
             }
+
+            var basicOfBiome = new Dictionary<ContentId, ContentId>();
+            for (int i = 0; i < content.Eggs.Count; i++)
+                if (content.Eggs[i].Tier == EggTier.Basic && !basicOfBiome.ContainsKey(content.Eggs[i].Biome))
+                    basicOfBiome.Add(content.Eggs[i].Biome, content.Eggs[i].Id);
+            for (int i = 0; i < content.Eggs.Count; i++)
+            {
+                var egg = content.Eggs[i];
+                _counterKey[egg.Id] = egg.Tier == EggTier.Focus && basicOfBiome.TryGetValue(egg.Biome, out var basic) ? basic : egg.Id;
+            }
         }
+
+        /// <summary>
+        /// Remote Config econ.egg.growth (doc 02 Améliorations, section 15): one price growth for every biome egg; 0 keeps
+        /// each egg's own CostGrowth (its content value).
+        /// </summary>
+        public double GrowthOverride { get; set; }
+
+        /// <summary>Eggs of this egg's biome bought this cycle (its Basic and its Focus together).</summary>
+        public int BoughtInCycle(ContentId eggId)
+        {
+            _state.World.EggPurchasesInCycle.TryGetValue(CounterKey(eggId), out int bought);
+            return bought;
+        }
+
+        private ContentId CounterKey(ContentId eggId) => _counterKey.TryGetValue(eggId, out var key) ? key : eggId;
+
+        private double Growth(EggDefinition egg) => GrowthOverride > 1.0 ? GrowthOverride : egg.CostGrowth;
 
         /// <summary>The first animal of a profile comes from the tutorial egg, without a cost.</summary>
         public bool IsNextHatchFree => _state.Collection.Count == 0;
@@ -245,8 +282,7 @@ namespace PocketWilds.Simulation
         {
             if (!_content.Eggs.TryGet(eggId, out var egg) || egg.Tier == EggTier.Discovery)
                 return BigValue.Zero;
-            _state.World.EggPurchasesInCycle.TryGetValue(eggId, out int bought);
-            return Price(egg, bought);
+            return Price(egg, BoughtInCycle(eggId));
         }
 
         /// <summary>Price of the next <paramref name="count"/> eggs of this type (doc 02 Œufs, section 5: n, n + 1, ...).</summary>
@@ -256,34 +292,41 @@ namespace PocketWilds.Simulation
                 return GetCost(eggId);
             if (!_content.Eggs.TryGet(eggId, out var egg) || egg.Tier == EggTier.Discovery)
                 return BigValue.Zero;
-            _state.World.EggPurchasesInCycle.TryGetValue(eggId, out int bought);
+            int bought = BoughtInCycle(eggId);
             var total = BigValue.Zero;
             for (int i = 0; i < count; i++)
                 total += Price(egg, bought + i);
             return total;
         }
 
-        /// <summary>Price of the egg bought after <paramref name="bought"/> others this cycle, Cozy Nests applied.</summary>
+        /// <summary>
+        /// Price of the egg bought after <paramref name="bought"/> others this cycle, Cozy Nests applied, never above the cap
+        /// in minutes of production.
+        /// </summary>
         private BigValue Price(EggDefinition egg, int bought)
         {
-            var cost = Cost(egg, bought);
+            var cost = Cost(egg, bought, Growth(egg));
             if (_modifiers == null)
                 return cost;
             double multiplier = _modifiers.EggPriceMultiplier(egg.Biome);
-            if (multiplier >= 1.0)
-                return cost;
-            var reduced = BigValue.Multiply(cost, multiplier);
+            if (multiplier < 1.0)
+                cost = BigValue.Multiply(cost, multiplier);
+            var cap = _modifiers.EggPriceCap();
+            if (!cap.IsZero && cost > cap)
+                cost = cap;
             // Whole Light while that matters, never below 1.
-            return reduced.Exponent10 < 15
-                ? BigValue.FromDouble(Math.Max(1.0, Math.Round(reduced.ToDoubleClamped(), MidpointRounding.AwayFromZero)))
-                : reduced;
+            return cost.Exponent10 < 15
+                ? BigValue.FromDouble(Math.Max(1.0, Math.Round(cost.ToDoubleClamped(), MidpointRounding.AwayFromZero)))
+                : cost;
         }
 
-        public static BigValue Cost(EggDefinition egg, int bought)
+        public static BigValue Cost(EggDefinition egg, int bought) => Cost(egg, bought, egg.CostGrowth);
+
+        public static BigValue Cost(EggDefinition egg, int bought, double growth)
         {
-            double log10 = Math.Log10(egg.BaseCost) + bought * Math.Log10(egg.CostGrowth);
+            double log10 = Math.Log10(egg.BaseCost) + bought * Math.Log10(growth);
             if (log10 < 15.0)
-                return BigValue.FromDouble(Math.Round(egg.BaseCost * Math.Pow(egg.CostGrowth, bought), MidpointRounding.AwayFromZero));
+                return BigValue.FromDouble(Math.Round(egg.BaseCost * Math.Pow(growth, bought), MidpointRounding.AwayFromZero));
             long exponent = (long)Math.Floor(log10);
             return BigValue.FromMantissaExponent(Math.Pow(10.0, log10 - exponent), exponent);
         }
@@ -487,8 +530,9 @@ namespace PocketWilds.Simulation
                 {
                     if (!_economy.Spend(CurrencyId.Light, cost, EconomyReason.EggPurchase))
                         return HatchResult.Failed(HatchStatus.NotEnoughLight, eggId, cost);
-                    _state.World.EggPurchasesInCycle.TryGetValue(eggId, out int bought);
-                    _state.World.EggPurchasesInCycle[eggId] = bought + 1;
+                    var key = CounterKey(eggId);
+                    _state.World.EggPurchasesInCycle.TryGetValue(key, out int bought);
+                    _state.World.EggPurchasesInCycle[key] = bought + 1;
                 }
                 return Complete(egg, variantIndex, rolled, cost, free, speciesPityActive, pity, DiscoveryRule.None, multiIndex, ref rng);
             }

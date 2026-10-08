@@ -221,8 +221,23 @@ namespace PocketWilds.Simulation
 
         private BigValue Rate(ContentId biome, bool oneBiome)
         {
-            var total = BigValue.Zero;
+            // Summed in double (a production stays far below 1e308): one BigValue at the end instead of one normalization per
+            // species; the BigValue sum takes over only if the double ever overflows.
+            double fast = Sum(biome, oneBiome, false, out _);
+            if (!double.IsInfinity(fast) && !double.IsNaN(fast))
+                return BigValue.FromDouble(fast);
+            Sum(biome, oneBiome, true, out var total);
+            return total;
+        }
+
+        private double Sum(ContentId biome, bool oneBiome, bool big, out BigValue total)
+        {
+            double fast = 0.0;
+            total = BigValue.Zero;
             var species = _content.Species;
+            // Species of a biome follow each other in the content: its multiplier is asked once per run of species.
+            var lastBiome = ContentId.None;
+            double lastMultiplier = 1.0;
             for (int i = 0; i < species.Count; i++)
             {
                 double sum = _aggregates.GetRarityBondSum(i);
@@ -234,10 +249,18 @@ namespace PocketWilds.Simulation
                     continue;
                 int masteryLevel = _state.Mastery.GetLevel(definition.Id);
                 double masteryMultiplier = 1.0 + _config.MasteryPerLevel * masteryLevel;
-                double biomeMultiplier = _modifiers != null ? _modifiers.BiomeProductionMultiplier(definition.Biome) : 1.0;
-                total = BigValue.Add(total, BigValue.FromDouble(definition.BaseProduction * sum * masteryMultiplier * biomeMultiplier));
+                if (definition.Biome != lastBiome || lastBiome == ContentId.None)
+                {
+                    lastBiome = definition.Biome;
+                    lastMultiplier = _modifiers != null ? _modifiers.BiomeProductionMultiplier(definition.Biome) : 1.0;
+                }
+                double term = definition.BaseProduction * sum * masteryMultiplier * lastMultiplier;
+                if (big)
+                    total = BigValue.Add(total, BigValue.FromDouble(term));
+                else
+                    fast += term;
             }
-            return total;
+            return fast;
         }
     }
 }

@@ -26,13 +26,14 @@ namespace PocketWilds.Tests.EditMode
         public void XpCurve_FollowsTheDoc()
         {
             var (_, _, mastery) = Create();
-            Assert.AreEqual(20, mastery.XpForNext(0), "Undiscovered to level 1.");
-            Assert.AreEqual(51, mastery.XpForNext(1));
-            Assert.AreEqual(88, mastery.XpForNext(2));
-            Assert.AreEqual(176, mastery.XpForNext(4));
+            // T35C calibration: 2.7 x L^1.15 XP for level L, 10 XP a duplicate.
+            Assert.AreEqual(3, mastery.XpForNext(0), "Undiscovered to level 1.");
+            Assert.AreEqual(6, mastery.XpForNext(1));
+            Assert.AreEqual(10, mastery.XpForNext(2));
+            Assert.AreEqual(17, mastery.XpForNext(4));
             Assert.AreEqual(25, mastery.XpFor(MasteryReason.Discovery));
             Assert.AreEqual(15, mastery.XpFor(MasteryReason.NewVariant));
-            Assert.AreEqual(2, mastery.XpFor(MasteryReason.Duplicate));
+            Assert.AreEqual(10, mastery.XpFor(MasteryReason.Duplicate));
             Assert.AreEqual(4, mastery.XpFor(MasteryReason.Birth));
         }
 
@@ -44,30 +45,32 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual(MasteryReason.Discovery, first.Reason);
             Assert.AreEqual(25, first.Xp);
             Assert.AreEqual(0, first.Before.Level);
-            Assert.AreEqual(1, first.After.Level, "The first rabbit already levels the species up.");
-            Assert.AreEqual(5, first.After.Xp);
+            // 3 + 6 + 10 = 19 XP for level 3, 6 XP into level 4.
+            Assert.AreEqual(3, first.After.Level, "The first rabbit already levels the species up.");
+            Assert.AreEqual(6, first.After.Xp);
             Assert.IsTrue(first.LeveledUp);
 
             var duplicate = mastery.OnAnimalObtained(Rabbit, false, false);
             Assert.AreEqual(MasteryReason.Duplicate, duplicate.Reason);
-            Assert.AreEqual(2, duplicate.Xp);
-            Assert.AreEqual(7, duplicate.After.Xp);
-            Assert.IsFalse(duplicate.LeveledUp);
+            Assert.AreEqual(10, duplicate.Xp);
+            Assert.AreEqual(4, duplicate.After.Level, "16 XP: level 4 needs 13.");
+            Assert.AreEqual(3, duplicate.After.Xp);
+            Assert.IsTrue(duplicate.LeveledUp);
 
             var variant = mastery.OnAnimalObtained(Rabbit, false, true);
             Assert.AreEqual(15, variant.Xp);
-            Assert.AreEqual(22, mastery.Get(Rabbit).Xp);
-            Assert.AreEqual(1, state.Mastery.GetLevel(Rabbit));
+            Assert.AreEqual(1, mastery.Get(Rabbit).Xp, "18 XP: level 5 needs 17.");
+            Assert.AreEqual(5, state.Mastery.GetLevel(Rabbit));
         }
 
         [Test]
         public void BigGain_CrossesSeveralLevels_AndReportsTheMilestone()
         {
             var (state, _, mastery) = Create();
-            // 20 + 51 + 88 + 130 + 176 = 465 XP to reach level 5.
-            var gain = mastery.AddXp(Rabbit, MasteryReason.Birth, 500);
+            // 3 + 6 + 10 + 13 + 17 = 49 XP to reach level 5.
+            var gain = mastery.AddXp(Rabbit, MasteryReason.Birth, 60);
             Assert.AreEqual(5, gain.After.Level);
-            Assert.AreEqual(35, gain.After.Xp);
+            Assert.AreEqual(11, gain.After.Xp);
             Assert.AreEqual(5, gain.LevelsGained);
             Assert.AreEqual(5, gain.Milestone);
             Assert.AreEqual(mastery.XpForNext(5), gain.After.XpForNext);
@@ -87,7 +90,7 @@ namespace PocketWilds.Tests.EditMode
             state.Collection.TryGet(id, out var animal);
             economy.OnAnimalAdded(animal);
             double before = economy.GetLightPerSecond().ToDoubleClamped();
-            mastery.AddXp(Rabbit, MasteryReason.Birth, 500); // level 5
+            mastery.AddXp(Rabbit, MasteryReason.Birth, 60); // level 5
             double after = economy.GetLightPerSecond().ToDoubleClamped();
             Assert.AreEqual(before * (1.0 + 0.015 * 5), after, 1e-9);
         }

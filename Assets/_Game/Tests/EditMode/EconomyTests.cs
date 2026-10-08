@@ -187,10 +187,11 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual(360, far.Exponent10);
 
             Assert.AreEqual(0, EconomyFormulas.MasteryXpForLevel(config, 0));
-            Assert.AreEqual(20, EconomyFormulas.MasteryXpForLevel(config, 1));
-            Assert.AreEqual(51, EconomyFormulas.MasteryXpForLevel(config, 2));
-            Assert.AreEqual(176, EconomyFormulas.MasteryXpForLevel(config, 5));
-            Assert.AreEqual(448, EconomyFormulas.MasteryXpForLevel(config, 10));
+            // T35C calibration: 2.7 x L^1.15.
+            Assert.AreEqual(3, EconomyFormulas.MasteryXpForLevel(config, 1));
+            Assert.AreEqual(6, EconomyFormulas.MasteryXpForLevel(config, 2));
+            Assert.AreEqual(17, EconomyFormulas.MasteryXpForLevel(config, 5));
+            Assert.AreEqual(38, EconomyFormulas.MasteryXpForLevel(config, 10));
 
             Assert.AreEqual(994.0, EconomyFormulas.ExpansionCost(BigValue.FromDouble(100), 2.15, 3).ToDoubleClamped());
             Assert.AreEqual(336, EconomyFormulas.RenewalEssence(config, BigValue.FromDouble(1e12), 1e6, 5));

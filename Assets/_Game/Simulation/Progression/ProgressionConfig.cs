@@ -59,6 +59,24 @@ namespace PocketWilds.Simulation
             FloorValue = floorValue;
             Treat = ContentId.FromSource(treat);
         }
+
+        private BiomeEconomy(in BiomeEconomy b, int gateRefugeLevel, int gateSpecies, int gateMastery, int floorValue)
+        {
+            Id = b.Id;
+            SourceId = b.SourceId;
+            EggBase = b.EggBase;
+            BaseProduction = b.BaseProduction;
+            GateRefugeLevel = gateRefugeLevel;
+            GateSpecies = gateSpecies;
+            GateMastery = gateMastery;
+            FloorKind = b.FloorKind;
+            FloorValue = floorValue;
+            Treat = b.Treat;
+        }
+
+        /// <summary>The same biome with other gate conditions (Remote Config econ.gate.&lt;biome&gt;.*).</summary>
+        public BiomeEconomy WithGate(int gateRefugeLevel, int gateSpecies, int gateMastery, int floorValue) =>
+            new BiomeEconomy(this, gateRefugeLevel, gateSpecies, gateMastery, floorValue);
     }
 
     /// <summary>One zone of a biome: a streamed chunk the player opens in order (doc 02 Améliorations, section 4).</summary>
@@ -157,7 +175,7 @@ namespace PocketWilds.Simulation
         public double ZoneCostMult = 25.0;
         public double ZoneGrowth = 2.15;
         public double ZoneProductionMult = 1.25;
-        public int ZoneMasteryStep = 3;
+        public int ZoneMasteryStep = 2;
         public int ZoneVisibleAnimals = 3;
 
         /// <summary>Opening gift: this many minutes of the production at that moment.</summary>
@@ -168,8 +186,8 @@ namespace PocketWilds.Simulation
         public long GateGems = 50;
 
         // ---- Refuge level (section 6) ----
-        public double RefugeCurveMult = 20.0;
-        public double RefugeCurveExp = 1.45;
+        public double RefugeCurveMult = 50.0;
+        public double RefugeCurveExp = 1.10;
         public int PointsSpecies = 10;
         public int PointsVariant = 3;
         public int PointsSecretVariant = 15;
@@ -184,6 +202,20 @@ namespace PocketWilds.Simulation
         public int LevelEssence = 5;
 
         // ---- Eggs (doc 02 Œufs, sections 4, 5 and 9) ----
+        /// <summary>
+        /// Price growth of every biome egg per egg of the biome bought this cycle, Basic and Focus together (Remote Config
+        /// econ.egg.growth; the T35C calibration).
+        /// </summary>
+        public double EggGrowth = 1.45;
+
+        /// <summary>
+        /// An egg never costs more than this many minutes of the current production: during the first days, then after
+        /// (doc 02 Formules, a guardrail made a rule by T35C; Remote Config econ.egg.cap_minutes_week1, econ.egg.cap_minutes).
+        /// </summary>
+        public double EggCapMinutesFirstDays = 15.0;
+        public double EggCapMinutes = 45.0;
+        public int EggCapFirstDays = 7;
+
         /// <summary>Refuge level that offers × 3 hatching.</summary>
         public int MultiThreeLevel = 12;
 
@@ -194,7 +226,7 @@ namespace PocketWilds.Simulation
         public int FullHatchSequences = 20;
 
         // ---- Biome mastery (section 7) ----
-        public double MasteryCurveMult = 40.0;
+        public double MasteryCurveMult = 18.0;
         public double MasteryCurveExp = 1.3;
         public int XpSpecies = 40;
         public int XpVariant = 12;
@@ -234,9 +266,10 @@ namespace PocketWilds.Simulation
             new BiomeEconomy("biome.sakura", 8e7, 1.5e6, 46, 5, 10, GateFloorKind.Day, 18, "treat.cherry_bite"),
             new BiomeEconomy("biome.mushroom", 6.5e8, 1.1e7, 54, 5, 10, GateFloorKind.Day, 24, "treat.mushroom_biscuit"),
             new BiomeEconomy("biome.cloudlands", 5e9, 8.5e7, 62, 5, 10, GateFloorKind.Day, 30, "treat.cloud_marshmallow"),
-            new BiomeEconomy("biome.lunar", 4e10, 6.5e8, 70, 5, 10, GateFloorKind.Day, 37, "treat.moon_honey"),
-            new BiomeEconomy("biome.prehistoric", 3.2e11, 5e9, 78, 5, 10, GateFloorKind.Day, 45, "treat.sweet_fern"),
-            new BiomeEconomy("biome.starlight", 2.6e12, 3.8e10, 86, 5, 10, GateFloorKind.Day, 54, "treat.star_candy"),
+            // T35C: the last three gates ask what a biome brings in (levels 66, 72, 78 instead of 70, 78, 86).
+            new BiomeEconomy("biome.lunar", 4e10, 6.5e8, 66, 5, 10, GateFloorKind.Day, 37, "treat.moon_honey"),
+            new BiomeEconomy("biome.prehistoric", 3.2e11, 5e9, 72, 5, 10, GateFloorKind.Day, 45, "treat.sweet_fern"),
+            new BiomeEconomy("biome.starlight", 2.6e12, 3.8e10, 78, 5, 10, GateFloorKind.Day, 54, "treat.star_candy"),
         };
 
         /// <summary>
@@ -355,15 +388,18 @@ namespace PocketWilds.Simulation
             ["econ.zone.mastery_step"] = new Bound(1, 6, (c, v) => c.ZoneMasteryStep = (int)v),
             ["econ.zone.visible_animals"] = new Bound(0, 6, (c, v) => c.ZoneVisibleAnimals = (int)v),
             ["econ.gate.cost_mult"] = new Bound(1, 100, (c, v) => c.GateCostMult = v),
-            ["econ.refuge.curve_mult"] = new Bound(5, 60, (c, v) => c.RefugeCurveMult = v),
-            ["econ.refuge.curve_exp"] = new Bound(1.2, 1.8, (c, v) => c.RefugeCurveExp = v),
-            ["econ.biome_mastery.curve_mult"] = new Bound(10, 100, (c, v) => c.MasteryCurveMult = v),
+            ["econ.refuge.curve_mult"] = new Bound(5, 300, (c, v) => c.RefugeCurveMult = v),
+            ["econ.refuge.curve_exp"] = new Bound(0.5, 1.8, (c, v) => c.RefugeCurveExp = v),
+            ["econ.biome_mastery.curve_mult"] = new Bound(5, 100, (c, v) => c.MasteryCurveMult = v),
             ["econ.biome_mastery.curve_exp"] = new Bound(1.1, 1.6, (c, v) => c.MasteryCurveExp = v),
             ["econ.biome_mastery.production_step"] = new Bound(0, 0.05, (c, v) => c.MasteryProductionStep = v),
             ["econ.decoration.light_mult"] = new Bound(5, 100, (c, v) => c.DecorationLightMult = v),
             ["econ.decoration.copy_growth"] = new Bound(1.2, 2.5, (c, v) => c.DecorationCopyGrowth = v),
             ["econ.treats.daily"] = new Bound(0, 5, (c, v) => c.TreatsDaily = (int)v),
             ["econ.treats.minutes"] = new Bound(1, 10, (c, v) => c.TreatMinutes = v),
+            ["econ.egg.growth"] = new Bound(1.05, 2.0, (c, v) => c.EggGrowth = v),
+            ["econ.egg.cap_minutes_week1"] = new Bound(0, 60, (c, v) => c.EggCapMinutesFirstDays = v),
+            ["econ.egg.cap_minutes"] = new Bound(0, 240, (c, v) => c.EggCapMinutes = v),
             ["econ.egg.multi3_refuge_level"] = new Bound(1, 40, (c, v) => c.MultiThreeLevel = (int)v),
             ["econ.egg.multi10_refuge_level"] = new Bound(1, 60, (c, v) => c.MultiTenLevel = (int)v),
             ["econ.hatch.full_sequence_count"] = new Bound(0, 100, (c, v) => c.FullHatchSequences = (int)v),
@@ -378,12 +414,49 @@ namespace PocketWilds.Simulation
         /// </summary>
         public bool TryOverride(string key, double value)
         {
-            if (double.IsNaN(value) || double.IsInfinity(value) || !Bounds.TryGetValue(key, out var bound))
+            if (double.IsNaN(value) || double.IsInfinity(value))
+                return false;
+            if (key.StartsWith("econ.gate.", StringComparison.Ordinal) && TryOverrideGate(key, value))
+                return true;
+            if (!Bounds.TryGetValue(key, out var bound))
                 return false;
             if (value < bound.Min || value > bound.Max)
                 return false;
             bound.Set(this, value);
             return true;
+        }
+
+        /// <summary>econ.gate.&lt;biome&gt;.refuge_level (1 to 200), .species (1 to 6), .mastery (0 to 40), .day_floor (0 to 120).</summary>
+        private bool TryOverrideGate(string key, double value)
+        {
+            var parts = key.Split('.');
+            if (parts.Length != 4)
+                return false;
+            int index = -1;
+            for (int i = 0; i < Biomes.Length; i++)
+                if (Biomes[i].SourceId == "biome." + parts[2])
+                    index = i;
+            if (index < 0 || value != Math.Floor(value))
+                return false;
+            var b = Biomes[index];
+            int v = (int)value;
+            switch (parts[3])
+            {
+                case "refuge_level" when v >= 1 && v <= 200:
+                    Biomes[index] = b.WithGate(v, b.GateSpecies, b.GateMastery, b.FloorValue);
+                    return true;
+                case "species" when v >= 1 && v <= 6:
+                    Biomes[index] = b.WithGate(b.GateRefugeLevel, v, b.GateMastery, b.FloorValue);
+                    return true;
+                case "mastery" when v >= 0 && v <= 40:
+                    Biomes[index] = b.WithGate(b.GateRefugeLevel, b.GateSpecies, v, b.FloorValue);
+                    return true;
+                case "day_floor" when v >= 0 && v <= 120 && b.FloorKind == GateFloorKind.Day:
+                    Biomes[index] = b.WithGate(b.GateRefugeLevel, b.GateSpecies, b.GateMastery, v);
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }

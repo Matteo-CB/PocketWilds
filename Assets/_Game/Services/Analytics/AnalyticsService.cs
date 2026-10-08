@@ -577,7 +577,7 @@ namespace PocketWilds.Services.Analytics
 
         private void EggBuy(ContentId egg, int quantity, BigValue cost, bool discovery)
         {
-            _state.World.EggPurchasesInCycle.TryGetValue(egg, out int bought);
+            int bought = _hatch?.BoughtInCycle(egg) ?? 0;
             var e = new AnalyticsEvent(AnalyticsEventId.EggBuy)
             {
                 U0 = egg.Value,

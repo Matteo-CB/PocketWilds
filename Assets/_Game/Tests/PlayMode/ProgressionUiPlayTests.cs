@@ -163,7 +163,17 @@ namespace PocketWilds.Tests.PlayMode
             Assert.IsFalse(card.IsOpen, "The card never cuts a hatching run.");
             yield return null;
             Assert.IsTrue(hud.LevelRewardDotVisible, "A dot on the badge says a reward waits.");
-            yield return WaitFor(() => card.IsOpen, ProgressionPresenter.RewardIdleSeconds + 2f, "The card comes in a calm moment.");
+            // Level 2 can come with the Shop's unlock (5 animals): a moment offer may open first; the player closes it, and the
+            // card, which never covers another screen, comes after.
+            yield return WaitFor(() =>
+            {
+                if (refuge.Shop != null && refuge.Shop.OfferOpen)
+                {
+                    Assert.IsFalse(card.IsOpen, "The card waits while the offer is open.");
+                    refuge.Shop.CloseOffer();
+                }
+                return card.IsOpen;
+            }, ProgressionPresenter.RewardIdleSeconds + 4f, "The card comes in a calm moment.");
             long gems = context.State.Wallet.Gems;
             var pending = context.Progression.Refuge.PendingRewards();
             card.ClaimButton.onClick.Invoke();

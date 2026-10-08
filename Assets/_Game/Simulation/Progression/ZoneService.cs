@@ -132,7 +132,8 @@ namespace PocketWilds.Simulation
 
         /// <summary>Biome mastery zone k needs: 3k - 2.</summary>
         public int RequiredMastery(in ZoneDefinition zone) =>
-            zone.Role != ZoneRole.Expansion ? 0 : Math.Max(0, _config.ZoneMasteryStep * zone.ExpansionIndex - 2);
+            // T35C: 2k - 2 with step 2, but the first zone still waits for biome mastery 1 (the first session's rhythm).
+            zone.Role != ZoneRole.Expansion ? 0 : Math.Max(1, _config.ZoneMasteryStep * zone.ExpansionIndex - 2);
 
         public ZoneState GetState(in ZoneDefinition zone)
         {

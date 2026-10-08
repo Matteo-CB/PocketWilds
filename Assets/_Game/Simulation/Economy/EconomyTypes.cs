@@ -72,13 +72,14 @@ namespace PocketWilds.Simulation
 
         public double ExpansionGrowth { get; set; } = 2.15;
 
-        public double MasteryXpBase { get; set; } = 20.0;
-        public double MasteryXpExponent { get; set; } = 1.35;
+        // T35C calibration: 2.7 x L^1.15 XP for level L (doc 02 Formules said 20 x L^1.35, out of reach in 120 days).
+        public double MasteryXpBase { get; set; } = 2.7;
+        public double MasteryXpExponent { get; set; } = 1.15;
 
         /// <summary>Species XP per acquisition (doc 02): first discovery, new variant, duplicate, birth.</summary>
         public int MasteryXpDiscovery { get; set; } = 25;
         public int MasteryXpNewVariant { get; set; } = 15;
-        public int MasteryXpDuplicate { get; set; } = 2;
+        public int MasteryXpDuplicate { get; set; } = 10;
         public int MasteryXpBirth { get; set; } = 4;
 
         /// <summary>Significant milestones every N levels; small economic steps in between.</summary>

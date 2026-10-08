@@ -166,7 +166,8 @@ namespace PocketWilds.Editor.Economy
                 foreach (var run in runs)
                 {
                     var m = run.First("biome", biome);
-                    sb.Append(' ').Append(m == null ? "pas dans les 120 jours" : $"j. {F(m.Value.Day, 1)} ({F(m.Value.PlayMinutes, 0)} min)").Append(" |");
+                    string cell = biome == biomes[0] ? "ouvert au départ" : m == null ? "pas dans les 120 jours" : $"j. {F(m.Value.Day, 1)} ({F(m.Value.PlayMinutes, 0)} min)";
+                    sb.Append(' ').Append(cell).Append(" |");
                 }
                 sb.Append('\n');
             }
@@ -224,10 +225,11 @@ namespace PocketWilds.Editor.Economy
               .Append("(6 espèces par biome, 6 variantes de base, 13 biomes, zones de la section 4.2). Les espèces prévues ne sont jamais livrées.\n");
             sb.Append("- Jours : le jour calendaire des docs (le jour de l'installation est le jour 1, installation à midi) ; 1,5 veut dire midi du jour 1.\n");
             sb.Append("- Joueur guidé, le même pour tous les profils : il éclot surtout ; il prend l'œuf qui cache encore une nouveauté (le moins cher), ")
-              .Append("sinon celui qui produit le plus pour son prix ; une amélioration quand le HUD la conseille (au moins 5 % de production totale, ")
-              .Append("ou le palier × 2 que la Lumière atteint) ; une zone dès que son panneau s'allume ; Nids douillets et Regard curieux quand ils ")
-              .Append("coûtent moins de 10 et 30 minutes de production ; quand l'œuf voulu coûte plus de 10 minutes de production, il ouvre l'écran ")
-              .Append("Améliorer et prend la carte « Conseillé » (le plus court temps de retour). Il garde sa Lumière pour une porte de biome dont ")
+              .Append("sinon celui du biome dont une espèce est la plus proche de sa prochaine couleur de maîtrise, sinon l'œuf Basic du biome le ")
+              .Append("plus récent ; une amélioration quand le HUD la conseille (au moins 5 % de production totale, ou le palier × 2 que la Lumière ")
+              .Append("atteint) ; une zone dès que son panneau s'allume ; Nids douillets et Regard curieux quand ils coûtent moins de 10 et 30 minutes ")
+              .Append("de production ; quand le prochain œuf est à plus de 10 minutes, il ouvre l'écran Améliorer et prend la carte « Conseillé » ")
+              .Append("(le plus court temps de retour). Il garde sa Lumière pour une porte de biome dont ")
               .Append("les autres conditions sont remplies, achète les décorations communes et les friandises bon marché, éclot les œufs Découverte ")
               .Append("tout de suite, par 1, 3 ou 10 selon le niveau du refuge.\n");
             sb.Append("- Renouveau : le premier dès que le bouton s'active, les suivants quand ils ajoutent au moins la moitié de l'Essence déjà gagnée ")
@@ -238,8 +240,7 @@ namespace PocketWilds.Editor.Economy
               .Append("autocollants et pages d'album, décorations posées, variantes de maîtrise (niveaux 10, 20, 30), objets d'événement et couleurs du Pass ")
               .Append("(3 points chacun), souhaits (maîtrise du biome).\n");
             sb.Append("- Pas encore simulés : la reproduction (T56) et les 5 % de Lumière du compagnon de pack.\n");
-            sb.Append("- La clé econ.egg.growth du doc Améliorations (section 15) n'est pas encore lue par le jeu : chaque œuf garde son costGrowth (1,18). ")
-              .Append("Le simulateur l'applique à tous les œufs pour les essais.\n");
+            sb.Append("- Les Gemmes d'un palier de maîtrise d'espèce (2) sont comptées ici ; le jeu les donnera avec l'écran des maîtrises.\n");
             return sb.ToString();
         }
 

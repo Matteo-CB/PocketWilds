@@ -139,11 +139,11 @@ namespace PocketWilds.Tests.PlayMode
             button.onClick.Invoke();
             Assert.AreEqual(2, context.State.Collection.Count);
             Assert.AreEqual(before - 10.0, context.Economy.Light.ToDoubleClamped(), 1e-6);
-            Assert.AreEqual(12.0, context.Hatch.GetCost(Basic).ToDoubleClamped());
+            Assert.AreEqual(15.0, context.Hatch.GetCost(Basic).ToDoubleClamped(), "10 x 1.45 (T35C).");
             button.onClick.Invoke(); // a second touch speeds the reveal up
             yield return WaitHatchDone(refuge);
             Assert.AreEqual(2, refuge.VisibleAnimals);
-            Assert.AreEqual(12.0, refuge.EggCost.ToDoubleClamped());
+            Assert.AreEqual(15.0, refuge.EggCost.ToDoubleClamped());
 
             Assert.IsTrue(context.Save.FlushNow());
             Object.Destroy(first.gameObject);
@@ -154,7 +154,7 @@ namespace PocketWilds.Tests.PlayMode
             var reloaded = Object.FindAnyObjectByType<VerticalSliceEntry>().Refuge;
             Assert.AreEqual(2, second.Context.State.Collection.Count);
             Assert.AreEqual(2, reloaded.VisibleAnimals, "Saved animals are back in the meadow.");
-            Assert.AreEqual(12.0, reloaded.EggCost.ToDoubleClamped(), "The price curve survives a restart.");
+            Assert.AreEqual(15.0, reloaded.EggCost.ToDoubleClamped(), "The price curve survives a restart.");
             Assert.IsFalse(second.Context.Hatch.IsNextHatchFree);
 #else
             Assert.Ignore("Editor only.");

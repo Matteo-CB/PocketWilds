@@ -52,6 +52,9 @@ namespace PocketWilds.Editor.Economy
         public long RefugeScore;
         public int BiomeMastery;
         public int MaxSpeciesMastery;
+
+        /// <summary>Species XP earned in all by the most hatched species (its mastery progress).</summary>
+        public long TopSpeciesXp;
         public long GemsEarned;
         public long GemsSpent;
         public long Gems;
@@ -186,7 +189,13 @@ namespace PocketWilds.Editor.Economy
             private const double TreatMinutes = 5.0;
             private const double NestsMinutes = 10.0;
 
-            /// <summary>Minutes of production the guided player waits for an egg before turning to the Upgrade screen.</summary>
+            /// <summary>
+            /// Gems of a species mastery milestone (every 5 levels): 2 since T35C, the mastery curve being about 8 times faster
+            /// than the 5 Gems of doc 02 Formules assumed (the Club keeps about twice a free player's Gems).
+            /// </summary>
+            private const long MasteryMilestoneGems = 2;
+
+            /// <summary>Minutes the guided player would wait for the next egg before turning to the Upgrade screen meanwhile.</summary>
             private const double PatienceMinutes = 10.0;
 
             /// <summary>The HUD's « amélioration conseillée » dot: a level worth at least 5 % of total production (doc 02 Améliorations, section 3.6).</summary>
@@ -263,7 +272,7 @@ namespace PocketWilds.Editor.Economy
                     _economyConfig.OfflineFullSeconds = 36.0 * 3600.0;
                 var renewal = new RenewalConfig();
                 tune?.Invoke(_config, _economyConfig, renewal);
-                _content = SimContent.Build(shipped, _config, _economyConfig.EggCostGrowth, out _);
+                _content = SimContent.Build(shipped, _config, out _);
                 _random = new Random(1000 + (int)profile.Kind);
 
                 _state = PlayerState.CreateNew(Install);
@@ -620,8 +629,10 @@ namespace PocketWilds.Editor.Economy
                 for (int guard = 0; guard < 10_000; guard++)
                 {
                     ClaimLevels();
-                    if (_p.Renewal.CanRenew() && Rentable() && RenewKeeping(out var done))
+                    if (_clock.UtcNow >= _nextRenewalLook && LookAtRenewal() && RenewKeeping(out var done))
                     {
+                        _upgradeFloor = -1.0;
+                        _essenceTried = -1;
                         Result.Milestones.Add(new SimMilestone("renewal", done.Count.ToString(), Today, PlayMinutes, done.Gain.Total));
                         Result.Milestones.Add(new SimMilestone("renewal.light", done.Count.ToString(), Today, PlayMinutes, done.Gain.FromLight));
                         _today.Renewals++;
@@ -635,15 +646,17 @@ namespace PocketWilds.Editor.Economy
                         return 0.0;
                     }
 
-                    if (_p.Gates.TryGetNextLocked(out var next))
+                    bool hasGate = _p.Gates.TryGetNextLocked(out var next);
+                    var gate = hasGate ? _p.Gates.GetStatus(next) : default;
+                    if (hasGate)
                     {
-                        var gate = _p.Gates.GetStatus(next);
                         if (gate.CanOpen)
                         {
                             double price = gate.Price.ToDoubleClamped();
                             if (_p.Gates.TryOpen(next, out _))
                             {
                                 Spent(SpendKind.Gates, price);
+                                _upgradeFloor = -1.0;
                                 Result.Milestones.Add(new SimMilestone("biome", BiomeName(next), Today, PlayMinutes, 0));
                                 _today.Goals++;
                                 _hatch.GrantDiscoveryEggs(1, DiscoverySource.BiomeOpening);
@@ -661,7 +674,7 @@ namespace PocketWilds.Editor.Economy
 
                     if (_policy == SimPolicy.Guided)
                     {
-                        double guided = Guided(rate, light, remaining);
+                        double guided = Guided(rate, light, remaining, hasGate && gate.Ready ? gate.Price.ToDoubleClamped() : -1.0);
                         if (guided < 0.0)
                             continue;
                         return guided;
@@ -701,6 +714,7 @@ namespace PocketWilds.Editor.Economy
                             if (_p.Zones.TryOpen(zone, out var opening))
                             {
                                 Spent(SpendKind.Zones, opening.Cost.ToDoubleClamped());
+                                _upgradeFloor = -1.0;
                                 _p.Zones.TryGet(zone, out var z);
                                 Result.Milestones.Add(new SimMilestone("zone", z.SourceId, Today, PlayMinutes, z.ExpansionIndex));
                                 _today.Goals++;
@@ -721,17 +735,15 @@ namespace PocketWilds.Editor.Economy
             /// and Curious Eye when cheap; a biome gate whose other conditions are met is saved for. Returns -1 after a purchase
             /// other than an egg (look again), 0 after a hatch, else the seconds until the chosen egg is affordable.
             /// </summary>
-            private double Guided(double rate, double light, double remaining)
+            private double Guided(double rate, double light, double remaining, double readyGatePrice)
             {
-                if (_p.Gates.TryGetNextLocked(out var next))
-                {
-                    var gate = _p.Gates.GetStatus(next);
-                    if (gate.Ready)
-                        return rate > 0.0 ? Math.Max(1.0, (gate.Price.ToDoubleClamped() - light) / rate) : remaining;
-                }
+                if (readyGatePrice >= 0.0)
+                    return rate > 0.0 ? Math.Max(1.0, (readyGatePrice - light) / rate) : remaining;
 
                 var biomes = _config.Biomes;
-                for (int b = 0; b < biomes.Length; b++)
+                if (_upgradeFloor < 0.0)
+                    _upgradeFloor = CheapestBiomePurchase();
+                for (int b = 0; light >= _upgradeFloor && b < biomes.Length; b++)
                 {
                     var biome = biomes[b].Id;
                     if (!_p.Store.IsUnlocked(biome))
@@ -740,6 +752,7 @@ namespace PocketWilds.Editor.Economy
                         && _p.Zones.TryOpen(nextZone.Id, out var opening))
                     {
                         Spent(SpendKind.Zones, opening.Cost.ToDoubleClamped());
+                        _upgradeFloor = -1.0;
                         Result.Milestones.Add(new SimMilestone("zone", nextZone.SourceId, Today, PlayMinutes, nextZone.ExpansionIndex));
                         _today.Goals++;
                         return -1.0;
@@ -756,10 +769,10 @@ namespace PocketWilds.Editor.Economy
                 if (egg == ContentId.None)
                     return remaining;
                 double eggWait = rate > 0.0 ? Math.Max(0.0, price - light) / rate : remaining;
-                if (price > PatienceMinutes * 60.0 * rate)
+                if (eggWait > PatienceMinutes * 60.0)
                 {
-                    // The egg is far off: the player opens the Upgrade screen and takes its « Conseillé » card, the shortest
-                    // payback (doc 02 Améliorations, section 3.6), or the zone that pays back sooner.
+                    // The egg is more than 10 minutes away: while waiting, the player opens the Upgrade screen and takes its
+                    // « Conseillé » card, the shortest payback (doc 02 Améliorations, section 3.6), or the zone that pays back sooner.
                     var pick = Best(rate, out double cost, out ContentId target, out UpgradeKind kind, out ContentId zone, out _);
                     if (pick == Option.Production || pick == Option.Nests || pick == Option.Curiosity || pick == Option.Zone)
                     {
@@ -770,6 +783,8 @@ namespace PocketWilds.Editor.Economy
                                 if (_p.Zones.TryGet(zone, out var z) && _p.Zones.TryOpen(zone, out var opening))
                                 {
                                     Spent(SpendKind.Zones, opening.Cost.ToDoubleClamped());
+                                    _upgradeFloor = -1.0;
+                        _upgradeFloor = -1.0;
                                     Result.Milestones.Add(new SimMilestone("zone", z.SourceId, Today, PlayMinutes, z.ExpansionIndex));
                                     _today.Goals++;
                                     return -1.0;
@@ -788,6 +803,37 @@ namespace PocketWilds.Editor.Economy
                 for (int n = 0; n < quantity && Hatch(egg, true, quantity); n++) { }
                 return 0.0;
             }
+
+            /// <summary>
+            /// The lowest price among every open biome's next zone and next upgrade levels, locked or not: no biome purchase can
+            /// happen below it. Recomputed after any purchase, Renewal, Essence node or new biome (prices only go up otherwise).
+            /// </summary>
+            private double CheapestBiomePurchase()
+            {
+                double floor = double.PositiveInfinity;
+                var biomes = _config.Biomes;
+                for (int b = 0; b < biomes.Length; b++)
+                {
+                    var biome = biomes[b].Id;
+                    if (!_p.Store.IsUnlocked(biome))
+                        continue;
+                    if (_p.Zones.TryGetNext(biome, out var zone))
+                    {
+                        double price = _p.Zones.Price(zone).ToDoubleClamped();
+                        if (price > 0.0)
+                            floor = Math.Min(floor, price);
+                    }
+                    foreach (var kind in UpgradeKinds)
+                    {
+                        int level = _p.Upgrades.GetLevel(biome, kind);
+                        if (level < _p.Upgrades.MaxLevel(kind))
+                            floor = Math.Min(floor, _p.Upgrades.LevelPrice(biome, kind, level).ToDoubleClamped());
+                    }
+                }
+                return floor;
+            }
+
+            private static readonly UpgradeKind[] UpgradeKinds = { UpgradeKind.Production, UpgradeKind.Nests, UpgradeKind.Curiosity };
 
             /// <summary>The Production level the HUD advises: 5 % of total production, or the run to the next × 2 the Light covers.</summary>
             private bool Advised(ContentId biome, double rate, double light)
@@ -822,6 +868,7 @@ namespace PocketWilds.Editor.Economy
             {
                 if (!_p.Upgrades.TryBuy(biome, kind, PurchaseQty.One, out var purchase))
                     return false;
+                _upgradeFloor = -1.0;
                 _busy += 0.4;
                 Spent(SpendKind.Upgrades, purchase.Cost.ToDoubleClamped());
                 if (purchase.MilestoneCrossed)
@@ -829,13 +876,19 @@ namespace PocketWilds.Editor.Economy
                 return true;
             }
 
-            /// <summary>The egg the player picks: one that can still give something new (the cheapest), else the most production for its price.</summary>
+            /// <summary>
+            /// The egg the player picks: one that can still give something new (the cheapest); else the Basic egg of the biome
+            /// whose species is closest to its next mastery color (levels 10, 20, 30, a discovery); else the Basic egg of the newest
+            /// biome (its animals produce the most); else the most production for its price.
+            /// </summary>
             private ContentId ChooseEgg(out double price)
             {
                 price = 0.0;
                 var global = _economy.GlobalMultiplier.ToDoubleClamped();
-                ContentId news = ContentId.None, best = ContentId.None;
-                double newsPrice = double.PositiveInfinity, bestPrice = 0.0, bestValue = 0.0;
+                ContentId news = ContentId.None, best = ContentId.None, newest = ContentId.None;
+                double newsPrice = double.PositiveInfinity, bestPrice = 0.0, bestValue = 0.0, newestPrice = 0.0;
+                var newestBiome = _p.Store.MostAdvancedUnlocked();
+                var chase = ChaseBiome();
                 for (int i = 0; i < _eggs.Count; i++)
                 {
                     var id = _eggs[i];
@@ -854,6 +907,13 @@ namespace PocketWilds.Editor.Economy
                         }
                         continue;
                     }
+                    if (egg.Tier == EggTier.Basic && egg.Biome == (chase != ContentId.None ? chase : newestBiome))
+                    {
+                        newest = id;
+                        newestPrice = cost;
+                    }
+                    if (news != ContentId.None || newest != ContentId.None)
+                        continue;
                     double value = AnimalRate(egg, global) / cost;
                     if (value > bestValue)
                     {
@@ -867,9 +927,55 @@ namespace PocketWilds.Editor.Economy
                     price = newsPrice;
                     return news;
                 }
+                if (newest != ContentId.None)
+                {
+                    price = newestPrice;
+                    return newest;
+                }
                 price = bestPrice;
                 return best;
             }
+
+            /// <summary>
+            /// The open biome holding the species closest to its next mastery color (levels 10, 20, 30), counted in its
+            /// hatches still needed; None when every species has its three.
+            /// </summary>
+            private ContentId ChaseBiome()
+            {
+                // Only a hatch changes species mastery: the answer is kept until the next animal.
+                int animals = _state.Collection.Count;
+                if (animals == _chaseAnimals)
+                    return _chase;
+                _chaseAnimals = animals;
+                if (_xpTo == null)
+                {
+                    _xpTo = new long[32];
+                    for (int l = 1; l < _xpTo.Length; l++)
+                        _xpTo[l] = _xpTo[l - 1] + EconomyFormulas.MasteryXpForLevel(_economyConfig, l);
+                }
+                var pick = ContentId.None;
+                long fewest = long.MaxValue;
+                var species = _content.Species;
+                for (int i = 0; i < species.Count; i++)
+                {
+                    var s = species[i];
+                    if (s.IsSecret || !_p.Store.IsUnlocked(s.Biome) || !_state.Mastery.Species.TryGetValue(s.Id, out var m) || m.Level >= 30)
+                        continue;
+                    int target = m.Level < 10 ? 10 : m.Level < 20 ? 20 : 30;
+                    long xp = _xpTo[target] - _xpTo[m.Level] - m.Xp;
+                    if (xp < fewest)
+                    {
+                        fewest = xp;
+                        pick = s.Biome;
+                    }
+                }
+                _chase = pick;
+                return pick;
+            }
+
+            private int _chaseAnimals = -1;
+            private ContentId _chase;
+            private long[]? _xpTo;
 
             /// <summary>Light decorations and the day's treats, when cheap (doc 02 Améliorations, sections 8 and 9).</summary>
             private bool CheapSpends(double rate, double light)
@@ -967,13 +1073,12 @@ namespace PocketWilds.Editor.Economy
                         double nestsPrice = _p.Upgrades.LevelPrice(biome, UpgradeKind.Nests, nests).ToDoubleClamped();
                         double savings = 0.0;
                         var basic = ContentId.FromSource("egg." + biomes[b].SourceId.Substring("biome.".Length) + ".basic");
-                        if (_content.Eggs.TryGet(basic, out var def))
+                        if (_content.Eggs.TryGet(basic, out _))
                         {
-                            // The next 10 eggs' prices, a geometric sum: B g^n (g^10 - 1) / (g - 1).
-                            _state.World.EggPurchasesInCycle.TryGetValue(basic, out int bought);
-                            double g = def.CostGrowth;
-                            double nextEgg = HatchService.Cost(def, bought).ToDoubleClamped();
-                            savings = nextEgg * (Math.Pow(g, 10) - 1.0) / (g - 1.0) * _p.EggPriceMultiplier(biome) * (1.0 - _config.NestsStep);
+                            // The next 10 eggs' prices (Nests already applied), a geometric sum: p (g^10 - 1) / (g - 1).
+                            double g = _config.EggGrowth;
+                            double nextEgg = _hatch.GetCost(basic).ToDoubleClamped();
+                            savings = nextEgg * (Math.Pow(g, 10) - 1.0) / (g - 1.0) * (1.0 - _config.NestsStep);
                         }
                         Consider(Option.Nests, nestsPrice, savings / 600.0, biome, UpgradeKind.Nests, default);
                     }
@@ -1128,7 +1233,7 @@ namespace PocketWilds.Editor.Economy
                     {
                         if (l % 5 == 0)
                         {
-                            EarnGems(5);
+                            EarnGems(MasteryMilestoneGems);
                             _today.Goals++;
                         }
                         if (l == 10 || l == 20 || l == 30)
@@ -1237,6 +1342,17 @@ namespace PocketWilds.Editor.Economy
                 }
             }
 
+            private DateTimeOffset _nextRenewalLook;
+            private long _essenceTried = -1;
+            private double _upgradeFloor = -1.0;
+
+            /// <summary>The player looks at the Renewal button about once a minute of play.</summary>
+            private bool LookAtRenewal()
+            {
+                _nextRenewalLook = _clock.UtcNow.AddMinutes(1);
+                return _p.Renewal.CanRenew() && Rentable();
+            }
+
             /// <summary>The Renewal; with the what-if <see cref="WhatIf.KeepEggCounters"/>, the egg counters survive it.</summary>
             private bool RenewKeeping(out RenewalDone done)
             {
@@ -1264,8 +1380,9 @@ namespace PocketWilds.Editor.Economy
             /// <summary>Essence goes to the cheapest open node, the Economy branch first, then Discovery and Offline.</summary>
             private void SpendEssence()
             {
-                if (_state.Wallet.Essence <= 0)
+                if (_state.Wallet.Essence <= 0 || _state.Wallet.Essence == _essenceTried)
                     return;
+                _essenceTried = _state.Wallet.Essence;
                 for (int guard = 0; guard < 200; guard++)
                 {
                     EssenceNodeDefinition? pick = null;
@@ -1284,6 +1401,7 @@ namespace PocketWilds.Editor.Economy
                     }
                     if (pick == null || !_p.Essence.TryBuy(pick.Value.Id, out _))
                         return;
+                    _upgradeFloor = -1.0;
                 }
             }
 
@@ -1315,7 +1433,13 @@ namespace PocketWilds.Editor.Economy
                 d.RefugeLevel = _p.Refuge.Level;
                 d.RefugeScore = _p.Refuge.Score;
                 foreach (var pair in _state.Mastery.Species)
+                {
                     d.MaxSpeciesMastery = Math.Max(d.MaxSpeciesMastery, pair.Value.Level);
+                    long xp = pair.Value.Xp;
+                    for (int l = 1; l <= pair.Value.Level; l++)
+                        xp += EconomyFormulas.MasteryXpForLevel(_economyConfig, l);
+                    d.TopSpeciesXp = Math.Max(d.TopSpeciesXp, xp);
+                }
                 d.Gems = _state.Wallet.Gems;
                 d.Essence = _state.Wallet.Essence;
                 d.BaseVariantsFound = _state.Collection.DiscoveredVariants.Count;

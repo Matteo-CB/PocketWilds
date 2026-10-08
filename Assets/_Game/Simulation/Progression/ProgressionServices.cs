@@ -19,6 +19,11 @@ namespace PocketWilds.Simulation
         private readonly ISaveScheduler? _save;
         private readonly MasteryService? _speciesMastery;
         private readonly OfflineService? _offline;
+        private readonly IGameClock _clock;
+
+        // The calendar day of the egg price cap, read again once a minute (a time zone conversion).
+        private int _capDay;
+        private DateTimeOffset _capDayUntil = DateTimeOffset.MinValue;
 
         public ProgressionServices(PlayerState state, ContentRegistry content, EconomyService economy, HatchService? hatch, IGameClock clock,
             ISaveScheduler? save, ProgressionConfig? config = null, MasteryService? speciesMastery = null, OfflineService? offline = null,
@@ -26,6 +31,7 @@ namespace PocketWilds.Simulation
         {
             _speciesMastery = speciesMastery;
             _offline = offline;
+            _clock = clock;
             _state = state;
             _content = content;
             _economy = economy;
@@ -47,7 +53,10 @@ namespace PocketWilds.Simulation
             economy.SetModifiers(this);
             hatch?.SetModifiers(this);
             if (hatch != null)
+            {
+                hatch.GrowthOverride = Config.EggGrowth;
                 hatch.Hatched += OnHatched;
+            }
             Mastery.LeveledUp += OnMasteryLeveledUp;
             Zones.Opened += OnZoneOpened;
             Upgrades.Purchased += OnPurchase;
@@ -81,6 +90,23 @@ namespace PocketWilds.Simulation
         public double EggPriceMultiplier(ContentId biome) => Upgrades.EggPriceMultiplier(biome) * Essence.EggPriceMultiplier;
 
         public double VariantChanceBonus(ContentId biome) => Upgrades.VariantChanceBonus(biome);
+
+        /// <summary>
+        /// The egg price cap (T35C): 15 minutes of production during the first 7 calendar days, 45 after (doc 02 Formules,
+        /// Remote Config econ.egg.cap_minutes_week1 and econ.egg.cap_minutes). Zero while nothing produces.
+        /// </summary>
+        public BigValue EggPriceCap()
+        {
+            var now = _clock.UtcNow;
+            if (now >= _capDayUntil || now < _capDayUntil.AddMinutes(-2))
+            {
+                _capDay = ProgressionMath.DayNumber(_state, now, Config.TimeZone);
+                _capDayUntil = now.AddMinutes(1);
+            }
+            double minutes = _capDay <= Config.EggCapFirstDays ? Config.EggCapMinutesFirstDays : Config.EggCapMinutes;
+            var rate = _economy.GetLightPerSecond();
+            return rate.IsZero || minutes <= 0.0 ? BigValue.Zero : BigValue.Multiply(rate, minutes * 60.0);
+        }
 
 
         public void Dispose()

@@ -41,7 +41,7 @@ namespace PocketWilds.Editor.Economy
         /// Builds the simulated registry from the shipped one: every shipped species, variant and egg is kept (eggs get the
         /// whole biome as pool), the planned species complete each biome to six.
         /// </summary>
-        public static ContentRegistry Build(ContentRegistry shipped, ProgressionConfig config, double eggGrowth, out int plannedSpecies)
+        public static ContentRegistry Build(ContentRegistry shipped, ProgressionConfig config, out int plannedSpecies)
         {
             var builder = new ContentRegistryBuilder();
             plannedSpecies = 0;
@@ -101,8 +101,8 @@ namespace PocketWilds.Editor.Economy
                 for (int i = 0; i < pool.Length; i++)
                     pool[i] = new EggDropEntry(speciesByBiome[biome.Id][i], 1.0);
                 string tag = biome.SourceId.Substring("biome.".Length);
-                AddEgg(builder, shipped, $"egg.{tag}.basic", biome.Id, EggTier.Basic, biome.EggBase, eggGrowth, BasicTable, pool, 0, 0);
-                AddEgg(builder, shipped, $"egg.{tag}.focus", biome.Id, EggTier.Focus, 4 * biome.EggBase, eggGrowth, FocusTable, pool, 3, 3);
+                AddEgg(builder, shipped, $"egg.{tag}.basic", biome.Id, EggTier.Basic, biome.EggBase, config.EggGrowth, BasicTable, pool, 0, 0);
+                AddEgg(builder, shipped, $"egg.{tag}.focus", biome.Id, EggTier.Focus, 4 * biome.EggBase, config.EggGrowth, FocusTable, pool, 3, 3);
             }
             for (int i = 0; i < shipped.Eggs.Count; i++)
             {
@@ -115,7 +115,7 @@ namespace PocketWilds.Editor.Economy
 
         /// <summary>
         /// A biome's egg: the shipped definition's numbers when it exists, the doc's otherwise; the whole biome as pool. The
-        /// price growth is Remote Config's econ.egg.growth (doc 02 Améliorations, section 15) for every egg.
+        /// game prices every biome egg with econ.egg.growth (HatchService.GrowthOverride): planned eggs carry it too.
         /// </summary>
         private static void AddEgg(ContentRegistryBuilder builder, ContentRegistry shipped, string source, ContentId biome, EggTier tier, double baseCost,
             double growth, double[] table, EggDropEntry[] pool, int unlockMastery, int targets)

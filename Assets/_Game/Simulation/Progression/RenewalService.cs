@@ -15,7 +15,7 @@ namespace PocketWilds.Simulation
         public static RenewalConfig Default { get; } = new RenewalConfig();
 
         /// <summary>E_light = floor((LifetimeLight / Scale)^Exponent).</summary>
-        public double Scale = 1e8;
+        public double Scale = 7e7;
 
         public double Exponent = 0.42;
 

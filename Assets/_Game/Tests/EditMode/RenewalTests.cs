@@ -114,17 +114,18 @@ namespace PocketWilds.Tests.EditMode
 
         // ---------------- Formula (section 1.3) ----------------
 
+        // T35C calibration: RenewalScale 7e7.
         [TestCase(0.0, 0L)]
         [TestCase(5e7, 0L)]
         [TestCase(1e8, 1L)]
-        [TestCase(1e10, 6L)]
-        [TestCase(1e12, 47L)]
-        [TestCase(1e15, 870L)]
+        [TestCase(1e10, 8L)]
+        [TestCase(1e12, 55L)]
+        [TestCase(1e15, 1011L)]
         public void EssenceForLight_IsTheDocFormula(double lifetime, long expected)
         {
             var rig = Create();
             Assert.AreEqual(expected, rig.P.Renewal.EssenceForLight(BigValue.FromDouble(lifetime)),
-                "floor((LT / 1e8)^0.42)");
+                "floor((LT / 7e7)^0.42)");
         }
 
         [Test]
@@ -137,7 +138,7 @@ namespace PocketWilds.Tests.EditMode
             rig.State.Progression.Refuge.PendingEssenceFromLevels = 5;
             rig.MakeVisible();
             var preview = rig.P.Renewal.Preview();
-            Assert.AreEqual(47, preview.FromLight);
+            Assert.AreEqual(55, preview.FromLight);
             Assert.AreEqual(3, preview.FromSpecies, "+1 per species found.");
             Assert.AreEqual(5, preview.FromBiomes, "+5 for the open Prairie.");
             Assert.AreEqual(5, preview.Pending, "Essence of the levels waits for the first Renewal.");
@@ -145,7 +146,7 @@ namespace PocketWilds.Tests.EditMode
             Assert.IsTrue(rig.P.Renewal.CanRenew());
             Assert.IsTrue(rig.P.Renewal.TryRenew(out var done));
             Assert.AreEqual(1, done.Count);
-            Assert.AreEqual(47 + 3 + 5 + 5 + 20, rig.State.Wallet.Essence);
+            Assert.AreEqual(55 + 3 + 5 + 5 + 20, rig.State.Wallet.Essence);
             Assert.AreEqual(rig.State.Wallet.Essence, rig.State.Progression.Renewal.EssenceEarned);
             Assert.AreEqual(0, rig.State.Progression.Refuge.PendingEssenceFromLevels);
             Assert.IsTrue(rig.State.Wallet.Light.IsZero, "The Light in the wallet starts over.");

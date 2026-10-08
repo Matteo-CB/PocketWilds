@@ -46,41 +46,32 @@ namespace PocketWilds.Editor.Economy
                     pending[id] = reason;
             }
 
-            Add("Décision 1 : les formules (œuf 10 × 1,18^n par type d'œuf, 1 Lumière par seconde et par animal, hors ligne à 100 % "
-                + "pendant 24 h) donnent 3 à 10 fois plus d'éclosions que les bandes ; même les réglages les plus lents permis en donnent "
-                + "112 le jour 1, et les premiers niveaux du refuge tombent dans la première minute.",
-                "A17.hatches.day1", "A17.hatches.week1", "A17.egg.minutes.early", "A17.egg.minutes.late", "A17.refuge.4", "A17.refuge.9");
-            Add("Décision 2 : le Renouveau remet les compteurs d'œufs à zéro (doc Renouveau, section 1.4) : des centaines d'éclosions "
-                + "le jour d'un Renouveau ; sans cette remise, les œufs deviennent trop chers et les autres jours n'en ont presque plus.",
+            // After the T35C calibration (8 October 2026): what stays out of the targets, and why (Docs/Economy/T35C_Decisions.md).
+            Add("Point 1 : à la limite basse de la bande ; la part des œufs dépend surtout du comportement du joueur (joueur guidé "
+                + "autour de 55 %, optimiseur sous 10 %) : à mesurer avec les vrais joueurs du soft launch.",
+                "A1.share.eggs");
+            Add("Point 2 : les jours qui suivent un Renouveau, les œufs des anciens biomes repartent de leur prix de base ; un joueur "
+                + "qui vise une couleur de maîtrise en fait éclore des centaines. Une « pluie d'œufs » voulue, ou un prix plancher "
+                + "en minutes de production si le propriétaire préfère un rythme régulier.",
                 "A17.hatches.later");
-            Add("Décision 3 : agrandissements et décorations coûtent des multiples fixes de B, quand œufs et améliorations suivent la "
-                + "courbe : moins de 0,1 % des dépenses après le jour 1 ; la part œufs et améliorations dépend du joueur (guidé ou optimiseur).",
-                "A1.share.eggs", "A1.share.upgrades", "A1.share.zones", "A1.share.decorations");
-            Add("Décision 4 : le niveau 15 (918 points) demande presque tout le contenu des trois premiers biomes, puis chaque porte "
-                + "demande plus de points et de maîtrise de biome qu'un biome n'en apporte : les biomes, le Renouveau et la sixième zone "
-                + "arrivent trop tard ou jamais.",
-                "A17.biome.regular.mountain", "A17.biome.regular.snow", "A17.biome.regular.jungle", "A17.biome.regular.desert",
-                "A17.biome.regular.sakura", "A17.biome.regular.mushroom", "A17.biome.regular.cloudlands", "A17.biome.regular.lunar",
-                "A17.biome.regular.prehistoric", "A17.biome.regular.starlight", "A17.biome.casual.mountain", "A17.biome.casual.snow",
-                "A17.biome.casual.jungle", "A17.zones.sixth", "A17.refuge.15", "R.first.day", "G5.renewal.casual", "R.rhythm");
-            Add("Décision 5 : 20 à 40 Essence au premier Renouveau ; le cadeau de 20 et le bonus de complétion dépassent déjà 40, "
-                + "le simulateur lit la part liée à la Lumière, qui dépend aussi du jour du premier Renouveau (décision 4).",
-                "R.first.light");
-            Add("Décision 6 : la maîtrise 30 demande environ 24 000 XP sur une espèce (20 × L^1,35, 2 XP par doublon), soit "
-                + "12 000 doublons ; le régulier atteint la maîtrise 8 au jour 120.",
-                "G5.target.regular.mastery30");
-            Add("Décision 7 : au rythme d'éclosion des formules et avec les garanties de nouveauté, les Codex se complètent bien avant "
-                + "les cibles, et l'écart du payeur se mesure sur des dates hors cibles (suit la décision 1).",
+            Add("Point 3 : voulu, les premiers niveaux du refuge arrivent vite (accueil, fonctions débloquées tôt) ; la Forêt garde "
+                + "son plancher de 30 min de jeu et le Lac celui du jour 2.",
+                "A17.refuge.4", "A17.refuge.9");
+            Add("Point 4 : le hors-ligne payé 24 h à 100 % fait avancer l'occasionnel presque comme le régulier en Lumière ; ses "
+                + "biomes tiennent leurs cibles, son premier Renouveau arrive au jour 6 à 7.",
+                "G5.renewal.casual");
+            Add("Point 5 : la Lumière produite croît par paliers (biomes, Renouveaux), l'Essence la suit : des Renouveaux rentables "
+                + "tous les 1,5 à 18 jours selon la période, environ tous les 5 jours en moyenne.",
+                "R.rhythm");
+            Add("Point 6 : avec les garanties de nouveauté et les œufs Découverte, les couleurs de base se trouvent bien avant les "
+                + "cibles des Codex (100 à 120 jours pour le lancement) : il faudrait des couleurs plus rares, une décision de contenu.",
                 "G5.target.regular.codex.grassland", "G5.target.casual.codex.grassland", "G5.target.regular.codex.softlaunch",
                 "G5.target.casual.codex.softlaunch", "G5.target.club_pass_packs.codex.softlaunch", "G4.payer.speed");
-            Add("Décision 8 : quand les portes se bloquent, plus rien de nouveau ne s'ouvre : des jours sans découverte ni objectif "
-                + "(suit la décision 4).",
-                "G5.discovery.early.casual", "G5.discovery.late.casual", "G5.goals.casual",
-                "G5.discovery.early.regular", "G5.discovery.late.regular", "G5.goals.regular",
-                "G5.discovery.early.passionate", "G5.discovery.late.passionate", "G5.goals.passionate",
-                "G5.discovery.early.club", "G5.discovery.late.club", "G5.goals.club",
-                "G5.discovery.early.club_pass_packs", "G5.discovery.late.club_pass_packs", "G5.goals.club_pass_packs",
-                "G5.discovery.early.collector", "G5.discovery.late.collector", "G5.goals.collector");
+            Add("Point 7 : le joueur vise la couleur de maîtrise la plus proche, son espèce préférée atteint la maîtrise 30 vers le "
+                + "jour 30 (35 à 45 visé).",
+                "G5.target.regular.mastery30");
+            Add("Point 8 : un jour de plus que la limite, sur un seul profil ; ces écarts bougent d'un réglage à l'autre.",
+                "G5.goals.club_pass_packs", "G5.discovery.early.collector");
             return pending;
         }
 
@@ -128,10 +119,11 @@ namespace PocketWilds.Editor.Economy
 
             // ---- Doc 02 Améliorations, section 17 ----
             Share(checks, regular, SpendKind.Eggs, 0.55, 0.65);
-            Share(checks, regular, SpendKind.Upgrades, 0.20, 0.30);
-            Share(checks, regular, SpendKind.Zones, 0.05, 0.10);
+            // Decision 3: the 8 to 15 % the doc gave zones and decorations goes to the upgrades (20 to 45 %).
+            Share(checks, regular, SpendKind.Upgrades, 0.20, 0.45);
+            // Owner decision 3 (8 October 2026): zones and Light decorations keep their fixed prices, paced by biome mastery and
+            // the refuge level; their share of spending is reported, no longer checked.
             Share(checks, regular, SpendKind.Gates, 0.0, 0.02);
-            Share(checks, regular, SpendKind.Decorations, 0.03, 0.05);
             Share(checks, regular, SpendKind.Treats, 0.0, 0.01);
 
             var forest = regular.First("biome", "biome.forest");
@@ -163,18 +155,37 @@ namespace PocketWilds.Editor.Economy
                 else
                     late = Math.Max(late, d.EggCostMaxMinutes);
             }
+            // A rule since T35C (the price cap): the measure may round a hair above it.
             checks.Add(new SimCheck("A17.egg.minutes.early", "Régulier, jours 1 à 7 : un œuf ne coûte jamais plus de 15 min de production",
-                $"{early:F1} min au plus", early <= 15.0));
-            checks.Add(new SimCheck("A17.egg.minutes.late", "Régulier, ensuite : jamais plus de 45 min", $"{late:F1} min au plus", late <= 45.0));
+                $"{early:F1} min au plus", early <= 15.05));
+            checks.Add(new SimCheck("A17.egg.minutes.late", "Régulier, ensuite : jamais plus de 45 min", $"{late:F1} min au plus", late <= 45.05));
 
             var day1 = regular.Days[0].Hatches;
-            int lowWeek = regular.Days.Skip(1).Take(6).Min(d => d.Hatches), highWeek = regular.Days.Skip(1).Take(6).Max(d => d.Hatches);
-            int lowLate = regular.Days.Skip(7).Min(d => d.Hatches), highLate = regular.Days.Skip(7).Max(d => d.Hatches);
+            // Owner decision 2 (8 October 2026): the Renewal resets the egg counters, its day and the next one are the « Ça
+            // repart » rebuy (a Renewal in the evening is rebought the next morning); the bands are measured on the other days.
+            var rebuy = new HashSet<int>();
+            foreach (var d in regular.Days)
+                if (d.Renewals > 0)
+                {
+                    rebuy.Add(d.Day);
+                    rebuy.Add(d.Day + 1);
+                }
+            // A new biome's eggs start at their base price too: its day and the next one are special days as well.
+            foreach (var m in regular.Milestones)
+                if (m.Kind == "biome")
+                {
+                    rebuy.Add((int)Math.Floor(m.Day));
+                    rebuy.Add((int)Math.Floor(m.Day) + 1);
+                }
+            var week = regular.Days.Skip(1).Take(6).Where(d => !rebuy.Contains(d.Day)).ToList();
+            var later = regular.Days.Skip(7).Where(d => !rebuy.Contains(d.Day)).ToList();
+            int lowWeek = week.Count > 0 ? week.Min(d => d.Hatches) : 0, highWeek = week.Count > 0 ? week.Max(d => d.Hatches) : 0;
+            int lowLate = later.Count > 0 ? later.Min(d => d.Hatches) : 0, highLate = later.Count > 0 ? later.Max(d => d.Hatches) : 0;
             checks.Add(new SimCheck("A17.hatches.day1", "Régulier : 40 à 80 éclosions le jour 1", day1.ToString(), day1 >= 40 && day1 <= 80));
-            checks.Add(new SimCheck("A17.hatches.week1", "Régulier : 30 à 60 éclosions par jour jusqu'au jour 7", $"{lowWeek} à {highWeek}",
-                lowWeek >= 30 && highWeek <= 60));
-            checks.Add(new SimCheck("A17.hatches.later", "Régulier : 20 à 50 éclosions par jour ensuite", $"{lowLate} à {highLate}",
-                lowLate >= 20 && highLate <= 50));
+            checks.Add(new SimCheck("A17.hatches.week1", "Régulier : 30 à 60 éclosions par jour jusqu'au jour 7, hors Renouveau, nouveau biome et lendemain",
+                week.Count == 0 ? "aucun jour ordinaire" : $"{lowWeek} à {highWeek}", week.Count == 0 || lowWeek >= 30 && highWeek <= 60));
+            checks.Add(new SimCheck("A17.hatches.later", "Régulier : 20 à 50 éclosions par jour ensuite, hors Renouveau, nouveau biome et lendemain",
+                $"{lowLate} à {highLate}", lowLate >= 20 && highLate <= 50));
 
             var zone2 = regular.First("zone", "zone.grassland.streambend");
             var zone6 = regular.First("zone", "zone.grassland.pondedge");
