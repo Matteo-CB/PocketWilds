@@ -1,0 +1,178 @@
+# Russian forbidden vocabulary (owner rule of 2026-10-06, Docs/Design/Vocabulary_Rule.md): nothing religious or divine.
+# Syntax (Drafts/check_drafts.py): a plain entry matches at the start of a word (stem, any ending); "=" the whole word only.
+# Matching ignores case. Short stems that would hit common words are written as whole words (=).
+# Allowed look-alikes: бесплатно (free), богатый (rich), библиотека (library), карман (pocket), иконка (UI icon),
+# черта (line), небо (sky), сказочный (fabulous, the rarity).
+#
+# god (forms of бог)
+=бог
+=бога
+=богу
+=богом
+=боге
+=боги
+=богов
+=богам
+=богами
+# goddess
+богин
+# divine, God's (божий, божество, божья)
+бож
+# deity
+божеств
+# holy, saint, sanctuary (святой, святилище, святыня)
+свят
+# sacred, priest (священный, священник)
+священ
+# heavenly, celestial, the heavens (небеса, небесный); the plain word небо (sky) is allowed
+небес
+# paradise
+=рай
+=рая
+=раю
+=раем
+райск
+# angel
+ангел
+# miracle (чудо, чудеса, чудесный)
+=чудо
+=чуда
+чудес
+чудотвор
+# blessing
+благослов
+# grace (religious)
+благодат
+# prayer, to pray
+молитв
+молиться
+молится
+молюсь
+молятся
+молебен
+# temple
+храм
+# altar
+алтар
+жертвенник
+# oracle, prophet
+оракул
+пророк
+пророч
+# monk, nun
+монах
+монахин
+# priest, priestess (pagan)
+жрец
+жриц
+# church
+церк
+# chapel
+часовн
+# relic
+реликви
+# pilgrim
+паломник
+# totem
+тотем
+# ritual, rite
+ритуал
+обряд
+# aura, halo
+=аура
+=ауры
+=ауру
+=аурой
+нимб
+ореол
+# astral
+астрал
+# mythic, myth
+миф
+# karma
+=карма
+=кармы
+=карму
+кармическ
+# zen
+=дзен
+# nirvana
+нирван
+# mantra
+мантр
+# resurrection (also the weekday name, avoided in game texts)
+воскрес
+# reincarnation
+перерожден
+реинкарнац
+# demon, devil, Satan
+демон
+=бес
+=беса
+=бесы
+=бесов
+=чёрт
+=черт
+=черти
+=чертей
+=чертёнок
+дьявол
+сатан
+# hell
+=ад
+=ада
+=аду
+=адом
+адск
+# soul, spirit (supernatural sense)
+=душа
+=душу
+=душой
+духовн
+# ghost
+призрак
+привиден
+# Bible
+=библия
+=библии
+=библию
+библейск
+# icon (religious image); иконка (UI icon) stays allowed
+=икона
+=иконы
+=икону
+=иконой
+=икон
+# cross
+крест
+# Easter, Christmas, baptism
+пасх
+рождеств
+крещен
+# mosque, synagogue, Buddha
+мечет
+синагог
+будд
+# lotus
+лотос
+# incense
+ладан
+фимиам
+# sin
+грех
+грешн
+# apostle, messiah, martyr
+апостол
+мессия
+мученик
+# religions and their founders
+христ
+иисус
+аллах
+ислам
+мусульман
+иудей
+индуист
+шаман
+# meditation
+медитац

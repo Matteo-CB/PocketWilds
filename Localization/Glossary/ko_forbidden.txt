@@ -1,0 +1,211 @@
+# Pocket Wilds, Korean: forbidden words (owner rule of 2026-10-06, Docs/Design/Vocabulary_Rule.md).
+# Nothing religious or divine in any text. This file and the rule document are the only places these words may appear.
+# Format: one word or stem per line; the comment line above each entry gives its meaning.
+# Matching (check_drafts.py): a plain entry matches at the start of a word (a stem: particles and endings may follow);
+# "~" matches anywhere (inside compounds), "=" only the whole word. Korean particles attach to nouns, so stems are used.
+# Avoided on purpose as too short or too common: 신 inside words (신나요, 신기록), 절 (절반), 선 (line), 오라 (come).
+# Replacements: refuge = 보금자리, top rarity = 환상, glow = 햇살 / 빛, rendez-vous = 매일의 만남, water lily = 수련.
+
+# ---------------------------------------------------------------- deities, the divine
+# god (standalone word only: 신나요, 신기록 stay allowed)
+=신
+# God (Catholic usage)
+~하느님
+# God (Protestant usage)
+~하나님
+# goddess
+~여신
+# spirit deity
+~신령
+# sacred, divine
+~신성
+# myth, mythical
+~신화
+# mystery, mystic (divine connotation)
+~신비
+# guardian deity
+~수호신
+# dragon king, sea deity
+~용왕
+# celestial fairy
+~선녀
+# divine oracle
+~신탁
+
+# ---------------------------------------------------------------- prayer, worship, blessing
+# prayer, to pray (word start only: 이기도 stays allowed)
+기도
+# blessing
+축복
+# miracle (word start only: 주기적, 이기적 stay allowed)
+기적
+# worship service
+~예배
+# holy, sacred
+성스러
+# holy place
+성지
+# holy precinct
+성역
+# curse
+저주
+# amen
+~아멘
+# hallelujah
+~할렐루야
+
+# ---------------------------------------------------------------- places of worship
+# temple of a deity
+~신전
+# shrine (Japanese)
+신사
+# Buddhist temple
+사찰
+# temple (also employee: never used in the game)
+사원
+# cathedral
+성당
+# church
+~교회
+# chapel
+~예배당
+# altar
+제단
+# stone lantern of temples (use 랜턴)
+석등
+# sanctuary (loanword)
+~생추어리
+
+# ---------------------------------------------------------------- the beyond
+# angel
+~천사
+# heaven
+~천국
+# heavenly realm
+~천상
+# paradise
+~낙원
+# Buddhist paradise
+~극락
+# hell
+~지옥
+# demon
+~악마
+# devil
+~마귀
+# ghost (supernatural)
+~귀신
+# ghost
+유령
+# soul
+~영혼
+# holy spirit
+~성령
+# astral (loanword)
+~아스트랄
+# celestial (loanword)
+~셀레스티얼
+
+# ---------------------------------------------------------------- clergy
+# Buddhist monk
+~스님
+# Buddhist monk
+승려
+# monk
+~수도승
+# monastery
+~수도원
+# pastor
+~목사
+# priest
+사제
+# Catholic priest (also bride: never used in the game)
+신부
+# clergy
+~성직자
+# shaman (whole word only: 무당벌레, the ladybug, stays allowed)
+=무당
+
+# ---------------------------------------------------------------- practices and objects
+# ritual, ceremony (also consciousness: never used in the game)
+의식
+# rite
+의례
+# ancestral rite
+제사
+# totem
+~토템
+# relic
+유물
+# holy relic
+성물
+# pilgrimage
+~순례
+# talisman
+부적
+# aura (loanword)
+~아우라
+# halo
+~후광
+# karma
+~카르마
+# karma (Buddhist)
+~업보
+# zen (school)
+~선종
+# zen meditation
+~참선
+# nirvana
+~열반
+# nirvana (loanword)
+~니르바나
+# mantra (loanword)
+~만트라
+# mantra (Buddhist)
+~진언
+# resurrection
+부활
+# reincarnation
+~환생
+# reincarnation, cycle of rebirth
+~윤회
+# bible
+~성경
+# bible (loanword)
+~바이블
+# the flower the rule replaces (use 수련, water lily)
+~연꽃
+# leaf of that flower
+~연잎
+
+# ---------------------------------------------------------------- religious holidays
+# Christmas
+~크리스마스
+# Easter
+~부활절
+# Halloween
+~핼러윈
+# Halloween (other spelling)
+~할로윈
+# Santa Claus
+산타
+# Buddha's birthday
+~석가탄신
+# Qixi, festival of the celestial lovers legend
+~칠석
+
+# ---------------------------------------------------------------- no sparkle rule (Docs/Design/No_Sparkle_Rule.md)
+# sparkle, twinkle (반짝반짝, 반짝이는)
+~반짝
+# twinkling (eyes, stars)
+~초롱초롱
+# glittering, radiant
+~영롱
+# flash, glitter
+~번쩍
+# glitter (loanword)
+~글리터
+# sparkle (loanword)
+~스파클
+# twinkle (loanword)
+~트윙클

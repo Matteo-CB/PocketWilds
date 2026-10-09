@@ -1,0 +1,107 @@
+# German forbidden vocabulary (owner rules of 2026-10-06: Docs/Design/Vocabulary_Rule.md, No_Sparkle_Rule.md).
+# Nothing religious or divine, no sparkle words. Syntax (Drafts/check_drafts.py): a plain entry matches at the start
+# of a word (stem, any ending); "=" the whole word only; "~" anywhere. Matching ignores case.
+# Allowed look-alikes: Himmel (the sky only, as in Sternenhimmel), Kirsche (cherry), Segel (sail), Gebiet (area),
+# gebeten (asked), Beton, Zentrum, Funk (radio), Wunsch (wish).
+#
+# holy, saint, sanctuary, halo (heilig, Heiligtum, Heiligenschein)
+heilig
+# god, goddess, divine, deity (Gott, Göttin, göttlich, Gottheit)
+gott
+gött
+# angel, guardian angel
+engel
+schutzengel
+# heavenly, the kingdom of heaven (the plain word Himmel stays allowed for the sky)
+himmlisch
+himmelreich
+# paradise
+paradies
+# miracle (also blocks wunderbar, wunderschön, sich wundern: write schön, toll, herrlich, staunen instead)
+wunder
+# blessing, to bless, blessed
+segen
+segne
+gesegnet
+# prayer, to pray (whole words: gebeten means asked)
+=gebet
+=gebete
+=beten
+=betet
+=bete
+# temple, shrine, altar
+tempel
+schrein
+altar
+# oracle
+orakel
+# monk, nun, priest, monastery
+mönch
+nonne
+priester
+kloster
+# church, chapel, cathedral, mosque, synagogue
+kirche
+kapelle
+kathedrale
+moschee
+synagoge
+# relic
+reliquie
+# pilgrim, pilgrimage
+pilger
+wallfahrt
+# totem
+totem
+# ritual
+ritual
+rituell
+# astral
+astral
+# mythic, myth, mythology (the rarity is Fabelhaft)
+mythisch
+mythos
+mytholog
+# karma, zen, nirvana, mantra
+karma
+=zen
+nirwana
+nirvana
+mantra
+# resurrection, reincarnation, rebirth
+auferstehung
+auferstanden
+reinkarnation
+wiedergeburt
+# demon, devil, hell
+dämon
+teufel
+hölle
+# soul, spirit, ghost (supernatural sense)
+seele
+=geist
+=geister
+geisterhaft
+# aura, halo (nimbus)
+aura
+nimbus
+# lotus (write Seerose or Wasserblüte)
+lotus
+# grace (as in Gnadenhof), sacrifice, offering
+gnade
+opfer
+# Bible
+bibel
+# sacred, sacral
+sakral
+# religious holidays and their symbols (Christmas, Easter, Pentecost, Ramadan, Hanukkah, Diwali)
+weihnacht
+oster
+pfingst
+ramadan
+chanukka
+diwali
+# sparkle, twinkle, glitter (no-sparkle rule)
+funke
+glitzer
+glitz

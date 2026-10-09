@@ -1,0 +1,103 @@
+# Italian forbidden vocabulary (owner rules of 2026-10-06: Docs/Design/Vocabulary_Rule.md, No_Sparkle_Rule.md).
+# Nothing religious or divine, no sparkle words. Syntax (Drafts/check_drafts.py): a plain entry matches at the start
+# of a word (stem, any ending); "=" the whole word only; "~" anywhere. Matching ignores case.
+# Allowed look-alikes: dei (the article, di + i), tempo / tempi (time), cappello (hat), chiese (he asked), animale /
+# animali (whole-word rule on anima), cielo (the sky only), Monaco only as a city if ever needed.
+#
+# sanctuary (the animal refuge is always rifugio)
+santuari
+# holy, saint, sacred, sacrifice
+=santo
+=santa
+=santi
+=sante
+=sacro
+=sacra
+=sacri
+=sacre
+sacrific
+# divine, god, goddess, deity
+divin
+=dio
+=dèi
+=dea
+=dee
+# celestial, heavenly; celeste is also the light-blue color word: write azzurro instead
+celest
+# angel
+angel
+angiol
+# paradise
+paradis
+# miracle
+miracol
+# blessing, blessed
+benedi
+# prayer, to pray
+preghier
+=pregare
+# temple, altar
+=tempio
+=templi
+altar
+# oracle
+oracol
+# monk, nun, priest
+monac
+=suora
+=suore
+=prete
+=preti
+sacerdot
+# church, chapel, cathedral
+=chiesa
+=cappella
+=cappelle
+cattedral
+# relic, pilgrim
+reliqui
+pellegrin
+# totem, ritual, astral
+totem
+ritual
+astral
+# mythic, myth, mythology (the rarity is Favoloso)
+mitic
+mitolog
+=mito
+=miti
+# karma, zen, nirvana, mantra
+karma
+=zen
+nirvana
+mantra
+# resurrection, reincarnation
+risurrez
+resurrez
+reincarnaz
+# demon, devil, hell
+demon
+diavol
+infern
+# soul, spirit (supernatural sense)
+=anima
+=anime
+spirit
+# aura, halo (alone is the Italian word for a halo of light), lotus (write fior d'acqua or ninfea)
+aura
+aureol
+=alone
+=loto
+lotus
+# Bible
+bibbi
+# religious holidays (Christmas, Easter, Ramadan)
+=natale
+natalizi
+pasqu
+ramadan
+# sparkle, twinkle, glitter (no-sparkle rule)
+scintill
+luccich
+brillantin
+sbrilluc

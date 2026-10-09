@@ -1,0 +1,97 @@
+Pocket Wilds fonts: the Latin core and the script fallbacks (pw_font_build.py --scripts)
+
+Units: font units, 1000 per em. Every file: hhea ascent 950, descent -250, line gap 0; OS/2 typo 950 / -250 / 0,
+win 1000 / 300; head created = modified = 0. Fallbacks: post format 3 (no glyph names), no Latin glyph.
+Glyph indices: core below 512; CyrGrk 512, Viet 768, Thai 1024 (own ranges: they carry pair or mark
+records); every other fallback from 1280. Placeholders (empty glyphs) fill the indices below a fallback's first.
+
+Core (unchanged by the fallbacks)
+file	glyphs	bytes	sha256
+PocketRound-Regular.ttf	369	201128	d45763e19d43d73e4114e2cbf83f07711f1be8af838e240e89d83315c3e40420
+PocketRound-Regular.kern.tsv	2354 pairs	33201	0e8dc56c36093dde755a54d6a4ecd04f3406b39888e0ece3230865e89ecd56d2
+PocketRound-SemiBold.ttf	369	199564	cd8a2175b76e96b3fa5b5d4f61f969fd823a6d1d94b982191842e3d606a21821
+PocketRound-SemiBold.kern.tsv	2220 pairs	31312	c76ab538587986766a31ce711fef862ac3714086d0640bddd9a98fa58cf705ff
+PocketRound-Bold.ttf	369	201396	ef01ee7c7e275225ce3f9fe801b42684525ab89bd16085011e53a0845c76537c
+PocketRound-Bold.kern.tsv	2161 pairs	30484	5bf0ef374474b997770e072058772b87b6801e354d6066aa9c3336b9c569a264
+PocketPlush-Black.ttf	369	210584	b40aa990a8b2b21101c944c5a7b3855273ee5951adebd5bc0376a8567c3ac647
+PocketPlush-Black.kern.tsv	1878 pairs	26471	20875359eba2d695ad5459b3a168e662d95b018a7856ffbec006fc758e8105eb
+
+Fallbacks
+file	first index	glyphs (script / total)	code points	composites	kern pairs	cross pairs	mark records	features	ink y min / max	bytes	sha256
+PocketRound-Regular-CyrGrk.ttf	512	172 / 684	172	0	1161	387	-	kern	-211 / 922	81300	ad61b419e81ec0b526ab98011fc390c4008296753047a0bb54e6e80139f5f2f3
+  PocketRound-Regular-CyrGrk.kern.tsv	16506	05ead5209feff1e5c004b4af7bc87c83b44087a12e272b614fc46af3f32c9668
+  PocketRound-Regular-CyrGrk.crosskern.tsv	8021	fd7dc8cef97347c5ab3fd6f65e8b8314964b24d8c103fef8d9c46133d285af30
+PocketRound-Regular-Viet.ttf	768	105 / 873	105	0	0	1677	-	-	-210 / 1000	64972	f05a3f8a6b65ae45e3854497f160ddf443e7db20e29badb3d79ecb71f2daea94
+  PocketRound-Regular-Viet.kern.tsv	45	2b7d3bc9fbbae58c0a492b922ef2d9efb4959337226897429d2b47c3900b6c52
+  PocketRound-Regular-Viet.crosskern.tsv	32279	97826466774dabe17ab49105348c018760b2945ccf7d8373803847e0c817a2e3
+PocketRound-Regular-Thai.ttf	1024	114 / 1138	114	0	-	-	808	ccmp mark mkmk	-404 / 953	60948	95974408a0459ce31137a2ea9fe70e5dfe0c3ed5bb0a3a91fef1c5624fd9fa4c
+  PocketRound-Regular-Thai.marks.tsv	25275	a4d4a2c66d6b789077e749e0b44ab684ac2a3469859cec6a083b98d95dc730b4
+PocketRound-Regular-Kana.ttf	1280	332 / 1612	324	0	-	-	-	locl	-210 / 896	148876	2751ce1fd3b618b1d4eb2f882bdf100c4982aa6be710dd24a88e5b782fbdc01a
+PocketRound-Regular-PunctSC.ttf	1280	125 / 1405	125	0	-	-	-	-	-210 / 896	56920	44b7d2356b7f1a57cf3342542d5f4b627e11a2cd2aadab70aeb46fc98e9fc021
+PocketRound-Regular-PunctTC.ttf	1280	125 / 1405	125	0	-	-	-	-	-210 / 896	56932	75926115e9d5cfb90272b3dd510c08b7c7da5913d8cf47ebc261c5766a133a36
+PocketRound-Regular-Hangul.ttf	1280	11883 / 13163	11266	11172	-	-	-	-	-75 / 804	690600	55600d66c5c4ef87412b35b541e8f6c182c9d83691934ab0bd09d635f6189182
+PocketRound-Regular-HanJP.ttf	1280	458 / 1738	458	0	-	-	-	-	-109 / 870	445556	bfc9b9d6bd492ff270f8496bc5f6656a55eb0c13456fc4b49ebc3a03174eda45
+PocketRound-Regular-HanSC.ttf	1280	477 / 1757	477	0	-	-	-	-	-112 / 870	429236	1cc6cc94df8199764b6a273901daf7421f61393e901321e687912260c9ed0d28
+PocketRound-Regular-HanTC.ttf	1280	467 / 1747	467	0	-	-	-	-	-109 / 870	472940	11f1a5a5359f3579c934dd8e25a2f61dbac60c8d79f77ca0757a4ff1cbc347a6
+PocketRound-SemiBold-CyrGrk.ttf	512	172 / 684	172	0	1141	367	-	kern	-211 / 946	81032	81109b532cc395f36c69d229d252f5ee1d93b50f0669f122a1594610140c6bdd
+  PocketRound-SemiBold-CyrGrk.kern.tsv	16208	357836d3f3b60a056ec85c7837333b801bf5aeea97305a165093c756ee37c4aa
+  PocketRound-SemiBold-CyrGrk.crosskern.tsv	7616	066367c775b4bc76995bc1279bc7f9563ba243f43af1db3b49dc68b62a7b5c85
+PocketRound-SemiBold-Viet.ttf	768	105 / 873	105	0	0	1609	-	-	-210 / 1009	65768	9adc960c9a9f80282bef29b4b48cd50591f23936197ac1ea6bc5b75e6a44327c
+  PocketRound-SemiBold-Viet.kern.tsv	45	2b7d3bc9fbbae58c0a492b922ef2d9efb4959337226897429d2b47c3900b6c52
+  PocketRound-SemiBold-Viet.crosskern.tsv	30980	4485d84fd151edf370de946fd94d581af86342a1bf75fa2369d434fb6c542142
+PocketRound-SemiBold-Thai.ttf	1024	114 / 1138	114	0	-	-	808	ccmp mark mkmk	-423 / 1004	61400	34943d7def2ca9e37ac76e4bdc1f41495163471c42d70d245e3830dd802ca10e
+  PocketRound-SemiBold-Thai.marks.tsv	25275	5475d0f05759ffdc41879ae56d002b0783743f527b51f9c4d93092ba0a8d3798
+PocketRound-SemiBold-Kana.ttf	1280	332 / 1612	324	0	-	-	-	locl	-214 / 909	149928	d4f4bbc193db8021bb586402686211ec9c005d65f919c2f939c53f5949f5a093
+PocketRound-SemiBold-PunctSC.ttf	1280	125 / 1405	125	0	-	-	-	-	-214 / 909	56868	f2296b436d9efb2cd10c3be0e3188c21be5605962884a54bef7dd59b6a65fe15
+PocketRound-SemiBold-PunctTC.ttf	1280	125 / 1405	125	0	-	-	-	-	-214 / 909	56872	27feaa559a583a34a09b007e25c549491561ea49a02fdd34c70f4618f239799e
+PocketRound-SemiBold-Hangul.ttf	1280	11883 / 13163	11266	11172	-	-	-	-	-77 / 818	690064	273a8ea77bded88fce41ab4a691c5031ec4958a0803614a8627566870d5ae474
+PocketRound-SemiBold-HanJP.ttf	1280	458 / 1738	458	0	-	-	-	-	-106 / 889	451644	edaf8f31ce1eebf5a96b6f4ebfe7154689123fcd07f27598b82f9c5e9d4160e4
+PocketRound-SemiBold-HanSC.ttf	1280	477 / 1757	477	0	-	-	-	-	-112 / 889	433336	dff8ec29087e0f608b70bd78923bf6656d7020707ecbb3d62edcc216681c03e9
+PocketRound-SemiBold-HanTC.ttf	1280	467 / 1747	467	0	-	-	-	-	-106 / 889	482052	1e5cfce5adcf1c27fe97ad42e394d63b0e2cd2641f072d755135c1504bf604b8
+PocketRound-Bold-CyrGrk.ttf	512	172 / 684	172	0	1097	338	-	kern	-211 / 974	81572	05b75b223d92ed5e83ea9e3dd60afb8bb32b8cbb155a1c369adf36e108b1fec7
+  PocketRound-Bold-CyrGrk.kern.tsv	15589	93ad9b0194b54d2365adc04df8f8e366e9ebbebd1fe6a4cb41510adee71e1967
+  PocketRound-Bold-CyrGrk.crosskern.tsv	7046	13aad770d4e151adb75d9b3568a15e08e3611ff124194ffd1bdd5d745ff73f8e
+PocketRound-Bold-Viet.ttf	768	105 / 873	105	0	0	1567	-	-	-219 / 1020	66408	3e9697da46bddc63c176b2a8ed395eb4cc756d86c179e1d9dae20fa127eb9544
+  PocketRound-Bold-Viet.kern.tsv	45	2b7d3bc9fbbae58c0a492b922ef2d9efb4959337226897429d2b47c3900b6c52
+  PocketRound-Bold-Viet.crosskern.tsv	30198	234610683aff97ef501b2e4a5dc7dc1e03e3988c2b98aea6296fc5e981406ae0
+PocketRound-Bold-Thai.ttf	1024	114 / 1138	114	0	-	-	808	ccmp mark mkmk	-445 / 1063	61920	7321547db697744ddc77fa5cf78df0ac2ba3ecf3206c30e9ed2249e18a1359e5
+  PocketRound-Bold-Thai.marks.tsv	25291	05be0fc296628ec50cb159238ce95772fab4720e63d4c2e8ee0b4df017d04db2
+PocketRound-Bold-Kana.ttf	1280	332 / 1612	324	0	-	-	-	locl	-229 / 924	151104	d5075c3ea4948d05cae92e81c5329f11be1a7d22c6b6d8bf5e7a7823a9042fde
+PocketRound-Bold-PunctSC.ttf	1280	125 / 1405	125	0	-	-	-	-	-229 / 924	57232	4da85745c732d766dd425e15b6c87066cdd8ae3486044e4e413e9dafd3aaa17c
+PocketRound-Bold-PunctTC.ttf	1280	125 / 1405	125	0	-	-	-	-	-229 / 924	57236	eaaf34872b65666afa743f0a57c1fb41bbe493f0ba874ce662e118d3cae53cb0
+PocketRound-Bold-Hangul.ttf	1280	11883 / 13163	11266	11172	-	-	-	-	-78 / 821	688296	1395fa55a744e3349e29b50b3783ea588d4b9c54114faf6aaba9b4909e4f2501
+PocketRound-Bold-HanJP.ttf	1280	458 / 1738	458	0	-	-	-	-	-101 / 894	448020	4bf4884d005899465d9182f103e298691f7fe321401cc5cfede7520b09ebd692
+PocketRound-Bold-HanSC.ttf	1280	477 / 1757	477	0	-	-	-	-	-114 / 894	429660	d0c7b996b932115fba08f3279395e56c915d0f2cceabcacbc1461c900466e65f
+PocketRound-Bold-HanTC.ttf	1280	467 / 1747	467	0	-	-	-	-	-101 / 894	478652	ca90c13cf7e0b50e593f330ee4623c3a41c19d283902131fe235460f86d056bb
+PocketPlush-Black-CyrGrk.ttf	512	172 / 684	172	0	929	298	-	kern	-217 / 975	87068	afd5fe9984c57239f97bd4ab7310f63574e6a0dbff90a7e9e7ddfdbfb5e6bcfe
+  PocketPlush-Black-CyrGrk.kern.tsv	13166	6af738795b79c9aebb72c39ed1218607f889bcafef81f66a465862bcfd973fbf
+  PocketPlush-Black-CyrGrk.crosskern.tsv	6268	86fbff450079b4af33015bf2ca16fae1ba8f09b8645e25b4bcf2a26ac7683bb7
+PocketPlush-Black-Viet.ttf	768	105 / 873	105	0	0	1490	-	-	-217 / 1044	70240	551bb1a4a5f51ed198a4ed2eb27cbab1f37e08e53e6cb5ec57c08f7e2a47a41c
+  PocketPlush-Black-Viet.kern.tsv	45	2b7d3bc9fbbae58c0a492b922ef2d9efb4959337226897429d2b47c3900b6c52
+  PocketPlush-Black-Viet.crosskern.tsv	28705	0397ca8dceb2ea6f6cb660b93689676b347649045ac5a01907ac8aab87744e5a
+PocketPlush-Black-Thai.ttf	1024	114 / 1138	114	0	-	-	808	ccmp mark mkmk	-474 / 1083	66040	a1b01a66c916722087e2b8b758571e2091cf32f1bc01bc536b3f3abdf3710d14
+  PocketPlush-Black-Thai.marks.tsv	25291	f43a3d22b0059a27a91e9b5604bb609e5b8a0576ffe3dc7ca89f722b460bca10
+PocketPlush-Black-Kana.ttf	1280	332 / 1612	324	0	-	-	-	locl	-227 / 922	159956	955da3948f795e9e81385626a17d86e1fbf2edba8ab59b085f7124e6cfd7808f
+PocketPlush-Black-PunctSC.ttf	1280	125 / 1405	125	0	-	-	-	-	-227 / 922	61492	8dd49146d098e6684b15c889904707e22f507e693c35593a6b805e03b331a164
+PocketPlush-Black-PunctTC.ttf	1280	125 / 1405	125	0	-	-	-	-	-227 / 922	61500	869bf0982dadb0fbad0e3e0ed02dd7ce118840e0edb9283a4396584a176e43e3
+PocketPlush-Black-Hangul.ttf	1280	11883 / 13163	11266	11172	-	-	-	-	-88 / 833	670940	ce843734c7e1671213081f7a5ad89f0315f882accc2298ffeeb700edef3a9f9d
+PocketPlush-Black-HanJP.ttf	1280	458 / 1738	458	0	-	-	-	-	-105 / 890	458756	3f0a6a3fc4cc27b2aa14a06fff1a744d95c2e2cba371bbb827039bb215f3bfa0
+PocketPlush-Black-HanSC.ttf	1280	477 / 1757	477	0	-	-	-	-	-118 / 890	438704	9debf941f32fbea73ebc5ded02454f67dd468dde650321061507b1fb9212b486
+PocketPlush-Black-HanTC.ttf	1280	467 / 1747	467	0	-	-	-	-	-105 / 890	490440	28007d568e953405b1ce26174207842f923dbfc2de15d24d19a1b07ea4adef0f
+
+Languages: fallbacks to add after the core, in this order (Latin languages load the core only)
+ru	CyrGrk
+uk	CyrGrk
+el	CyrGrk
+vi	Viet
+th	Thai
+ja	Kana HanJP
+ko	Hangul
+zh-Hans	PunctSC HanSC
+zh-Hant	PunctTC HanTC
+
+Line breaking (TMP Settings), from pw_font_kana (JIS X 4051 kinsoku, Latin marks included)
+linebreak_leading.txt	101 characters	23a078cb7ce86d60e404cef57f468bd46ee315a0338add3f8dffd846a814ca05
+linebreak_following.txt	29 characters	366aa47a6e6fe3ee9635d557ba9d447e986d6411403fbe26162d49d9918de790
+Korean: TMP Settings useModernHangulLineBreakingRules = true (break at spaces).
+Thai: words are separated by U+200B in the translations (the Thai font maps it, zero width).

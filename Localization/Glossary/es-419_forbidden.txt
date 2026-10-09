@@ -1,0 +1,110 @@
+# Spanish (Latin America) forbidden vocabulary (owner rules of 2026-10-06: Docs/Design/Vocabulary_Rule.md,
+# No_Sparkle_Rule.md). Nothing religious or divine, no sparkle words. Syntax (Drafts/check_drafts.py): a plain entry
+# matches at the start of a word (stem, any ending); "=" the whole word only; "~" anywhere. Matching ignores case.
+# Allowed look-alikes: cielo (the sky only), biblioteca (library), almacén, almohada, almendra (whole-word rule on
+# alma), curar (heal), brillo (shine, used for the Glow upgrade).
+#
+# sanctuary (the animal refuge is always refugio)
+santuario
+# holy, saint, sacred
+=santo
+=santa
+=santos
+=santas
+sagrad
+# divine, god, goddess, deity
+divin
+=dios
+=diosa
+=dioses
+=diosas
+deidad
+# celestial, heavenly; celeste is also avoided as the color word (write azul cielo)
+celestial
+celeste
+# angel, angelic
+ángel
+angel
+# paradise
+paraís
+parais
+# miracle
+milagr
+# blessing, blessed
+bendic
+bendit
+# prayer, to pray
+oración
+oracion
+rezar
+=reza
+=rezo
+=rezas
+# temple, altar
+templo
+altar
+# oracle
+oráculo
+oraculo
+# monk, nun, priest
+monje
+=monja
+=monjas
+sacerdot
+=cura
+=curas
+# church, chapel, cathedral
+iglesia
+capilla
+catedral
+# relic, pilgrim
+reliquia
+peregrin
+# totem, ritual, astral
+tótem
+totem
+ritual
+astral
+# mythic, myth, mythology (the rarity is Fabuloso)
+mític
+mitic
+mitolog
+=mito
+=mitos
+# karma, zen, nirvana, mantra
+karma
+=zen
+nirvana
+mantra
+# resurrection, reincarnation
+resurrec
+reencarn
+# demon, devil, hell
+demoni
+diabl
+infiern
+# soul, spirit (supernatural sense)
+=alma
+=almas
+espíritu
+espiritu
+# aura, halo, lotus (write flor de agua or nenúfar)
+aura
+aureola
+=halo
+=loto
+lotus
+# Bible
+biblia
+# religious holidays (Christmas, Easter, Ramadan)
+navidad
+navideñ
+pascua
+ramadán
+ramadan
+# sparkle, twinkle, glitter (no-sparkle rule)
+destell
+centell
+chispa
+brillantin
+titil

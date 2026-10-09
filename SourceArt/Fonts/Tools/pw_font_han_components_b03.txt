@@ -1,0 +1,91 @@
+# Pocket Wilds Han components, lot b03 (batch B: the last jōyō, Japanese forms). Private parts of this lot, named
+# {b03_*}. Same syntax and same hand as the shared files (pw_font_han.py). Drawn by hand on the 0..100 grid, y down;
+# nothing taken from any font. Ideas borrowed from earlier lots are redrawn here under {b03_*} names.
+
+# ---------------------------------------------------------------- right parts drawn whole
+# 十 over 罒 over 心, no bar (徳 聴): a three-part stack placed by hand so 心 keeps its height
+{b03_de_r} : h 14,10 86,10 | s 50,0 50,24 | s 12,26 12,48 | z 12,26 88,26 88,48 | s 37,26 37,48 | s 63,26 63,48 | h 12,48 88,48 | d 18,66 8,90 | z 30,58 30,86~ 40,96~ 64,96 68,86 | d 44,56 54,70 | d 78,62 92,84
+# 束 on the left (勅 頼): the nà becomes a dot
+{b03_shu_l} [f=0,0,44,100 w=0.44] : h 4,18 40,18 | s 22,0 22,98 | s 8,32 8,56 | z 8,32 36,32 36,56 | h 8,56 36,56 | p:0.15 21,58 2,88 | d 25,64 38,80
+# 歩 (Japanese): 止 over 少, the right dot kept
+{b03_bu} : s 50,2 50,40 | h 50,20 80,20 | s 22,14 22,40 | h 6,40 94,40 | s 50,40 50,72 | p:0.05 34,50 20,68 | d 62,46 70,56 | p:0.15 90,56 10,98
+# 歩 as the right of 捗: the older form, no right dot (捗 has ten strokes)
+{b03_bu7} : s 50,2 50,40 | h 50,20 80,20 | s 22,14 22,40 | h 6,40 94,40 | s 50,40 50,70 | p:0.05 34,50 20,68 | p:0.15 86,52 10,98
+# inside of 逓: the flat top piě, the left side, two bars, 巾 under them
+{b03_di_in} : p:0.05 92,0 16,8 | s 16,8 16,60 | h 16,26 96,26 | h 16,44 96,44 | s 16,60 16,96 | z 16,60 84,60 84,90 76,86 | s 52,26 52,100
+# 眞 (塡): 匕, 目 whose left side runs down to the long bar, 八
+{b03_zhen} : p:0.05 90,0 32,8 | z 30,0 30,17r4 90,16 94,10 | s 24,25 24,80 | z 24,25 76,25 76,67 | h 24,39 76,39 | h 24,53 76,53 | h 24,67 76,67 | h 6,80 94,80 | p:0.1 34,86 14,99 | d 64,86 86,99
+# 旧 shape under 爫 (稲)
+{b03_jiu} : s 14,0 14,100 | s 34,0 34,100 | z 34,0 86,0 86,100 | h 34,50 86,50 | h 34,100 86,100
+# 上 over 下 (峠)
+{b03_ka_r} : s 40,2 40,40 | h 40,20 80,20 | h 8,40 92,40 | h 4,58 96,58 | s 46,58 46,98 | d 58,70 76,84
+# 丼: 井 opened up, the dot in its middle cell
+{b03_don} : h 10,26 90,26 | h 6,66 94,66 | p:0.15 32,6 32,62~ 10,96 | s 68,6 68,98 | d 46,40 54,52
+# 弐: a short bar over 弋, 二 inside
+{b03_er} : h 16,14 58,14 | h 8,32 86,31 | n:0.12 50,2 82,80 92,68 | d 72,4 80,14 | h 18,50 56,50 | t 12,74 62,68
+# ⺍ over 凶 (悩 脳)
+{b03_nao_r} : d 14,4 22,24 | s 48,0 48,22 | p:0.05 84,2 74,24 | z 14,42 14,94 86,94 | s 86,42 86,94 | p:0.1 70,42 30,84 | n:0.05 30,44 70,84
+# 免, Japanese form: the box split by its own short vertical, then 儿 (晩)
+{b03_mian} : p:0.1 36,0 14,18 | z 24,9 62,9 p50,28 | s 16,28 16,58 | z 16,28 84,28 84,58 | s 48,28 48,58 | h 16,58 84,58 | p:0.2 46,58 46,68~ 8,96 | z 62,58 62,84r10 92,88 94,74
+# right of 姫 (Japanese): the bar, the long left side, two short verticals, the box between them, the foot bar
+{b03_ji_r} : h 4,6 96,6 | s 18,6 18,100 | s 50,6 50,32 | z 18,32 84,32 84,62 | h 18,62 84,62 | s 50,62 50,88 | h 18,88 96,88
+# 氷: 水 with its dot
+{b03_bing} : d 16,6 28,20 | z 50,4 50,90 40,83 | z 10,36 40,36 p8,80 | p:0.12 84,22 51,46 | n:0.08 51,46 94,90
+# 表 (俵): 龶, then the lower half of 衣
+{b03_biao} : h 14,8 86,8 | h 20,24 80,24 | s 50,0 50,40 | h 6,40 94,40 | p:0.1 44,42 16,62 | z 28,56 28,92 44,82 | p:0.1 82,46 50,68 | n:0.05 48,48 96,96
+# 兵 (浜): 丘 over 八
+{b03_bing2} : p:0.05 74,2 22,12 | s 22,12 22,60 | h 22,36 78,36 | s 52,36 52,60 | h 4,60 96,60 | p:0.1 36,72 14,96 | d 64,72 86,96
+# 亦 on top (変)
+{b03_yi_t} [f=0,0,100,44] : d 47,0 53,10 | h 6,16 94,16 | s 38,22 38,42 | z 62,22 62,40 56,37 | p:0.05 22,26 8,40 | d 78,26 92,40
+# 舎 on the left (舗)
+{b03_she_l} [f=0,0,44,100 w=0.44] : p:0.15 22,2 2,30 | n:0.05 22,2 42,26 | h 12,30 32,30 | s 22,24 22,50 | h 4,50 40,50 | s 8,64 8,94 | z 8,64 36,64 36,94 | h 8,94 36,94
+# 麦 holding 面 (麺): the last stroke of 夂 sweeps under the right part
+{b03_mai_o} [in=42,0,100,82] : h 10,8 36,8 | h 12,22 34,22 | h 2,36 44,36 | s 23,0 23,36 | p:0.1 24,42 6,62 | z 16,50 40,50 p8,84 | z 27,64 34,80~ 56,92~ 98,95
+# 兪, Japanese form: 人, 一, ⺼ with its ticks leaving the left side (open in heavy weights), 巜 (喩 癒)
+{b03_yu} : p:0.2 50,2 4,34 | n:0.06 50,2 96,34 | h 32,30 68,30 | p:0.08 16,42 16,80~ 8,98 | z 16,42 48,42 48,94 42,90 | d 16,56 38,64 | d 16,72 38,80 | z 70,46 62,66 78,96 | z 88,44 80,62 96,92
+# 䍃, Japanese form: 爫, two bars, the vertical, 凵 (揺 謡)
+{b03_yao} : p:0.05 90,2 12,10 | d 16,16 24,30 | d 44,14 50,28 | p:0.05 84,14 72,32 | h 18,42 82,42 | h 8,60 92,60 | s 50,42 50,90 | z 16,72 16,90 84,90 | s 84,72 84,98
+# right of 様 (Japanese): 丷, three bars, the vertical with its hook, the dot and tick, the piě and nà
+{b03_yang} : d 28,2 36,14 | p:0.05 72,2 64,14 | h 14,22 86,22 | h 18,36 82,36 | h 8,50 92,50 | z 50,22 50,92 40,86 | d 20,62 30,72 | t 12,90 38,74 | p:0.1 82,58 52,72 | n:0.06 52,72 94,96
+# top of 覧 (Japanese): 臣, 𠂉 and a bar
+{b03_lan_t} [f=0,0,100,40] : h 4,4 46,4 | s 6,4 6,38 | s 26,4 26,36 | z 6,16 42,16 42,28 | h 6,28 42,28 | h 6,36 46,36 | p:0.08 72,0 54,22 | h 64,10 96,10 | h 60,28 92,28
+# right of 猟 (Japanese): ⺍ over a frame with its foot turned out, the vertical, two bars
+{b03_lie} : d 20,2 26,16 | s 50,0 50,16 | p:0.05 82,2 72,16 | p:0.1 22,24 22,80~ 8,98 | z 22,24 78,24 78,84r10 90,92 96,86 | s 50,24 50,100 | h 22,46 78,46 | h 22,68 78,68
+# 尞 under 宀 (寮)
+{b03_liao} : h 10,6 90,6 | p:0.2 50,0 48,14~ 12,40 | n:0.06 52,14 90,40 | d 24,18 32,30 | p:0.05 76,18 68,30 | s 28,46 28,72 | z 28,46 72,46 72,72 | h 28,59 72,59 | h 28,72 72,72 | z 50,72 50,98 42,94 | p:0.1 34,80 18,94 | d 66,80 82,94
+# 塁 (Japanese): 田, the two pairs of short strokes, 土
+{b03_lei} : s 16,2 16,36 | z 16,2 84,2 84,36 | h 16,19 84,19 | s 50,2 50,36 | h 16,36 84,36 | d 10,42 32,48 | t 6,62 38,51 | p:0.05 92,40 62,49 | d 60,53 94,63 | h 26,74 74,74 | s 50,62 50,94 | h 6,94 94,94
+# 士 over 示 on the left (隷)
+{b03_li_l} [f=0,0,44,100 w=0.44] : h 6,8 38,8 | s 22,0 22,26 | h 10,26 34,26 | h 8,40 36,40 | h 2,56 42,56 | z 22,56 22,94 16,88 | p:0.08 12,68 4,86 | d 32,68 40,84
+# 卆 (枠): 九 over 十
+{b03_zu} : p:0.2 38,2 10,46 | z 16,16 62,16 62,40r6 84,46 90,38 | h 6,64 94,64 | s 50,50 50,98
+
+# ---------------------------------------------------------------- stacks and flat forms placed by hand
+# (written while checking the lot: each keeps a clear white, or reads closer to the right character, where the
+# shared part squeezed into the slot touched, went muddy in Bold and Plush, or drifted towards a rival)
+# 分 under 雨 (雰): 八 open, 刀 under it
+{b03_fen_b} : p:0.15 38,0 8,30 | n:0.05 62,0 92,30 | z 22,40 78,40 78,92 68,86 | p:0.2 48,40 48,62~ 18,98
+# 兪 over 心 inside 疒 (癒), placed by hand
+{b03_yu_xin} : p:0.2 50,0 6,24 | n:0.06 50,0 94,24 | h 34,19 66,19 | p:0.06 16,33 16,60~ 10,68 | z 16,33 50,33 50,66 44,62 | d 16,43 36,49 | d 16,54 36,60 | z 68,33 62,47 74,66 | z 86,31 80,45 94,64 | d 16,78 8,96 | z 30,72 30,92~ 38,99~ 64,99 68,92 | d 44,70 52,80 | d 78,74 92,92
+# 覀 flat, the box lower under its bar (覇)
+{b03_xi_t} [f=0,0,100,36] : h 6,2 94,2 | s 16,13 16,34 | z 16,13 84,13 84,34 | s 38,2 38,34 | s 62,2 62,34 | h 16,34 84,34
+# 革 on the left under another part (覇): the box lower, clear of 廿
+{b03_ge_l} [f=0,0,40,100 w=0.4] : h 4,10 36,10 | s 12,0 12,26 | s 28,0 28,26 | h 12,26 28,26 | s 7,42 7,62 | z 7,42 33,42 33,62 | h 7,62 33,62 | t 2,84 36,76 | s 20,26 20,98
+# 雨 on top with its dots clear of the frame in heavy weights (雰)
+{b03_yu_t} [f=0,0,100,52 h=0.54] : h 12,2 88,2 | s 8,14 8,50 | z 8,14 92,14 92,50 84,47 | s 50,2 50,46 | d 25,27 33,30 | d 25,40 33,43 | d 66,27 74,30 | d 66,40 74,43
+# 劦 (脇): one 力 over two, each with room for its hook
+{b03_xie} : z 14,12 84,12 84,40 76,36 | p:0.2 46,0 46,14~ 12,42 | z 4,62 38,62 38,96 32,92 | p:0.15 22,50 22,64~ 4,96 | z 62,62 96,62 96,96 90,92 | p:0.15 80,50 80,64~ 62,96
+# 楽 under 艹 (薬): 白 kept open, the side marks small, 木 under them
+{b03_le_b} : d 8,6 18,18 | t 4,40 22,30 | p:0.05 52,0 46,8 | s 32,10 32,48 | z 32,10 68,10 68,48 | h 32,29 68,29 | h 32,48 68,48 | p:0.05 94,4 82,18 | d 80,30 94,42 | h 6,62 94,62 | s 50,48 50,100 | p:0.15 49,64 10,94 | n:0.05 51,64 90,94
+# 豊 (Japanese) drawn whole: 曲 over 豆, each with its counters open
+{b03_feng} : s 36,0 36,40 | s 64,0 64,40 | s 14,12 14,40 | z 14,12 86,12 86,40 | h 14,26 86,26 | h 14,40 86,40 | h 12,50 88,50 | s 26,57 26,71 | z 26,57 74,57 74,71 | h 26,71 74,71 | d 32,77 38,88 | p:0.05 68,77 62,88 | h 6,96 94,96
+# 厉 on the right of 栃: the flat top piě, the long sweep, a wide 万
+{b03_li_r} : p:0.04 94,2 18,12 | p:0.1 18,12 18,64~ 4,98 | h 32,32 96,32 | z 52,52 88,52 86,92 76,88 | p:0.2 58,32 56,58~ 30,96
+# 反 with 又 further right, clear of the long sweep (坂)
+{b03_fan} : h 16,6 92,6 | p:0.12 16,6 16,60~ 2,98 | z 36,36 84,36 p36,96 | n:0.05 46,52 96,96
+
+# ---------------------------------------------------------------- aliases
+# 口 on the left, a little taller than 口.L (喩: clear of 哺 once every lot is loaded)
+{b03_kou_l} [a=0.95:1.45 al=0.4 w=0.27] = 口
+# 山 on the left, taller than 山.L (峠)
+{b03_shan_l} [a=0.9:1.8 al=0.6 w=0.34] = 山

@@ -1,0 +1,113 @@
+# Brazilian Portuguese forbidden vocabulary (owner rules of 2026-10-06: Docs/Design/Vocabulary_Rule.md,
+# No_Sparkle_Rule.md). Nothing religious or divine, no sparkle words. Syntax (Drafts/check_drafts.py): a plain entry
+# matches at the start of a word (stem, any ending); "=" the whole word only; "~" anywhere. Matching ignores case.
+# Allowed look-alikes: céu (the sky only), coração, padrão (pattern), almoço, almofada (whole-word rule on alma),
+# brilho (shine, used for the Glow upgrade), biblioteca.
+#
+# sanctuary (the animal refuge is always refúgio)
+santuário
+santuario
+# holy, saint, sacred
+=santo
+=santa
+=santos
+=santas
+sagrad
+# divine, god, goddess, deity (adeus is avoided too)
+divin
+=deus
+=deusa
+=deuses
+=deusas
+# celestial, heavenly; celeste is also avoided as the color word (write azul-claro)
+celestial
+celeste
+# angel
+anjo
+anjinh
+# paradise
+paraís
+parais
+# miracle
+milagr
+# blessing, blessed
+bênç
+benç
+abençoa
+# prayer, to pray
+oraç
+rezar
+=reza
+=rezo
+# temple, altar
+templo
+altar
+# oracle
+oráculo
+oraculo
+# monk, nun, priest
+monge
+freira
+=padre
+=padres
+sacerdot
+# church, chapel, cathedral
+igreja
+capela
+catedral
+# relic, pilgrim
+relíquia
+reliquia
+peregrin
+# totem, ritual, astral
+totem
+ritual
+astral
+# mythic, myth, mythology (the rarity is Fabuloso)
+mític
+mitic
+mitolog
+=mito
+=mitos
+# karma, zen, nirvana, mantra
+carma
+karma
+=zen
+nirvana
+mantra
+# resurrection, reincarnation
+ressurrei
+reencarna
+# demon, devil, hell
+demôni
+demoni
+diab
+infern
+# soul, spirit (supernatural sense)
+=alma
+=almas
+espírito
+espirito
+# aura, halo, lotus (write flor-d'água or vitória-régia)
+aura
+auréola
+aureola
+=halo
+lótus
+=lotus
+# Bible
+bíblia
+=biblia
+# religious holidays (Christmas, Easter, Ramadan)
+=natal
+natalin
+páscoa
+pascoa
+ramadã
+ramadan
+# sparkle, twinkle, glitter (no-sparkle rule)
+cintil
+faísc
+faisc
+purpurin
+brilhinho

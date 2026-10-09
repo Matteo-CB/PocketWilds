@@ -1,0 +1,97 @@
+{
+  "title": "Pocket Wilds T01 test",
+  "output": "PocketWilds_T01_test.mp4",
+  "contactSheet": "PocketWilds_T01_test_contact.png",
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "duration": 26.0,
+  "video": {
+    "profile": "high",
+    "level": "4.1",
+    "preset": "slow",
+    "bitrate": "14M",
+    "maxrate": "16M",
+    "bufsize": "28M"
+  },
+  "audio": {
+    "music": {
+      "file": "Assets/_Game/Art/Audio/Music/MUS_RefugeTheme.wav",
+      "offset": 12.0,
+      "gainDb": 0.0,
+      "fadeIn": 0.2,
+      "fadeOutStart": 24.3,
+      "fadeOutDuration": 1.7
+    },
+    "game": {
+      "gainDb": 0.0,
+      "cutFadeMs": 12
+    },
+    "balance": {
+      "musicLufs": -20.0,
+      "gameLufs": -21.0
+    },
+    "duck": {
+      "depthDb": -7.0,
+      "attack": 0.06,
+      "hold": 0.35,
+      "release": 0.6,
+      "events": ["hatch_crack1", "hatch_crack2", "hatch_pop", "hide_tap", "hide_found", "cozy_treat", "cozy_cheer", "play_happy_a", "play_happy_b"]
+    },
+    "loudness": {
+      "integrated": -14.0,
+      "truePeak": -2.0,
+      "lra": 11.0
+    },
+    "masterFadeOut": 1.0,
+    "aacBitrate": "192k"
+  },
+  "endCard": {
+    "start": 21.0,
+    "blurSigma": 5.0,
+    "blurFade": 0.6,
+    "dim": 0.06
+  },
+  "safeArea": {
+    "top": 0.10,
+    "bottom": 0.20,
+    "right": 0.12
+  },
+  "styles": {
+    "default": {
+      "font": "plush",
+      "size": 80,
+      "outline": 0.095,
+      "outlineColor": "#5E3A21",
+      "fillTop": "#FFFBF1",
+      "fillBottom": "#FFE6BF",
+      "shadowColor": "#3A2212",
+      "shadowAlpha": 0.38,
+      "shadowBlur": 0.07,
+      "shadowOffset": 0.06,
+      "accentColor": "#FFB3C6"
+    },
+    "title": {
+      "size": 172,
+      "outline": 0.075
+    },
+    "small": {
+      "font": "round",
+      "size": 58,
+      "outline": 0.12,
+      "shadowAlpha": 0.32
+    }
+  },
+  "captions": [
+    {"text": "Hatch tiny friends", "start": 0.25, "end": 2.8, "y": 0.205},
+    {"text": "Watch them play", "start": 3.35, "end": 6.6, "y": 0.205},
+    {"text": "in a cozy meadow", "start": 6.85, "end": 10.25, "y": 0.205},
+    {"textByVariant": {"hide": "Find who's hiding", "play": "Tiny best friends"}, "shot": "hide", "start": 10.8, "end": 14.35, "y": 0.205},
+    {"textByVariant": {"treat": "Spoil them\nwith treats", "cheer": "Make them happy", "default": "Make them happy"}, "shot": "cozy", "start": 16.8, "end": 20.75, "y": 0.200},
+    {"text": "Pocket Wilds", "style": "title", "accent": "paw", "start": 21.25, "end": 26.0, "y": 0.300, "fadeOut": false, "pop": 0.4},
+    {"text": "Coming soon to", "style": "small", "start": 21.85, "end": 26.0, "y": 0.402, "fadeOut": false},
+    {"text": "Google Play & the App Store", "style": "small", "start": 22.0, "end": 26.0, "y": 0.442, "fadeOut": false}
+  ],
+  "contactFrames": [1.9, 13.8, 23.2],
+  "contactLabels": ["hatch", "hide and seek", "end card"]
+}

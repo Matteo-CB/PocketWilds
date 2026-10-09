@@ -1,0 +1,180 @@
+# Greek forbidden vocabulary (owner rule of 2026-10-06, Docs/Design/Vocabulary_Rule.md): nothing religious or divine.
+# Syntax (Drafts/check_drafts.py): a plain entry matches at the start of a word (stem, any ending); "=" the whole word only.
+# Greek matching ignores case, accents and diaeresis, and reads ς as σ (so « θεός » also catches « ΘΕΟΣ »).
+# Allowed look-alikes: θέα (view), βιβλίο (book), αγγελία (notice), αποστολή (mission, delivery), ουρανός (sky),
+# ουράνιο τόξο (rainbow), παραμυθένιο (fabulous, the rarity), ευχαριστώ (thank you).
+#
+# god (forms of θεός)
+=θεός
+=θεού
+=θεό
+=θεοί
+=θεών
+=θεούς
+# deity, divinity
+θεότητ
+# divine
+θεϊκ
+# sacred, priest, temple precinct (ιερός, ιερέας, ιερό)
+ιερ
+# holy, saint (forms of άγιος)
+=άγιος
+=αγίου
+=άγιο
+=άγιοι
+=αγίων
+=αγίους
+=αγία
+=αγίας
+=άγια
+αγιασμ
+# celestial, heavenly (ουράνιος); the sky (ουρανός) and the rainbow (ουράνιο τόξο) stay allowed
+=ουράνιος
+=ουράνιου
+=ουρανίου
+=ουράνιοι
+=ουράνιων
+=ουρανίων
+# paradise
+παράδεισ
+# angel, angelic
+=άγγελος
+=αγγέλου
+=άγγελο
+=άγγελοι
+=αγγέλων
+=αγγέλους
+αγγελάκ
+αγγελικ
+# miracle
+=θαύμα
+=θαύματα
+=θαύματος
+θαυματουργ
+# blessing
+ευλογ
+# prayer
+προσευχ
+# worship, pilgrimage, pilgrim
+προσκυν
+# temple
+=ναός
+=ναού
+=ναό
+=ναοί
+=ναών
+=ναούς
+# altar
+βωμ
+# oracle, prophecy
+μαντείο
+μαντεία
+χρησμ
+# prophet
+προφήτ
+# monk, nun
+=μοναχός
+=μοναχού
+=μοναχό
+=μοναχοί
+=μοναχών
+=μοναχή
+=μοναχές
+καλόγερ
+καλόγρι
+# priest (colloquial)
+=παπάς
+=παπά
+# church, chapel
+εκκλησ
+παρεκκλήσ
+# relic
+λείψαν
+# totem
+τοτέμ
+# ritual
+τελετουργ
+# aura (also « breeze »: avoided), halo
+=αύρα
+=αύρας
+φωτοστέφαν
+# astral
+αστρικ
+# mythic
+μυθικ
+# karma
+=κάρμα
+# zen
+=ζεν
+# nirvana
+νιρβάν
+# mantra
+=μάντρα
+=μάντρας
+# resurrection
+ανάστασ
+# reincarnation
+μετενσάρκωσ
+# demon
+δαίμον
+# devil
+διάβολ
+# Satan
+σατανά
+# hell
+κόλασ
+# soul, spirit (supernatural sense)
+=ψυχή
+=ψυχής
+=πνεύμα
+=πνεύματα
+πνευματικ
+# ghost
+φάντασμ
+# Bible
+=βίβλος
+=βίβλου
+=βίβλο
+# Easter
+=πάσχα
+# Christmas
+χριστούγενν
+# cross
+σταυρ
+# icon (religious image)
+εικόνισμ
+αγιογραφ
+# mosque (accent folding also blocks τζάμι, window glass: avoided)
+=τζαμί
+=τζαμιά
+# synagogue
+συναγωγ
+# Buddha, Buddhism
+=βούδας
+=βούδα
+βουδισ
+# lotus
+=λωτός
+=λωτού
+=λωτό
+=λωτοί
+# incense
+=λιβάνι
+=λιβανιού
+θυμιατ
+# sin
+αμαρτ
+# apostle
+=απόστολος
+=αποστόλου
+=απόστολοι
+# Christ, Jesus
+χριστ
+ιησού
+# Allah, Islam
+αλλάχ
+ισλάμ
+# shaman
+σαμάν
+# meditation
+διαλογισμ

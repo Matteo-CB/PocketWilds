@@ -1,0 +1,92 @@
+# Turkish forbidden vocabulary (owner rules of 2026-10-06: Docs/Design/Vocabulary_Rule.md, No_Sparkle_Rule.md).
+# Nothing religious or divine, no sparkle words. Syntax (Drafts/check_drafts.py): a plain entry matches at the start
+# of a word (stem, any ending); "=" the whole word only; "~" anywhere. Matching ignores case.
+# Allowed look-alikes: ziyaret / ziyaretçi (visit, visitor), bayram (also secular festivals, not used), gök (the sky
+# only), ışık (light), hacim (volume), dualite, nilüfer (water lily, used for Lily Pad Hop).
+#
+# holy, sacred, blessed
+=kutsal
+kutsan
+# divine, god, goddess
+=ilahi
+ilahî
+tanrı
+=allah
+# angel
+melek
+# heaven, paradise
+cennet
+# miracle
+mucize
+# blessing, abundance in the religious sense
+bereket
+# prayer, worship
+=dua
+=dualar
+=duası
+=namaz
+ibadet
+# temple, altar
+tapınak
+mabet
+sunak
+# oracle
+kâhin
+kahin
+# monk, nun, priest
+=rahip
+rahibe
+keşiş
+=imam
+papaz
+# church, mosque, chapel
+kilise
+=cami
+=camii
+şapel
+# pilgrim, pilgrimage
+=hacı
+=hac
+hacca
+# totem, ritual, astral
+totem
+ritüel
+astral
+# mythic, mythology (the rarity is Masalsı)
+mitik
+mitoloji
+# karma, zen, nirvana, mantra
+karma
+=zen
+nirvana
+mantra
+# resurrection, reincarnation
+diriliş
+reenkarnasyon
+# devil, demon, hell
+şeytan
+iblis
+cehennem
+# soul, spirit (ruh hali, mood, is avoided too)
+=ruh
+=ruhu
+=ruhlar
+ruhani
+# aura, halo (hâle; plain hale is the dative of hal), lotus
+aura
+=hâle
+lotus
+# holy books
+incil
+kuran
+# religious holidays (Christmas, Easter, Ramadan, Feast of Sacrifice)
+=noel
+paskalya
+ramazan
+=kurban
+# sparkle, twinkle, glitter (no-sparkle rule)
+ışıl
+parılt
+parılda
+pırılt
+pırıl

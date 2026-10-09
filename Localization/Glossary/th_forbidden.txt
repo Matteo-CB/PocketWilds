@@ -1,0 +1,118 @@
+# Thai forbidden vocabulary (owner rule of 2026-10-06, Docs/Design/Vocabulary_Rule.md): nothing religious or divine.
+# Syntax (Drafts/check_drafts.py): Thai has no spaces between words, so a plain entry matches anywhere (substring).
+# Entries are chosen so they do not hit everyday words: กิจกรรม (activities) is allowed while the karma words are listed
+# whole; ผีเสื้อ (butterfly) is allowed while the ghost words are listed whole; พร้อม (ready) and พรุ่งนี้ (tomorrow) are
+# allowed while the blessing words are listed whole. Sun and moon are written ดวงอาทิตย์, ดวงจันทร์ or จันทรา, never with พระ.
+#
+# god, deity (also in compounds such as god-like skill)
+เทพ
+# angel, deity
+เทวดา
+เทวี
+เทวะ
+# monk, holy, Buddha, royal honorific (also « sun » and « moon » with this prefix: avoided)
+พระ
+# temple (also « to measure »: avoided)
+วัด
+# church, ordination hall
+โบสถ์
+# chapel (Christian)
+โบสถ์น้อย
+# shrine
+ศาลเจ้า
+ศาลพระภูมิ
+# altar
+แท่นบูชา
+# worship
+บูชา
+# heaven, paradise
+สวรรค์
+# hell
+นรก
+# demon, devil, Satan
+ปีศาจ
+อสูร
+ซาตาน
+# sacred, holy
+ศักดิ์สิทธิ์
+# miracle
+ปาฏิหาริย์
+# blessing
+อวยพร
+ขอพร
+รับพร
+ให้พร
+# prayer, to pray, chant
+อธิษฐาน
+สวดมนต์
+สวด
+# mantra, magic chant
+มนต์
+มนตร์
+# ritual, ceremony
+พิธี
+# monk, clergy, novice, nun, hermit
+นักบวช
+บาทหลวง
+ภิกษุ
+สงฆ์
+เณร
+แม่ชี
+ฤๅษี
+# oracle, astrology, prophecy
+โหรา
+คำทำนาย
+ศาสดา
+# Bible, scripture
+ไบเบิล
+คัมภีร์
+# totem
+โทเท็ม
+โทเทม
+# aura, halo
+ออร่า
+รัศมี
+# karma (the everyday word กิจกรรม, activities, stays allowed)
+ผลกรรม
+เวรกรรม
+กฎแห่งกรรม
+คาร์มา
+# zen
+เซน
+# nirvana
+นิพพาน
+นิรวาณ
+# reincarnation
+กลับชาติมาเกิด
+ชาติหน้า
+# resurrection
+ฟื้นคืนชีพ
+# soul, spirit, ghost
+วิญญาณ
+ภูตผี
+# cross
+ไม้กางเขน
+# lotus (also water lily and the common word for a watering can: กระป๋องรดน้ำ is used instead)
+บัว
+# incense
+ธูป
+# amen
+สาธุ
+# sin
+บาป
+# merit, saint
+บุญ
+# religion
+ศาสนา
+# Christian, Islam, mosque, monastery, stupa
+คริสต์
+อิสลาม
+มัสยิด
+อาราม
+เจดีย์
+# auspicious (blessing sense)
+มงคล
+# relic
+พระธาตุ
+# pilgrimage
+แสวงบุญ

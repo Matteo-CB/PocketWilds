@@ -8,6 +8,8 @@ import math
 import unicodedata
 from dataclasses import dataclass
 
+import numpy as np
+
 from pw_font_engine import Dot, Path, Poly, Stroke, bounds, glyph_contours
 
 
@@ -1148,8 +1150,9 @@ class Glyphs:
         shapes, a, b = self.g_d()
         s, h = self.s, self.h
         x = self.ow * 0.99 - h
-        y = s.asc - 120
-        return shapes + [self.line(x - 160, y, x + 80, y, 0.9)], a, "O"
+        bowl, stem = shapes
+        bar, top = self._clear_bar(lambda y: self.line(x - 160, y, x + 80, y, 0.9), s.asc - 120, [bowl])
+        return [bowl, self.stem(x, 0, top), bar], a, "O"
 
     def g_Hbar(self):
         shapes, a, b = self.g_H()
@@ -1160,13 +1163,35 @@ class Glyphs:
     def g_hbar(self):
         shapes, a, b = self.g_h()
         s, h = self.s, self.h
-        y = s.asc - 125
-        return shapes + [self.line(h - 60, y, h + 160, y, 0.9)], "O", b
+        stem, arch = shapes
+        bar, top = self._clear_bar(lambda y: self.line(h - 60, y, h + 160, y, 0.9), s.asc - 125, [arch])
+        return [self.stem(h, 0, top), arch, bar], "O", b
+
+    def _lift(self, bar_at, y, others):
+        """A bar drawn at y, raised in 2-unit steps until its ink clears the other parts by mark_gap()."""
+        bar = bar_at(y)
+        step = 0
+        while ink_gap(others, [bar]) < self.mark_gap() and step < 150:
+            step += 1
+            bar = bar_at(y + 2 * step)
+        return bar, step
+
+    def _clear_bar(self, bar_at, y, others):
+        """A bar crossing a stem, raised until it clears the other parts (the arch of ħ, the bowl of đ), and the
+        stem top that keeps it crossing: the ascender, or a little above the bar when the bar had to climb past it
+        (the tall Plush x-height leaves no room under the ascender)."""
+        s = self.s
+        bar, step = self._lift(bar_at, y, others)
+        if step == 0:
+            return bar, s.asc
+        return bar, max(s.asc, bounds(glyph_contours([bar]))[3] + s.w * 0.25)
 
     def g_Lslash(self):
         shapes, a, b = self.g_L()
         s, h = self.s, self.h
-        return shapes + [self.line(h - 80, s.cap * 0.30, h + 130, s.cap * 0.56, 0.9)], "O", b
+        y0 = s.cap * 0.30
+        slash, _ = self._lift(lambda y: self.line(h - 80, y, h + 130, s.cap * 0.56 + (y - y0), 0.9), y0, shapes[1:])
+        return shapes + [slash], "O", b
 
     def g_lslash(self):
         shapes, a, b = self.g_l()
@@ -1490,6 +1515,8 @@ class Glyphs:
                 stem = self.ow * 0.99 - h if base == "d" else stems.get(base, h)
                 top = s.asc if base in "dl" else s.cap if base == "L" else s.xh * 1.24 + 80
                 mark = self.accent(m, stem + h + 26, top, True)
+                # ď ľ Ľ step right of the stem; ť climbs over its crossbar.
+                mark = self._seat(shapes, mark, 0.0 if base == "t" else 2.0, 2.0 if base == "t" else 0.0)
                 x1 = max(x1, self.box(mark)[2])
             else:
                 if m == "ogonek":
@@ -1505,10 +1532,26 @@ class Glyphs:
                 else:
                     by, up = s.xh, False
                 mark = self.accent(m, ax, by, up)
+                if m not in ("cedilla", "ogonek"):
+                    mark = self._seat(shapes, mark, 0.0, -2.0 if m == "commaaccent" else 2.0)
                 mx0, _, mx1, _ = self.box(mark)
                 x0, x1 = min(x0, mx0 + 25), max(x1, mx1 - 25)
             shapes = shapes + mark
         return shapes, lc, rc, upper, (x0, x1)
+
+    def mark_gap(self):
+        """Smallest ink gap between a mark and its letter (or a bar and the parts it must not touch)."""
+        return max(14.0, self.s.w * 0.15)
+
+    def _seat(self, letter, mark, dx, dy):
+        """A mark moved away from its letter in 2-unit steps until their ink is mark_gap() apart. Marks that already
+        clear their letter stay exactly where Glyphs.accent put them."""
+        step = 0
+        moved = mark
+        while ink_gap(letter, moved) < self.mark_gap() and step < 150:
+            step += 1
+            moved = [_shift(sh, dx * step, dy * step) for sh in mark]
+        return moved
 
     def _j_left(self):
         """Spacing edge of j: its stem, so the descender hook tucks under the letter before (as in 'mjuka', 'Pijama')."""
@@ -1581,6 +1624,34 @@ class Glyphs:
             yd = base_y - r
             return [self.dot(cx + r, yd, 0.85), self.line(cx + r + 4, yd - 4, cx + r - 20, yd - 104, 0.78)]
         raise KeyError(kind)
+
+
+def _ink_samples(shape):
+    """Centerline points of a shape and the half width of its ink at each point (as pw_font_engine draws it)."""
+    if isinstance(shape, Dot):
+        return np.array([[shape.x, shape.y]]), np.array([shape.r])
+    if isinstance(shape, Poly):
+        p = np.array(shape.points, dtype=float)
+        return p, np.zeros(len(p))
+    p = np.array(shape.path.points, dtype=float)
+    hw = np.full(len(p), shape.width * 0.5)
+    if shape.width_fn is not None and len(p) > 1:
+        s = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(p, axis=0), axis=1))])
+        u = s / s[-1] if s[-1] > 0 else s
+        hw = hw * np.array([shape.width_fn(v) for v in u])
+    return p, hw
+
+
+def ink_gap(a, b):
+    """Smallest distance between the ink of two shape lists (negative when they overlap)."""
+    best = 1e9
+    for sa in a:
+        pa, ha = _ink_samples(sa)
+        for sb in b:
+            pb, hb = _ink_samples(sb)
+            d = np.sqrt(((pa[:, None, :] - pb[None, :, :]) ** 2).sum(axis=2)) - ha[:, None] - hb[None, :]
+            best = min(best, float(d.min()))
+    return best
 
 
 def _se(cx, cy, rx, ry, a, n):

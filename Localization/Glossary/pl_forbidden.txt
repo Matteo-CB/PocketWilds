@@ -1,0 +1,125 @@
+# Polish forbidden vocabulary (owner rules of 2026-10-06: Docs/Design/Vocabulary_Rule.md, No_Sparkle_Rule.md).
+# Nothing religious or divine, no sparkle words. Syntax (Drafts/check_drafts.py): a plain entry matches at the start
+# of a word (stem, any ending); "=" the whole word only; "~" anywhere. Matching ignores case.
+# Allowed look-alikes: księżyc (moon), świetlik (firefly), świetnie (great), światło (light), niebo (the sky only), biblioteka
+# (library), skrzynia (chest), skrzydło (wing), kości (bones), mity (only as part of other words, never alone).
+#
+# sanctuary
+sanktuarium
+# holy, saint, temple, holiday in the religious sense (święty, świątynia, święta, świąteczny)
+święt
+świąt
+# god, divine, goddess, deity (bóg, boski, bogini, bóstwo)
+bóg
+=boga
+=bogu
+=bogiem
+=bogowie
+=bogów
+boski
+boska
+boskie
+bogini
+bóstw
+# Christmas (Boże Narodzenie) and every boży / boże form
+boż
+# angel
+anioł
+aniel
+# heavenly, the heavens (niebiosa, niebiański); the plain word niebo stays allowed for the sky
+niebios
+niebiań
+# paradise
+=raj
+=raju
+=rajem
+rajsk
+# miracle (also blocks cudowny: write wspaniały, przepiękny, świetny instead)
+=cud
+=cuda
+=cudu
+=cudem
+=cudów
+cudown
+# blessing, to bless
+błogosław
+# prayer, to pray
+modlitw
+modli
+# altar, chapel, church
+ołtarz
+kaplic
+kościoł
+kościół
+# oracle
+wyroczni
+# monk, nun, priest
+mnich
+zakonni
+ksiądz
+=księża
+=księży
+=księżom
+=księżmi
+=księdza
+=księdzu
+kapłan
+# relic, pilgrim
+relikwi
+pielgrzym
+# totem
+totem
+# ritual
+rytuał
+# astral
+astraln
+# mythic, myth, mythology (the rarity is Bajeczny)
+mityczn
+=mit
+=mitu
+=mity
+mitolog
+# karma (also the word for pet food in Polish: avoid it, write jedzenie or przysmak), zen, nirvana, mantra
+karma
+karmy
+=zen
+nirwan
+mantr
+# resurrection, reincarnation
+zmartwychwsta
+reinkarnac
+# demon, devil, hell
+demon
+diab
+piekł
+=piekle
+# soul, spirit, ghost
+=dusza
+=duszy
+=duszę
+=dusze
+=duch
+=ducha
+=duchy
+duchow
+# aura, halo, lotus (write lilia wodna)
+aura
+aureol
+lotos
+lotus
+# Bible
+=biblia
+=biblii
+=biblię
+# religious holidays and their symbols (Christmas Eve, Easter, the Christmas star adjective)
+wigili
+wielkan
+gwiazdkow
+# sparkle, twinkle, glitter (no-sparkle rule)
+iskr
+iskier
+migot
+migoc
+skrząc
+=skrzyć
+brokat

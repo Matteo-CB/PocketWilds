@@ -1,0 +1,106 @@
+# Vietnamese forbidden vocabulary (owner rule of 2026-10-06, Docs/Design/Vocabulary_Rule.md): nothing religious or divine.
+# Syntax (Drafts/check_drafts.py): a plain entry matches at the start of a word; "=" the whole word (one syllable) only.
+# Vietnamese writes one syllable per word, so most entries are whole syllables (=) or fixed phrases.
+# Allowed look-alikes: hạnh phúc (happiness), thiên nhiên (nature), trời (sky), Huyền thoại (Legendary, the rarity),
+# Tuyệt diệu (Fabulous, the rarity), Hoàng hôn (dusk), đồng hồ (clock).
+#
+# god, deity, divine (also « spirit, morale » in tinh thần and « magical » in thần kỳ: avoided)
+=thần
+# saint, holy
+=thánh
+# sacred
+thiêng
+# paradise, heaven
+thiên đường
+thiên đàng
+thiên giới
+# God, lord (also « princess » in công chúa: avoided)
+thượng đế
+=chúa
+# Buddha
+=phật
+# pagoda
+=chùa
+# temple, shrine (also « to compensate » in đền bù: avoided)
+=đền
+=miếu
+# church, chapel
+nhà thờ
+nhà nguyện
+# altar, to worship
+bàn thờ
+=thờ
+# prayer, to pray
+cầu nguyện
+# blessing
+=phước
+ban phước
+chúc phúc
+# miracle
+phép màu
+phép lạ
+nhiệm màu
+# oracle, prophet
+tiên tri
+sấm truyền
+# monk, priest, pastor, nun
+nhà sư
+sư thầy
+tăng ni
+linh mục
+mục sư
+thầy tu
+tu sĩ
+ni cô
+hòa thượng
+# pilgrimage
+hành hương
+# totem
+vật tổ
+tô-tem
+=totem
+# ritual, rite
+nghi lễ
+nghi thức
+=lễ bái
+# aura, halo
+hào quang
+=aura
+# soul, spirit (supernatural sense)
+linh hồn
+=hồn
+# demon, devil, ghost
+ma quỷ
+=quỷ
+ác quỷ
+# hell, underworld
+địa ngục
+âm phủ
+# karma
+nghiệp chướng
+nghiệp báo
+=karma
+# zen, meditation
+=thiền
+# nirvana
+niết bàn
+=nirvana
+# mantra
+=mantra
+# resurrection, Easter
+phục sinh
+# reincarnation
+luân hồi
+đầu thai
+# lotus
+=sen
+hoa sen
+# incense
+=nhang
+thắp hương
+# sin
+tội lỗi
+# Christmas
+giáng sinh
+# cross
+thập tự

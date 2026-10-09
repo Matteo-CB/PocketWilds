@@ -1,0 +1,108 @@
+# Indonesian forbidden vocabulary (owner rules of 2026-10-06: Docs/Design/Vocabulary_Rule.md, No_Sparkle_Rule.md).
+# Nothing religious or divine, no sparkle words. Syntax (Drafts/check_drafts.py): a plain entry matches at the start
+# of a word (stem, any ending); "=" the whole word only; "~" anywhere (used for words hidden behind prefixes such as
+# ber-, ke-). Matching ignores case.
+# Allowed look-alikes: dewasa (adult), kilat (fast, lightning), purapura is avoided anyway, suaka (refuge, protected
+# area), langit (the sky only), ajaib (amazing) is allowed but not needed.
+#
+# holy, sacred (suci also means clean: write bersih)
+=suci
+kudus
+keramat
+# divine, god, goddess, deity
+=ilahi
+ilahiah
+=dewa
+=dewi
+=dewata
+=tuhan
+=allah
+# angel, celestial nymph
+malaikat
+bidadari
+# heaven, paradise
+surga
+sorga
+firdaus
+# miracle, wonder in the miraculous sense
+mukjizat
+keajaiban
+# blessing, blessed (berkat also means thanks to: write karena)
+berkah
+=berkat
+diberkati
+# prayer, to pray, worship
+=doa
+berdoa
+sembahyang
+ibadah
+# temple, shrine, altar
+=kuil
+=candi
+=pura
+=altar
+mezbah
+# oracle
+orakel
+# monk, nun, priest
+biksu
+biarawan
+pendeta
+=imam
+=pastor
+# church, mosque, chapel
+gereja
+masjid
+=kapel
+# relic, pilgrimage
+relikui
+ziarah
+peziarah
+# totem, ritual, astral
+totem
+ritual
+astral
+# mythic, myth, mystical (the rarity is Memukau)
+=mitos
+mitologi
+=mistis
+# karma, zen, nirvana, mantra
+karma
+=zen
+nirwana
+nirvana
+mantra
+# resurrection, reincarnation
+kebangkitan
+reinkarnasi
+# demon, devil, hell
+=setan
+iblis
+neraka
+# soul, spirit, ghost
+=roh
+=arwah
+=jiwa
+=hantu
+# aura, halo, lotus (teratai is lotus and water lily: write lili air)
+aura
+~lingkaran cahaya
+teratai
+lotus
+# holy books
+alkitab
+=injil
+# religious holidays (Christmas, Eid, Easter, Ramadan, Nyepi, Vesak)
+=natal
+lebaran
+=idul
+paskah
+ramadan
+=nyepi
+waisak
+# sparkle, twinkle, glitter (no-sparkle rule)
+~kilau
+kemilau
+~kelip
+~kerlip
+gemerlap

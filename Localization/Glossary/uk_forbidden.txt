@@ -1,0 +1,174 @@
+# Ukrainian forbidden vocabulary (owner rule of 2026-10-06, Docs/Design/Vocabulary_Rule.md): nothing religious or divine.
+# Syntax (Drafts/check_drafts.py): a plain entry matches at the start of a word (stem, any ending); "=" the whole word only.
+# Matching ignores case. Short stems that would hit common words are written as whole words (=).
+# Allowed look-alikes: безкоштовно (free), бібліотека (library), іконка (UI icon), небо (sky), казковий (fabulous,
+# the rarity), дивовижний (amazing). Not used either: свято (holiday, from the « holy » root) and its forms.
+#
+# god (forms of бог)
+=бог
+=бога
+=богу
+=богом
+=бозі
+=боги
+=богів
+=богам
+=богами
+# goddess
+богин
+# divine, God's (божий, божество)
+бож
+# deity
+божеств
+# holy, saint, sanctuary, holiday (святий, святиня, святилище, свято)
+свят
+# sacred, priest (священний, священик)
+священ
+# heavenly, celestial, the heavens (небеса, небесний); the plain word небо (sky) is allowed
+небес
+# paradise
+=рай
+=раю
+=раєм
+райськ
+# angel
+ангел
+# miracle
+=чудо
+=чуда
+=диво
+=дива
+чудотвор
+# blessing
+благослов
+# grace (religious)
+благодат
+# prayer, to pray
+молитв
+молитися
+молиться
+молюся
+моляться
+# temple
+храм
+# altar
+вівтар
+жертовник
+# oracle, prophet
+оракул
+пророк
+пророц
+# monk, nun
+монах
+чернець
+ченц
+черниц
+# priest, priestess (pagan)
+жрец
+жриц
+# church
+церкв
+церков
+# chapel
+каплиц
+# relic
+релікві
+# pilgrim
+паломник
+прочан
+# totem
+тотем
+# ritual, rite
+ритуал
+обряд
+# aura, halo
+=аура
+=аури
+=ауру
+=аурою
+німб
+ореол
+# astral
+астрал
+# mythic, myth
+міф
+# karma
+=карма
+=карми
+=карму
+кармічн
+# zen
+=дзен
+# nirvana
+нірван
+# mantra
+мантр
+# resurrection
+воскрес
+# reincarnation
+перевтілен
+реінкарнац
+# demon, devil, Satan
+демон
+=біс
+=біса
+=біси
+=бісів
+чорт
+диявол
+сатан
+# hell (пекла is also « she baked »: past tenses of пекти are avoided)
+=пекло
+=пекла
+пекельн
+# soul, spirit (supernatural sense)
+=душа
+=душу
+=душею
+духовн
+# ghost
+привид
+# Bible
+=біблія
+=біблії
+=біблію
+біблійн
+# icon (religious image); іконка (UI icon) stays allowed
+=ікона
+=ікони
+=ікону
+=іконою
+=ікон
+# cross, baptism
+хрест
+хрещ
+# Easter, Christmas
+великдень
+великод
+різдв
+# mosque, synagogue, Buddha
+мечет
+синагог
+будд
+# lotus
+лотос
+# incense
+ладан
+# sin
+гріх
+грішн
+# apostle, messiah, martyr
+апостол
+месія
+мученик
+# religions and their founders
+христ
+ісус
+аллах
+іслам
+мусульман
+юдей
+індуїст
+шаман
+# meditation
+медитац

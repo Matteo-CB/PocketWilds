@@ -1,0 +1,126 @@
+# Pocket Wilds Han components, lot a03 (batch A): private parts of this lot, named {a03_*}.
+# Same syntax and same hand as the shared files (pw_font_han.py): stroke skeletons on the 0..100 grid, y down.
+# Written by hand, nothing taken from any font.
+
+# ---------------------------------------------------------------- characters drawn whole
+# 丈: bar, the piě from above the bar, the nà leaving the piě
+{a03_zhang} : h 6,26 94,26 | p:0.2 54,2 54,52~ 6,94 | n:0.04 28,40 94,94
+# 瓦 in Simplified and Taiwan: bar, the slanted vertical rising at its foot, the turning hook, the dot
+{a03_wa} : h 8,10 92,10 | z 35,20 26,82 62,72 | z 33,32 70,32 70,80r10 90,88 94,72 | d 44,46 54,60
+# 瓦 in Japan: the bar at the foot runs past the slanted vertical (five strokes)
+{a03_wa_j} : h 8,10 92,10 | s 35,20 28,78 | t 8,86 62,74 | z 33,32 70,32 70,80r10 90,88 94,72 | d 44,46 54,60
+# 釜: 父 over the lower part of 金 (short bar, bar, vertical, two dots, base)
+{a03_fu} : p:0.05 42,2 14,20 | n:0.04 58,2 86,20 | p:0.1 72,16 4,44 | n:0.05 28,16 96,44 | h 26,54 74,54 | h 8,70 92,70 | s 50,54 50,96 | d 28,78 36,90 | p:0.05 72,78 64,90 | h 6,96 94,96
+# 臼: the short piě, the left side, the right corner, two half bars, the base
+{a03_jiu} : p:0.05 32,2 20,14 | s 18,14 18,94 | h 18,52 40,52 | z 58,10 82,10 82,94 | h 58,52 82,52 | h 18,94 82,94
+# 尚 at full height (the shared 尚 is a top form)
+{a03_shang} : s 50,2 50,22 | d 24,8 32,22 | p:0.05 76,6 68,22 | s 12,30 12,96 | z 12,30 88,30 88,92 78,86 | s 34,46 34,68 | z 34,46 66,46 66,68 | h 34,68 66,68
+# 承: the top 横撇, the hooked vertical, three bars, the left 横撇, the short piě and the nà on the right
+{a03_cheng} : z 24,8 72,8 p50,24 | z 50,24 50,90 40,84 | h 36,38 64,38 | h 36,50 64,50 | h 32,62 68,62 | z 12,32 32,32 p8,80 | p:0.05 88,26 72,40 | n:0.05 66,28 94,80
+# 善: 䒑, the short bar, the vertical, the long bar, the two dots and bar, 口
+{a03_shan} : d 30,2 38,12 | p:0.05 70,2 62,12 | h 14,18 86,18 | h 22,30 78,30 | s 50,18 50,42 | h 6,42 94,42 | d 32,50 38,58 | p:0.05 68,50 62,58 | h 14,64 86,64 | s 26,74 26,96 | z 26,74 74,74 74,96 | h 26,96 74,96
+# 爽: 大 with two 乂 on each side of its piě
+{a03_shuang} : h 6,22 94,22 | p:0.3 50,2 50,62~ 6,98 | n:0.06 52,64 96,98 | p:0.05 36,30 14,46 | d 14,32 36,46 | p:0.05 36,52 14,68 | d 14,54 36,68 | p:0.05 86,30 64,46 | d 64,32 86,46 | p:0.05 86,52 64,68 | d 64,54 86,68
+# 疑 (凝): 匕 over 矢 at the left, マ over 疋 at the right
+{a03_yi} : p:0.05 32,2 12,10 | z 10,2 10,22 36,18 | p:0.05 16,28 8,40 | h 12,36 40,36 | h 4,54 44,54 | p:0.2 26,36 26,62~ 4,96 | d 30,70 44,92 | z 56,2 92,2 p70,20 | d 76,12 88,24 | z 56,34 90,34 88,44 | s 72,44 72,80 | h 72,60 94,60 | p:0.1 60,54 50,82 | n:0.04 62,82 98,96
+# 既: 艮-like left (box, the vertical rising at its foot, the dot), 旡 at the right
+{a03_jii} : z 6,8 40,8 40,52 | h 6,30 40,30 | h 6,52 40,52 | z 6,8 6,90 38,76 | d 22,62 36,78 | h 52,8 92,8 | h 48,34 98,34 | p:0.3 70,8 66,52~ 44,94 | z 80,34 80,84r8 92,92 98,80
+# 充: 亠, the turning 厶 spread wide, 儿
+{a03_chong} : d 48,0 54,10 | h 6,18 94,18 | z 46,30 24,52 72,48 | d 62,38 78,52 | p:0.2 36,60 6,96 | z 62,60 62,86r10 90,92 96,78
+# 拳: 龹 with its legs spread over 手
+{a03_quan} : d 30,2 38,12 | p:0.05 70,2 62,12 | h 18,20 82,20 | h 8,34 92,34 | p:0.25 48,12 48,30~ 8,62 | n:0.05 52,38 92,62 | p:0.05 72,48 30,56 | h 22,68 78,68 | h 12,82 88,82 | z 50,53 50,94 40,88
+# 玄: 亠 over a full-size 幺
+{a03_xuan} : d 47,0 53,10 | h 6,20 94,20 | z 54,32 30,56 60,58 | z 68,44 18,90 80,84 | d 66,68 84,90
+
+# ---------------------------------------------------------------- parts
+# 虍 with its inner 七 kept high, so 呉 / 吳 / 吴 fit under it (虞)
+{a03_hu_f} [in=18,46,100,100] : s 46,0 46,16 | h 46,7 72,7 | z 16,22 88,22 82,32 | p:0.12 16,22 16,70~ 2,98 | t 30,36 70,31 | z 44,25 44,40r6 84,40 86,34
+# 者 under 罒 (署): the piě crosses the bar right of the vertical, Taiwan with its dot
+{a03_zhe}@JS : h 20,16 70,16 | s 44,2 44,32 | h 6,32 94,32 | p:0.1 86,4 28,62 | s 32,60 32,96 | z 32,60 80,60 80,96 | h 32,78 80,78 | h 32,96 80,96
+{a03_zhe}@T : h 20,16 70,16 | s 44,2 44,32 | h 6,32 94,32 | p:0.1 86,4 28,62 | d 58,42 66,50 | s 32,60 32,96 | z 32,60 80,60 80,96 | h 32,78 80,78 | h 32,96 80,96
+# right of 隙: 小, 日, then the hooked vertical between its two dots
+{a03_xi_r} : s 50,2 50,22 | p:0.05 28,6 20,20 | d 72,6 84,20 | s 26,26 26,64 | z 26,26 74,26 74,64 | h 26,45 74,45 | h 26,64 74,64 | z 50,64 50,94 42,90 | p:0.08 30,74 10,94 | d 70,74 90,94
+# bottom of 畏: bar, the vertical rising at its foot, the short piě, the nà
+{a03_wei_b} [f=0,0,100,56] : h 4,4 96,4 | z 28,4 28,50 48,40 | p:0.05 80,14 56,28 | n:0.06 44,18 96,54
+# inside of 延: the flat piě and 止
+{a03_yan_in} : p:0.05 70,2 30,10 | s 50,10 50,84 | h 50,44 80,44 | z 24,34 24,84 94,84
+# 巛 at full height (inside 辶)
+{a03_chuan} : z 34,4 8,36 26,66 | p:0.1 64,4 40,76 | p:0.1 96,4 64,92
+# 巨 (拒)
+{a03_ju} : h 12,10 88,10 | z 12,38 74,38 74,64 | h 12,64 74,64 | z 12,10 12,90 92,90
+# 冘, right of 沈
+{a03_chen_r} : d 12,6 14,22 | z 12,6 88,6 84,20 | p:0.15 42,22 42,60~ 10,96 | z 60,22 60,82r10 90,90 96,76
+# 呉 / 吳 under 虍 in Japan and Taiwan: 口, the corner stroke, the bar, the two legs
+{a03_wu_jt} : s 40,2 40,30 | z 40,2 86,2 86,30 | h 40,30 86,30 | z 16,8 16,48 84,48 | h 4,66 96,66 | p:0.1 42,70 6,96 | n:0.05 58,72 96,96
+# 毋 under 龶 (毒 in Japan and Taiwan)
+{a03_wu} : z 28,8 22,70 88,70 | z 28,8 80,8 78,92 66,86 | p:0.05 56,12 46,66 | h 6,40 94,40
+# 母 under 龶 (毒 in Simplified): the lower dot clear of the base
+{a03_mu} : z 28,6 22,74 88,74 | z 28,6 80,6 78,92 66,86 | d 46,14 55,26 | h 6,38 94,38 | d 45,50 53,60
+# 爰 at the right (媛): the flat piě of 爫 spans the part, 友 below
+{a03_yuan} : p:0.04 88,2 20,10 | d 24,16 32,28 | d 48,15 52,28 | p:0.05 76,15 68,28 | h 18,38 82,38 | h 6,54 94,54 | p:0.2 46,38 46,62~ 8,96 | z 40,66 80,66 p34,96 | n:0.05 46,76 96,96
+# 犭 with its long curved stroke and the lower piě leaving it high (狩: the shared 犭 closes into a wedge)
+{a03_quan_l} [f=0,0,32,100 w=0.31] : p:0.08 28,4 2,30 | z 4,12 16,24~ 21,44~ 21,88 13,82 | p:0.1 21,40 2,66
+# 宀 with longer sides (守 in 狩: the shared one, flattened, reads close to the 土 of 寺 in Taiwan)
+{a03_mian} [f=0,0,100,36] : d 46,0 54,12 | d 8,16 10,36 | z 8,16 92,16 86,36
+# 寸 under 宀 with its bar high (狩), as the references draw 守
+{a03_cun} [f=0,0,60,100] : h 2,20 58,20 | z 40,2 40,92 30,86 | d 14,36 20,52
+# 司 (伺 嗣)
+{a03_si} : z 12,10 86,10 86,90 74,84 | h 20,32 68,32 | s 22,48 22,76 | z 22,48 64,48 64,76 | h 22,76 64,76
+# right of 侯: コ, ⺈ and 大 (no short vertical, that is 候)
+{a03_hou_r} : z 20,4 80,4 80,18 | h 20,18 80,18 | p:0.1 32,24 18,40 | h 26,36 84,36 | h 8,58 96,58 | p:0.25 54,36 54,62~ 10,98 | n:0.06 56,66 96,98
+# bottom of 爵: 艮-like box with its rising foot and dot, 寸
+{a03_jue_b} : z 8,6 44,6 44,46 | h 8,26 44,26 | h 8,46 44,46 | z 8,6 8,92 46,80 | d 28,58 44,74 | h 52,30 98,30 | z 82,2 82,92 72,86 | d 62,48 70,62
+# 夫 at the left of 替: its nà shortened
+{a03_fu_l} [f=0,0,50,100] : h 8,20 44,20 | h 4,46 48,46 | p:0.2 26,2 26,50~ 4,96 | d 30,62 46,84
+# 反 with room around the left piě (阪, narrow slot)
+{a03_fan} : h 16,8 92,8 | p:0.12 16,8 16,60~ 2,98 | z 34,36 84,36 p38,96 | n:0.05 44,52 96,96
+# 㡀, left of 敝: the vertical through 冂 between 丷 above and two short strokes inside
+{a03_bi_l} [f=0,0,56,100] : d 8,4 14,18 | p:0.05 48,4 42,18 | s 28,0 28,98 | s 4,30 4,96 | z 4,30 52,30 52,92 46,88 | d 16,30 15,70 | d 40,30 41,70
+# 辟 drawn whole (璧 癖): 尸 over 口, 辛 with its dots clear of both bars
+{a03_pi} : z 6,6 42,6 42,28 | h 6,28 42,28 | p:0.12 6,6 6,64~ 2,98 | s 18,46 18,80 | z 18,46 42,46 42,80 | h 18,80 42,80 | d 70,0 74,6 | h 52,10 94,10 | d 60,25 63,33 | p:0.05 86,25 83,33 | h 50,48 98,48 | h 54,72 94,72 | s 72,48 72,98
+# 鬲, left of 融: bar, 口, 冂, the V and the T inside
+{a03_li_l} [f=0,0,44,100] : h 2,4 42,4 | s 10,14 10,34 | z 10,14 34,14 34,34 | h 10,34 34,34 | s 4,44 4,98 | z 4,44 40,44 40,92 34,88 | d 14,54 20,62 | p:0.05 30,54 24,62 | h 10,70 34,70 | s 22,64 22,96
+
+# ---------------------------------------------------------------- variants of shared parts (worth promoting)
+# 阝 with a rounder, roomier ear: the shared one fills up in Bold and Plush (隙 隅 防 阪 陛)
+{a03_ear_l} [f=0,0,40,100 w=0.31] : z 6,4 34,4 p19,36 38,58~ 34,76~ 19,83 | s 6,4 6,98
+# 阝 at the right, the same roomier ear (邸)
+{a03_ear_r} [f=0,0,40,100 w=0.33] : z 6,4 34,4 p19,36 38,58~ 34,76~ 19,83 | s 6,4 6,98
+# 扌 narrower, its tí higher and its hook small: the shared 扌, and any long hook, read close to 火 and 衤 in the
+# Simplified duels (拷 / 烤, 披 / 被), as a01 and c01 found with 木
+{a03_shou_l} [f=0,0,32,100 w=0.27] : h 4,28 30,28 | z 16,2 16,94 12,90 | t 2,62 32,50
+# 口 on the left a little taller and centred (唆 嗣), as in a01 and c01
+{a03_kou_l} [a=1.0:1.6 al=0.5 w=0.31] = 口
+# 骨 on the left: the 冖 hook clear of the narrower 月 (骸)
+{a03_gu_l}@J [f=0,0,44,100 w=0.42] : s 6,4 6,30 | z 6,4 40,4 40,30 | z 24,4 24,17 40,17 | h 6,30 40,30 | d 2,40 3,51 | z 2,40 42,40 42,49 | p:0.1 11,54 11,84~ 4,98 | z 11,54 33,54 33,94 27,90 | h 11,67 33,67 | h 11,81 33,81
+{a03_gu_l}@T [f=0,0,44,100 w=0.42] : s 6,4 6,30 | z 6,4 40,4 40,30 | z 24,4 24,17 40,17 | h 6,30 40,30 | d 2,40 3,51 | z 2,40 42,40 42,49 | p:0.1 11,54 11,84~ 4,98 | z 11,54 33,54 33,94 27,90 | t 11,71 24,66 | t 11,87 33,79
+{a03_gu_l}@S [f=0,0,44,100 w=0.42] : s 6,4 6,36 | z 6,4 37,4 37,36 | z 24,4 24,20 6,20 | d 2,36 3,49 | z 2,36 42,36 42,46 | p:0.1 11,52 11,84~ 4,98 | z 11,52 33,52 33,94 27,90 | h 11,66 33,66 | h 11,80 33,80
+# 鹿 under another part (麓): more room between the bar of 广 and the box
+{a03_lu_b} : d 52,0 58,6 | h 16,10 96,10 | p:0.12 18,10 18,64~ 4,98 | z 30,26 30,52 84,52 | z 30,26 84,26 84,52 | h 30,39 84,39 | s 58,10 58,52 | h 32,78 50,78 | z 32,66 32,94 52,86 | p:0.05 88,68 64,79 | z 64,64 64,90r6 92,94 94,86
+
+# ---------------------------------------------------------------- parts redrawn for one slot
+# 瓦 at the right (瓶): the slanted vertical further left, the dot clear of both sides
+{a03_wa_r} : h 8,10 92,10 | z 30,20 20,82 60,72 | z 28,32 74,32 74,80r10 90,88 94,72 | d 48,46 58,60
+{a03_wa_jr} : h 8,10 92,10 | s 30,20 22,78 | t 6,86 60,74 | z 28,32 74,32 74,80r10 90,88 94,72 | d 48,46 58,60
+# left of 敷: 甫 over 方, drawn whole so both keep their rows
+{a03_fu_lft} [f=0,0,56,100] : h 4,12 52,12 | s 10,21 10,52 | z 10,21 48,21 48,50 43,47 | h 10,31 48,31 | h 10,41 48,41 | s 29,2 29,52 | d 40,2 46,8 | d 26,57 31,64 | h 4,69 52,69 | z 23,78 46,78 46,94 38,98 | p:0.2 21,69 21,82~ 4,98
+# 并 at the left (瓶): the two dots apart, so they never close into one shape in Bold and Plush
+{a03_bing_l} [f=0,0,50,100 w=0.44] : d 10,4 16,18 | p:0.05 40,4 34,18 | h 6,30 44,30 | h 2,56 48,56 | p:0.1 17,30 17,76~ 4,98 | s 33,30 33,98
+# 玉 under 辟 (璧): the dot between the middle and the bottom bars
+{a03_yu_b} : h 12,6 88,6 | h 18,42 82,42 | s 50,6 50,94 | h 6,94 94,94 | d 62,56 74,78
+# 矢 with its piě starting on the first bar (the shared 矢 starts above it and reads 失 in Simplified and Taiwan)
+{a03_shi} : p:0.1 30,4 12,32 | h 20,26 82,26 | h 6,52 94,52 | p:0.3 50,26 50,56~ 8,96 | n:0.06 52,62 94,96
+# 山 on the left a little taller and higher (岬 岐)
+{a03_shan_l} [a=0.95:1.7 al=0.5 w=0.34] = 山
+# 冊 / 册 in a narrow middle slot (嗣): wider gap between the two halves
+{a03_ce}@JT : s 10,8 10,98 | z 10,8 38,8 38,92 30,86 | s 62,8 62,98 | z 62,8 90,8 90,92 82,86 | h 2,52 98,52
+{a03_ce}@S : p:0.08 10,8 10,70~ 3,98 | z 10,8 38,8 38,92 30,86 | s 62,8 62,98 | z 62,8 90,8 90,92 82,86 | h 2,52 98,52
+# 辰 at the right (娠): the inner parts a little away from the left piě
+{a03_chen} : h 14,8 90,8 | p:0.12 16,8 16,62~ 2,96 | h 34,30 84,30 | h 30,50 92,50 | z 34,50 34,88 50,80 | p:0.05 86,52 62,68 | n:0.06 52,54 96,96
+
+# ---------------------------------------------------------------- compositions
+{a03_sui_in} = ⿱:0.2丷豕
+{a03_wei_l} = ⿸尸示
+{a03_dian_l} = ⿸尸共
+{a03_xu} = ⿱:0.42{dan_t}月
+{a03_bi} = ⿰:0.52{a03_bi_l}攵
