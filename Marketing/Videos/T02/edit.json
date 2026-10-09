@@ -1,0 +1,493 @@
+{
+  "title": "Pocket Wilds T02",
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "music": {
+    "file": "Assets/_Game/Art/Audio/Music/MUS_Activity_HurriedPaws.wav",
+    "bpm": 112,
+    "gainDb": 0.0
+  },
+  "sources": {
+    "a": {
+      "dir": "Marketing/Videos/T02",
+      "frames": "frames_run1",
+      "audio": "game_audio_run1.wav",
+      "log": "capture_log_run1.json"
+    },
+    "b": {
+      "dir": "Marketing/Videos/T02"
+    },
+    "t01": {
+      "dir": "Marketing/Videos/T01_test"
+    }
+  },
+  "video": {
+    "profile": "high",
+    "level": "4.1",
+    "preset": "slow",
+    "bitrate": "14M",
+    "maxrate": "16M",
+    "bufsize": "28M"
+  },
+  "audio": {
+    "balance": {
+      "musicLufs": -19.0,
+      "gameLufs": -20.0,
+      "gamePeak": -1.5
+    },
+    "duck": {
+      "depthDb": -6.0,
+      "attack": 0.05,
+      "hold": 0.3,
+      "release": 0.5,
+      "events": [
+        "hatch_crack1",
+        "hatch_crack2",
+        "hatch_pop",
+        "burst_pop",
+        "hide_tap",
+        "hide_found",
+        "cozy_treat",
+        "groom_bow",
+        "social_greet",
+        "zone_open"
+      ]
+    },
+    "asmr": {
+      "depthDb": -13.0,
+      "attack": 0.08,
+      "hold": 0.5,
+      "release": 0.45
+    },
+    "loudness": {
+      "integrated": -14.0,
+      "truePeak": -2.0,
+      "lra": 11.0
+    },
+    "aacBitrate": "192k"
+  },
+  "safeArea": {
+    "top": 0.1,
+    "bottom": 0.2,
+    "right": 0.12
+  },
+  "styles": {
+    "default": {
+      "font": "plush",
+      "size": 92,
+      "outline": 0.1,
+      "outlineColor": "#5E3A21",
+      "fillTop": "#FFFBF1",
+      "fillBottom": "#FFE2B8",
+      "shadowColor": "#3A2212",
+      "shadowAlpha": 0.42,
+      "shadowBlur": 0.07,
+      "shadowOffset": 0.065,
+      "accentColor": "#FFB3C6"
+    },
+    "title": {
+      "size": 176,
+      "outline": 0.08
+    },
+    "small": {
+      "font": "round",
+      "size": 60,
+      "outline": 0.12,
+      "shadowAlpha": 0.34
+    }
+  },
+  "cuts": {
+    "main": {
+      "output": "PocketWilds_T02.mp4",
+      "contact": "PocketWilds_T02_contact.png",
+      "musicBar": 2,
+      "fadeOut": 1.4,
+      "clips": [
+        {
+          "source": "a",
+          "shot": "burst",
+          "beats": 4,
+          "event": "burst_pop",
+          "eventBeat": 1.0,
+          "zoom": [
+            1.08,
+            1.16
+          ],
+          "pop": 0.0,
+          "punch": {
+            "beat": 1.0,
+            "to": 1.12
+          }
+        },
+        {
+          "source": "a",
+          "shot": "hatch",
+          "beats": 4,
+          "event": "hatch_pop",
+          "eventBeat": 1.0,
+          "zoom": [
+            1.0,
+            1.1
+          ],
+          "punch": {
+            "beat": 1.0,
+            "to": 1.08
+          }
+        },
+        {
+          "source": "t01",
+          "shot": "hide",
+          "beats": 4,
+          "event": "hide_found",
+          "eventBeat": 2.0,
+          "zoom": [
+            1.04,
+            1.12
+          ],
+          "asmr": true
+        },
+        {
+          "source": "b",
+          "shot": "groom_brush",
+          "beats": 4,
+          "in": 0.4,
+          "zoom": [
+            1.55,
+            1.68
+          ],
+          "center": [
+            0.5,
+            0.52
+          ]
+        },
+        {
+          "source": "b",
+          "shot": "groom_bow",
+          "beats": 4,
+          "event": "groom_bow",
+          "eventBeat": 1.0,
+          "zoom": [
+            1.62,
+            1.78
+          ],
+          "center": [
+            0.5,
+            0.48
+          ],
+          "asmr": true
+        },
+        {
+          "source": "t01",
+          "shot": "cozy",
+          "beats": 4,
+          "event": "cozy_treat",
+          "eventBeat": 1.0,
+          "zoom": [
+            1.0,
+            1.08
+          ]
+        },
+        {
+          "source": "b",
+          "shot": "social",
+          "beats": 4,
+          "event": "social_greet",
+          "eventBeat": 1.0,
+          "zoom": [
+            1.12,
+            1.22
+          ],
+          "center": [
+            0.5,
+            0.45
+          ]
+        },
+        {
+          "source": "b",
+          "shot": "zone",
+          "beats": 4,
+          "event": "zone_open",
+          "eventBeat": 1.0,
+          "zoom": [
+            1.0,
+            1.08
+          ]
+        },
+        {
+          "source": "t01",
+          "shot": "meadow",
+          "beats": 4,
+          "in": 1.5,
+          "zoom": [
+            1.05,
+            1.12
+          ]
+        },
+        {
+          "source": "a",
+          "shot": "end",
+          "beats": 11,
+          "in": 0.0,
+          "zoom": [
+            1.0,
+            1.04
+          ],
+          "pop": 0.03
+        }
+      ],
+      "captions": [
+        {
+          "text": "Hatch tiny friends",
+          "startBeat": 0.15,
+          "endBeat": 3.85,
+          "y": 0.205
+        },
+        {
+          "text": "Every one\nis different",
+          "startBeat": 4.15,
+          "endBeat": 7.85,
+          "y": 0.225
+        },
+        {
+          "text": "Can you find them?",
+          "startBeat": 8.15,
+          "endBeat": 10.0,
+          "y": 0.205
+        },
+        {
+          "text": "Brush them",
+          "startBeat": 12.15,
+          "endBeat": 19.85,
+          "y": 0.205
+        },
+        {
+          "text": "Spoil them",
+          "startBeat": 20.15,
+          "endBeat": 23.85,
+          "y": 0.2
+        },
+        {
+          "text": "Make friends",
+          "startBeat": 24.15,
+          "endBeat": 27.85,
+          "y": 0.205
+        },
+        {
+          "text": "Watch your\nmeadow grow",
+          "startBeat": 28.15,
+          "endBeat": 35.85,
+          "y": 0.225
+        },
+        {
+          "text": "Pocket Wilds",
+          "style": "title",
+          "accent": "paw",
+          "startBeat": 40.0,
+          "endBeat": 47.0,
+          "y": 0.29,
+          "fadeOut": false,
+          "pop": 0.36
+        },
+        {
+          "text": "Coming soon to",
+          "style": "small",
+          "startBeat": 40.8,
+          "endBeat": 47.0,
+          "y": 0.392,
+          "fadeOut": false
+        },
+        {
+          "text": "Google Play & the App Store",
+          "style": "small",
+          "startBeat": 41.1,
+          "endBeat": 47.0,
+          "y": 0.43,
+          "fadeOut": false
+        }
+      ],
+      "endCard": {
+        "startBeat": 39.6,
+        "blurSigma": 4.5,
+        "blurFade": 0.5,
+        "dim": 0.05
+      },
+      "contactFrames": [
+        0.9,
+        3.0,
+        5.6,
+        9.4,
+        11.6,
+        13.6,
+        16.3,
+        23.3
+      ],
+      "contactLabels": [
+        "x10 hatch",
+        "rare",
+        "hide and seek",
+        "grooming bow",
+        "treat",
+        "friends",
+        "new zone",
+        "end card"
+      ]
+    },
+    "short": {
+      "output": "PocketWilds_T02_15s.mp4",
+      "contact": "PocketWilds_T02_15s_contact.png",
+      "musicBar": 6,
+      "fadeOut": 1.0,
+      "clips": [
+        {
+          "source": "a",
+          "shot": "burst",
+          "beats": 4,
+          "event": "burst_pop",
+          "eventBeat": 1.0,
+          "zoom": [
+            1.08,
+            1.16
+          ],
+          "pop": 0.0,
+          "punch": {
+            "beat": 1.0,
+            "to": 1.12
+          }
+        },
+        {
+          "source": "a",
+          "shot": "hatch",
+          "beats": 4,
+          "event": "hatch_pop",
+          "eventBeat": 1.0,
+          "zoom": [
+            1.0,
+            1.1
+          ],
+          "punch": {
+            "beat": 1.0,
+            "to": 1.08
+          }
+        },
+        {
+          "source": "t01",
+          "shot": "hide",
+          "beats": 4,
+          "event": "hide_found",
+          "eventBeat": 2.0,
+          "zoom": [
+            1.04,
+            1.12
+          ],
+          "asmr": true
+        },
+        {
+          "source": "b",
+          "shot": "groom_bow",
+          "beats": 4,
+          "event": "groom_bow",
+          "eventBeat": 1.0,
+          "zoom": [
+            1.62,
+            1.78
+          ],
+          "center": [
+            0.5,
+            0.48
+          ]
+        },
+        {
+          "source": "t01",
+          "shot": "cozy",
+          "beats": 4,
+          "event": "cozy_treat",
+          "eventBeat": 1.0,
+          "zoom": [
+            1.0,
+            1.08
+          ]
+        },
+        {
+          "source": "a",
+          "shot": "end",
+          "beats": 8,
+          "in": 1.4,
+          "zoom": [
+            1.0,
+            1.04
+          ],
+          "pop": 0.03
+        }
+      ],
+      "captions": [
+        {
+          "text": "Hatch tiny friends",
+          "startBeat": 0.15,
+          "endBeat": 7.85,
+          "y": 0.205
+        },
+        {
+          "text": "Can you find them?",
+          "startBeat": 8.15,
+          "endBeat": 10.0,
+          "y": 0.205
+        },
+        {
+          "text": "Brush and\nspoil them",
+          "startBeat": 12.15,
+          "endBeat": 19.85,
+          "y": 0.225
+        },
+        {
+          "text": "Pocket Wilds",
+          "style": "title",
+          "accent": "paw",
+          "startBeat": 24.0,
+          "endBeat": 28.0,
+          "y": 0.29,
+          "fadeOut": false,
+          "pop": 0.36
+        },
+        {
+          "text": "Coming soon to",
+          "style": "small",
+          "startBeat": 24.6,
+          "endBeat": 28.0,
+          "y": 0.392,
+          "fadeOut": false
+        },
+        {
+          "text": "Google Play & the App Store",
+          "style": "small",
+          "startBeat": 24.9,
+          "endBeat": 28.0,
+          "y": 0.43,
+          "fadeOut": false
+        }
+      ],
+      "endCard": {
+        "startBeat": 23.6,
+        "blurSigma": 4.5,
+        "blurFade": 0.5,
+        "dim": 0.05
+      },
+      "contactFrames": [
+        0.9,
+        3.0,
+        5.6,
+        7.7,
+        10.2,
+        13.8
+      ],
+      "contactLabels": [
+        "x10 hatch",
+        "rare",
+        "hide and seek",
+        "bow",
+        "treat",
+        "end card"
+      ]
+    }
+  }
+}

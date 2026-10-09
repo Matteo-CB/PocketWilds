@@ -298,8 +298,8 @@ namespace PocketWilds.Editor.Marketing
                 }
                 if (_uiHidden)
                     HideUi();
-                // No shower during a video (Force keeps the sky clear every frame, whatever the schedule says).
-                _entry?.Weather?.Force(0f, 0f);
+                // The sky a shot asks for (clear by default), held every frame whatever the schedule says.
+                _entry?.Weather?.Force(_rain, _rainbow);
                 if (_refuge != null && _refuge.ShopOpen)
                 {
                     _refuge.Shop.CloseOffer();

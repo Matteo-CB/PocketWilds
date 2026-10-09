@@ -57,6 +57,20 @@ namespace PocketWilds.Editor.Marketing
         /// <summary>Read back rows bottom-up (set if the frames come out upside down on another graphics API).</summary>
         public bool flipY;
 
+        /// <summary>The shot list: "T01" (the first test) or "T02" (short shots of many moments, the edit cuts them on the beat).</summary>
+        public string plan = "T01";
+
+        /// <summary>Refuge level and Renewals of the seeded save (× 10 hatching needs level 25 and one Renewal).</summary>
+        public int refugeLevel = 5;
+
+        public int renewals;
+
+        /// <summary>Light in the wallet (× 10 eggs and a zone opening need much more than the first test).</summary>
+        public double light = 2_000_000;
+
+        /// <summary>The first hatch's lowest rarity wanted (2 = Rare: its glow and its own burst).</summary>
+        public int hatchMinRarity;
+
         public bool recordAudio = true;
         public float bootTimeoutSeconds = 240f;
         public bool exitPlayModeWhenDone = true;
@@ -86,7 +100,7 @@ namespace PocketWilds.Editor.Marketing
         private const string ArmedAtKey = "PW.Marketing.ArmedAt";
 
         /// <summary>The hand-over expires: a Play Mode entered minutes later (by hand) boots the normal game.</summary>
-        private const float ArmedSeconds = 240f;
+        private const float ArmedSeconds = 900f;
 
         /// <summary>The day of the capture: a Monday of October, mid-morning UTC (the light itself is forced).</summary>
         public static readonly DateTimeOffset ClockTime = new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero);
@@ -121,6 +135,7 @@ namespace PocketWilds.Editor.Marketing
             public bool asyncShaders;
             public bool mute;
             public bool startSceneChanged;
+            public int hatchQuantity = -1;
         }
 
         static MarketingCapture()
@@ -215,7 +230,11 @@ namespace PocketWilds.Editor.Marketing
                     runInBackground = PlayerSettings.runInBackground,
                     asyncShaders = ShaderUtil.allowAsyncCompilation,
                     mute = EditorUtility.audioMasterMute,
+                    hatchQuantity = PlayerPrefs.HasKey(PocketWilds.Presentation.EggChoice.QuantityKey)
+                        ? PlayerPrefs.GetInt(PocketWilds.Presentation.EggChoice.QuantityKey) : -1,
                 };
+                // The first hatch of a capture is a single egg (the × 10 is chosen in game, as a player does).
+                PlayerPrefs.SetInt(PocketWilds.Presentation.EggChoice.QuantityKey, 1);
                 if (EditorSceneManager.playModeStartScene == null)
                 {
                     EditorSceneManager.playModeStartScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(BootstrapScenePath);
@@ -325,6 +344,11 @@ namespace PocketWilds.Editor.Marketing
             EditorUtility.audioMasterMute = restore.mute;
             if (restore.startSceneChanged)
                 EditorSceneManager.playModeStartScene = null;
+            if (restore.hatchQuantity >= 0)
+                PlayerPrefs.SetInt(PocketWilds.Presentation.EggChoice.QuantityKey, restore.hatchQuantity);
+            else
+                PlayerPrefs.DeleteKey(PocketWilds.Presentation.EggChoice.QuantityKey);
+            PlayerPrefs.Save();
             Debug.Log("[MarketingCapture] Editor settings restored (run in background " + restore.runInBackground + ").");
         }
 
@@ -367,8 +391,9 @@ namespace PocketWilds.Editor.Marketing
             state.Settings.HapticsEnabled = false;
             state.Settings.ReduceMotion = false;
             state.Settings.LanguageCode = "en";
-            state.Wallet.Light = BigValue.FromDouble(2_000_000);
-            state.Wallet.LifetimeLight = BigValue.FromDouble(9_000_000);
+            state.Wallet.Light = BigValue.FromDouble(settings.light);
+            state.Wallet.LifetimeLight = BigValue.FromDouble(settings.light * 4.5);
+            state.World.RenewalCount = settings.renewals;
             state.Wallet.Gems = 120;
 
             for (int i = 0; i < Roster.Length; i++)
@@ -402,9 +427,9 @@ namespace PocketWilds.Editor.Marketing
                 Biome = ContentId.FromSource("biome.grassland"), Unlocked = true, Expansions = expansions, ZonesOpened = (uint)zones,
                 MasteryXp = 600, MasteryLevel = 4, ProductionLevel = 10, NestsLevel = 3, CuriosityLevel = 0,
             });
-            state.Progression.Refuge.Score = 150;
-            state.Progression.Refuge.Level = 5;
-            state.Progression.Refuge.LastRewardedLevel = 5;
+            state.Progression.Refuge.Score = settings.refugeLevel <= 5 ? 150 : 150L * settings.refugeLevel * settings.refugeLevel;
+            state.Progression.Refuge.Level = settings.refugeLevel;
+            state.Progression.Refuge.LastRewardedLevel = settings.refugeLevel;
             state.Progression.Treats[ContentId.FromSource("treat.clover_crunch")] = 6;
             state.Progression.Treats[ContentId.FromSource("treat.mushroom_biscuit")] = 4;
 
@@ -461,7 +486,7 @@ namespace PocketWilds.Editor.Marketing
                     string text = $"predicted first hatch {Name(content, result.Animal.Species)} / {VariantName(content, result.Animal.Variant)} ({result.Animal.Rarity}) with profile {profile}";
                     if (k == 0)
                         prediction = text;
-                    if (result.Animal.Species == wanted)
+                    if (result.Animal.Species == wanted && (int)result.Animal.Rarity >= settings.hatchMinRarity)
                     {
                         prediction = text;
                         return profile;

@@ -204,27 +204,28 @@ def ease_out_back(k, overshoot=1.2):
     return 1.0 + (overshoot + 1.0) * k ** 3 + overshoot * k ** 2
 
 
-def caption_state(t, duration, fade_out, pop):
-    """Scale, alpha and vertical offset of a caption at its local time t: a gentle pop in, a soft fade out."""
+def caption_state(t, duration, fade_out, pop, overshoot=1.2, start_scale=0.8):
+    """Scale, alpha and vertical offset of a caption at its local time t: a pop in (overshoot), a soft fade out."""
     if t < pop:
         k = t / pop
-        return 0.8 + 0.2 * ease_out_back(k), min(1.0, t / (pop * 0.45)), (1.0 - (1.0 - (1.0 - k) ** 3)) * 18.0
+        return (start_scale + (1.0 - start_scale) * ease_out_back(k, overshoot), min(1.0, t / (pop * 0.45)),
+                (1.0 - (1.0 - (1.0 - k) ** 3)) * 18.0)
     if fade_out and t > duration - 0.24:
         k = max(0.0, (duration - t) / 0.24)
         return 0.94 + 0.06 * k, k, (1.0 - k) * -6.0
     return 1.0, 1.0, 0.0
 
 
-def write_caption_frames(sprite, duration, fps, fade_out, pop, folder):
+def write_caption_frames(sprite, duration, fps, fade_out, pop, folder, overshoot=1.2, start_scale=0.8):
     folder.mkdir(parents=True, exist_ok=True)
     for old in folder.glob('*.png'):
         old.unlink()
     width, height = sprite.size
-    canvas_w, canvas_h = math.ceil(width * 1.12) + 4, math.ceil(height * 1.12) + 44
+    canvas_w, canvas_h = math.ceil(width * 1.3) + 4, math.ceil(height * 1.3) + 44
     count = max(1, round(duration * fps))
     previous = None
     for i in range(count):
-        scale, alpha, dy = caption_state(i / fps, duration, fade_out, pop)
+        scale, alpha, dy = caption_state(i / fps, duration, fade_out, pop, overshoot, start_scale)
         state = (round(scale, 4), round(alpha, 3), round(dy))
         path = folder / f'{i:04d}.png'
         if state == previous:

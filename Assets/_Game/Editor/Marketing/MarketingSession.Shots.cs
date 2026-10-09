@@ -98,6 +98,11 @@ namespace PocketWilds.Editor.Marketing
             // A second of game time for the forced light, the new quality state and the scatter of every chunk.
             for (int i = 0; i < 30; i++)
                 yield return null;
+            if (_settings.plan == "T02")
+            {
+                yield return RunT02();
+                yield break;
+            }
 
             Status("recording", "hatch");
             yield return ShotHatch(90);
@@ -641,6 +646,7 @@ namespace PocketWilds.Editor.Marketing
         private IEnumerator ShotCozy(int frames)
         {
             CollectObstacles();
+            CollectPropBounds();
             // The subject and the angle are scored together: a clear sight line through the decor first, a hedgehog then
             // a squirrel then a rabbit, nibbling or resting (never walking off), seen from the front.
             float[] offsets = { 0f, 30f, -30f, 55f, -55f, 80f, -80f, 120f, -120f };
@@ -723,7 +729,8 @@ namespace PocketWilds.Editor.Marketing
             for (int k = 0; k <= 1; k++)
             {
                 var pose = CozyPose(k, target, yaw);
-                score += 3f * Occlusion(pose.Position, target) + (Inside(pose.Position, 0.08f) ? 2f : 0f);
+                score += 3f * Occlusion(pose.Position, target) + (Inside(pose.Position, 0.08f) ? 2f : 0f)
+                         + 3f * PropBlocked(pose.Position, target, 0.85f) + (InsideProp(pose.Position, 0.2f) ? 2f : 0f);
             }
             _probing = false;
             return score;
