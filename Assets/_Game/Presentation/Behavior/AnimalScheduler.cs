@@ -349,7 +349,7 @@ namespace PocketWilds.Presentation
                 State = AnimalBehaviorState.Idle,
                 LastChoice = AnimalBehaviorState.Idle,
                 Arrive = AnimalBehaviorState.Idle,
-                Temperament = (Temperament)(SeedHash.Mix(seed, TemperamentSalt) % TemperamentTable.Count),
+                Temperament = TemperamentOf(seed),
                 Tier = SimulationTier.B,
                 Scale = scale,
                 Body = body,
@@ -430,6 +430,9 @@ namespace PocketWilds.Presentation
         public AnimalBehaviorState GetState(int handle) => _agents[handle].State;
         public SimulationTier GetTier(int handle) => _agents[handle].Tier;
         public Temperament GetTemperament(int handle) => _agents[handle].Temperament;
+
+        /// <summary>An animal's temperament, from its seed alone (the activities read it too: Hide and Seek's timid hint).</summary>
+        public static Temperament TemperamentOf(uint seed) => (Temperament)(SeedHash.Mix(seed, TemperamentSalt) % TemperamentTable.Count);
         public Vector3 GetPosition(int handle) => _agents[handle].Position;
 
         /// <summary>

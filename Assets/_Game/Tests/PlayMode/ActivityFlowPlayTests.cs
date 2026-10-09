@@ -62,7 +62,8 @@ namespace PocketWilds.Tests.PlayMode
             var state = context.State;
             var hud = Object.FindAnyObjectByType<RefugeHud>();
 
-            // A new profile: Grooming exists (T38) but opens at refuge level 3 with 5 animals: no Play button yet.
+            // A new profile: Grooming (T38) and Hide and Seek (T39) exist but open at refuge level 3 with 5 animals and level 4
+            // with 8: no Play button yet.
             yield return new WaitForSecondsRealtime(0.6f);
             Assert.IsTrue(services.AnyShipped, "Grooming ships with T38.");
             Assert.IsFalse(presenter.PlayAvailable, "No activity open yet: no Play button.");
@@ -78,10 +79,12 @@ namespace PocketWilds.Tests.PlayMode
             presenter.OpenActivities();
             yield return null;
             Assert.IsTrue(presenter.HubOpen, "Play opens the hub.");
-            Assert.AreEqual(2, presenter.CardCount, "The hub lists the activities of this build: the test one, and Grooming still closed.");
+            Assert.AreEqual(3, presenter.CardCount, "The hub lists the activities of this build: the test one, Grooming and Hide and Seek still closed.");
             Assert.AreEqual(ActivityId.Test, presenter.Card(0).Activity, "The open ones first.");
             Assert.AreEqual(ActivityId.Grooming, presenter.Card(1).Activity);
             Assert.AreEqual(ActivityCardState.Locked, presenter.Card(1).State);
+            Assert.AreEqual(ActivityId.HideAndSeek, presenter.Card(2).Activity, "T39: Hide and Seek ships, closed until level 4 and 8 animals.");
+            Assert.AreEqual(ActivityCardState.Locked, presenter.Card(2).State);
             Assert.IsFalse(string.IsNullOrEmpty(presenter.Card(1).UnlockHint), "A closed card says what opens it.");
             Assert.AreEqual(ActivityCardState.New, presenter.Card(0).State, "Never played: « Nouveau ».");
             Assert.AreEqual(5, presenter.Tickets.Count, "The first use fills the reserve (doc 01 A15).");

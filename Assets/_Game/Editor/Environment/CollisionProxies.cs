@@ -15,8 +15,12 @@ namespace PocketWilds.Editor.Environment
     /// </summary>
     public static class CollisionProxies
     {
-        /// <summary>Band limits above the prop's base (m): ground level (animals, scatter), trunks, crowns, landmarks.</summary>
-        public static readonly float[] BandLimits = { 0f, 0.7f, 1.5f, 3f, 6f, 12f };
+        /// <summary>
+        /// Band limits above the prop's base (m): ground level (animals, scatter), trunks, crowns, landmarks. T39: the trunk
+        /// (0.7 to 0.95 m) is cut from the crown above it (the Prairie's crowns start at 1.0 to 1.2 m), so the space under a
+        /// crown is no longer counted as crown: an animal stands or hops there without entering anything.
+        /// </summary>
+        public static readonly float[] BandLimits = { 0f, 0.7f, 0.95f, 1.5f, 3f, 6f, 12f };
 
         private const float SampleSpacing = 0.04f;
         private const int RotorSteps = 24;
@@ -60,7 +64,7 @@ namespace PocketWilds.Editor.Environment
 
         public static void ClearCache() => Cache.Clear();
 
-        /// <summary>Measures (once per prefab) the prop's bands from its LOD0 renderers.</summary>
+        /// <summary>Measures (once per prefab) the prop's bands from its LOD0 renderers (or, without any, its mesh filters).</summary>
         public static Proxy Measure(GameObject prefab)
         {
             string key = prefab.name + "#" + prefab.GetInstanceID();
@@ -75,16 +79,20 @@ namespace PocketWilds.Editor.Environment
             else
                 renderers.AddRange(prefab.GetComponentsInChildren<MeshRenderer>(true));
 
+            var filters = renderers.Select(r => r.GetComponent<MeshFilter>()).ToList();
+            // T39: a shape-only prop (its look is merged into one renderer per chunk) is measured from its mesh filters.
+            if (filters.Count == 0)
+                filters.AddRange(prefab.GetComponentsInChildren<MeshFilter>(true));
+
             var buckets = new List<Vector3>[BandLimits.Length - 1];
             for (int i = 0; i < buckets.Length; i++)
                 buckets[i] = new List<Vector3>();
-            foreach (var renderer in renderers)
+            foreach (var filter in filters)
             {
-                var filter = renderer.GetComponent<MeshFilter>();
                 if (filter == null || filter.sharedMesh == null)
                     continue;
-                var toPrefab = root.worldToLocalMatrix * renderer.transform.localToWorldMatrix;
-                bool rotor = renderer.name.Contains("_Sails_");
+                var toPrefab = root.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+                bool rotor = filter.name.Contains("_Sails_");
                 foreach (var p in SampleSurface(filter.sharedMesh))
                 {
                     if (!rotor)

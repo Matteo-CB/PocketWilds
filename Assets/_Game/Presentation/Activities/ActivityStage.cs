@@ -37,6 +37,16 @@ namespace PocketWilds.Presentation
         void Exit();
     }
 
+    /// <summary>
+    /// T39: a stage that picks its own played animals (Hide and Seek hides up to 8 of the player's animals): the presenter
+    /// names up to 3 of them to the runner before the game begins, so the bond and the species XP go to animals that played.
+    /// </summary>
+    public interface IActivityPlayedAnimals
+    {
+        /// <summary>Up to 3 distinct instance ids (0: none); returns how many.</summary>
+        int PlayedAnimals(out uint first, out uint second, out uint third);
+    }
+
     /// <summary>Where the presenter finds an activity's stage: the shipped activities register theirs; tests add theirs.</summary>
     public interface IActivityStageProvider
     {
@@ -82,6 +92,24 @@ namespace PocketWilds.Presentation
 
         /// <summary>The refuge's world rendering is off while a stage shows its own set (the presenter turns it back on).</summary>
         public System.Action<bool> SetWorldVisible { get; set; }
+
+        private VerticalSliceEntry _world;
+
+        /// <summary>
+        /// T39: the refuge scene (its chunk streamer, open zones, atmosphere, ambient life) for a stage that plays in the
+        /// refuge itself (Hide and Seek). Set by the scene entry, else found on <see cref="Root"/> (the entry's own object);
+        /// null in captures and headless tests.
+        /// </summary>
+        public VerticalSliceEntry World
+        {
+            get
+            {
+                if (_world == null && Root != null)
+                    _world = Root.GetComponent<VerticalSliceEntry>();
+                return _world;
+            }
+            set => _world = value;
+        }
     }
 
     /// <summary>

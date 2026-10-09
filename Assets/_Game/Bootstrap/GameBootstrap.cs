@@ -72,6 +72,7 @@ namespace PocketWilds.Bootstrap
         private DailyVisitServices _daily;
         private ActivityServices _activities;
         private GroomingHooks _groomingHooks;
+        private HideSeekHooks _hideSeekHooks;
         private GrantService _grants;
         private OfferService _offers;
         private StoreService _store;
@@ -232,6 +233,8 @@ namespace PocketWilds.Bootstrap
                 _activities.Runner.Ended += _daily.OnActivityEnded;
                 // T38: grooming games feed their wishes (WISH-019 to 022) and the journal (JRN-033).
                 _groomingHooks = new GroomingHooks(_activities, _daily);
+                // T39: hide-and-seek games feed their wishes (WISH-051 to 053) and the journal (JRN-016).
+                _hideSeekHooks = new HideSeekHooks(_activities, _daily);
                 if (_activities.AnyShipped)
                 {
                     _daily.Config.ActivitiesAvailable = true;
@@ -471,6 +474,8 @@ namespace PocketWilds.Bootstrap
             _analytics = null;
             _groomingHooks?.Dispose();
             _groomingHooks = null;
+            _hideSeekHooks?.Dispose();
+            _hideSeekHooks = null;
             _activities?.Dispose();
             _activities = null;
             _daily?.Dispose();

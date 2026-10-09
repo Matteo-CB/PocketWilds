@@ -494,6 +494,8 @@ namespace PocketWilds.Simulation
             _systemOpen[(int)WishSystem.Rendezvous] = _ctx.TodayOpen;
             // T38: Grooming (refuge level 3 and 5 animals) once the build has activities.
             _systemOpen[(int)WishSystem.Grooming] = welcomeOver && Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.Grooming);
+            // T39: Hide and Seek (refuge level 4 and 8 animals) the same way.
+            _systemOpen[(int)WishSystem.HideAndSeek] = welcomeOver && Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.HideAndSeek);
         }
 
         private bool IsEligible(JournalGoalId id, int target)
@@ -506,6 +508,7 @@ namespace PocketWilds.Simulation
                 case JournalGoalId.AnimalsTapped:
                 case JournalGoalId.Upgrades:
                 case JournalGoalId.Grooming:
+                case JournalGoalId.HideAndSeekFinds:
                     return true;
                 case JournalGoalId.DiscoverVariants:
                     return _missingVariants >= target;
@@ -758,6 +761,12 @@ namespace PocketWilds.Simulation
             if (game.Finished)
                 AddProgress(JournalGoalId.Grooming, 1);
         }
+
+        /// <summary>
+        /// T39: JRN-016 « Trouve {n} animaux à Cache-cache »: every animal found counts, practice included (section 5.1), even
+        /// in a game left before its end (it really was found).
+        /// </summary>
+        public void OnHideSeekGame(in HideSeekGameSummary game) => AddProgress(JournalGoalId.HideAndSeekFinds, game.Found);
 
         /// <summary>Adds to every goal of this kind while its week runs, up to its target.</summary>
         private void AddProgress(JournalGoalId id, int amount)

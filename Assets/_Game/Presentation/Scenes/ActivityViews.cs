@@ -229,6 +229,12 @@ namespace PocketWilds.Presentation
         void Pick(int index);
     }
 
+    /// <summary>T39: the in-game item buttons (the magnifier and the whistle of Hide and Seek): a tap uses one.</summary>
+    public interface IActivityItemActions
+    {
+        void UseItem(int index);
+    }
+
     /// <summary>PF_UI_ActivityHud: score, time left (a soft ring, never a red countdown), streak, pause.</summary>
     public interface IActivityHudView
     {
@@ -278,6 +284,25 @@ namespace PocketWilds.Presentation
         /// hold a copy of the UI atlas. Null when unknown. Called when a game starts, not per frame.
         /// </summary>
         Sprite Icon(string name);
+
+        // T39: Hide and Seek's items and its night challenge.
+
+        /// <summary>
+        /// Round item buttons at the bottom corner of the play area (at most 3, e.g. the magnifier and the whistle), shown
+        /// for the whole game; a tap calls <see cref="IActivityItemActions.UseItem"/>. The array is not kept.
+        /// </summary>
+        void ShowItems(ActivityPickerItem[] items, int count, IActivityItemActions actions);
+
+        /// <summary>An item used (greyed, a soft check) or available again.</summary>
+        void SetItemUsed(int index, bool used);
+
+        void HideItems();
+
+        /// <summary>
+        /// Night (Hide and Seek challenge 7): the play area goes dark except a soft circle of <paramref name="radius"/> (a share
+        /// of the screen's width) around a screen point; an interface mask, no real-time light. 0 turns it off.
+        /// </summary>
+        void SetSpotlight(float radius, Vector2 center);
     }
 
     // ------------------------------------------------------------------------------------------- result (doc 05 sheet 20)

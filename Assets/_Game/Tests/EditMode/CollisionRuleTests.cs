@@ -178,6 +178,36 @@ namespace PocketWilds.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// T39: the Prairie's hiding decor (tall grass, flowered bushes) is as solid as any prop: each one carries a ground
+        /// obstacle in its chunk, measured from its mesh, so no animal walks into a clump and no hidden animal stands in it.
+        /// </summary>
+        [Test]
+        public void HideDecor_CarriesItsObstacle_ForWalkers()
+        {
+            int checkedProps = 0;
+            foreach (var volume in GrasslandPipeline.BuiltPropVolumes())
+            {
+                if (!GrasslandPipeline.IsTallGrass(volume.Prop.Replace("PF_", "")) && !GrasslandPipeline.IsFlowerBush(volume.Prop.Replace("PF_", "")))
+                    continue;
+                var entry = WorldContentPipeline.GrasslandChunks.First(c => AssetDatabase.LoadAssetAtPath<GameObject>(c.path).name == volume.Chunk);
+                var chunk = AssetDatabase.LoadAssetAtPath<WorldChunk>(entry.path);
+                var center = new Vector2(volume.Placed.Position.x - entry.origin.x, volume.Placed.Position.z - entry.origin.z);
+                var ground = volume.Placed.Ground;
+                Assert.IsNotNull(ground, volume.Prop + ": a ground band.");
+                bool found = false;
+                for (int i = 0; i < chunk.ObstacleCount && !found; i++)
+                {
+                    var o = chunk.GetObstacle(i);
+                    found = o.kind == ObstacleKind.Solid && o.bottom < 0.1f && (o.Center - center).magnitude < 0.05f + o.Reach * 0.5f
+                            && o.BlocksWalker(volume.Placed.Position.y - entry.origin.y, 0.3f);
+                }
+                Assert.IsTrue(found, $"{volume.Chunk}/{volume.Prop} at {center}: no solid obstacle at its foot.");
+                checkedProps++;
+            }
+            Assert.Greater(checkedProps, 8, "The T39 decor is built (Pocket Wilds/Environment/Build Grassland Strip and Hide Decor (T39)).");
+        }
+
         [Test]
         public void TurningParts_NeverSweepThroughTheirProp()
         {

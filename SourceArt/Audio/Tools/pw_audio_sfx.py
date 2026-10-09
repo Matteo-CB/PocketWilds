@@ -965,6 +965,161 @@ def bubble_puff(v):
     return _soft_start(wet(x, ROOM, 0.08))
 
 
+# ---------------------------------------------------------------- T39: hide and seek (doc 01 Contenu, S-ACT-002 "Sons
+# et effets"; doc Audio, J-SFX-ACT-002-01 to 06). The meadow plays along: leaves and grass, a round pop, a wooden
+# whistle, the music box; F major. The voice of the coucou (-01, "ip ?") is the species' happy bank a little higher
+# (AnimalHappy at 1.12 through IAudioService.PlayPitched, see HideSeekAudio): the clip here is the pop under it.
+
+def _leaf_grains(n, count, density, rng, lo=900.0, hi=3600.0):
+    """Leaves brushing together: count tiny grains of noise (3 to 8 ms, rounded windows: never a click, never a crackle)
+    placed where density (an envelope over n samples) is high, each in the band of a leaf of its own size (lo to hi)."""
+    bands = [band_noise(n, c / 1.4, c * 1.4, rng) for c in np.geomspace(lo, hi, 3)]
+    cdf = np.cumsum(density)
+    cdf /= cdf[-1]
+    out = np.zeros(n)
+    for _ in range(count):
+        g = samples(rng.uniform(0.003, 0.008))
+        at = min(int(np.searchsorted(cdf, rng.uniform(0.02, 0.98))), n - g)
+        band = bands[int(rng.integers(0, len(bands)))]
+        out[at:at + g] += band[at:at + g] * np.hanning(g) * rng.uniform(0.35, 1.0)
+    return out
+
+
+def _resonance(fc, octaves):
+    """A narrow band in log frequency (a resonance of glass or wood), as a magnitude response."""
+    return lambda f: np.exp(-0.5 * (np.log2(np.maximum(f, 1.0) / fc) / octaves) ** 2)
+
+
+def _flute(freq, rng, breath=0.08, vibrato=0.006, vibrato_from=0.12):
+    """A soft wooden flute on a frequency curve (Hz per sample), like a recorder played gently: an almost pure tone (a
+    little second and third harmonic), a slow vibrato that grows in after vibrato_from seconds, and the player's breath
+    around the note. No amplitude envelope: the caller shapes it."""
+    n = len(freq)
+    t = np.arange(n) / SR
+    depth = vibrato * np.clip((t - vibrato_from) / 0.15, 0.0, 1.0)
+    f = freq * (1.0 + depth * np.sin(2.0 * np.pi * 5.2 * t))
+    ph = phase_of(f)
+    tone = np.sin(ph) + 0.16 * np.sin(2.0 * ph + 0.4) + 0.05 * np.sin(3.0 * ph + 1.1) + 0.015 * np.sin(4.0 * ph)
+    centre = float(np.median(freq))
+    air = band_noise(n, centre * 0.8, centre * 2.6, rng) * breath + band_noise(n, 1200.0, 4000.0, rng) * breath * 0.2
+    return tone + air
+
+
+def hideseek_coucou(v):
+    """J-SFX-ACT-002-01, the pop under the voice: the animal pops out of its hiding place. A whisper of leaves as it
+    pushes through, then a round pop that bends up into its note and keeps lifting a whole tone, like a question
+    ("ip ?"): F rising to G, or G rising to A for the second variant, so the coucous of a game never repeat one sound.
+    About 0.2 s; the voice itself is the species' (HideSeekAudio)."""
+    rng = np.random.default_rng(1950 + v)
+    out = np.zeros(samples(0.3))
+    n = samples(0.045)
+    place(out, band_noise(n, 900.0, 3000.0, rng) * _rise_fall(n, 0.6) * 0.035, 0.0, release=0.01)
+    note = hz(('F5', 'G5')[v])
+    t = t_axis(0.2)
+    lift = np.clip((t - 0.03) / 0.08, 0.0, 1.0)
+    f = note * (0.62 + 0.38 * (1.0 - np.exp(-t / 0.01))) * 2.0 ** (2.0 / 12.0 * lift * lift * (3.0 - 2.0 * lift))
+    ph = phase_of(f)
+    body = np.sin(ph) * env_ad(t, 0.0015, 0.05, hold=0.025) + 0.16 * np.sin(2.0 * ph) * env_ad(t, 0.0015, 0.022)
+    place(out, body * 0.5, 0.022, release=0.03)
+    x = fft_filter(out, chain(lowpass(6000.0, 2), highpass(220.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.06))
+
+
+def hideseek_empty(v):
+    """J-SFX-ACT-002-02: a touch on an empty spot: the bush gives a little shake (a short soft swish and its warm body),
+    its leaves brush together (tiny rounded grains, never a crackle), then a few leaves fly off (H-VFX-ACT-002-02).
+    Kind and light: nothing says "wrong", no buzzer, no falling note. Three shakes, so quick taps never repeat one
+    sound. About 0.35 s."""
+    rng = np.random.default_rng(1960 + v)
+    seconds, peak_at, grains, spin = ((0.3, 0.3, 38, 14.0), (0.34, 0.4, 44, 17.0), (0.27, 0.25, 32, 12.0))[v]
+    n = samples(seconds)
+    env = _rise_fall(n, peak_at, 1.6)
+    swish = band_noise(n, 600.0, 2200.0, rng) * env * (1.0 + 0.25 * _flutter(n, 30.0, rng))
+    body = band_noise(n, 220.0, 700.0, rng) * _rise_fall(n, peak_at * 0.8, 2.0)
+    leaves = _leaf_grains(n, grains, env, rng, 600.0, 2200.0)
+    out = np.zeros(samples(0.5))
+    place(out, swish * 0.22 + body * 0.4 + leaves * 0.7, 0.0, release=0.03)
+    place(out, _leaf_flight(0.2, spin, rng, 500.0, 1800.0) * 0.06, seconds * 0.55, release=0.03)
+    x = fft_filter(out, chain(lowpass(3400.0, 3), highpass(200.0, 2), peak(3000.0, -3.0, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.05), 0.003)
+
+
+def hideseek_hint(v):
+    """J-SFX-ACT-002-03: a hidden animal gives its hint: the grass of its spot ripples (H-VFX-ACT-002-03). Two soft swells
+    of grass running one after the other, smooth (blades of grass, not the crinkle of leaves of the empty touch), their
+    colour lifting a little at the top of each swell so the ear turns to it; quieter than the empty touch. About 0.45 s."""
+    rng = np.random.default_rng(1970 + v)
+    seconds, second_at, second_level = ((0.46, 0.42, 0.8), (0.4, 0.36, 0.7))[v]
+    n = samples(seconds)
+    k = samples(seconds * second_at)
+    first = np.zeros(n)
+    first[:samples(seconds * 0.6)] = _rise_fall(samples(seconds * 0.6), 0.45, 1.4)
+    second = np.zeros(n)
+    second[k:] = _rise_fall(n - k, 0.45, 1.6) * second_level
+    env = np.maximum(first, second)
+    centre = 750.0 * 2.0 ** (1.0 * env)
+    swish = _moving_band(n, centre, rng, width=0.5, low=400.0, high=3200.0) * env * (1.0 + 0.2 * _flutter(n, 18.0, rng))
+    blades = _leaf_grains(n, 8, env, rng, 1200.0, 3000.0) * 0.1
+    x = fft_filter(swish + blades, chain(lowpass(3800.0, 3), highpass(350.0, 2), peak(2800.0, -3.0, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.05), 0.003)
+
+
+def hideseek_magnifier(v):
+    """J-SFX-ACT-002-04: the magnifier: a soft breath across glass. A breath of air whose colour lifts as the lens comes up
+    and settles back, the glass of the lens singing faintly inside it (the same breath through two narrow resonances, a
+    C and the partial of a small glass above it, like a breath across the rim of a glass), then one small glass bead on
+    C when the ring settles around the spot. About 0.6 s."""
+    rng = np.random.default_rng(1980)
+    out = np.zeros(samples(0.8))
+    n = samples(0.42)
+    env = _rise_fall(n, 0.45, 1.5)
+    centre = 600.0 * 2.0 ** (1.5 * env)
+    breath = _moving_band(n, centre, rng, width=0.6, low=350.0, high=3000.0) * env
+    c6 = hz('C6')
+    song = fft_filter(white(n, rng), lambda f: _resonance(c6, 0.012)(f) + 0.3 * _resonance(c6 * 2.76, 0.01)(f))
+    song = song / (np.std(song) + 1e-12) * env ** 1.5
+    place(out, breath * 0.5 + song * 0.2, 0.0, release=0.04)
+    place(out, _glass_bead(c6, 0.4, 0.5, 0.11) * 0.18, 0.24)
+    x = fft_filter(out, chain(lowpass(4500.0, 3), highpass(250.0, 2), peak(3000.0, -2.0, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.1), 0.003)
+
+
+def hideseek_whistle(v):
+    """J-SFX-ACT-002-05: the whistle calls the hidden animals: two soft notes of a wooden slide whistle, F then a slide up
+    to the C above, held with a slow vibrato (a friendly "where are you?", rising like a question). Warm: an almost pure
+    tone with a little breath, under 1.1 kHz, never shrill; a call, never a bird's alarm. About 0.6 s."""
+    rng = np.random.default_rng(1990)
+    seconds = 0.62
+    n = samples(seconds)
+    t = np.arange(n) / SR
+    slide = np.clip((t - 0.15) / 0.05, 0.0, 1.0)
+    freq = hz('F5') * 2.0 ** (7.0 / 12.0 * slide * slide * (3.0 - 2.0 * slide))
+    voice = _flute(freq, rng, vibrato_from=0.26)
+    amp = env_asr(n, 0.035, 0.14) * (1.0 - 0.55 * np.exp(-0.5 * ((t - 0.165) / 0.02) ** 2))
+    chiff = band_noise(n, 1200.0, 3200.0, rng) * env_ad(t, 0.002, 0.012) * 0.1
+    out = np.zeros(samples(0.8))
+    place(out, voice * amp + chiff, 0.0, release=0.04)
+    x = fft_filter(out, chain(lowpass(3600.0, 2), highpass(250.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.12))
+
+
+def hideseek_all_found(v):
+    """J-SFX-ACT-002-06: every animal is found: a happy three-note motif at the music box, C, D, then the F above (short,
+    short, long, growing into the F), each over a warm tine an octave below, the F left to ring over a low F. It climbs
+    from the C the end chord (J-SFX-ACT-000-02, played at the same moment) rolls down from, so the two meet in one F
+    major, and its accent comes on the F, once the last coucou's pop and the chord's first notes have passed. Under the
+    result stars (-20 against -19). About 0.9 s."""
+    rng = np.random.default_rng(2000)
+    out = np.zeros(samples(1.3))
+    for note, at, vel, seconds, tau, level in (('C6', 0.0, 0.42, 0.45, 0.12, 0.2), ('D6', 0.1, 0.48, 0.45, 0.12, 0.26),
+                                              ('F6', 0.2, 0.58, 1.0, 0.36, 0.38)):
+        place(out, _glass_note(hz(note), seconds, vel, tau) * level, at)
+        place(out, _tine_under(hz(note) / 2.0, seconds, 0.5, tau * 1.2, rng) * level * 0.45, at)
+    place(out, _tine_under(hz('F4'), 0.9, 0.45, 0.32, rng) * 0.16, 0.2)
+    x = fft_filter(out, chain(lowpass(7500.0, 2), highpass(150.0, 2), peak(3000.0, -2.5, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.14))
+
+
 # ---------------------------------------------------------------- catalog
 
 # name: (recipe, variants, loudness target (loudest 200 ms, K-weighted, LUFS scale), group)
@@ -1026,4 +1181,12 @@ SFX = {
     'SFX_Groom_Clean': (groom_clean, CLEAN_STEPS, -24.0, 'Rewards'),
     'SFX_Groom_Bow': (groom_bow, 1, -19.0, 'Rewards'),
     'SFX_World_BubblePuff': (bubble_puff, 2, -20.0, 'World'),
+    # T39 hide and seek (doc 01 Contenu, S-ACT-002 "Sons et effets"). The rustles sit low (the empty touch -25, the hint
+    # under it at -27: it invites a look, never calls); the pop and the motif with the rewards, under the result star.
+    'SFX_HideSeek_Coucou': (hideseek_coucou, 2, -21.0, 'Rewards'),
+    'SFX_HideSeek_Empty': (hideseek_empty, 3, -25.0, 'World'),
+    'SFX_HideSeek_Hint': (hideseek_hint, 2, -27.0, 'World'),
+    'SFX_HideSeek_Magnifier': (hideseek_magnifier, 1, -23.0, 'UI'),
+    'SFX_HideSeek_Whistle': (hideseek_whistle, 1, -21.0, 'UI'),
+    'SFX_HideSeek_AllFound': (hideseek_all_found, 1, -20.0, 'Rewards'),
 }

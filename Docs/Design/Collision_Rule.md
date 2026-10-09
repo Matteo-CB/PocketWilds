@@ -25,7 +25,7 @@ Le benchmark Windows relève l'écart minimal dans le jeu compilé : `overlapSam
 | Quoi | Forme | D'où elle vient |
 |---|---|---|
 | Animal | Gélule orientée vue de dessus (museau, queue, flancs) et une hauteur | Mesurée sur le modèle LOD0 (`AnimalPipeline.MeasureBody`, menu *Measure Bodies*), à l'échelle de l'individu |
-| Décor | Par tranche de hauteur (0–0,7 m, 0,7–1,5, 1,5–3, 3–6, 6–12) : contour convexe exact et gélule englobante | Échantillonnage des surfaces LOD0 tous les 4 cm (`CollisionProxies`) ; les ailes du moulin sont balayées sur un tour complet |
+| Décor | Par tranche de hauteur (0–0,7 m, 0,7–0,95, 0,95–1,5, 1,5–3, 3–6, 6–12) : contour convexe exact et gélule englobante ; le tronc est séparé de la couronne (T39), l'espace sous une couronne reste libre | Échantillonnage des surfaces LOD0 tous les 4 cm (`CollisionProxies`) ; les ailes du moulin sont balayées sur un tour complet |
 | Eau | Gélules couvrant la surface, rangée par rangée | Maillage de l'eau (`WaterObstacles`) |
 | Pente trop raide (> 32°) | Gélules, rangée par rangée | Carte du relief (`SteepObstacles`) |
 | Œuf | Disque réservé de 0,55 m ; l'œuf lui-même fait 0,36 m | `RefugeController.EggSpotRadius`, `EggBodyRadius` |

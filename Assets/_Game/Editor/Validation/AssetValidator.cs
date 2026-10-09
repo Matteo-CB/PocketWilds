@@ -81,6 +81,9 @@ namespace PocketWilds.Editor.Validation
             "Assets/_Game/Art/Materials/MAT_Ground_Grassland.mat",
             // T33B: the stream and the pond (SH_WaterLite master).
             "Assets/_Game/Art/Materials/MAT_Water_Grassland.mat",
+            // T39: the tall grass props sway with the meadow's tufts, on their material (SH_FoliageWind, already drawn by the
+            // ScatterRenderer in every chunk).
+            "Assets/_Game/Art/Materials/MAT_Foliage_Grassland.mat",
         };
 
         /// <summary>Biomes doc budgets (triangles, LOD0): name prefix, min, max.</summary>
@@ -116,6 +119,10 @@ namespace PocketWilds.Editor.Validation
             ("GL_WellTiny", 24, 400),
             ("GL_Edge_", 24, 400),
             ("GL_StreamStones", 24, 300),
+            // T39 (agent HB's budgets: tall grass 500, flowered bush 650; a patch merges two clumps).
+            ("GL_TallGrass_", 150, 600),
+            ("GL_TallGrassPatch_", 300, 1500),
+            ("GL_FlowerBush_", 200, 800),
         };
 
         /// <summary>Doc 04: plants and scatter details 20-150 tris (tiny pebbles may go lower), life under 150.</summary>
@@ -144,12 +151,16 @@ namespace PocketWilds.Editor.Validation
         [MenuItem("Pocket Wilds/Validate/Grassland Kit", priority = 402)]
         public static void ValidateEnvironmentMenu() => Report(ValidateEnvironment());
 
+        [MenuItem("Pocket Wilds/Validate/Hide Spots (T39)", priority = 403)]
+        public static void ValidateHideSpotsMenu() => Report(ValidateHideSpots());
+
         public static void ValidateAllBatch()
         {
             var issues = ValidateAllAnimals();
             issues.AddRange(ValidateEggModels());
             issues.AddRange(ValidateEggPrefab());
             issues.AddRange(ValidateEnvironment());
+            issues.AddRange(ValidateHideSpots());
             Report(issues);
             EditorApplication.Exit(issues.Any(i => i.Severity == IssueSeverity.Error) ? 1 : 0);
         }
@@ -440,6 +451,24 @@ namespace PocketWilds.Editor.Validation
                         issues.Add(new ValidationIssue(severity, path, "Budget", $"{meshName}: {tris} tris ({min}-{max})."));
                     }
                 }
+                // T39 hide decor: shape-only prefabs (their look is merged per chunk); the budget holds for their mesh.
+                if (prefab.GetComponentInChildren<Renderer>(true) == null)
+                {
+                    foreach (var filter in prefab.GetComponentsInChildren<MeshFilter>(true))
+                    {
+                        if (filter.sharedMesh == null)
+                            continue;
+                        string meshName = filter.sharedMesh.name;
+                        foreach (var (prefix, min, max) in EnvironmentBudgets)
+                        {
+                            if (!meshName.StartsWith(prefix, StringComparison.Ordinal))
+                                continue;
+                            int tris = (int)(filter.sharedMesh.GetIndexCount(0) / 3);
+                            var severity = tris < min || tris > max ? IssueSeverity.Error : IssueSeverity.Info;
+                            issues.Add(new ValidationIssue(severity, path, "Budget", $"{meshName}: {tris} tris ({min}-{max}), shape only."));
+                        }
+                    }
+                }
                 var lod = prefab.GetComponent<LODGroup>();
                 if (prefab.name.StartsWith("PF_GL_Tree", StringComparison.Ordinal))
                 {
@@ -474,6 +503,104 @@ namespace PocketWilds.Editor.Validation
             foreach (var (a, b, depth) in PocketWilds.Editor.Environment.GrasslandPipeline.PropOverlaps())
                 issues.Add(new ValidationIssue(IssueSeverity.Error, a.Chunk, "Collision",
                     $"{a.Prop} at ({a.Placed.Position.x:F2}, {a.Placed.Position.z:F2}) enters {b.Chunk}/{b.Prop} by {depth * 100f:F1} cm."));
+        }
+
+        /// <summary>
+        /// T39 « Cache-cache » (Docs/Design/Collision_Rule.md): every hiding spot of DEF_HideSpots_Grassland keeps every
+        /// species' body out of its chunk's obstacles and the egg's place at every measured level, its landing takes the
+        /// largest body in any heading, and the spots of a zone stand 0.9 m apart. Too few spots in a zone is a warning
+        /// (HideSpotTests holds the 5 to 14, the start chunk's 4).
+        /// </summary>
+        public static List<ValidationIssue> ValidateHideSpots()
+        {
+            var issues = new List<ValidationIssue>();
+            const string path = PocketWilds.Editor.Activities.HideSpotPipeline.AssetPath;
+            var set = AssetDatabase.LoadAssetAtPath<HideSpotSet>(path);
+            if (set == null)
+            {
+                issues.Add(new ValidationIssue(IssueSeverity.Warning, path, "Load", "Hide spots missing (Pocket Wilds/Activities/Build Hide Spots (T39))."));
+                return issues;
+            }
+            var database = AssetDatabase.LoadAssetAtPath<PocketWilds.Content.ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath);
+            var catalog = AssetDatabase.LoadAssetAtPath<AnimalVisualCatalog>(AnimalPipeline.VisualCatalogPath);
+            var bodies = new BodyShape[set.SpeciesCount];
+            float largest = 0f;
+            for (int s = 0; s < set.SpeciesCount; s++)
+            {
+                var definition = database != null
+                    ? database.species.FirstOrDefault(d => d != null && Core.ContentId.FromSource(d.sourceId).Value == set.GetSpecies(s).Value) : null;
+                bodies[s] = definition != null && catalog != null && catalog.TryGet(definition.visualKey, out var entry)
+                    ? entry.behavior.body : new BehaviorProfile().body;
+                largest = Mathf.Max(largest, bodies[s].Reach);
+            }
+            float Clearance(WorldChunk chunk, BodyShape body, Vector3 p, float yaw)
+            {
+                body.Segment(p, yaw, 1f, out var a, out var b);
+                float best = float.MaxValue;
+                for (int i = 0; i < chunk.ObstacleCount; i++)
+                {
+                    var o = chunk.GetObstacle(i);
+                    if (o.BlocksWalker(p.y, body.height))
+                        best = Mathf.Min(best, CollisionMath.Gap(a, b, body.halfWidth, o));
+                }
+                if (chunk.EggSpawn != null)
+                {
+                    var egg = new Vector2(chunk.EggSpawn.localPosition.x, chunk.EggSpawn.localPosition.z);
+                    best = Mathf.Min(best, CollisionMath.Gap(a, b, body.halfWidth, egg, egg, RefugeController.EggSpotRadius));
+                }
+                return best;
+            }
+            const float Tolerance = 0.002f;
+            for (int z = 0; z < set.ZoneCount; z++)
+            {
+                var zone = set.GetZone(z);
+                var chunkEntry = PocketWilds.Editor.World.WorldContentPipeline.GrasslandChunks.FirstOrDefault(c => c.address == zone.chunkId);
+                var chunk = chunkEntry.path != null ? AssetDatabase.LoadAssetAtPath<WorldChunk>(chunkEntry.path) : null;
+                if (chunk == null)
+                {
+                    issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Zone", $"{zone.chunkId}: no such Grassland chunk."));
+                    continue;
+                }
+                int least = PocketWilds.Editor.Activities.HideSpotPipeline.MinSpotsFor(zone.chunkId);
+                if (zone.spotCount < least || zone.spotCount > PocketWilds.Editor.Activities.HideSpotPipeline.MaxSpots)
+                    issues.Add(new ValidationIssue(IssueSeverity.Warning, path, "Spots",
+                        $"{zone.chunkId}: {zone.spotCount} spots ({least} to {PocketWilds.Editor.Activities.HideSpotPipeline.MaxSpots} wanted)."));
+                for (int i = zone.firstSpot; i < zone.firstSpot + zone.spotCount; i++)
+                {
+                    var spot = set.GetSpot(i);
+                    for (int s = 0; s < set.SpeciesCount; s++)
+                    {
+                        for (int level = 0; level < HideSpotSet.ShareLevels; level++)
+                        {
+                            float gap = Clearance(chunk, bodies[s], set.Placement(i, s, HideSpotSet.ShareAt(level)), spot.facing);
+                            if (gap < -Tolerance)
+                                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Collision",
+                                    $"{zone.chunkId} spot {i - zone.firstSpot}: species {s} at {HideSpotSet.ShareAt(level) * 100f:F0} % enters something by {-gap * 100f:F1} cm."));
+                        }
+                    }
+                    var disc = new BodyShape(largest, -largest, largest, bodies.Length > 0 ? bodies.Max(b => b.height) : 0.7f);
+                    float landing = Clearance(chunk, disc, spot.landing, 0f);
+                    if (landing < -Tolerance)
+                        issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Collision",
+                            $"{zone.chunkId} spot {i - zone.firstSpot}: its landing is {-landing * 100f:F1} cm inside something."));
+                    for (int j = i + 1; j < zone.firstSpot + zone.spotCount; j++)
+                    {
+                        var other = set.GetSpot(j);
+                        float d = new Vector2(spot.position.x - other.position.x, spot.position.z - other.position.z).magnitude;
+                        if (d < PocketWilds.Editor.Activities.HideSpotPipeline.Spacing - 1e-3f)
+                            issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Spacing",
+                                $"{zone.chunkId}: spots {i - zone.firstSpot} and {j - zone.firstSpot} stand {d:F2} m apart (0.9 m at least)."));
+                    }
+                }
+            }
+            // What a filmed game shows: the play area, the strip's edge, the landings, other props in front.
+            foreach (var line in PocketWilds.Editor.Activities.HideSpotPipeline.Audit())
+            {
+                int colon = line.IndexOf(':');
+                string kind = colon > 0 ? line.Substring(0, colon) : "Audit";
+                issues.Add(new ValidationIssue(IssueSeverity.Error, path, "Spots " + kind, colon > 0 ? line.Substring(colon + 1).Trim() : line));
+            }
+            return issues;
         }
 
         /// <summary>

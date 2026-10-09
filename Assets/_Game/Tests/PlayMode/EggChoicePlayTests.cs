@@ -261,7 +261,8 @@ namespace PocketWilds.Tests.PlayMode
             };
 #endif
             var bootstrap = new GameObject("GameBootstrap").AddComponent<GameBootstrap>();
-            float timeout = Time.realtimeSinceStartup + 20f;
+            // A cold first boot (the fixture run alone, right after a domain reload) compiles shaders and loads every bundle.
+            float timeout = Time.realtimeSinceStartup + 60f;
             while (bootstrap.State == BootState.NotStarted || bootstrap.State == BootState.Running)
             {
                 if (Time.realtimeSinceStartup > timeout)

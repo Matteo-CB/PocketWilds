@@ -392,6 +392,167 @@ namespace PocketWilds.Presentation
             Activities.GroomAnimal(instanceId);
         }
 
+        // ---------------- T39: an activity played in the refuge itself (Hide and Seek) ----------------
+
+        private bool _actorsHidden;
+        private readonly List<Renderer> _actorRenderers = new List<Renderer>(16);
+        private bool _cameraHeld;
+        private bool _cameraReturning;
+        private float _cameraT = 1f;
+        private float _cameraSeconds;
+        private Vector3 _cameraFromPosition, _cameraToPosition, _cameraHomePosition;
+        private Quaternion _cameraFromRotation, _cameraToRotation, _cameraHomeRotation;
+        private float _cameraFromFov, _cameraToFov, _cameraHomeFov;
+
+        /// <summary>The refuge's own animals and the waiting egg are drawn (false while an activity plays in the refuge).</summary>
+        public bool ActorsVisible => !_actorsHidden;
+
+        /// <summary>
+        /// T39 « Cache-cache » plays in the refuge (doc 01 Contenu S-ACT-002: the camera frames a zone of the biome): the
+        /// refuge's own animals and the waiting egg are hidden for the game, then shown again. Their simulation keeps
+        /// running; with their renderers off their animators rest (CullCompletely). Wish bubbles, voices, rare glints and the
+        /// tap hand already wait under any activity (ModalOpen); a new egg waits for the end. Not per frame.
+        /// </summary>
+        public void SetActorsVisible(bool visible)
+        {
+            if (_actorsHidden == !visible)
+                return;
+            _actorsHidden = !visible;
+            for (int i = 0; i < _views.Length; i++)
+                if (_views[i] != null)
+                    ShowActor(_views[i], visible);
+            if (_hatchingAnimal != null)
+                ShowActor(_hatchingAnimal, visible);
+            if (_waitingEgg != null)
+                _waitingEgg.gameObject.SetActive(visible);
+        }
+
+        private void ShowActor(AnimalView view, bool shown)
+        {
+            if (view == null)
+                return;
+            view.GetComponentsInChildren(true, _actorRenderers);
+            for (int i = 0; i < _actorRenderers.Count; i++)
+                _actorRenderers[i].enabled = shown;
+            _actorRenderers.Clear();
+            // The blob shadow follows the quality tier again (on only without a shadow map).
+            if (shown)
+                view.RefreshQuality();
+        }
+
+        /// <summary>An activity holds the refuge camera (or it is still gliding back to the player's view).</summary>
+        public bool CameraHeld => _cameraHeld;
+
+        /// <summary>
+        /// The ground point the camera looks at: the rig's focus, or while an activity holds the camera (and on its way back)
+        /// the point under the screen's center at the focus height, so the weather's rain box follows the framed zone.
+        /// </summary>
+        public Vector3 ViewFocus
+        {
+            get
+            {
+                if (_rig == null)
+                    return Vector3.zero;
+                var focus = _rig.Focus;
+                var camera = _rig.Camera;
+                if ((!_cameraHeld && !_cameraReturning) || camera == null)
+                    return focus;
+                var transform = camera.transform;
+                var forward = transform.forward;
+                if (forward.y > -0.05f)
+                    return focus;
+                float t = (focus.y - transform.position.y) / forward.y;
+                return transform.position + forward * t;
+            }
+        }
+
+        /// <summary>The held camera is still gliding (to the activity's pose, or back to the player's view).</summary>
+        public bool CameraGliding => (_cameraHeld || _cameraReturning) && _cameraT < 1f;
+
+        /// <summary>
+        /// T39: an activity takes the refuge camera to its own framing (a world pose and a vertical field of view), gliding
+        /// there over <paramref name="seconds"/> (eased). The rig stops (no pan, no zoom, its own state kept) until
+        /// <see cref="ReleaseCamera"/> glides back to the view the player left, where the rig takes over again. Calling it
+        /// again while held glides on to the new pose.
+        /// </summary>
+        public void HoldCamera(Vector3 position, Quaternion rotation, float fieldOfView, float seconds)
+        {
+            var camera = _rig != null ? _rig.Camera : null;
+            if (camera == null)
+                return;
+            var transform = camera.transform;
+            if (!_cameraHeld && !_cameraReturning)
+            {
+                _cameraHomePosition = transform.position;
+                _cameraHomeRotation = transform.rotation;
+                _cameraHomeFov = camera.fieldOfView;
+            }
+            _cameraHeld = true;
+            _cameraReturning = false;
+            _rig.StopFling();
+            _rig.enabled = false;
+            StartCameraGlide(transform.position, transform.rotation, camera.fieldOfView, position, rotation, fieldOfView, seconds);
+        }
+
+        /// <summary>T39: the activity gives the camera back: it glides to the player's view, then the rig resumes.</summary>
+        public void ReleaseCamera(float seconds)
+        {
+            var camera = _rig != null ? _rig.Camera : null;
+            if (!_cameraHeld || camera == null)
+                return;
+            _cameraHeld = false;
+            _cameraReturning = true;
+            var transform = camera.transform;
+            StartCameraGlide(transform.position, transform.rotation, camera.fieldOfView, _cameraHomePosition, _cameraHomeRotation, _cameraHomeFov, seconds);
+            if (_cameraT >= 1f)
+                TickHeldCamera(0f);
+        }
+
+        private void StartCameraGlide(Vector3 fromPosition, Quaternion fromRotation, float fromFov, Vector3 toPosition, Quaternion toRotation,
+            float toFov, float seconds)
+        {
+            _cameraFromPosition = fromPosition;
+            _cameraFromRotation = fromRotation;
+            _cameraFromFov = fromFov;
+            _cameraToPosition = toPosition;
+            _cameraToRotation = toRotation;
+            _cameraToFov = toFov;
+            _cameraSeconds = Mathf.Max(0f, seconds);
+            _cameraT = _cameraSeconds > 0f ? 0f : 1f;
+            ApplyHeldCamera();
+        }
+
+        /// <summary>One frame of the held camera (unscaled time): an eased glide, then the pose held; the rig back at the end.</summary>
+        private void TickHeldCamera(float unscaledDeltaTime)
+        {
+            if (!_cameraHeld && !_cameraReturning)
+                return;
+            if (_cameraT < 1f)
+            {
+                _cameraT = Mathf.Min(1f, _cameraT + unscaledDeltaTime / Mathf.Max(0.0001f, _cameraSeconds));
+                ApplyHeldCamera();
+            }
+            if (_cameraReturning && _cameraT >= 1f)
+            {
+                _cameraReturning = false;
+                if (_rig != null)
+                    _rig.enabled = true;
+            }
+        }
+
+        private void ApplyHeldCamera()
+        {
+            var camera = _rig != null ? _rig.Camera : null;
+            if (camera == null)
+                return;
+            float t = _cameraT;
+            // Ease in and out (smootherstep): the glide leaves and lands softly.
+            float k = t * t * t * (t * (6f * t - 15f) + 10f);
+            camera.transform.SetPositionAndRotation(Vector3.LerpUnclamped(_cameraFromPosition, _cameraToPosition, k),
+                Quaternion.SlerpUnclamped(_cameraFromRotation, _cameraToRotation, k));
+            camera.fieldOfView = Mathf.LerpUnclamped(_cameraFromFov, _cameraToFov, k);
+        }
+
         /// <summary>T36: the wish bubbles above animals (doc 06 screen 002); null without the prefab.</summary>
         public WishBubbleLayer Bubbles { get; set; }
 
@@ -419,9 +580,11 @@ namespace PocketWilds.Presentation
         /// <summary>T34: adaptive quality turned real shadows on or off: visible animals and the egg update their blob shadows.</summary>
         public void RefreshPresentationQuality()
         {
-            for (int i = 0; i < _views.Length; i++)
+            // T39: views hidden for an activity take their blob shadow back when they show again (ShowActor).
+            for (int i = 0; i < _views.Length && !_actorsHidden; i++)
                 _views[i]?.RefreshQuality();
-            _hatchingAnimal?.RefreshQuality();
+            if (!_actorsHidden)
+                _hatchingAnimal?.RefreshQuality();
             _waitingEgg?.RefreshQuality();
             _vfx?.SetTier(PresentationQuality.Tier);
         }
@@ -429,6 +592,7 @@ namespace PocketWilds.Presentation
         public void Tick(float time, float deltaTime)
         {
             _time = time;
+            TickHeldCamera(Time.unscaledDeltaTime);
             // T34: while heat keeps the picture lighter, the HUD says so in one short line.
             bool notice = _context.Quality != null && _context.Quality.ThermalNotice;
             if (notice != _noticeShown)
@@ -437,7 +601,7 @@ namespace PocketWilds.Presentation
                 _hud?.SetNotice(notice ? _context.Localization.Get(QualityService.ThermalNoticeKey) : null);
             }
             // A new egg waits until the newborn has walked off its spot (no-collision rule).
-            if (_nextEggTime >= 0f && time >= _nextEggTime && _scheduler.IsEggSpotClear())
+            if (_nextEggTime >= 0f && time >= _nextEggTime && !_actorsHidden && _scheduler.IsEggSpotClear())
             {
                 _nextEggTime = -1f;
                 PresentEgg();
@@ -1625,6 +1789,9 @@ namespace PocketWilds.Presentation
 
         public void Dispose()
         {
+            // T39: the rig never stays switched off behind a held camera.
+            if (_rig != null)
+                _rig.enabled = true;
             _shop?.Dispose();
             _lifetime.Cancel();
             _lifetime.Dispose();
@@ -1972,6 +2139,9 @@ namespace PocketWilds.Presentation
                     }
                 }
                 _scheduler.Unregister(_agentByView[leave]);
+                // T39: a view hidden for an activity goes back to its pool drawable again.
+                if (_actorsHidden)
+                    ShowActor(_views[leave], true);
                 _animals.Release(_views[leave]);
                 VisibleAnimals--;
                 int last = VisibleAnimals;
@@ -1982,6 +2152,9 @@ namespace PocketWilds.Presentation
             }
             var transform = view.transform;
             _views[slot] = view;
+            // T39: an animal arriving while an activity plays in the refuge stays hidden with the others until it ends.
+            if (_actorsHidden)
+                ShowActor(view, false);
             _rareByView[slot] = rare;
             _agentByView[slot] = _scheduler.Register(view, instanceId, seed, transform.position, transform.eulerAngles.y, ProfileOf(species), _time,
                 transform.localScale.x, emerging);

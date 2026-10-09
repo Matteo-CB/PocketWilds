@@ -71,6 +71,7 @@ namespace PocketWilds.Presentation
         private int _themeCount;
         private int _selectedTheme;
         private bool _practice;
+        private bool _stageTickFailed;
         private TicketsModel _tickets;
         private bool _ticketsDirty = true;
 
@@ -126,6 +127,7 @@ namespace PocketWilds.Presentation
             var stages = new ActivityStageRegistry();
             // The stages of the activities shipped in this build (each registers its factory and its themes).
             GroomingStage.Register(stages);
+            HideSeekStage.Register(stages);
             Stages = stages;
 
             _onEnded = OnEnded;
@@ -234,10 +236,11 @@ namespace PocketWilds.Presentation
 
         private bool _cardHint;
 
-        /// <summary>The free first game of Grooming, never played yet: the game shows its gestures and tips.</summary>
-        private bool IsTutorialGame(in ActivityRequest request) =>
-            request.Activity == ActivityId.Grooming && request.Mode != ActivityMode.Practice
-            && _services.FreeGameAvailable(ActivityId.Grooming) && _services.Record(ActivityId.Grooming).GamesPlayed == 0;
+        /// <summary>
+        /// The first game of an activity, never played yet (doc Mini-jeux, section 1: understood without text in 3 s): the
+        /// game shows its gestures and tips (Grooming's is also the free first game of A15).
+        /// </summary>
+        private bool IsTutorialGame(in ActivityRequest request) => _services.Record(request.Activity).GamesPlayed == 0;
 
         /// <summary>A15: the paw on the Grooming card (selected first as « Nouveau ») until the first game starts.</summary>
         private void ShowCardHint()
@@ -469,6 +472,10 @@ namespace PocketWilds.Presentation
         private void BeginGame()
         {
             var runner = _services.Runner;
+            // T39: a stage that picked its own animals names the ones that played (bond and species XP go to them).
+            if (_stage is IActivityPlayedAnimals played && played.PlayedAnimals(out uint a, out uint b, out uint c) > 0)
+                _pending.SetAnimals(a, b, c);
+            _stageTickFailed = false;
             var verdict = runner.TryStart(_pending, _stage.Controller);
             if (verdict != ActivityStartResult.Started)
             {
@@ -758,6 +765,25 @@ namespace PocketWilds.Presentation
             }
         }
 
+        /// <summary>
+        /// The stage's frame, guarded: an error in a stage's visuals is logged once and the game goes on (its score, time and
+        /// result stay the runner's), instead of aborting the scene's whole update every frame.
+        /// </summary>
+        private void TickStage(float deltaTime, float unscaledDeltaTime)
+        {
+            if (_stage == null || _stageTickFailed)
+                return;
+            try
+            {
+                _stage.Tick(deltaTime, unscaledDeltaTime);
+            }
+            catch (Exception ex)
+            {
+                _stageTickFailed = true;
+                GameLog.Error(LogCategory.Presentation, "Activity stage tick failed: " + ex);
+            }
+        }
+
         private void TickGame(float deltaTime, float unscaledDeltaTime)
         {
             var runner = _services.Runner;
@@ -766,7 +792,7 @@ namespace PocketWilds.Presentation
             // The runner may have ended the game in that tick (OnEnded already moved the phase on).
             if (_phase != Phase.Playing)
                 return;
-            _stage?.Tick(deltaTime, unscaledDeltaTime);
+            TickStage(deltaTime, unscaledDeltaTime);
             if (_hud == null)
                 return;
             _hud.SetScore(runner.Score);

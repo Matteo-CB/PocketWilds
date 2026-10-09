@@ -407,7 +407,8 @@ namespace PocketWilds.Editor.Environment
         {
             var groundMesh = prefabs["GL_Ground_Core_A"].GetComponent<MeshFilter>().sharedMesh;
             var egg = ClearingCenter(groundMesh);
-            var layout = StartLayoutT33();
+            // T39: the Prairie's hiding decor joins the layout before it is settled (GrasslandPipeline.T39.cs).
+            var layout = WithHideDecorT39("Start", StartLayoutT33(), prefabs, groundMesh, null);
             var moves = SettleProps("Start", Vector3.zero, layout, prefabs);
             var area = StartWalkArea;
             var rules = new ScatterRules
@@ -432,6 +433,7 @@ namespace PocketWilds.Editor.Environment
                     renderer = ground.GetComponent<Renderer>(), paletteId = ContentId.FromSource(PaletteGround).Value, brightness = WorldChunk.NeutralBrightness,
                 });
                 ComposePropsT33(root.transform, layout, prefabs, new Random(4242), bindings);
+                ComposeHideDecorT39("Start", root.transform, layout, prefabs, bindings);
 
                 var spawns = Child(root.transform, "SpawnPoints");
                 var eggSpawn = Point(spawns, "EggSpawn", egg);
@@ -473,7 +475,7 @@ namespace PocketWilds.Editor.Environment
         private static string BuildMeadowChunkT33(Dictionary<string, GameObject> prefabs, ScatterKit kit)
         {
             var groundMesh = AssetDatabase.LoadAllAssetsAtPath($"{ModelsFolder}/GL_Ground_Core_B.fbx").OfType<Mesh>().First();
-            var layout = MeadowLayoutT33();
+            var layout = WithHideDecorT39("Meadow", MeadowLayoutT33(), prefabs, groundMesh, null);
             var moves = SettleProps("Meadow", MeadowOffset, layout, prefabs);
             var area = new WanderArea(Vector3.zero, 3.5f);
             var rules = new ScatterRules
@@ -499,6 +501,7 @@ namespace PocketWilds.Editor.Environment
                     renderer = ground.GetComponent<Renderer>(), paletteId = ContentId.FromSource(PaletteGround).Value, brightness = WorldChunk.NeutralBrightness,
                 });
                 ComposePropsT33(root.transform, layout, prefabs, new Random(9157), bindings);
+                ComposeHideDecorT39("Meadow", root.transform, layout, prefabs, bindings);
                 var spawns = Child(root.transform, "SpawnPoints");
                 var animals = new[]
                 {

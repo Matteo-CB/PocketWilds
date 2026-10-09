@@ -283,6 +283,7 @@ namespace PocketWilds.Presentation
                     var host = new ActivityStageHost(context, _refuge, _cameraRig, transform);
                     // A stage with its own set turns the refuge's rendering off while it plays (doc Mini-jeux, section 1).
                     host.SetWorldVisible = SetWorldVisible;
+                    host.World = this;
                     _activityPresenter = new ActivityPresenter(context, _hud as IPlayHud, _activityHub as IActivityHubView,
                         _activityHud as IActivityHudView, _activityResult as IActivityResultView, _ticketsEmpty as ITicketsEmptyView, host);
                     _activityPresenter.Daily = _dailyPresenter;
@@ -506,7 +507,7 @@ namespace PocketWilds.Presentation
                 _life.Render(camera, Time.time);
             }
             if (_weather != null && _cameraRig != null)
-                _weather.Render(camera, _cameraRig.Focus);
+                _weather.Render(camera, _refuge != null ? _refuge.ViewFocus : _cameraRig.Focus);
             if (_context != null)
                 UpdateAmbienceMix();
         }

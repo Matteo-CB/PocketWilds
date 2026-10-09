@@ -348,7 +348,8 @@ namespace PocketWilds.Editor.Environment
             var meshes = ModelMeshes();
             var groundMesh = meshes[def.Ground];
             var groundSampler = new GroundSampler(groundMesh);
-            var layout = def.Layout();
+            // T39: the Prairie's hiding decor joins the layout (GrasslandPipeline.T39.cs); the loop below sets its height.
+            var layout = WithHideDecorT39(def.Name, def.Layout(), prefabs, groundMesh, def.Water != null ? meshes[def.Water] : null);
             // Props stand on the ground (hill, rise, banks): the layout gives x and z, the ground under the footprint gives y.
             for (int i = 0; i < layout.Count; i++)
             {
@@ -441,6 +442,7 @@ namespace PocketWilds.Editor.Environment
                     });
                 }
                 ComposePropsT33(root.transform, layout, prefabs, new Random(def.Seed), bindings);
+                ComposeHideDecorT39(def.Name, root.transform, layout, prefabs, bindings);
 
                 var spawns = Child(root.transform, "SpawnPoints");
                 var animals = def.AnimalSpawns.Select((p, i) =>

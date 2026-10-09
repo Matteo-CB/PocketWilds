@@ -947,7 +947,8 @@ namespace PocketWilds.Simulation
         /// <summary>
         /// Section 2.2: SYS-01 to SYS-03 open at the end of the welcome (A10); SYS-04 with the first upgrade bought or the
         /// Upgrade button (A07); SYS-06 when a biome offers its first expansion (zone signs shown, the next zone allowed);
-        /// T38: SYS-09 with Grooming (refuge level 3 and 5 animals) once the build has activities.
+        /// T38: SYS-09 with Grooming (refuge level 3 and 5 animals) once the build has activities; T39: SYS-10 with Hide and
+        /// Seek (refuge level 4 and 8 animals) the same way.
         /// </summary>
         private bool SystemOpensNow(WishSystem system)
         {
@@ -965,6 +966,8 @@ namespace PocketWilds.Simulation
                     return ExpansionOffered();
                 case WishSystem.Grooming:
                     return GroomingOpen;
+                case WishSystem.HideAndSeek:
+                    return HideSeekOpen;
                 default:
                     return false;
             }
@@ -972,6 +975,9 @@ namespace PocketWilds.Simulation
 
         /// <summary>« Toilettage débloqué »: the build has its activities (the bootstrap sets it) and Grooming's function is open.</summary>
         private bool GroomingOpen => Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.Grooming);
+
+        /// <summary>« Cache-cache débloqué »: the build has its activities and Hide and Seek's function is open (level 4, 8 animals).</summary>
+        private bool HideSeekOpen => Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.HideAndSeek);
 
         /// <summary>Each shipped template's eligibility now (section 2.3, plan § 1.6), with the services of this build.</summary>
         private bool IsEligible(in WishTemplate template)
@@ -1012,6 +1018,11 @@ namespace PocketWilds.Simulation
                 case WishTemplateId.GroomingBow:
                     // « Toilettage débloqué » (the system's opening, checked by the draw).
                     return GroomingOpen;
+                case WishTemplateId.PlayHideAndSeek:
+                case WishTemplateId.FindHiddenAnimals:
+                case WishTemplateId.FindEveryHiddenAnimal:
+                    // « Cache-cache débloqué ».
+                    return HideSeekOpen;
                 default:
                     return false;
             }
@@ -1685,6 +1696,37 @@ namespace PocketWilds.Simulation
                         break;
                     case WishTemplateId.GroomingBow:
                         if (game.Finished && game.BowPlaced)
+                            Advance(i, 1);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// T39 (SYS-10, section 2.3): a hide-and-seek game ended. WISH-051 « Joue à Cache-cache »: a game played to its end,
+        /// practice included (a game left early is not a game played); WISH-052 « Trouve {n} animaux cachés »: the animals
+        /// found in any game, even one left before its end (cumulated: they really were found); WISH-053 « Trouve tous les
+        /// animaux d'une partie »: every animal of one game found, practice included. Allocation-free.
+        /// </summary>
+        public void OnHideSeekGame(in HideSeekGameSummary game)
+        {
+            var wishes = State.DailyVisit.Wishes;
+            for (int i = Pending - 1; i >= 0; i--)
+            {
+                if (i >= Pending || wishes[i].IsDone)
+                    continue;
+                switch ((WishTemplateId)wishes[i].Template)
+                {
+                    case WishTemplateId.PlayHideAndSeek:
+                        if (game.Finished)
+                            Advance(i, 1);
+                        break;
+                    case WishTemplateId.FindHiddenAnimals:
+                        if (game.Found > 0)
+                            Advance(i, game.Found);
+                        break;
+                    case WishTemplateId.FindEveryHiddenAnimal:
+                        if (game.Finished && game.AllFound)
                             Advance(i, 1);
                         break;
                 }

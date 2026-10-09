@@ -167,6 +167,16 @@ namespace PocketWilds.Simulation
         }
 
         /// <summary>
+        /// T39: a hide-and-seek game ended (<see cref="HideSeekHooks"/> calls it): its wishes (WISH-051 to 053) and the
+        /// journal's JRN-016. Allocation-free.
+        /// </summary>
+        public void OnHideSeekGame(in HideSeekGameSummary game)
+        {
+            Wishes.OnHideSeekGame(in game);
+            Journal.OnHideSeekGame(in game);
+        }
+
+        /// <summary>
         /// At boot (after the offline resolution) and when the app comes back: the day check first, then the return gift of
         /// this absence (doc 01, section 6).
         /// </summary>

@@ -30,6 +30,8 @@ namespace PocketWilds.Editor.UI
     /// The HUD's Play button is built by <see cref="UiPipeline.BuildHudPrefab"/>.
     /// T38: PF_UI_ActivityHud also carries what an activity's stage shows over its game (the tip bubble, the tutorial paw,
     /// the round choices and the boost chip), and Atlas_Activities the T38 sprites of agent GI when drawn.
+    /// T39: the HUD's item buttons (Hide and Seek's magnifier and whistle, agent HI's icons packed in Atlas_Activities and
+    /// lent to the stage) and its night (one full screen Image with MAT_UI_Spotlight, PocketWilds/UISpotlight).
     /// </summary>
     public static class ActivityUiPipeline
     {
@@ -54,12 +56,35 @@ namespace PocketWilds.Editor.UI
         /// (Art/UI/Icons) and the two result stars (Art/UI/Kit, 192 px, same frame). ICO_Play stays in Atlas_CommonHUD (HUD).
         /// T38 (agent GI): the three bow choices and the golden brush (Icons); each is packed when drawn, nothing breaks while
         /// one is missing. The swipe paw UI_Gesture_Swipe stays in Atlas_CommonHUD next to UI_Gesture_Tap.
+        /// T39 (agent HI): Hide and Seek's magnifier and whistle (Icons), packed when drawn.
         /// </summary>
         public static readonly string[] ScreenOnlyIcons =
         {
             "ICO_Practice", "ICO_Record", "ICO_Challenge", "ICO_Pause", "ICO_Timer", "ICO_Lock", "UI_Star_Result_Empty", "UI_Star_Result_Full",
-            "ICO_Bow_Pink", "ICO_Bow_SkyBlue", "ICO_Bow_Cream", "ICO_GoldenBrush",
+            "ICO_Bow_Pink", "ICO_Bow_SkyBlue", "ICO_Bow_Cream", "ICO_GoldenBrush", ActivityText.IconMagnifier, ActivityText.IconWhistle,
         };
+
+        /// <summary>
+        /// The icons PF_UI_ActivityHud lends to the stages by name (IActivityHudView.Icon), so their bundles never copy the UI
+        /// atlas: T38's bows and golden brush, T39's magnifier and whistle. A missing one is left out (the stage falls back).
+        /// </summary>
+        public static readonly string[] LentIcons =
+        {
+            "ICO_Bow_Pink", "ICO_Bow_SkyBlue", "ICO_Bow_Cream", "ICO_GoldenBrush", ActivityText.IconMagnifier, ActivityText.IconWhistle,
+        };
+
+        /// <summary>T39 night (Hide and Seek challenge 7): the handmade UI shader and its material.</summary>
+        public const string SpotlightShaderPath = "Assets/_Game/Art/Shaders/SH_UISpotlight.shader";
+
+        public const string SpotlightMaterialPath = "Assets/_Game/Art/Materials/MAT_UI_Spotlight.mat";
+
+        /// <summary>The night's look: a deep blue-violet (never black), 76 % opaque by the circle, 86 % far from it, a soft edge of 7 % of the width.</summary>
+        public static readonly Color Night = UiColorTokens.Hex(0x211F47);
+
+        public const float NightNear = 0.76f;
+        public const float NightFar = 0.86f;
+        public const float NightFeather = 0.07f;
+        public const float NightReach = 0.8f;
 
         /// <summary>T38 HUD parts: the picker's choices (diameter, at least 150), their pitch and the height of their row's center.</summary>
         public const float PickerSize = 176f;
@@ -270,6 +295,8 @@ namespace PocketWilds.Editor.UI
             public readonly Sprite GestureTap = Load(Kit("UI_Gesture_Tap"));
             public readonly Sprite GestureSwipe = Optional(Kit("UI_Gesture_Swipe"));
             public readonly Sprite GoldenBrush = Optional(Icon("ICO_GoldenBrush"));
+            // T39: the used item's small round check (Atlas_CommonHUD).
+            public readonly Sprite Check = Optional(Icon("ICO_Check"));
             public readonly Sprite[] ActivityIcons;
             public readonly int ActivityIconsFound;
 
@@ -826,6 +853,10 @@ namespace PocketWilds.Editor.UI
                 BuildBoost(screen, safe, kit);
                 BuildPicker(screen, safe, kit);
                 BuildGesture(screen, content, kit);
+                // T39: the item row in the safe area's bottom right corner; the night drawn first, under everything else.
+                BuildItems(screen, safe, kit);
+                BuildSpotlight(screen, content);
+                LendIcons(screen);
 
                 // The pause card: a dim that keeps touches from the game, « Reprendre » and « Quitter ».
                 var pauseLayer = UiPipeline.Rect("PauseLayer", content);
@@ -936,15 +967,141 @@ namespace PocketWilds.Editor.UI
             var icon = UiPipeline.AddImage("Icon", root, fallback, Color.white, Image.Type.Simple);
             UiPipeline.Place(icon.rectTransform, center, center, new Vector2(0f, 2f), new Vector2(size * 0.6f, size * 0.6f));
             screen.SetBoostReferences(root, group, icon, ring, fallback);
-            // T38: the icons the stages borrow (their bundles never copy the UI atlas).
-            var lent = new System.Collections.Generic.List<Sprite>();
-            foreach (var name in new[] { "ICO_Bow_Pink", "ICO_Bow_SkyBlue", "ICO_Bow_Cream", "ICO_GoldenBrush" })
+            root.gameObject.SetActive(false);
+        }
+
+        /// <summary>The icons the stages borrow (<see cref="LentIcons"/>, their bundles never copy the UI atlas); a missing one is left out.</summary>
+        private static void LendIcons(ActivityHudScreen screen)
+        {
+            var lent = new List<Sprite>();
+            foreach (var name in LentIcons)
             {
-                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(UiPipeline.IconFolder + "/" + name + ".png");
+                var sprite = Optional(Icon(name));
                 if (sprite != null)
                     lent.Add(sprite);
             }
             screen.SetIcons(lent.ToArray());
+        }
+
+        /// <summary>
+        /// T39 items (doc 01 S-ACT-002 « Objets »: the magnifier and the whistle, one each per game): 3 round buttons (150
+        /// units, 48 dp and more) in a row at the safe area's bottom right, under the picker's place and away from the middle
+        /// of the play area. Each is a cream disc (the touch, the kit's pressed tint) with a soft warm rim, a soft shadow under
+        /// it, the item icon, and the small round check of a used item (ICO_Check) on its lower right. Own canvas with its
+        /// raycaster; the screen places the row for the count shown.
+        /// </summary>
+        private static void BuildItems(ActivityHudScreen screen, RectTransform safe, KitSprites kit)
+        {
+            var tokens = kit.Tokens;
+            var center = new Vector2(0.5f, 0.5f);
+            var corner = new Vector2(1f, 0f);
+            const int count = ActivityHudScreen.MaxItems;
+            const float size = ActivityHudScreen.ItemSize;
+            var root = UiPipeline.Rect("Items", safe);
+            UiPipeline.Place(root, corner, corner, Vector2.zero,
+                new Vector2(ActivityHudScreen.ItemsRight + count * ActivityHudScreen.ItemPitch, ActivityHudScreen.ItemsY * 2f + 20f));
+            root.gameObject.AddComponent<Canvas>();
+            root.gameObject.AddComponent<GraphicRaycaster>();
+            var items = new RectTransform[count];
+            var groups = new CanvasGroup[count];
+            var buttons = new Button[count];
+            var discs = new Image[count];
+            var rims = new Image[count];
+            var icons = new Image[count];
+            var checks = new Image[count];
+            for (int i = 0; i < count; i++)
+            {
+                var item = UiPipeline.Rect("Item" + i, root);
+                UiPipeline.Place(item, corner, center, new Vector2(ActivityHudScreen.ItemX(i, count), ActivityHudScreen.ItemsY), new Vector2(size, size));
+                groups[i] = item.gameObject.AddComponent<CanvasGroup>();
+                var shadow = UiPipeline.AddImage("Shadow", item, kit.Glow, PickerShadow, Image.Type.Simple);
+                UiPipeline.Place(shadow.rectTransform, center, center, new Vector2(0f, -14f), new Vector2(size * 1.3f, size * 1.3f));
+                discs[i] = UiPipeline.AddImage("Button", item, kit.Circle, tokens.backgroundLight, Image.Type.Simple);
+                discs[i].raycastTarget = true;
+                UiPipeline.Stretch(discs[i].rectTransform);
+                buttons[i] = discs[i].gameObject.AddComponent<Button>();
+                UiPipeline.ConfigureButton(buttons[i], discs[i]);
+                // A used item is greyed by the screen itself: the disabled tint changes nothing.
+                var colors = buttons[i].colors;
+                colors.disabledColor = Color.white;
+                buttons[i].colors = colors;
+                rims[i] = UiPipeline.AddImage("Rim", discs[i].rectTransform, kit.Ring, tokens.accentBusy, Image.Type.Simple);
+                UiPipeline.Stretch(rims[i].rectTransform);
+                // The item icons (agent HI, 128 px drawn) read best at 62 % of the button.
+                icons[i] = UiPipeline.AddImage("Icon", discs[i].rectTransform, kit.Paw, Color.white, Image.Type.Simple);
+                UiPipeline.Place(icons[i].rectTransform, center, center, new Vector2(0f, 2f), new Vector2(size * 0.62f, size * 0.62f));
+                checks[i] = UiPipeline.AddImage("Check", item, kit.Check != null ? kit.Check : kit.Dot, kit.Check != null ? Color.white : tokens.success,
+                    Image.Type.Simple);
+                UiPipeline.Place(checks[i].rectTransform, center, center, new Vector2(size * 0.34f, -size * 0.34f),
+                    new Vector2(ActivityHudScreen.ItemCheckSize, ActivityHudScreen.ItemCheckSize));
+                // Drawn through its alpha (clear until the item is used, culled while clear): nothing toggles during a game.
+                var checkColor = checks[i].color;
+                checkColor.a = 0f;
+                checks[i].color = checkColor;
+                checks[i].canvasRenderer.cullTransparentMesh = true;
+                items[i] = item;
+                item.gameObject.SetActive(false);
+            }
+            screen.SetItemReferences(root, items, groups, buttons, discs, rims, icons, checks, kit.Paw);
+            root.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// MAT_UI_Spotlight (PocketWilds/UISpotlight) with the night's look (<see cref="Night"/>, <see cref="NightNear"/>…).
+        /// Null while the shader is not imported: the HUD is then built without its night.
+        /// </summary>
+        public static Material EnsureSpotlightMaterial()
+        {
+            if (File.Exists(SpotlightShaderPath))
+                AssetDatabase.ImportAsset(SpotlightShaderPath);
+            var shader = AssetDatabase.LoadAssetAtPath<Shader>(SpotlightShaderPath);
+            if (shader == null)
+                return null;
+            var material = AssetDatabase.LoadAssetAtPath<Material>(SpotlightMaterialPath);
+            if (material == null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(SpotlightMaterialPath));
+                material = new Material(shader) { name = Path.GetFileNameWithoutExtension(SpotlightMaterialPath) };
+                AssetDatabase.CreateAsset(material, SpotlightMaterialPath);
+            }
+            else if (material.shader != shader)
+            {
+                material.shader = shader;
+            }
+            material.SetColor("_Color", Night);
+            material.SetVector("_Spot", new Vector4(0.5f, 0.5f, 0.25f, UiPipeline.ReferenceResolution.y / UiPipeline.ReferenceResolution.x));
+            material.SetFloat("_Feather", NightFeather);
+            material.SetFloat("_Near", NightNear);
+            material.SetFloat("_Far", NightFar);
+            material.SetFloat("_Reach", NightReach);
+            material.SetFloat("_Fade", 1f);
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        /// <summary>
+        /// T39 night (doc 01 S-ACT-002 challenge 7, an interface mask, no real-time light): a full screen layer drawn first in
+        /// the HUD (the score, the tips and the items stay readable over it), on its own passive canvas: one sprite-less Image
+        /// (UVs 0 to 1 over the screen) with MAT_UI_Spotlight, taking no touch, one draw call.
+        /// </summary>
+        private static void BuildSpotlight(ActivityHudScreen screen, RectTransform content)
+        {
+            var material = EnsureSpotlightMaterial();
+            if (material == null)
+            {
+                Debug.LogWarning("[ActivityUiPipeline] " + SpotlightShaderPath + " is not imported yet: the HUD is built without its night.");
+                return;
+            }
+            var root = UiPipeline.Rect("Night", content);
+            UiPipeline.Stretch(root);
+            root.SetAsFirstSibling();
+            root.gameObject.AddComponent<Canvas>();
+            PassiveGroup(root.gameObject);
+            var image = UiPipeline.AddImage("Shade", root, null, Color.white, Image.Type.Simple);
+            UiPipeline.Stretch(image.rectTransform);
+            image.preserveAspect = false;
+            image.material = material;
+            screen.SetSpotlightReferences(root, image, material);
             root.gameObject.SetActive(false);
         }
 

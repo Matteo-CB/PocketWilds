@@ -39,6 +39,10 @@
     {
       "blend": "SourceArt/Blender/Activities/BL_Activity_Grooming.blend",
       "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_grooming.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
+      "blend": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_T39.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_grassland_t33.py", "SourceArt/Blender/Tools/pw_grassland_t39_props.py", "SourceArt/Blender/Tools/pw_export.py"]
     }
   ],
   "generated": [
@@ -49,6 +53,7 @@
         "Assets/_Game/Editor/Environment/GrasslandPipeline.cs",
         "Assets/_Game/Editor/Environment/GrasslandPipeline.T33.cs",
         "Assets/_Game/Editor/Environment/GrasslandPipeline.T33B.Kit.cs",
+        "Assets/_Game/Editor/Environment/GrasslandPipeline.T39.cs",
         "Assets/_Game/Editor/Environment/ZonePipeline.cs"
       ]
     },
@@ -76,6 +81,29 @@
       "final": "Assets/_Game/Art/Activities/Grooming/Bodies/",
       "from": "each species' LOD0 mesh (BL_Animal_<Species>.blend) copied with its grooming zones (uv2) and bind positions (uv3)",
       "builders": ["Assets/_Game/Editor/Activities/GroomingPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Fonts/",
+      "from": "Pocket Round and Pocket Plush drawn as stroke skeletons by our own code: the Latin core and one fallback per script and region (SourceArt/Fonts/Build, pw_font_build.py --scripts); the Han components and IDS data are pw_font_han_*.txt beside the tools",
+      "builders": [
+        "SourceArt/Fonts/Tools/pw_font_engine.py",
+        "SourceArt/Fonts/Tools/pw_font_glyphs.py",
+        "SourceArt/Fonts/Tools/pw_font_build.py",
+        "SourceArt/Fonts/Tools/pw_font_proof.py",
+        "SourceArt/Fonts/Tools/pw_font_scripts_proof.py",
+        "SourceArt/Fonts/Tools/pw_font_cyrillic_greek.py",
+        "SourceArt/Fonts/Tools/pw_font_cyrillic_greek_test.py",
+        "SourceArt/Fonts/Tools/pw_font_vietnamese.py",
+        "SourceArt/Fonts/Tools/pw_font_vietnamese_test.py",
+        "SourceArt/Fonts/Tools/pw_font_thai.py",
+        "SourceArt/Fonts/Tools/pw_font_thai_test.py",
+        "SourceArt/Fonts/Tools/pw_font_kana.py",
+        "SourceArt/Fonts/Tools/pw_font_kana_test.py",
+        "SourceArt/Fonts/Tools/pw_font_hangul.py",
+        "SourceArt/Fonts/Tools/pw_font_hangul_test.py",
+        "SourceArt/Fonts/Tools/pw_font_han.py",
+        "SourceArt/Fonts/Tools/pw_font_han_test.py"
+      ]
     }
   ],
   "largeTextures": [

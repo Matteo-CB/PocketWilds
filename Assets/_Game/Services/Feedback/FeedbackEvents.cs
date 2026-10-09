@@ -182,6 +182,36 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>T38 J-SFX-ACT-001-06: the bow is placed (a ribbon settles, two music box notes, C then F).</summary>
         GroomBow = 77,
+
+        // T39: the hide and seek (doc 01 Contenu, S-ACT-002 « Sons et effets »; the « ip ? » of J-SFX-ACT-002-01 is the
+        // species' happy voice through IAudioService.PlayPitched). See HideSeekAudio.
+
+        /// <summary>
+        /// T39 J-SFX-ACT-002-01: the pop of the « coucou » (an animal found pops out: a whisper of leaves, a round pop
+        /// lifting like a question), 2 variants; HideSeekAudio.Coucou plays the species' voice with it.
+        /// </summary>
+        HideSeekCoucou = 78,
+
+        /// <summary>
+        /// T39 J-SFX-ACT-002-02: a touch on an empty spot (a soft shake of leaves, a few leaves flying off), 3 variants.
+        /// Kind and light, never a « wrong » sound; its cooldown keeps quick taps from piling up.
+        /// </summary>
+        HideSeekEmpty = 79,
+
+        /// <summary>
+        /// T39 J-SFX-ACT-002-03: an animal gives its hint (two soft swells of grass), 2 variants, under the empty touch.
+        /// Animals hinting at the same moment make one rustle (cooldown).
+        /// </summary>
+        HideSeekHint = 80,
+
+        /// <summary>T39 J-SFX-ACT-002-04: the magnifier (a soft breath across glass, a small glass bead as the ring settles).</summary>
+        HideSeekMagnifier = 81,
+
+        /// <summary>T39 J-SFX-ACT-002-05: the whistle (two soft notes of a wooden slide whistle, F sliding up to C).</summary>
+        HideSeekWhistle = 82,
+
+        /// <summary>T39 J-SFX-ACT-002-06: every animal found (a three-note music box motif, C, D, F, over the end chord).</summary>
+        HideSeekAllFound = 83,
     }
 
     /// <summary>T37: the three activity musics (doc 01 Contenu, section 12.0, J-MUS-ACT-01 to 03). Stable values.</summary>
@@ -372,6 +402,67 @@ namespace PocketWilds.Services.Feedback
         /// </summary>
         public static void Sigh(IAudioService audio, ContentId species, Vector3 position) =>
             audio.PlayPitched(AudioEventId.AnimalSleep, position, species, SighPitch);
+    }
+
+    /// <summary>
+    /// T39: how a hide-and-seek game sounds (doc 01 Contenu, S-ACT-002 « Sons et effets »; doc Audio, J-SFX-ACT-002-01 to
+    /// 06). The stage hands every drained game event to <see cref="Play"/>, with the species of the animal it concerns for
+    /// the finds (ContentId.None otherwise). The « coucou » is the pop plus the animal's own happy voice, a little higher
+    /// (the « ip ? »); everything else plays from the centre. The end chord stays the presenter's (ActivityEnd), the
+    /// all-found motif lands with it. No allocation.
+    /// </summary>
+    public static class HideSeekAudio
+    {
+        /// <summary>
+        /// J-SFX-ACT-002-01: the « ip ? » is the species' happy voice, 12 % higher: a little question (the pop under it
+        /// lifts a whole tone). Our default: the doc gives the bank, not the pitch.
+        /// </summary>
+        public const float CoucouPitch = 1.12f;
+
+        /// <summary>
+        /// The sound of one hide-and-seek event (doc 01 S-ACT-002 « Sons et effets »). Our defaults where the doc is
+        /// silent: a find after its hint (or the magnifier, the whistle) is the same « coucou » as a find before it (the
+        /// points and the ring tell the difference); the pause after 3 empty touches, a challenge 6 mistake (its touch
+        /// already rustled) and a decoy moving in the wind are silent, so the hint's rustle always means an animal; an
+        /// animal slipping to another spot (challenge 9) rustles like a hint, quietly, so the player knows to look again.
+        /// species: the found animal's species (Found, FoundAfterHint); position: its spot.
+        /// </summary>
+        public static void Play(IAudioService audio, in PocketWilds.Simulation.HideSeekEvent e, ContentId species, Vector3 position)
+        {
+            switch (e.Kind)
+            {
+                case PocketWilds.Simulation.HideSeekEventKind.Found:
+                case PocketWilds.Simulation.HideSeekEventKind.FoundAfterHint:
+                    Coucou(audio, species, position);
+                    break;
+                case PocketWilds.Simulation.HideSeekEventKind.Empty:
+                    audio.Play(AudioEventId.HideSeekEmpty, position, ContentId.None);
+                    break;
+                case PocketWilds.Simulation.HideSeekEventKind.Hint:
+                case PocketWilds.Simulation.HideSeekEventKind.Moved:
+                    audio.Play(AudioEventId.HideSeekHint, position, ContentId.None);
+                    break;
+                case PocketWilds.Simulation.HideSeekEventKind.Magnifier:
+                    audio.Play(AudioEventId.HideSeekMagnifier, position, ContentId.None);
+                    break;
+                case PocketWilds.Simulation.HideSeekEventKind.Whistle:
+                    audio.Play(AudioEventId.HideSeekWhistle, position, ContentId.None);
+                    break;
+                case PocketWilds.Simulation.HideSeekEventKind.AllFound:
+                    audio.Play(AudioEventId.HideSeekAllFound, position, ContentId.None);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// J-SFX-ACT-002-01, the « coucou »: the pop as the animal pops out, and its own happy voice at
+        /// <see cref="CoucouPitch"/> (a close-up: full level from the centre, whatever the refuge's view).
+        /// </summary>
+        public static void Coucou(IAudioService audio, ContentId species, Vector3 position)
+        {
+            audio.Play(AudioEventId.HideSeekCoucou, position, ContentId.None);
+            audio.PlayPitched(AudioEventId.AnimalHappy, position, species, CoucouPitch);
+        }
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>

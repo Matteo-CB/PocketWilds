@@ -159,9 +159,11 @@ namespace PocketWilds.Tests.EditMode
                     ActivityText.ResultTitleTwo, ActivityText.ResultTitleThree)),
                 (ActivityUiPipeline.TicketsEmptyPath, "Practice/Label", Longest(ActivityText.EmptyPractice)),
                 (ActivityUiPipeline.TicketsEmptyPath, "Card/Title", Longest(ActivityText.EmptyTitle)),
-                // T38: the HUD's tip bubble (its widest box) and the sheet's « Brosser » button with its « Gratuit » tag.
+                // T38: the HUD's tip bubble (its widest box) and the sheet's « Brosser » button with its « Gratuit » tag; T39:
+                // Hide and Seek's tips in the same bubble (its item buttons and its night carry no text).
                 (ActivityUiPipeline.HudPath, "Tip/Label", Longest(ActivityText.GroomingTipBrush, ActivityText.GroomingTipLeaves,
-                    ActivityText.GroomingTipBurr, ActivityText.GroomingTipBow, ActivityText.GroomingTipBubble)),
+                    ActivityText.GroomingTipBurr, ActivityText.GroomingTipBow, ActivityText.GroomingTipBubble, ActivityText.HideSeekTipFind,
+                    ActivityText.HideSeekTipHint, ActivityText.HideSeekTipItems, ActivityText.HideSeekTipPaused)),
                 (FeedbackUiPipeline.SheetPrefabPath, "Content/SafeArea/Card/Groom/Button/Label", Longest(ActivityText.SheetGroom)),
                 (FeedbackUiPipeline.SheetPrefabPath, "Content/SafeArea/Card/Groom/Button/Free/Label", Longest(ActivityText.HubFree)),
             };

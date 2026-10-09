@@ -292,6 +292,17 @@ namespace PocketWilds.Editor.Audio
                 // T38 J-SFX-FEEL-020 (doc 05 Sensations, section 6.1: World, 1 voice, 0.3 s): the soap bubble's puff, played
                 // from the centre (the grooming close-up, later the animal sheet), not placed in the refuge.
                 Def(AudioEventId.BubblePuff, "SFX_World_BubblePuff", AudioGroup.World, 2, 0.3f, 1, volumeJitter: 0.04f, pitchJitter: 0.03f),
+                // T39: the hide and seek (doc 01 Contenu, S-ACT-002 « Sons et effets »; HideSeekAudio), from the centre (the
+                // set's close-up). The coucou's pop: 2 voices, two animals found in a quick run each pop. The empty touch:
+                // one rustle every 0.3 s at most, so quick taps never pile up (a rustle fades under -40 dB in 0.3 to 0.36 s:
+                // 2 voices never cut one). The hint: 0.6 s and one voice, animals hinting at the same moment make one
+                // rustle. The items and the motif once each (1 s), melodic: no pitch jitter.
+                Def(AudioEventId.HideSeekCoucou, "SFX_HideSeek_Coucou", AudioGroup.Rewards, 2, 0.08f, 2, volumeJitter: 0.04f, pitchJitter: 0.02f),
+                Def(AudioEventId.HideSeekEmpty, "SFX_HideSeek_Empty", AudioGroup.World, 2, 0.3f, 2, 0.9f, volumeJitter: 0.08f, pitchJitter: 0.04f),
+                Def(AudioEventId.HideSeekHint, "SFX_HideSeek_Hint", AudioGroup.World, 2, 0.6f, 1, volumeJitter: 0.05f, pitchJitter: 0.03f),
+                Def(AudioEventId.HideSeekMagnifier, "SFX_HideSeek_Magnifier", AudioGroup.UI, 1, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                Def(AudioEventId.HideSeekWhistle, "SFX_HideSeek_Whistle", AudioGroup.UI, 1, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                Def(AudioEventId.HideSeekAllFound, "SFX_HideSeek_AllFound", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
             };
             foreach (var (id, prefix) in new[]
                      {

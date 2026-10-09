@@ -25,7 +25,10 @@ namespace PocketWilds.Tests.EditMode
         [Test]
         public void StartChunk_UsesAtMostTwoMaterials()
         {
-            var materials = Chunk().GetComponentsInChildren<Renderer>(true).Select(r => r.sharedMaterial).Distinct().ToList();
+            // T39: the tall grass props draw with the meadow tufts' own material (the scatter's, already in every frame).
+            var scatterMaterial = Chunk().Scatter != null && Chunk().Scatter.kit != null ? Chunk().Scatter.kit.material : null;
+            var materials = Chunk().GetComponentsInChildren<Renderer>(true).Select(r => r.sharedMaterial).Where(m => m != scatterMaterial)
+                .Distinct().ToList();
             Assert.LessOrEqual(materials.Count, 2, string.Join(", ", materials.Select(m => m.name)));
         }
 

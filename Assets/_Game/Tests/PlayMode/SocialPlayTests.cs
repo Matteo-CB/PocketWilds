@@ -98,7 +98,7 @@ namespace PocketWilds.Tests.PlayMode
                 LoadTargetScene = true,
             };
             var bootstrap = new GameObject("GameBootstrap").AddComponent<GameBootstrap>();
-            float timeout = Time.realtimeSinceStartup + 20f;
+            float timeout = Time.realtimeSinceStartup + 60f; // a cold first boot compiles shaders and loads every bundle
             while (bootstrap.State == BootState.NotStarted || bootstrap.State == BootState.Running)
             {
                 Assert.Less(Time.realtimeSinceStartup, timeout, "Boot timed out.");
@@ -112,28 +112,34 @@ namespace PocketWilds.Tests.PlayMode
             Assert.AreEqual(entry.StartChunk.InterestCount, scheduler.InterestCount, "The chunk's points of interest reach the scheduler.");
             Assert.Greater(scheduler.InterestCount, 0);
 
-            // Animals are spread over the meadow: any of them that has a free neighbour within reach invites it.
-            int a = -1;
-            float searchUntil = Time.realtimeSinceStartup + 12f;
-            while (a < 0)
+            // Animals are spread over the meadow: any of them that has a free neighbour within reach invites it. A pair whose
+            // approach finds no free track gives up (nothing walks through a prop, Collision_Rule.md): then another pair forms.
+            int a = -1, b = -1, pairs = 0;
+            float until = Time.realtimeSinceStartup + 40f;
+            string lastPair = "";
+            while (a < 0 || scheduler.GetState(a) != AnimalBehaviorState.Social)
             {
-                for (int h = 0; h < scheduler.Capacity && a < 0; h++)
-                    if (scheduler.IsValid(h) && scheduler.GetPartner(h) < 0 && scheduler.TryStartSocial(h, refuge.SimulationTime))
-                        a = h;
-                if (a >= 0)
-                    break;
-                Assert.Less(Time.realtimeSinceStartup, searchUntil, "No animal ever found a neighbour to greet.");
+                if (a >= 0 && scheduler.GetPartner(a) < 0)
+                {
+                    lastPair = $"pair {pairs} gave up: A {scheduler.GetState(a)} at {scheduler.GetPosition(a)}, B {scheduler.GetState(b)} at {scheduler.GetPosition(b)}";
+                    a = -1;
+                }
+                if (a < 0)
+                {
+                    for (int h = 0; h < scheduler.Capacity && a < 0; h++)
+                        if (scheduler.IsValid(h) && scheduler.GetPartner(h) < 0 && scheduler.TryStartSocial(h, refuge.SimulationTime))
+                            a = h;
+                    if (a >= 0)
+                    {
+                        b = scheduler.GetPartner(a);
+                        pairs++;
+                    }
+                }
+                if (Time.realtimeSinceStartup >= until)
+                    Assert.Fail($"No pair met in 40 s ({pairs} pairs formed; {lastPair}).");
                 yield return null;
             }
-            int b = scheduler.GetPartner(a);
-            Assert.GreaterOrEqual(b, 0);
-
-            float until = Time.realtimeSinceStartup + 10f;
-            while (scheduler.GetState(a) != AnimalBehaviorState.Social)
-            {
-                Assert.Less(Time.realtimeSinceStartup, until, "The pair never met.");
-                yield return null;
-            }
+            Assert.Less(pairs, 6, "Most pairs meet: " + lastPair);
             Assert.AreEqual(AnimalBehaviorState.Social, scheduler.GetState(b));
             // The pair may meet anywhere in the arrival zone: look at it (animators of animals off screen do not run).
             entry.CameraRig.SnapTo((scheduler.GetPosition(a) + scheduler.GetPosition(b)) * 0.5f);

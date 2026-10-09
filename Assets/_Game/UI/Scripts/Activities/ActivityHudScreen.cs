@@ -25,6 +25,12 @@ namespace PocketWilds.UI
     /// soft ring; Reduce Motion: a still paw that breathes softly); up to 4 big round choices at the bottom (they bounce in
     /// one after the other; a pick bounces the chosen one, lets the others go and calls the stage once); a small boost chip
     /// under the score with a soft ring that empties (never red, no ticking). Tip and boost timers wait while paused.</para>
+    /// <para>T39 (doc 01 S-ACT-002 « Objets » and challenge 7 « Dans le noir »), Hide and Seek's parts: up to 3 round item
+    /// buttons in a row at the bottom right of the play area (the magnifier and the whistle; they bounce in one after the
+    /// other, a tap presses one, calls the stage once and greys it softly with a small round check), on their own canvas
+    /// under the picker's place; and the night, one full screen Image under everything else of the HUD (PocketWilds/UISpotlight:
+    /// a deep blue-violet veil, never black, with a soft clear circle that glides after a screen point), on its own passive
+    /// canvas: it catches no touch and the score, the tips and the items stay readable over it.</para>
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class ActivityHudScreen : MonoBehaviour, IActivityHudView, IMotionSettings
@@ -95,6 +101,42 @@ namespace PocketWilds.UI
         private const float PickFadeDelay = 0.5f;
         private const float BoostFadeIn = 0.15f;
         private const float BoostFadeOut = 0.25f;
+
+        // ---------------- T39 layout (safe area units; the pipeline builds with them) ----------------
+
+        /// <summary>At most 3 item buttons (Hide and Seek: the magnifier and the whistle).</summary>
+        public const int MaxItems = 3;
+
+        /// <summary>An item button's diameter (48 dp and more, like the picker's choices).</summary>
+        public const float ItemSize = 150f;
+
+        /// <summary>From one item's center to the next one's (a gap of 24).</summary>
+        public const float ItemPitch = 174f;
+
+        /// <summary>The row's margin to the safe area's right edge (the pause button's).</summary>
+        public const float ItemsRight = 40f;
+
+        /// <summary>
+        /// The row's center above the safe area's bottom edge: low in the corner, under the picker's choices (their lowest
+        /// edge, bounce included, stays above 198) and never over the middle of the play area.
+        /// </summary>
+        public const float ItemsY = 108f;
+
+        /// <summary>The small round check of a used item, on the disc's lower right.</summary>
+        public const float ItemCheckSize = 60f;
+
+        /// <summary>The night fades in (0.25 s) and out (0.3 s) and glides after its point at this rate (per second).</summary>
+        public const float SpotlightFadeIn = 0.25f;
+
+        public const float SpotlightFadeOut = 0.3f;
+        public const float SpotlightFollow = 18f;
+
+        private const float ItemStagger = 0.08f;
+        private const float ItemFade = 0.18f;
+        private const float ItemUsedSeconds = 0.25f;
+
+        /// <summary>An item's center from the safe area's bottom right corner: the row ends at the right margin.</summary>
+        public static float ItemX(int index, int count) => -(ItemsRight + ItemSize * 0.5f) - (count - 1 - index) * ItemPitch;
 
         /// <summary>The tapping paw floats above its point (never hiding it) and taps down toward it, like the A12 paw.</summary>
         private static readonly Vector2 TapRest = new Vector2(0f, 130f);
@@ -178,6 +220,29 @@ namespace PocketWilds.UI
         [SerializeField] private Image _boostRing;
         [SerializeField] private Sprite _boostFallback;
 
+        [Header("T39 items")]
+        [SerializeField] private RectTransform _itemsRoot;
+        [SerializeField] private RectTransform[] _items = Array.Empty<RectTransform>();
+        [SerializeField] private CanvasGroup[] _itemGroups = Array.Empty<CanvasGroup>();
+        [SerializeField] private Button[] _itemButtons = Array.Empty<Button>();
+        [SerializeField] private Image[] _itemDiscs = Array.Empty<Image>();
+        [SerializeField] private Image[] _itemRims = Array.Empty<Image>();
+        [SerializeField] private Image[] _itemIcons = Array.Empty<Image>();
+        [SerializeField] private Image[] _itemChecks = Array.Empty<Image>();
+        [SerializeField] private Sprite _itemFallback;
+
+        /// <summary>A used item: the disc goes a soft warm grey, the icon a muted grey (multiplied), the rim fades.</summary>
+        [SerializeField] private Color _itemDiscUsed = new Color(0.91f, 0.89f, 0.86f, 1f);
+
+        [SerializeField] private Color _itemIconUsed = new Color(0.80f, 0.78f, 0.76f, 0.55f);
+
+        [Header("T39 night")]
+        [SerializeField] private RectTransform _spotRoot;
+        [SerializeField] private Image _spotImage;
+
+        /// <summary>MAT_UI_Spotlight (PocketWilds/UISpotlight): copied once at start, the copy takes the per-frame values.</summary>
+        [SerializeField] private Material _spotMaterial;
+
         private readonly WindowMotion _motion = new WindowMotion(0.15f);
         private readonly SafeAreaFitter _fitter = new SafeAreaFitter();
         private readonly float[] _thresholds = new float[3];
@@ -254,6 +319,44 @@ namespace PocketWilds.UI
         private float _boostTime;
         private float _boostAlpha;
         private float _boostFillShown = -1f;
+
+        // T39 items.
+        private UnityAction[] _itemHandlers = Array.Empty<UnityAction>();
+        private float[] _itemFadeShown = Array.Empty<float>();
+        private float[] _itemScaleShown = Array.Empty<float>();
+        private float[] _itemPress = Array.Empty<float>();
+        private float[] _itemUsedLook = Array.Empty<float>();
+        private float[] _itemCheckAt = Array.Empty<float>();
+        private bool[] _itemUsed = Array.Empty<bool>();
+        private Color[] _itemTints = Array.Empty<Color>();
+        private Color _itemDiscOn = Color.white;
+        private Color _itemRimOn = Color.white;
+        private IActivityItemActions _itemActions;
+        private int _itemCount;
+        private bool _itemsOn;
+        private bool _itemsOpen;
+        private bool _itemsHiding;
+        private float _itemsTime;
+
+        // T39 night.
+        private static bool s_SpotIds;
+        private static int s_SpotId;
+        private static int s_FadeId;
+        private static int s_FeatherId;
+        private static int s_NearId;
+        private static int s_FarId;
+        private static int s_ReachId;
+        private static int s_NightId;
+        private Material _spotInstance;
+        private bool _spotOn;
+        private bool _spotWanted;
+        private float _spotFade;
+        private float _spotRadius;
+        private float _spotTargetRadius;
+        private Vector2 _spotCenter;
+        private Vector2 _spotTarget;
+        private Vector4 _spotApplied = new Vector4(-1f, -1f, -1f, -1f);
+        private float _spotFadeApplied = -1f;
 
         public bool IsShown => _motion.IsOpen && !_motion.Closing;
         public bool Visible => _motion.IsOpen;
@@ -332,6 +435,78 @@ namespace PocketWilds.UI
         public Color BoostRingColor => _boostRing != null ? _boostRing.color : Color.clear;
         public Sprite BoostIconShown => _boostIcon != null ? _boostIcon.sprite : null;
         public RectTransform BoostRect => _boostRoot;
+
+        // T39 parts, read by tests and captures.
+        public bool HasT39Parts => _itemsRoot != null && _spotRoot != null && _spotImage != null && _spotMaterial != null;
+        public RectTransform SafeAreaRect => _safeArea;
+        public RectTransform PickerChoiceRect(int item) => _pickerItems[item];
+        public bool ItemsShown => _itemsOpen;
+        public bool ItemsVisible => _itemsOn;
+        public int ItemCount => _itemCount;
+        public Button ItemButton(int item) => _itemButtons[item];
+        public RectTransform ItemRect(int item) => _items[item];
+        public bool ItemVisible(int item) => _items[item].gameObject.activeInHierarchy && _itemGroups[item].alpha > 0.01f;
+        public float ItemScale(int item) => _items[item].localScale.x;
+        public bool ItemUsed(int item) => item < _itemUsed.Length && _itemUsed[item];
+
+        /// <summary>The item takes a tap right now: shown, available, its button interactable and catching touches.</summary>
+        public bool ItemTappable(int item) =>
+            _itemsOpen && item < _itemCount && !_itemUsed[item] && _itemButtons[item].interactable && _itemGroups[item].blocksRaycasts;
+
+        public bool ItemCheckShown(int item) => _itemChecks[item].gameObject.activeInHierarchy && _itemChecks[item].color.a > 0.5f;
+        public Sprite ItemIconShown(int item) => _itemIcons[item].sprite;
+        public Color ItemIconColor(int item) => _itemIcons[item].color;
+        public Color ItemDiscColor(int item) => _itemDiscs[item].color;
+        public Vector2 ItemScreenPosition(int item) => RectTransformUtility.WorldToScreenPoint(UiCamera(), _items[item].position);
+        public bool SpotlightShown => _spotOn && _spotWanted;
+        public bool SpotlightVisible => _spotOn;
+        public RectTransform SpotlightRect => _spotRoot;
+        public Image SpotlightImage => _spotImage;
+
+        /// <summary>The circle's center on screen right now (pixels), gliding after the point given.</summary>
+        public Vector2 SpotlightCenter => _spotCenter;
+
+        /// <summary>The circle's radius right now, a share of the screen's width.</summary>
+        public float SpotlightRadius => _spotRadius;
+
+        public float SpotlightFade => _spotFade;
+
+        /// <summary>The night's color (the runtime material's).</summary>
+        public Color SpotlightNight => _spotInstance != null ? _spotInstance.GetColor(s_NightId) : Color.clear;
+
+        /// <summary>The material values the shader draws with now: center (uv), radius (widths), height over width.</summary>
+        public Vector4 SpotlightShaderSpot => _spotInstance != null ? _spotInstance.GetVector(s_SpotId) : Vector4.zero;
+
+        /// <summary>
+        /// The night's opacity PocketWilds/UISpotlight draws at a screen point right now (0: lit, about 0.8: night), from the
+        /// runtime material's values and the shader's own math.
+        /// </summary>
+        public float SpotlightOpacity(Vector2 screen)
+        {
+            if (!_spotOn || _spotInstance == null)
+                return 0f;
+            var rt = _spotImage.rectTransform;
+            var rect = rt.rect;
+            if (rect.width <= 0f || rect.height <= 0f)
+                return 0f;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(rt, screen, UiCamera(), out var local);
+            var spot = _spotInstance.GetVector(s_SpotId);
+            float x = (local.x - rect.xMin) / rect.width - spot.x;
+            float y = ((local.y - rect.yMin) / rect.height - spot.y) * spot.w;
+            float away = Mathf.Sqrt(x * x + y * y);
+            float feather = _spotInstance.GetFloat(s_FeatherId);
+            float night = SmoothStep(spot.z - feather * 0.5f, spot.z + feather * 0.5f, away);
+            float depth = Mathf.Lerp(_spotInstance.GetFloat(s_NearId), _spotInstance.GetFloat(s_FarId),
+                Mathf.Clamp01((away - spot.z) / Mathf.Max(1e-4f, _spotInstance.GetFloat(s_ReachId))));
+            return night * depth * _spotInstance.GetFloat(s_FadeId) * _spotImage.color.a;
+        }
+
+        /// <summary>The shader's smoothstep (HLSL), not Mathf.SmoothStep.</summary>
+        private static float SmoothStep(float from, float to, float x)
+        {
+            float t = Mathf.Clamp01((x - from) / Mathf.Max(1e-5f, to - from));
+            return t * t * (3f - 2f * t);
+        }
 
         // ---------------- IActivityHudView ----------------
 
@@ -463,6 +638,9 @@ namespace PocketWilds.UI
 
         public void Hide()
         {
+            // A stage may close its game while the scene tears down, after this HUD was destroyed.
+            if (this == null)
+                return;
             _motion.Hide();
             _paused = false;
             // The parts fade with the whole HUD and are put away when it is closed.
@@ -470,6 +648,8 @@ namespace PocketWilds.UI
             HideGesture();
             HidePicker();
             HideBoost();
+            HideItems();
+            SetSpotlight(0f, Vector2.zero);
         }
 
         // ---------------- T38: tip (doc 01 A15: « Brosse le pelage » 2 s, then « Enlève les feuilles ») ----------------
@@ -510,6 +690,8 @@ namespace PocketWilds.UI
 
         public void HideTip()
         {
+            if (this == null)
+                return;
             if (_tipOn)
                 _tipHiding = true;
         }
@@ -585,6 +767,8 @@ namespace PocketWilds.UI
 
         public void HideGesture()
         {
+            if (this == null)
+                return;
             if (_gestureOn)
                 _gestureHiding = true;
         }
@@ -645,6 +829,8 @@ namespace PocketWilds.UI
 
         public void HidePicker()
         {
+            if (this == null)
+                return;
             if (!_pickerOn || _pickerHiding)
                 return;
             _pickerOpen = false;
@@ -697,8 +883,144 @@ namespace PocketWilds.UI
 
         public void HideBoost()
         {
+            if (this == null)
+                return;
             if (_boostOn)
                 _boostHiding = true;
+        }
+
+        // ---------------- T39: items (doc 01 S-ACT-002 « Objets »: the magnifier and the whistle, one each per game) ----------------
+
+        /// <summary>
+        /// Up to 3 round item buttons in a row at the bottom right of the play area (the last one in the corner), each a cream
+        /// disc with its icon (tinted by its tint; a clear tint keeps the icon's colors), bouncing in one after the other. A tap
+        /// presses one (a small bounce), marks it used (greyed softly with a small round check, no more taps) and calls
+        /// <see cref="IActivityItemActions.UseItem"/> once; the stage gives it back with <see cref="SetItemUsed"/> (false) if
+        /// the game refused it. Called again while shown, the row stays and every item is available again. The array is read
+        /// now and not kept.
+        /// </summary>
+        public void ShowItems(ActivityPickerItem[] items, int count, IActivityItemActions actions)
+        {
+            Initialize();
+            if (_itemsRoot == null)
+                return;
+            int n = items == null ? 0 : Mathf.Min(count, Mathf.Min(items.Length, _items.Length));
+            if (n <= 0)
+            {
+                HideItems();
+                return;
+            }
+            bool fresh = !_itemsOn || _itemsHiding;
+            _itemActions = actions;
+            _itemCount = n;
+            _itemsOpen = true;
+            _itemsHiding = false;
+            if (fresh)
+                _itemsTime = 0f;
+            for (int i = 0; i < _items.Length; i++)
+            {
+                bool on = i < n;
+                SetActive(_items[i].gameObject, on);
+                if (!on)
+                    continue;
+                var icon = items[i].Icon != null ? items[i].Icon : _itemFallback;
+                if (_itemIcons[i].sprite != icon)
+                    _itemIcons[i].sprite = icon;
+                var tint = items[i].Tint;
+                _itemTints[i] = tint.a <= 0f ? Color.white : tint;
+                _items[i].anchoredPosition = new Vector2(ItemX(i, n), ItemsY);
+                _itemUsed[i] = false;
+                _itemUsedLook[i] = 0f;
+                _itemPress[i] = -1f;
+                _itemButtons[i].interactable = true;
+                _itemGroups[i].interactable = true;
+                _itemGroups[i].blocksRaycasts = true;
+                // The check stays active, drawn through its alpha (a clear one costs nothing): nothing toggles during a game.
+                SetActive(_itemChecks[i].gameObject, true);
+                ApplyItemLook(i);
+                if (fresh)
+                {
+                    _itemFadeShown[i] = 0f;
+                    _itemScaleShown[i] = _reduceMotion ? 1f : 0f;
+                    _itemGroups[i].alpha = 0f;
+                    _items[i].localScale = new Vector3(_itemScaleShown[i], _itemScaleShown[i], 1f);
+                }
+            }
+            if (!_itemsOn)
+            {
+                _itemsOn = true;
+                _itemsRoot.gameObject.SetActive(true);
+            }
+            PoseItems(0f);
+        }
+
+        /// <summary>An item used (greyed softly, a small round check, no taps) or available again (the stage's word).</summary>
+        public void SetItemUsed(int index, bool used)
+        {
+            if (this == null)
+                return;
+            if (!_itemsOpen || index < 0 || index >= _itemCount || _itemUsed[index] == used)
+                return;
+            MarkItem(index, used);
+        }
+
+        /// <summary>The row fades out softly; a tap does nothing from now on.</summary>
+        public void HideItems()
+        {
+            if (this == null)
+                return;
+            if (!_itemsOn || _itemsHiding)
+                return;
+            _itemsOpen = false;
+            _itemsHiding = true;
+            _itemActions = null;
+            for (int i = 0; i < _itemGroups.Length; i++)
+            {
+                _itemGroups[i].interactable = false;
+                _itemGroups[i].blocksRaycasts = false;
+            }
+        }
+
+        // ---------------- T39: night (doc 01 S-ACT-002 challenge 7: « cercle éclairé de 25 % de l'écran autour du doigt ») ----------------
+
+        /// <summary>
+        /// Night: a deep blue-violet veil over the play area (about 80 % opaque, never black) with a soft clear circle of
+        /// <paramref name="radius"/> × the screen's width around <paramref name="center"/> (screen pixels), drawn by one Image
+        /// with PocketWilds/UISpotlight (an interface mask, no light, one draw call). It sits under the score, the tips and the
+        /// item buttons, catches no touch, fades in and out and glides after its point: call it every frame with the finger
+        /// (nothing is rebuilt, only two material values change). 0 turns it off.
+        /// </summary>
+        public void SetSpotlight(float radius, Vector2 center)
+        {
+            if (this == null)
+                return;
+            Initialize();
+            if (_spotRoot == null || _spotInstance == null)
+                return;
+            if (radius <= 0f)
+            {
+                _spotWanted = false;
+                return;
+            }
+            _spotTargetRadius = radius;
+            _spotTarget = center;
+            // A new night starts on its point; one still fading out glides from where it is.
+            if (!_spotOn || _spotFade <= 0f)
+            {
+                _spotCenter = center;
+                _spotRadius = radius;
+            }
+            _spotWanted = true;
+            if (!_spotOn)
+            {
+                _spotOn = true;
+                _spotFade = 0f;
+                // The runtime copy only while the night shows: the Image keeps the shared material otherwise.
+                if (_spotImage.material != _spotInstance)
+                    _spotImage.material = _spotInstance;
+                _spotRoot.gameObject.SetActive(true);
+            }
+            ApplySpotlight();
         }
 
         public void Prewarm(ILocalization text)
@@ -754,6 +1076,9 @@ namespace PocketWilds.UI
             TickTip(unscaledDeltaTime);
             TickGesture(unscaledDeltaTime);
             TickPicker(unscaledDeltaTime);
+            // T39 parts: each returns at once while closed.
+            TickItems(unscaledDeltaTime);
+            TickSpotlight(unscaledDeltaTime);
         }
 
         // ---------------- ticking ----------------
@@ -1193,6 +1518,9 @@ namespace PocketWilds.UI
         {
             for (int i = 0; i < _pickerGroups.Length; i++)
             {
+                // The scene may be tearing down (the HUD destroyed before the presenter's last Exit).
+                if (_pickerGroups[i] == null)
+                    continue;
                 _pickerGroups[i].interactable = false;
                 _pickerGroups[i].blocksRaycasts = false;
             }
@@ -1252,6 +1580,153 @@ namespace PocketWilds.UI
                 _boostRoot.anchoredPosition = new Vector2(position.x, y);
         }
 
+        // ---------------- T39 ticking ----------------
+
+        private void TickItems(float dt)
+        {
+            if (!_itemsOn)
+                return;
+            _itemsTime += dt;
+            PoseItems(dt);
+        }
+
+        /// <summary>
+        /// The items bounce in one after the other (the doc 05 pop, 80 ms apart); a tap presses one (the doc 05 press: 0.94,
+        /// 1.04, 1); a used one greys in 0.25 s while its check pops (0.6, 1.08, 1); hiding fades and shrinks them softly
+        /// (0.18 s). Reduce Motion: fades only. Each value is written only when it changes.
+        /// </summary>
+        private void PoseItems(float dt)
+        {
+            bool any = false;
+            for (int i = 0; i < _itemCount; i++)
+            {
+                float alpha;
+                float scale;
+                if (_itemsHiding)
+                {
+                    alpha = Mathf.MoveTowards(_itemFadeShown[i], 0f, dt / ItemFade);
+                    scale = _reduceMotion ? _itemScaleShown[i] : Mathf.MoveTowards(_itemScaleShown[i], 0.7f, dt * 1.7f);
+                }
+                else
+                {
+                    float t = _itemsTime - i * ItemStagger;
+                    alpha = Mathf.Clamp01(t / 0.12f);
+                    scale = _reduceMotion ? 1f : UiCurves.Pop(t);
+                    if (_itemPress[i] >= 0f)
+                    {
+                        _itemPress[i] += dt;
+                        if (_itemPress[i] >= UiCurves.PressSeconds)
+                            _itemPress[i] = -1f;
+                        else
+                            scale *= UiCurves.Press(_itemPress[i]);
+                    }
+                }
+                if (alpha != _itemFadeShown[i])
+                {
+                    _itemFadeShown[i] = alpha;
+                    _itemGroups[i].alpha = alpha;
+                }
+                if (scale != _itemScaleShown[i])
+                {
+                    _itemScaleShown[i] = scale;
+                    _items[i].localScale = new Vector3(scale, scale, 1f);
+                }
+                float look = _itemUsed[i] ? 1f : 0f;
+                if (_itemUsedLook[i] != look)
+                {
+                    _itemUsedLook[i] = Mathf.MoveTowards(_itemUsedLook[i], look, dt / ItemUsedSeconds);
+                    ApplyItemLook(i);
+                }
+                if (_itemUsed[i])
+                {
+                    float since = _itemsTime - _itemCheckAt[i];
+                    float s = _reduceMotion || since >= 0.32f ? 1f : ActivityCurves.SoftPop(since);
+                    var check = _itemChecks[i].rectTransform;
+                    if (check.localScale.x != s)
+                        check.localScale = new Vector3(s, s, 1f);
+                }
+                if (alpha > 0f)
+                    any = true;
+            }
+            if (_itemsHiding && !any)
+                StopItems();
+        }
+
+        /// <summary>Available (cream disc, the icon in its colors, the warm rim) to used (soft grey, muted icon, the check).</summary>
+        private void ApplyItemLook(int i)
+        {
+            float k = UiCurves.Smooth(_itemUsedLook[i]);
+            _itemDiscs[i].color = Color.Lerp(_itemDiscOn, _itemDiscUsed, k);
+            _itemIcons[i].color = Color.Lerp(_itemTints[i], _itemIconUsed, k);
+            var rim = _itemRimOn;
+            rim.a *= 1f - 0.6f * k;
+            _itemRims[i].color = rim;
+            SetAlpha(_itemChecks[i], k);
+        }
+
+        private void MarkItem(int index, bool used)
+        {
+            _itemUsed[index] = used;
+            _itemButtons[index].interactable = !used;
+            if (!used)
+                return;
+            _itemCheckAt[index] = _itemsTime;
+            ApplyItemLook(index);
+        }
+
+        private void OnItem(int index)
+        {
+            if (!_itemsOpen || index < 0 || index >= _itemCount || _itemUsed[index])
+                return;
+            if (!_reduceMotion)
+                _itemPress[index] = 0f;
+            MarkItem(index, true);
+            _itemActions?.UseItem(index);
+        }
+
+        private void TickSpotlight(float dt)
+        {
+            if (!_spotOn)
+                return;
+            float target = _spotWanted ? 1f : 0f;
+            if (_spotFade != target)
+                _spotFade = Mathf.MoveTowards(_spotFade, target, dt / (_spotWanted ? SpotlightFadeIn : SpotlightFadeOut));
+            if (!_spotWanted && _spotFade <= 0f)
+            {
+                StopSpotlight();
+                return;
+            }
+            // It glides after its point (an exponential follow, the same feel at any frame rate) and settles on it.
+            if (_spotCenter != _spotTarget || _spotRadius != _spotTargetRadius)
+            {
+                float k = 1f - Mathf.Exp(-SpotlightFollow * dt);
+                _spotCenter = (_spotTarget - _spotCenter).sqrMagnitude < 0.04f ? _spotTarget : Vector2.Lerp(_spotCenter, _spotTarget, k);
+                _spotRadius = Mathf.Abs(_spotTargetRadius - _spotRadius) < 1e-4f ? _spotTargetRadius : Mathf.Lerp(_spotRadius, _spotTargetRadius, k);
+            }
+            ApplySpotlight();
+        }
+
+        /// <summary>The two values the shader reads, written only when they change (no rebuild, no allocation).</summary>
+        private void ApplySpotlight()
+        {
+            var rt = _spotImage.rectTransform;
+            var rect = rt.rect;
+            if (rect.width <= 0f || rect.height <= 0f)
+                return;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(rt, _spotCenter, UiCamera(), out var local);
+            var spot = new Vector4((local.x - rect.xMin) / rect.width, (local.y - rect.yMin) / rect.height, _spotRadius, rect.height / rect.width);
+            if (spot != _spotApplied)
+            {
+                _spotApplied = spot;
+                _spotInstance.SetVector(s_SpotId, spot);
+            }
+            if (_spotFade != _spotFadeApplied)
+            {
+                _spotFadeApplied = _spotFade;
+                _spotInstance.SetFloat(s_FadeId, _spotFade);
+            }
+        }
+
         // ---------------- T38 parts put away ----------------
 
         private void StopTip()
@@ -1297,35 +1772,81 @@ namespace PocketWilds.UI
                 SetActive(_boostRoot.gameObject, false);
         }
 
-        /// <summary>Every T38 part closed at once (a new game, the HUD closed, the prewarm's end).</summary>
+        private void StopItems()
+        {
+            _itemsOn = false;
+            _itemsOpen = false;
+            _itemsHiding = false;
+            _itemCount = 0;
+            _itemActions = null;
+            if (_itemsRoot != null)
+                SetActive(_itemsRoot.gameObject, false);
+        }
+
+        private void StopSpotlight()
+        {
+            _spotOn = false;
+            _spotWanted = false;
+            _spotFade = 0f;
+            _spotApplied = new Vector4(-1f, -1f, -1f, -1f);
+            _spotFadeApplied = -1f;
+            if (_spotRoot != null)
+                SetActive(_spotRoot.gameObject, false);
+            // Back to the shared material while off: a scene saved now never holds the runtime copy.
+            if (_spotImage != null && _spotMaterial != null && _spotImage.material != _spotMaterial)
+                _spotImage.material = _spotMaterial;
+        }
+
+        /// <summary>Every T38 and T39 part closed at once (a new game, the HUD closed, the prewarm's end).</summary>
         private void ResetParts()
         {
             StopTip();
             StopGesture();
             StopPicker();
             StopBoost();
+            StopItems();
+            StopSpotlight();
         }
 
-        /// <summary>Every T38 part drawn once with its longest content, so the first real game builds nothing new.</summary>
+        /// <summary>Every T38 and T39 part drawn once with its longest content, so the first real game builds nothing new.</summary>
         private void PrewarmParts(ILocalization text)
         {
-            if (!HasT38Parts)
-                return;
-            string sample = text != null ? text.Get(ActivityText.GroomingTipBurr) : null;
-            ShowTip(string.IsNullOrEmpty(sample) ? ActivityText.GroomingTipBurr : sample, DefaultTipSeconds);
-            ShowGesture(ActivityGesture.Swipe, Vector2.zero, new Vector2(200f, 0f));
-            ShowPicker(PrewarmItems, MaxPickerItems, null);
-            ShowBoost(null, 1f);
-            ShowAll(_trail);
-            ShowAll(_rings);
-            for (int i = 0; i < _pickerItems.Length; i++)
+            if (HasT38Parts)
             {
-                _pickerGroups[i].alpha = 1f;
-                _pickerItems[i].localScale = Vector3.one;
+                string sample = text != null ? text.Get(ActivityText.GroomingTipBurr) : null;
+                ShowTip(string.IsNullOrEmpty(sample) ? ActivityText.GroomingTipBurr : sample, DefaultTipSeconds);
+                ShowGesture(ActivityGesture.Swipe, Vector2.zero, new Vector2(200f, 0f));
+                ShowPicker(PrewarmItems, MaxPickerItems, null);
+                ShowBoost(null, 1f);
+                ShowAll(_trail);
+                ShowAll(_rings);
+                for (int i = 0; i < _pickerItems.Length; i++)
+                {
+                    _pickerGroups[i].alpha = 1f;
+                    _pickerItems[i].localScale = Vector3.one;
+                }
+                _tipGroup.alpha = 1f;
+                _gestureGroup.alpha = 1f;
+                _boostGroup.alpha = 1f;
             }
-            _tipGroup.alpha = 1f;
-            _gestureGroup.alpha = 1f;
-            _boostGroup.alpha = 1f;
+            if (HasT39Parts)
+            {
+                // Every item drawn used (disc, icon, rim and check), and the night with its copied material.
+                ShowItems(PrewarmItems, MaxItems, null);
+                for (int i = 0; i < _itemCount; i++)
+                {
+                    _itemFadeShown[i] = 1f;
+                    _itemScaleShown[i] = 1f;
+                    _itemGroups[i].alpha = 1f;
+                    _items[i].localScale = Vector3.one;
+                    MarkItem(i, true);
+                    _itemUsedLook[i] = 1f;
+                    ApplyItemLook(i);
+                }
+                SetSpotlight(0.25f, new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
+                _spotFade = 1f;
+                ApplySpotlight();
+            }
         }
 
         private void ResetTrail()
@@ -1420,6 +1941,43 @@ namespace PocketWilds.UI
                 _pickHandlers[i] = () => OnPick(index);
                 _pickerButtons[i].onClick.AddListener(_pickHandlers[i]);
             }
+            // T39 parts (absent from a HUD built before T39: every part checks its references).
+            int items = _items.Length;
+            _itemFadeShown = new float[items];
+            _itemScaleShown = new float[items];
+            _itemPress = new float[items];
+            _itemUsedLook = new float[items];
+            _itemCheckAt = new float[items];
+            _itemUsed = new bool[items];
+            _itemTints = new Color[items];
+            if (items > 0)
+            {
+                _itemDiscOn = _itemDiscs[0].color;
+                _itemRimOn = _itemRims[0].color;
+            }
+            _itemHandlers = new UnityAction[_itemButtons.Length];
+            for (int i = 0; i < _itemButtons.Length; i++)
+            {
+                int index = i;
+                _itemHandlers[i] = () => OnItem(index);
+                _itemButtons[i].onClick.AddListener(_itemHandlers[i]);
+            }
+            if (_spotImage != null && _spotMaterial != null)
+            {
+                if (!s_SpotIds)
+                {
+                    s_SpotIds = true;
+                    s_SpotId = Shader.PropertyToID("_Spot");
+                    s_FadeId = Shader.PropertyToID("_Fade");
+                    s_FeatherId = Shader.PropertyToID("_Feather");
+                    s_NearId = Shader.PropertyToID("_Near");
+                    s_FarId = Shader.PropertyToID("_Far");
+                    s_ReachId = Shader.PropertyToID("_Reach");
+                    s_NightId = Shader.PropertyToID("_Color");
+                }
+                // The per-frame values go to a copy made once (never to the shared asset); it is never saved.
+                _spotInstance = new Material(_spotMaterial) { hideFlags = HideFlags.DontSave };
+            }
         }
 
         private void OnPause()
@@ -1448,6 +2006,21 @@ namespace PocketWilds.UI
             {
                 if (_pickerButtons[i] != null)
                     _pickerButtons[i].onClick.RemoveListener(_pickHandlers[i]);
+            }
+            for (int i = 0; i < _itemHandlers.Length; i++)
+            {
+                if (_itemButtons[i] != null)
+                    _itemButtons[i].onClick.RemoveListener(_itemHandlers[i]);
+            }
+            if (_spotInstance != null)
+            {
+                if (_spotImage != null && _spotImage.material == _spotInstance)
+                    _spotImage.material = _spotMaterial;
+                if (Application.isPlaying)
+                    Destroy(_spotInstance);
+                else
+                    DestroyImmediate(_spotInstance);
+                _spotInstance = null;
             }
         }
 
@@ -1538,7 +2111,35 @@ namespace PocketWilds.UI
             _pickerFallback = fallback;
         }
 
-        /// <summary>T38 builder hook: the boost chip (own passive canvas), its icon and its emptying ring.</summary>
+        /// <summary>
+        /// T39 builder hook: the item row (own canvas and raycaster, at the safe area's bottom right), its round buttons
+        /// with their disc (the touch), warm rim, icon and small check, and the icon shown when a stage gives none.
+        /// </summary>
+        public void SetItemReferences(RectTransform root, RectTransform[] items, CanvasGroup[] groups, Button[] buttons, Image[] discs, Image[] rims,
+            Image[] icons, Image[] checks, Sprite fallback)
+        {
+            _itemsRoot = root;
+            _items = items;
+            _itemGroups = groups;
+            _itemButtons = buttons;
+            _itemDiscs = discs;
+            _itemRims = rims;
+            _itemIcons = icons;
+            _itemChecks = checks;
+            _itemFallback = fallback;
+        }
+
+        /// <summary>
+        /// T39 builder hook: the night layer (full screen, own passive canvas, drawn first: under the safe area's parts), its
+        /// sprite-less Image (UVs 0 to 1 over the screen) and MAT_UI_Spotlight.
+        /// </summary>
+        public void SetSpotlightReferences(RectTransform root, Image image, Material material)
+        {
+            _spotRoot = root;
+            _spotImage = image;
+            _spotMaterial = material;
+        }
+
         /// <summary>The icons the stages borrow (built by ActivityUiPipeline from Atlas_Activities).</summary>
         public void SetIcons(Sprite[] icons) => _icons = icons ?? System.Array.Empty<Sprite>();
 
@@ -1552,6 +2153,7 @@ namespace PocketWilds.UI
             return null;
         }
 
+        /// <summary>T38 builder hook: the boost chip (own passive canvas), its icon and its emptying ring.</summary>
         public void SetBoostReferences(RectTransform root, CanvasGroup group, Image icon, Image ring, Sprite fallback)
         {
             _boostRoot = root;

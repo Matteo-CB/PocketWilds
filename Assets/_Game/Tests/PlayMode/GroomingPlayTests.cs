@@ -109,13 +109,14 @@ namespace PocketWilds.Tests.PlayMode
                 Assert.IsTrue(hud.GestureShown, "The brush paw shows (UI_Gesture_Swipe).");
             CheckOnCushion(stage);
 
-            // Brush every dirty zone but a few (the bubble and the golden brush need dust left).
+            // Brush every dirty zone but a dozen (the bubble and the golden brush need dust left, and the two bubbles may
+            // clean up to 6 zones while the debris are tapped on a slow machine).
             int dirty = 0;
             for (int z = 0; z < game.ZoneCount; z++)
                 if (game.IsDirty(z))
                     dirty++;
-            Assert.Greater(dirty, 8, "The game dirtied its zones.");
-            int keep = 6;
+            Assert.Greater(dirty, 14, "The game dirtied its zones.");
+            int keep = 12;
             for (int z = 0; z < game.ZoneCount && dirty > keep; z++)
             {
                 if (!game.IsDirty(z))

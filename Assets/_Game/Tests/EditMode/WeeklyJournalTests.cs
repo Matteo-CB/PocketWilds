@@ -188,6 +188,8 @@ namespace PocketWilds.Tests.EditMode
                 case JournalGoalId.Expansions: journal.OnZoneOpened(); break;
                 // T38: with the activities in the build (ActivitiesAvailable), the draw may bring JRN-033.
                 case JournalGoalId.Grooming: journal.OnGroomingGame(new GroomingGameSummary { Animal = 1, Finished = true }); break;
+                // T39: and JRN-016 (every animal found counts).
+                case JournalGoalId.HideAndSeekFinds: journal.OnHideSeekGame(new HideSeekGameSummary { Hidden = 1, Found = 1, Finished = true }); break;
                 default: Assert.Fail("No hook for " + goal); break;
             }
         }
@@ -275,12 +277,13 @@ namespace PocketWilds.Tests.EditMode
                 foreach (int id in pair.Value)
                     Assert.AreEqual(pair.Key, all[id - 1].Slot, "Slot of JRN-" + id.ToString("000"));
 
-            // T36's goals, and T38's JRN-033 « Brosse {n} animaux » with Grooming.
-            var shipped = new HashSet<int> { 1, 2, 3, 4, 5, 21, 22, 23, 31, 32, 33, 34, 36, 38 };
+            // T36's goals, T38's JRN-033 « Brosse {n} animaux » with Grooming and T39's JRN-016 « Trouve {n} animaux à
+            // Cache-cache » with Hide and Seek.
+            var shipped = new HashSet<int> { 1, 2, 3, 4, 5, 16, 21, 22, 23, 31, 32, 33, 34, 36, 38 };
             var rewardedOnly = new HashSet<int> { 10, 14 };
             foreach (var goal in all)
             {
-                Assert.AreEqual(shipped.Contains((int)goal.Id), goal.ShippedInThisBuild, "Shipped in T36 or T38: JRN-" + (int)goal.Id);
+                Assert.AreEqual(shipped.Contains((int)goal.Id), goal.ShippedInThisBuild, "Shipped in T36, T38 or T39: JRN-" + (int)goal.Id);
                 Assert.AreEqual(rewardedOnly.Contains((int)goal.Id), goal.RewardedGamesOnly, "Rewarded games only: JRN-" + (int)goal.Id);
             }
 
@@ -299,6 +302,7 @@ namespace PocketWilds.Tests.EditMode
                 [JournalGoalId.TreatsGiven] = (new[] { 6, 9, 12, 15 }, WishSystem.CuddlesAndTreats),
                 [JournalGoalId.AnimalsTapped] = (new[] { 30, 45, 60, 75 }, WishSystem.CuddlesAndTreats),
                 [JournalGoalId.Grooming] = (new[] { 3, 4, 5, 6 }, WishSystem.Grooming),
+                [JournalGoalId.HideAndSeekFinds] = (new[] { 20, 30, 40, 50 }, WishSystem.HideAndSeek),
                 [JournalGoalId.Upgrades] = (new[] { 6, 10, 12, 15 }, WishSystem.Upgrades),
                 [JournalGoalId.Expansions] = (new[] { 1, 2, 2, 3 }, WishSystem.Expansions),
             };

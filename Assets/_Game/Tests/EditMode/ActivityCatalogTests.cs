@@ -39,8 +39,9 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual("activity." + keys[slot] + ".name", definition.NameKey);
                 Assert.AreEqual("challenge." + keys[slot] + ".01", definition.ChallengeId(0));
                 Assert.AreEqual("challenge." + keys[slot] + ".10", definition.ChallengeId(9));
-                // T37 shipped the framework alone; T38 ships Grooming, the others wait for their tasks.
-                Assert.AreEqual(definition.Id == ActivityId.Grooming, definition.ShippedInThisBuild, definition.Id + " shipped.");
+                // T37 shipped the framework alone; T38 ships Grooming and T39 Hide and Seek, the others wait for their tasks.
+                bool shipped = definition.Id == ActivityId.Grooming || definition.Id == ActivityId.HideAndSeek;
+                Assert.AreEqual(shipped, definition.ShippedInThisBuild, definition.Id + " shipped.");
             }
             Assert.AreEqual(ActivityCatalog.TestSlot, ActivityCatalog.SlotOf(ActivityId.Test));
             Assert.AreEqual(-1, ActivityCatalog.SlotOf(ActivityId.None));

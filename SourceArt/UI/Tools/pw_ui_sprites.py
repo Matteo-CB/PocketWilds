@@ -572,9 +572,12 @@ def main():
     from pw_ui_sprites_t37 import T37_SPRITES
     # T38 sprites (Toilettage: the swipe gesture paw, the three bows of the picker, the golden brush of the boost chip).
     from pw_ui_sprites_t38 import T38_SPRITES
+    # T39 sprites (Cache-cache: the magnifier and the whistle of the item buttons).
+    from pw_ui_sprites_t39 import T39_SPRITES
     for folder in (RUNTIME_KIT, RUNTIME_ICONS, RUNTIME_SHOP, RUNTIME_CODEX, MASTERS):
         os.makedirs(folder, exist_ok=True)
-    for build in SPRITES + T34A_SPRITES + T35A_SPRITES + T35B_SPRITES + T36_SPRITES + T37_SPRITES + T38_SPRITES:
+    for build in (SPRITES + T34A_SPRITES + T35A_SPRITES + T35B_SPRITES + T36_SPRITES + T37_SPRITES + T38_SPRITES +
+                  T39_SPRITES):
         name, canvas, folder = build()
         canvas.image(True).save(os.path.join(folder, name + ".png"), optimize=True)
         canvas.image(False).save(os.path.join(MASTERS, name + "@4x.png"), optimize=True)

@@ -331,8 +331,8 @@
     {
       "task": "T39",
       "title": "Cache-cache",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "DONE 2026-10-09. Hide and Seek (S-ACT-002) plays in the refuge itself: one measured zone per Prairie chunk (DEF_HideSpots_Grassland, HideSpotPipeline, Eat pose, shares 8/15/20/30 %, best-first spots, audits: island only on phones, own decor only, clear landings), new handmade tall-grass patches and flowered bushes in every chunk (GL_Props_T39), FoliageGusts local wind. HideSeekController (3 to 5 hidden, decoys 0 to 2, hints staggered, timid +2 s, magnifier, whistle, challenge 9 moves, replay rotation), rules 300/600/750 and 10 challenges (deviation from doc 01 counts: zones hold 3 to 6 spots), Mushroom Biscuit at 3 stars, WISH-051..053 and JRN-016 hooks. HideSeekStage (camera hold and glide, actors hidden, nibbling animals, coucou hop, hearts, rings, leaves, night spotlight, items in the HUD). Sounds SFX_HideSeek_* (ids 78 to 83), icons ICO_Magnifier/ICO_Whistle, HUD items and SH_UISpotlight. Design note Docs/Design/T39_Cache_cache.md."
     },
     {
       "task": "T40",
@@ -542,13 +542,49 @@
       "task": "T74",
       "title": "Polices cyrillique et grec",
       "status": "PLANNED",
-      "notes": ""
+      "notes": "Started ahead of time during T39 and paused (owner, 2026-10-09: en and fr only until the game is finished): Cyrillic and Greek, Vietnamese, Thai, kana, Hangul and part of the Han ideographs are drawn by our own code; see Docs/Design/Localization_Plan.md and SourceArt/Fonts/Tools/HAN_BATCHES.md, HAN_RESUME_NOTES.md."
     },
     {
       "task": "T75",
       "title": "V1 Gate",
       "status": "PLANNED",
       "notes": ""
+    },
+    {
+      "task": "T39B",
+      "title": "Langues : socle (détection de la langue du téléphone, réglage, pluriels CLDR, tests de mise en page, textes par langue)",
+      "status": "PLANNED",
+      "notes": "Deferred until the production queue is finished (owner, 2026-10-09: en and fr only until then). Plan: Docs/Design/Localization_Plan.md; prototypes LanguageMatcher, DeviceLanguages, PluralRules."
+    },
+    {
+      "task": "T39C",
+      "title": "Polices : toutes les écritures",
+      "status": "PLANNED",
+      "notes": "Deferred until the production queue is finished (owner, 2026-10-09: en and fr only until then). Scripts done: CyrGrk, Viet, Thai, Kana, PunctSC/TC, Hangul (SourceArt/Fonts/Build). Han: lots a01-a03, b01-b03, c01-c04, d01, e01, e02 done; c05-c08, d02 paused part-way; e03, c09, d03 not started. A full audit of the lot drawings against the « no position read from a reference » rule is required before any merge (HAN_RESUME_NOTES.md)."
+    },
+    {
+      "task": "T39D",
+      "title": "Polices dans Unity (fallbacks par langue, atlas dynamiques, coupures de ligne, marques thaïes)",
+      "status": "PLANNED",
+      "notes": "Deferred until the production queue is finished (owner, 2026-10-09: en and fr only until then)."
+    },
+    {
+      "task": "T39E",
+      "title": "Langues, vague A : de, es-419, pt-BR, it, id, tr, pl",
+      "status": "PLANNED",
+      "notes": "Deferred until the production queue is finished (owner, 2026-10-09: en and fr only until then). Drafts in Localization/Drafts (to refresh for texts added since)."
+    },
+    {
+      "task": "T39F",
+      "title": "Langues, vague B : ja, ko, zh-Hant, zh-Hans",
+      "status": "PLANNED",
+      "notes": "Deferred until the production queue is finished (owner, 2026-10-09: en and fr only until then)."
+    },
+    {
+      "task": "T39G",
+      "title": "Langues, vague C : th, vi, ru, uk, el",
+      "status": "PLANNED",
+      "notes": "Deferred until the production queue is finished (owner, 2026-10-09: en and fr only until then)."
     }
   ],
   "assets": [

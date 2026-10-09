@@ -3,7 +3,10 @@
 //   base color, vertex color R/G/B/A toward palette columns 1-4, uv.x occlusion toward column 5,
 //   column 6 = variation tint mixed per instance so no two tufts or flowers read identical.
 // Palette row: _PaletteRow (set per draw by the ScatterRenderer), or the renderer's Shader User Value when -1.
-// Wind: global PW_WindOffset (Include/PW_World.hlsl), weighted by uv.y = height factor from Blender.
+// Wind: global PW_WindOffset (Include/PW_World.hlsl), weighted by uv.y = height factor from Blender; T39 adds the local
+// gusts of FoliageGusts (_PW_Gusts, _PW_GustStrength: the Hide and Seek hint ripple) through PW_WindGustOffset.
+// T39: also drawn by the Prairie's tall grass, every patch of a chunk merged into one renderer (_PaletteRow -1: the
+// renderer's palette row); uv1 carries each vertex's own patch base, so each patch sways from its own root and phase.
 // Scatter never casts shadows (cost) but receives them on tiers that have a shadow map.
 Shader "PocketWilds/FoliageWind"
 {
@@ -69,6 +72,9 @@ Shader "PocketWilds/FoliageWind"
                 float3 normalOS : NORMAL;
                 half4 color : COLOR;
                 float2 uv : TEXCOORD0;
+                // T39 merged tall grass (one renderer per chunk): xyz the vertex's own patch base in object space, w 1.
+                // Absent on the scatter's meshes (zero): the plant's pivot is the object's origin, as before.
+                float4 uv1 : TEXCOORD1;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -87,10 +93,11 @@ Shader "PocketWilds/FoliageWind"
                 UNITY_SETUP_INSTANCE_ID(input);
                 Varyings output;
 
-                float3 originWS = TransformObjectToWorld(float3(0, 0, 0));
+                float3 originWS = TransformObjectToWorld(input.uv1.w > 0.5 ? input.uv1.xyz : float3(0, 0, 0));
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 half tip = saturate(half(input.uv.y));
-                positionWS += PW_WindOffset(originWS, max(0.0, positionWS.y - originWS.y), tip) * _WindScale;
+                // T39: the local gusts of FoliageGusts ride on the breeze (zero strength: the breeze is unchanged).
+                positionWS += PW_WindGustOffset(originWS, positionWS, max(0.0, positionWS.y - originWS.y), tip) * _WindScale;
 
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.positionWS = positionWS;
