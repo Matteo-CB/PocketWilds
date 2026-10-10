@@ -104,6 +104,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>T37: the activities: tickets, rules, the runner, rewards (null in scenes started without them).</summary>
         public ActivityServices Activities { get; }
+
+        /// <summary>T42: the expeditions (set by the bootstrap after the context; null in scenes started without them).</summary>
+        public ExpeditionService Expeditions { get; set; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

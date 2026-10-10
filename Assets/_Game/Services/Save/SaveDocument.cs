@@ -30,6 +30,9 @@ namespace PocketWilds.Services.Save
 
         /// <summary>T37: the activities: tickets, records, challenges, adaptive difficulty (schema 11).</summary>
         Activities = 17,
+
+        /// <summary>T42: the expeditions: slots, teams, timers, loot drawn at departure, the guarantee, postcards (schema 12).</summary>
+        Expeditions = 18,
     }
 
     public sealed class SaveSection

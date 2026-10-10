@@ -190,8 +190,15 @@ namespace PocketWilds.Tests.EditMode
     public class WishDrawTests
     {
         // T36: SYS-01, 02, 03, 04 and 06; T38 adds SYS-09 Grooming (WISH-019 to 022), T39 SYS-10 Hide and Seek (WISH-051 to
-        // 053) and T40 SYS-11 Nut Drop (WISH-054 to 056), each with its activity.
-        private static readonly int[] Shipped = { 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 30, 51, 52, 53, 54, 55, 56 };
+        // 053), T40 SYS-11 Nut Drop (WISH-054 to 056), T41 SYS-12 Pawprint Memory (WISH-057 to 059) and T42 SYS-13 Expeditions
+        // (WISH-041 to 046), each with its activity.
+        private static readonly int[] Shipped =
+        {
+            1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 30, 41, 42, 43, 44, 45, 46, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+        };
+
+        /// <summary>T42's expedition wishes: never eligible in a rig without the activities (the stock tests leave them out).</summary>
+        private static bool IsExpeditionWish(int id) => id >= (int)WishTemplateId.StartExpedition && id <= (int)WishTemplateId.HeadToDestination;
 
         // ---------------- Catalog (section 2.3) ----------------
 
@@ -207,7 +214,7 @@ namespace PocketWilds.Tests.EditMode
                 Assert.Greater(t.Weight, 0, t.Id.ToString());
                 Assert.AreEqual(WishSystems.FamilyOf(t.System), t.Family);
                 Assert.AreEqual(!t.Timer && t.TypicalSeconds <= 120, t.Quick, t.Id + ": quick is 2 min or less, no timer.");
-                Assert.AreEqual(Shipped.Contains(i + 1), t.ShippedInThisBuild, t.Id + " ships with SYS-01, 02, 03, 04, 06, 09, 10 and 11 only.");
+                Assert.AreEqual(Shipped.Contains(i + 1), t.ShippedInThisBuild, t.Id + " ships with SYS-01, 02, 03, 04, 06, 09, 10, 11, 12 and 13 only.");
                 Assert.AreEqual("wish." + (i + 1).ToString("000"), WishCatalog.TextKey(t.Id));
             }
 
@@ -227,6 +234,9 @@ namespace PocketWilds.Tests.EditMode
             AssertTemplate(WishTemplateId.UpgradeInBiome, WishSystem.Upgrades, 4, 1, 1, 1, 1, quick: false, param: WishParamKind.Upgrade);
             AssertTemplate(WishTemplateId.ExpandBiome, WishSystem.Expansions, 5, 1, 1, 1, 1, quick: false);
             AssertTemplate(WishTemplateId.NutDropCatch, WishSystem.NutRain, 4, 30, 40, 50, 60, quick: true);
+            AssertTemplate(WishTemplateId.StartExpedition, WishSystem.Expeditions, 7, 1, 1, 1, 1, quick: true);
+            AssertTemplate(WishTemplateId.SendAnimalOnExpedition, WishSystem.Expeditions, 4, 1, 1, 1, 1, quick: true, param: WishParamKind.Animal);
+            AssertTemplate(WishTemplateId.HeadToDestination, WishSystem.Expeditions, 3, 1, 1, 1, 1, quick: true, param: WishParamKind.Destination);
             AssertTemplate(WishTemplateId.VoteGrandContest, WishSystem.GrandContest, 3, 5, 10, 10, 15, quick: true);
             Assert.IsTrue(all[(int)WishTemplateId.NutDropCatch - 1].Score);
             Assert.IsTrue(all[(int)WishTemplateId.WelcomeNewborn - 1].Timer && all[(int)WishTemplateId.WelcomeNewborn - 1].Long);
@@ -468,13 +478,14 @@ namespace PocketWilds.Tests.EditMode
         {
             var config = new DailyVisitConfig();
             Assert.IsTrue(config.TryOverride("daily.wishes_stock_days", 7));
-            // T40: 25 shipped templates (24 pending below); a stock of 4 × 7 = 28 keeps room for the one left.
+            // T41: 28 shipped templates (27 pending below; T42's expedition wishes are never eligible here); a stock of 4 × 7 = 28
+            // keeps room for the one left.
             Assert.IsTrue(config.TryOverride("daily.wishes_per_day", 4));
             var rig = WishTestRig.Create(config: config);
             int day1 = rig.SetDay(1);
             uint stranger = 200000;
             foreach (int id in Shipped)
-                if (id != (int)WishTemplateId.CuddleAnimal)
+                if (id != (int)WishTemplateId.CuddleAnimal && !IsExpeditionWish(id))
                     rig.AddWish((WishTemplateId)id, stranger++, 1, day1);
             int key = rig.SetDay(2);
             Assert.AreEqual(1, rig.Wishes.DrawForDay(key), "One template left: one wish, never a second copy.");

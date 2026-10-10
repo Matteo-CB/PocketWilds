@@ -74,6 +74,9 @@ namespace PocketWilds.Bootstrap
         private GroomingHooks _groomingHooks;
         private HideSeekHooks _hideSeekHooks;
         private NutDropHooks _nutDropHooks;
+        private MemoryHooks _memoryHooks;
+        private ExpeditionService _expeditions;
+        private ExpeditionHooks _expeditionHooks;
         private GrantService _grants;
         private OfferService _offers;
         private StoreService _store;
@@ -238,6 +241,12 @@ namespace PocketWilds.Bootstrap
                 _hideSeekHooks = new HideSeekHooks(_activities, _daily);
                 // T40: nut drop games feed their wishes (WISH-054 to 056) and the journal (JRN-017).
                 _nutDropHooks = new NutDropHooks(_activities, _daily);
+                // T41: memory games feed their wishes (WISH-057 to 059) and the journal (JRN-052).
+                _memoryHooks = new MemoryHooks(_activities, _daily);
+                // T42: the expeditions (a meta activity: timers in the save, loot drawn at departure) and their wishes
+                // (WISH-041 to 046) and journal goals (JRN-024 to 026, the stars of JRN-009).
+                _expeditions = new ExpeditionService(_activities);
+                _expeditionHooks = new ExpeditionHooks(_expeditions, _daily);
                 if (_activities.AnyShipped)
                 {
                     _daily.Config.ActivitiesAvailable = true;
@@ -274,6 +283,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.AttachProgression(_progression);
                 _analytics.AttachDaily(_daily);
                 _analytics.AttachActivities(_activities);
+                _analytics.AttachExpeditions(_expeditions);
                 _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
             });
 
@@ -343,6 +353,7 @@ namespace PocketWilds.Bootstrap
                     : _animalCatalog.IsValid() && _animalCatalog.Status == AsyncOperationStatus.Succeeded ? _animalCatalog.Result : null;
                 Context = new GameContext(_clock, _content, _save, _economy, _hatch, _quality, _frameRate, _palettes, visuals, catalog,
                     _audio, _haptics, _offline, _localization, _codex, _store, _analytics, _progression, _daily, _activities);
+                Context.Expeditions = _expeditions;
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);
@@ -481,6 +492,11 @@ namespace PocketWilds.Bootstrap
             _hideSeekHooks = null;
             _nutDropHooks?.Dispose();
             _nutDropHooks = null;
+            _memoryHooks?.Dispose();
+            _memoryHooks = null;
+            _expeditionHooks?.Dispose();
+            _expeditionHooks = null;
+            _expeditions = null;
             _activities?.Dispose();
             _activities = null;
             _daily?.Dispose();

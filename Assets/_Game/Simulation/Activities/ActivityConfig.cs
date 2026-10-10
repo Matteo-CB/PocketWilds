@@ -98,6 +98,9 @@ namespace PocketWilds.Simulation
         /// <summary>The Pâtisserie exists and is open (T63); before, Nut Drop's Strawberries are not given (T40).</summary>
         public bool BakeryAvailable;
 
+        /// <summary>The Garden exists (T43); before, Pawprint Memory's 3-star seed is not given (T41).</summary>
+        public bool GardenAvailable;
+
         // ---- Accessors (cross rules of doc 08, section 5) ----
 
         public int Reserve(bool club) => Math.Max(1, club ? Math.Max(TicketsMax, TicketsMaxClub) : TicketsMax);

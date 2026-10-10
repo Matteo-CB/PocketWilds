@@ -47,6 +47,10 @@
     {
       "blend": "SourceArt/Blender/Activities/BL_Activity_NutDrop.blend",
       "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_nutdrop.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
+      "blend": "SourceArt/Blender/Activities/BL_Activity_Postcards.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_nutdrop.py", "SourceArt/Blender/Tools/pw_postcards.py", "SourceArt/Blender/Tools/pw_export.py"]
     }
   ],
   "generated": [
@@ -80,6 +84,11 @@
       "final": "Assets/_Game/Art/UI/Zones/",
       "from": "the real zones of the Prairie with the game light and plants",
       "builders": ["Assets/_Game/Editor/Capture/WorldCapture.T35A.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Activities/Expeditions/Destinations/",
+      "from": "each destination's postcard set (PC_FlowerMeadows.fbx from BL_Activity_Postcards.blend, the T38 backdrop, the Prairie kit) rendered in Unity without animals, with the game shaders and the set's light",
+      "builders": ["Assets/_Game/Editor/Activities/PostcardSetPipeline.cs"]
     },
     {
       "final": "Assets/_Game/Art/Activities/Grooming/Bodies/",

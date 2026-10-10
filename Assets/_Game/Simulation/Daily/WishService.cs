@@ -775,8 +775,28 @@ namespace PocketWilds.Simulation
                         record.ParamExtra = _paramExtra[k];
                     }
                     break;
+                case WishTemplateId.PawMemoryMoves:
+                    // T41: n = 2 × the pairs + 6 of the player's Memory grid now (its free mode's d); each game is then
+                    // checked against its own grid.
+                    record.Target = MemoryMovesTarget();
+                    break;
+                case WishTemplateId.HeadToDestination:
+                    // T42: {destination} is one of the destinations open now.
+                    n = CollectOpenDestinations();
+                    if (n > 0)
+                        record.Param = _paramIds[rng.Next(n)];
+                    break;
             }
             return record;
+        }
+
+        /// <summary>WISH-059's n at the draw: 2 × the pairs of the player's Memory grid (at its free mode's d) + 6.</summary>
+        private int MemoryMovesTarget()
+        {
+            int slot = ActivityCatalog.SlotOf(ActivityId.PawMemory);
+            var records = State.Activities.Records;
+            int d = (uint)slot < (uint)records.Length ? AdaptiveDifficulty.Level(in records[slot]) : AdaptiveDifficulty.Start;
+            return MemoryRules.MovesTarget(MemoryRules.Pairs(MemoryRules.GridAt(d)));
         }
 
         private double Weight(in WishTemplate template, int dayNumber, bool recent, uint earlierSystems)
@@ -891,7 +911,8 @@ namespace PocketWilds.Simulation
         private double AnimalWeightAt(int index, int lowBondThreshold)
         {
             ref readonly var animal = ref State.Collection[index];
-            if (HoldsWish(animal.InstanceId))
+            // T42: an animal away on an expedition is not in the refuge: it expresses no wish.
+            if (HoldsWish(animal.InstanceId) || State.Expeditions.IsAway(animal.InstanceId))
                 return 0.0;
             double weight = animal.IsFavorite ? FavoriteWeight : 1.0;
             if (Math.Min((int)animal.BondPoints, BondBins - 1) <= lowBondThreshold)
@@ -948,7 +969,9 @@ namespace PocketWilds.Simulation
         /// Section 2.2: SYS-01 to SYS-03 open at the end of the welcome (A10); SYS-04 with the first upgrade bought or the
         /// Upgrade button (A07); SYS-06 when a biome offers its first expansion (zone signs shown, the next zone allowed);
         /// T38: SYS-09 with Grooming (refuge level 3 and 5 animals) once the build has activities; T39: SYS-10 with Hide and
-        /// Seek (refuge level 4 and 8 animals) the same way; T40: SYS-11 with Nut Drop (refuge level 10, day 4 or 15 animals).
+        /// Seek (refuge level 4 and 8 animals) the same way; T40: SYS-11 with Nut Drop (refuge level 10, day 4 or 15 animals);
+        /// T41: SYS-12 with Pawprint Memory (refuge level 11 and day 5); T42: SYS-13 with Expeditions (refuge level 5 and 8
+        /// animals).
         /// </summary>
         private bool SystemOpensNow(WishSystem system)
         {
@@ -970,6 +993,10 @@ namespace PocketWilds.Simulation
                     return HideSeekOpen;
                 case WishSystem.NutRain:
                     return NutDropOpen;
+                case WishSystem.PawMemory:
+                    return MemoryOpen;
+                case WishSystem.Expeditions:
+                    return ExpeditionsOpen;
                 default:
                     return false;
             }
@@ -983,6 +1010,44 @@ namespace PocketWilds.Simulation
 
         /// <summary>« Pluie de noisettes débloquée »: the build has its activities and Nut Drop's function is open (level 10, day 4 or 15 animals).</summary>
         private bool NutDropOpen => Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.NutRain);
+
+        /// <summary>« Memory débloqué »: the build has its activities and Pawprint Memory's function is open (level 11, day 5).</summary>
+        private bool MemoryOpen => Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.PawMemory);
+
+        /// <summary>« Expéditions »: the build has its activities and the Expeditions function is open (level 5, 8 animals).</summary>
+        private bool ExpeditionsOpen => Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.Expeditions);
+
+        /// <summary>« 1 emplacement libre »: a free slot among the free ones and the Gems slot once bought (the Club's is not seen here).</summary>
+        private bool ExpeditionSlotFree()
+        {
+            var expeditions = State.Expeditions;
+            return expeditions.HasFreeSlot(ExpeditionConfig.DefaultSlotsBase + (expeditions.SlotBought ? 1 : 0));
+        }
+
+        /// <summary>Animals in the refuge, not away on an expedition (WISH-044 needs three).</summary>
+        private int AnimalsHome()
+        {
+            var collection = State.Collection;
+            var expeditions = State.Expeditions;
+            if (!expeditions.AnyActive)
+                return collection.Count;
+            int home = 0;
+            for (int i = 0; i < collection.Count; i++)
+                if (!expeditions.IsAway(collection[i].InstanceId))
+                    home++;
+            return home;
+        }
+
+        /// <summary>WISH-046: the destinations open now (T42: the Flower Meadows; a biome destination opens with its biome).</summary>
+        private int CollectOpenDestinations()
+        {
+            int n = 0;
+            var all = ExpeditionCatalog.All;
+            for (int i = 0; i < all.Length && n < _paramIds.Length; i++)
+                if (ExpeditionCatalog.IsOpen(all[i], _ctx.Progression))
+                    _paramIds[n++] = all[i].Id;
+            return n;
+        }
 
         /// <summary>Each shipped template's eligibility now (section 2.3, plan § 1.6), with the services of this build.</summary>
         private bool IsEligible(in WishTemplate template)
@@ -1033,6 +1098,24 @@ namespace PocketWilds.Simulation
                 case WishTemplateId.NutDropStreak:
                     // « Pluie de noisettes débloquée ».
                     return NutDropOpen;
+                case WishTemplateId.PlayPawMemory:
+                case WishTemplateId.PawMemoryPairs:
+                case WishTemplateId.PawMemoryMoves:
+                    // « Memory débloqué ».
+                    return MemoryOpen;
+                case WishTemplateId.StartExpedition:
+                case WishTemplateId.StartLongExpedition:
+                case WishTemplateId.SendAnimalOnExpedition:
+                    // « 1 emplacement libre » (WISH-043: its animal is picked among the animals at home).
+                    return ExpeditionsOpen && ExpeditionSlotFree();
+                case WishTemplateId.SendTeamOfThree:
+                    return ExpeditionsOpen && ExpeditionSlotFree() && AnimalsHome() >= 3;
+                case WishTemplateId.OpenPostcard:
+                    // « 1 expédition en cours » (away, or back and waiting).
+                    return ExpeditionsOpen && State.Expeditions.AnyActive;
+                case WishTemplateId.HeadToDestination:
+                    // « destination débloquée ».
+                    return ExpeditionsOpen && ExpeditionSlotFree() && CollectOpenDestinations() > 0;
                 default:
                     return false;
             }
@@ -1772,6 +1855,88 @@ namespace PocketWilds.Simulation
                             Advance(i, game.BestStreak - Math.Max(0, wishes[i].Progress));
                         break;
                 }
+            }
+        }
+
+        /// <summary>
+        /// T41 (SYS-12, section 2.3): a memory game ended. WISH-057 « Joue au Memory des empreintes »: a game played to its end,
+        /// practice included (a game left early is not a game played); WISH-058 « Trouve {n} paires au Memory »: the pairs
+        /// found, cumulated, practice included and even in a game left early (they really were found); WISH-059 « Finis un
+        /// Memory en {n} coups ou moins »: a game with every pair found in at most 2 × its grid's pairs + 6 tries (a try is
+        /// two cards; « grille de la partie »), practice included. Allocation-free.
+        /// </summary>
+        public void OnMemoryGame(in MemoryGameSummary game)
+        {
+            var wishes = State.DailyVisit.Wishes;
+            for (int i = Pending - 1; i >= 0; i--)
+            {
+                if (i >= Pending || wishes[i].IsDone)
+                    continue;
+                switch ((WishTemplateId)wishes[i].Template)
+                {
+                    case WishTemplateId.PlayPawMemory:
+                        if (game.Finished)
+                            Advance(i, 1);
+                        break;
+                    case WishTemplateId.PawMemoryPairs:
+                        if (game.PairsFound > 0)
+                            Advance(i, game.PairsFound);
+                        break;
+                    case WishTemplateId.PawMemoryMoves:
+                        if (game.WithinMoves)
+                            Advance(i, Math.Max(1, wishes[i].Target) - Math.Max(0, wishes[i].Progress));
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// T42 (SYS-13, section 2.3): a team left. WISH-041 « Lance une expédition »; WISH-042 « … de 4 h ou plus » (the
+        /// duration chosen; the first stroll is the 1 h one); WISH-043 « Envoie {animal} en expédition »: its animal in the
+        /// team; WISH-044 « Envoie une équipe de 3 animaux »; WISH-046 « Pars vers {destination} ». Allocation-free.
+        /// </summary>
+        public void OnExpeditionStarted(in ExpeditionStartInfo start)
+        {
+            var wishes = State.DailyVisit.Wishes;
+            for (int i = Pending - 1; i >= 0; i--)
+            {
+                if (i >= Pending || wishes[i].IsDone)
+                    continue;
+                switch ((WishTemplateId)wishes[i].Template)
+                {
+                    case WishTemplateId.StartExpedition:
+                        Advance(i, 1);
+                        break;
+                    case WishTemplateId.StartLongExpedition:
+                        if (start.Duration >= ExpeditionDuration.FourHours)
+                            Advance(i, 1);
+                        break;
+                    case WishTemplateId.SendAnimalOnExpedition:
+                        if (wishes[i].Animal != 0 && start.HasAnimal(wishes[i].Animal))
+                            Advance(i, 1);
+                        break;
+                    case WishTemplateId.SendTeamOfThree:
+                        if (start.TeamSize >= 3)
+                            Advance(i, 1);
+                        break;
+                    case WishTemplateId.HeadToDestination:
+                        if (!wishes[i].Param.IsValid || wishes[i].Param == start.Destination)
+                            Advance(i, 1);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>T42: a team welcomed: WISH-045 « Ouvre une carte postale ». Allocation-free.</summary>
+        public void OnExpeditionWelcomed(in ExpeditionWelcomeInfo welcome)
+        {
+            var wishes = State.DailyVisit.Wishes;
+            for (int i = Pending - 1; i >= 0; i--)
+            {
+                if (i >= Pending || wishes[i].IsDone)
+                    continue;
+                if ((WishTemplateId)wishes[i].Template == WishTemplateId.OpenPostcard)
+                    Advance(i, 1);
             }
         }
 

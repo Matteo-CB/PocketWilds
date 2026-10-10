@@ -265,6 +265,10 @@ namespace PocketWilds.Editor.UI
                 var activities = ActivityTexts.Texts;
                 for (int i = 0; i < activities.GetLength(0); i++)
                     table.Set(activities[i, 0], activities[i, language + 1]);
+                // T42: the expeditions' texts (the screen, the 37 destinations, the 10 challenges).
+                var expeditions = ExpeditionTexts.Texts;
+                for (int i = 0; i < expeditions.GetLength(0); i++)
+                    table.Set(expeditions[i, 0], expeditions[i, language + 1]);
                 EditorUtility.SetDirty(table);
                 if (!database.localization.Contains(table))
                     database.localization.Insert(Mathf.Min(language, database.localization.Count), table);

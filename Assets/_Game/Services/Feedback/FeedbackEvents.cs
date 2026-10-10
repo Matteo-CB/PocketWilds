@@ -121,7 +121,17 @@ namespace PocketWilds.Services.Feedback
         /// </summary>
         StarEarned = 42,
 
-        // 43 to 48 are reserved by doc 05 section 6.4 (Sticker, AlbumPage, ExpeditionReturn, Harvest, VisitorArrive, BondUp).
+        // 43 and 44 are reserved by doc 05 section 6.4 (Sticker, AlbumPage).
+
+        /// <summary>
+        /// T42 J-SFX-FEEL-016: the team is home (doc 05 sheet 23: small hurried felted steps coming closer, the postcard slid
+        /// out of the bag, two wooden notes, C then F). Its slot in doc 05 section 6.4's order. Played once at the start of
+        /// the welcome, while the team walks in; its two notes land 0.6 and 0.7 s later, as the postcard pivots in. See
+        /// ExpeditionAudio.
+        /// </summary>
+        ExpeditionReturn = 45,
+
+        // 46 to 48 are reserved by doc 05 section 6.4 (Harvest, VisitorArrive, BondUp).
 
         /// <summary>
         /// T38 J-SFX-FEEL-020: a soft puff of bubbles (a breath of air, a small cluster of round bubbles popping around F).
@@ -230,6 +240,44 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>T40 J-SFX-ACT-003-05: a special is caught (a breath, then a soft F major chord).</summary>
         NutDropSpecial = 87,
+
+        // T41: the pawprint memory (doc 01 Contenu, S-ACT-004 « Sons et effets »). See MemoryAudio.
+
+        /// <summary>
+        /// T41 J-SFX-ACT-004-01: a card turns over (a soft rustle of card stock, the card laid on the tablecloth), 3
+        /// variants. Also the preview turning every card, the cards of a miss turning back, and two cards swapping places.
+        /// </summary>
+        MemoryFlip = 88,
+
+        /// <summary>
+        /// T41 J-SFX-ACT-004-02: a pair is found (two notes a third apart at the music box). The third climbs the F major
+        /// scale with the pairs found: variant 0 (F and A) to 7 (F and A an octave higher), MemoryAudio.MatchVariant.
+        /// </summary>
+        MemoryMatch = 89,
+
+        /// <summary>T41 J-SFX-ACT-004-03: two cards do not match (one low felted note, very soft, never a buzzer).</summary>
+        MemoryMiss = 90,
+
+        /// <summary>T41 J-SFX-ACT-004-04: the glow card is turned (a warm cup of glass while its pair glows, never a bell).</summary>
+        MemoryGlow = 91,
+
+        // T42: the expeditions (doc 01 Contenu, S-ACT-005 « Sons et effets »; J-SFX-FEEL-016 is ExpeditionReturn, 45). See
+        // ExpeditionAudio.
+
+        /// <summary>T42 J-SFX-ACT-005-01: the team leaves (the little cloth bag closes, then small steps trot away), 1 s.</summary>
+        ExpeditionDepart = 92,
+
+        /// <summary>T42 J-SFX-ACT-005-02: a team is back (a small shop door bell rings three times on its spring).</summary>
+        ExpeditionBack = 93,
+
+        /// <summary>T42 J-SFX-ACT-005-03: the postcard comes in front (a card slid across paper, then laid flat).</summary>
+        ExpeditionPostcard = 94,
+
+        /// <summary>
+        /// T42 J-SFX-ACT-005-04: a loot item turns over (a warm pop), one step higher per item up the F major pentatonic:
+        /// variant 0 (F) to 7 (the A an octave and a third up), ExpeditionAudio.LootVariant.
+        /// </summary>
+        ExpeditionLoot = 95,
     }
 
     /// <summary>T37: the three activity musics (doc 01 Contenu, section 12.0, J-MUS-ACT-01 to 03). Stable values.</summary>
@@ -314,10 +362,11 @@ namespace PocketWilds.Services.Feedback
         /// T38: the activity sounds its own streak, so the shared ActivityStreak (J-SFX-ACT-000-06) does not play over it:
         /// the grooming's clean zone climbs a semitone per zone in a row (J-SFX-ACT-001-05, GroomZoneClean). T40: the nut
         /// drop plays the shared step on each +0.1 of its multiplier (every 5 catches, J-SFX-ACT-003-04, NutDropAudio), not
-        /// on every catch.
+        /// on every catch. T41: the memory's pair third already climbs with the pairs found (MemoryAudio.MatchVariant).
         /// </summary>
         public static bool HasOwnStreakSound(PocketWilds.Simulation.ActivityId activity) =>
-            activity == PocketWilds.Simulation.ActivityId.Grooming || activity == PocketWilds.Simulation.ActivityId.NutRain;
+            activity == PocketWilds.Simulation.ActivityId.Grooming || activity == PocketWilds.Simulation.ActivityId.NutRain
+                                                                   || activity == PocketWilds.Simulation.ActivityId.PawMemory;
     }
 
     /// <summary>
@@ -569,6 +618,97 @@ namespace PocketWilds.Services.Feedback
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// T41: how a pawprint memory game sounds (doc 01 Contenu, S-ACT-004 « Sons et effets »; doc Audio, J-SFX-ACT-004-01 to
+    /// 04). An interface screen: everything plays from the centre. The stage hands every drained game event to
+    /// <see cref="Play"/> with the game's PairsFound and PairCount. A card turned over rustles; a pair sounds a third at the
+    /// music box that climbs with the pairs found, the last pair on the top F whatever the grid; a miss is one low felted
+    /// note; the glow card a warm cup of glass. The end chord stays the presenter's (ActivityEnd), and the presenter keeps
+    /// its streak step quiet for this activity (<see cref="ActivityAudio.HasOwnStreakSound"/>). No allocation.
+    /// </summary>
+    public static class MemoryAudio
+    {
+        /// <summary>MemoryMatch's clips: the third up the F major scale, F and A (0) to F and A an octave higher (7).</summary>
+        public const int MatchSteps = 8;
+
+        /// <summary>
+        /// The pair's third for a game's pairsFound-th pair (1 for the first) out of pairCount: the steps spread evenly from
+        /// the first (F and A) to the top (an octave higher), so the third climbs through the game and the last pair always
+        /// lands on the top: 6 pairs (4 × 3) steps 0, 1, 3, 4, 6, 7; 8 pairs (4 × 4) 0 to 7; 10 pairs (5 × 4) 0, 1, 2, 2, 3,
+        /// 4, 5, 5, 6, 7. A game of one pair plays the top.
+        /// </summary>
+        public static int MatchVariant(int pairsFound, int pairCount)
+        {
+            int last = pairCount - 1;
+            if (last <= 0)
+                return MatchSteps - 1;
+            int k = pairsFound - 1;
+            k = k < 0 ? 0 : k > last ? last : k;
+            return (k * (MatchSteps - 1) + last / 2) / last;
+        }
+
+        /// <summary>
+        /// The sound of one memory event (doc 01 S-ACT-004 « Sons et effets »). A card turned face up rustles (the second
+        /// card of a try rustles too, under the pair's third or the miss's felt); a pair plays its third
+        /// (<see cref="MatchVariant"/>, the double pair the same: its 200 points tell the difference); a mismatch the low
+        /// felted note, whether it counts as a mistake or not (never a punishment). Our defaults where the doc is silent:
+        /// the preview turning every card up and back, the two cards of a miss turning back and two cards swapping places
+        /// (challenge 6) rustle once per event (cards moving on the cloth); the end bonus and the end of the game are the
+        /// presenter's (silent here). pairsFound, pairCount: the
+        /// game's PairsFound and PairCount when the events are drained.
+        /// </summary>
+        public static void Play(IAudioService audio, in PocketWilds.Simulation.MemoryEvent e, int pairsFound, int pairCount)
+        {
+            switch (e.Kind)
+            {
+                case PocketWilds.Simulation.MemoryEventKind.Flipped:
+                case PocketWilds.Simulation.MemoryEventKind.FlippedBack:
+                case PocketWilds.Simulation.MemoryEventKind.PreviewStarted:
+                case PocketWilds.Simulation.MemoryEventKind.PreviewEnded:
+                case PocketWilds.Simulation.MemoryEventKind.Swapped:
+                    audio.Play(AudioEventId.MemoryFlip, Vector3.zero, ContentId.None);
+                    break;
+                case PocketWilds.Simulation.MemoryEventKind.Matched:
+                    audio.PlayVariant(AudioEventId.MemoryMatch, MatchVariant(pairsFound, pairCount));
+                    break;
+                case PocketWilds.Simulation.MemoryEventKind.Mismatched:
+                    audio.Play(AudioEventId.MemoryMiss, Vector3.zero, ContentId.None);
+                    break;
+                case PocketWilds.Simulation.MemoryEventKind.Glow:
+                    audio.Play(AudioEventId.MemoryGlow, Vector3.zero, ContentId.None);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// T42: how the expeditions sound (doc 01 Contenu, S-ACT-005 « Sons et effets »; doc 05 Sensations, sheet 23). An
+    /// interface screen: everything plays from the centre (<see cref="Vector3.zero"/>). Where to play them:
+    /// - « Partir » pressed and the team gone: <see cref="AudioEventId.ExpeditionDepart"/> (in place of the
+    ///   confirm; H-VFX-ACT-005-01's dust puffs go with its steps);
+    /// - a slot turns Back while the screen is open (its timer ends, or « Finir maintenant » is paid):
+    ///   <see cref="AudioEventId.ExpeditionBack"/>, once per slot (its 1 s cooldown makes slots ending together one bell);
+    /// - the welcome starts (« Voir la carte postale »): <see cref="AudioEventId.ExpeditionReturn"/> while the team walks
+    ///   in (its steps hurry closer for 0.4 s, its two wooden notes land at 0.6 and 0.7 s);
+    /// - the postcard pivots in (400 ms): <see cref="AudioEventId.ExpeditionPostcard"/>, and for each postcard of a
+    ///   « Tout réclamer » / "Claim all" (300 ms apart: 0.25 s cooldown, 2 voices);
+    /// - each loot item turning over in the result: <see cref="AudioEventId.ExpeditionLoot"/> with
+    ///   <see cref="LootVariant"/>. Its first five steps are the reward card's five notes (CardFlip, J-SFX-FEEL-012) an
+    ///   octave apart at most, so the card's paper and the pop can sound together.
+    /// No allocation.
+    /// </summary>
+    public static class ExpeditionAudio
+    {
+        /// <summary>ExpeditionLoot's clips: the pop up the F major pentatonic, F, G, A, C, D, F, G, A (0 to 7).</summary>
+        public const int LootSteps = 8;
+
+        /// <summary>The pop of the item-th loot item turned (0 for the first): one step higher per item, the top past the eighth.</summary>
+        public static int LootVariant(int item) => item < 0 ? 0 : item >= LootSteps ? LootSteps - 1 : item;
+
+        /// <summary>The pop of one loot item (see <see cref="LootVariant"/>).</summary>
+        public static void PlayLoot(IAudioService audio, int item) => audio.PlayVariant(AudioEventId.ExpeditionLoot, LootVariant(item));
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>

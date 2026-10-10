@@ -66,6 +66,8 @@ namespace PocketWilds.Bootstrap
                 _context.Daily?.Tick(delta);
                 // T37: ticket refill, day boundary and openings, once a second inside. Games are ticked by their presenter.
                 _context.Activities?.Tick(delta);
+                // T42: a team whose return time has passed comes back (SlotChanged once); reads the clock, no allocation.
+                _context.Expeditions?.Tick();
 
                 _context.Save.Tick();
             }

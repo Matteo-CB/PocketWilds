@@ -35,8 +35,9 @@ namespace PocketWilds.Services.Save
         /// 2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids). 4: Pity counters.
         /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
         /// 8: Discovery egg stock (World 3). 9: Renewal memory and Essence tree. 10: daily rendez-vous and inventory (T36).
+        /// 11: activities (T37). 12: expeditions (T42).
         /// </summary>
-        public const int CurrentVersion = 11;
+        public const int CurrentVersion = 12;
     }
 
     /// <summary>
@@ -63,6 +64,7 @@ namespace PocketWilds.Services.Save
         private const ushort DailyVisitVersion = 1;
         private const ushort InventoryVersion = 1;
         private const ushort ActivitiesVersion = 1;
+        private const ushort ExpeditionsVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -179,6 +181,10 @@ namespace PocketWilds.Services.Save
 
             mark = BeginSection(output, SaveSectionId.Activities, ActivitiesVersion);
             WriteActivities(output, state.Activities);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Expeditions, ExpeditionsVersion);
+            WriteExpeditions(output, state.Expeditions);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -356,6 +362,9 @@ namespace PocketWilds.Services.Save
                 // tickets kept in the inventory (T37).
                 if (document.TryGetSection(SaveSectionId.Activities, out var activities))
                     ReadActivities(activities, state.Activities);
+                // Saves older than schema 12 have no expeditions: no team away, the first stroll still to come (T42).
+                if (document.TryGetSection(SaveSectionId.Expeditions, out var expeditions))
+                    ReadExpeditions(expeditions, state.Expeditions);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -765,6 +774,175 @@ namespace PocketWilds.Services.Save
                 if (slot < ActivityCatalog.ActivityCount && challenge < ActivityState.ChallengesPerActivity)
                     a.ChallengeAttempts[ActivityState.ChallengeIndex(slot, challenge)] = attempts;
             }
+        }
+
+        /// <summary>
+        /// T42: the expeditions. The slots are written with their count (each one's active flag, then its team, times, stars,
+        /// challenge, seed and the loot drawn at departure), then the postcards kept, oldest first.
+        /// </summary>
+        private static void WriteExpeditions(ByteBufferWriter output, ExpeditionState e)
+        {
+            output.WriteBool(e.SlotBought);
+            output.WriteBool(e.FirstStrollDone);
+            output.WriteInt32(e.LongWithoutEgg);
+            output.WriteInt32(e.Started);
+            output.WriteInt32(e.Completed);
+            output.WriteInt32(e.SpeedUpDayKey);
+            output.WriteInt32(e.SpeedUpsToday);
+            output.WriteInt32(e.NextPostcardId);
+            output.WriteInt32(e.JournalWeekKey);
+            output.WriteInt64((long)e.JournalPlacesMask);
+            output.WriteInt32(e.Slots.Length);
+            for (int s = 0; s < e.Slots.Length; s++)
+            {
+                ref readonly var slot = ref e.Slots[s];
+                output.WriteBool(slot.Active);
+                if (!slot.Active)
+                    continue;
+                output.WriteContentId(slot.Destination);
+                output.WriteByte((byte)slot.Duration);
+                output.WriteByte(slot.TeamSize);
+                for (int i = 0; i < ExpeditionState.MaxTeam; i++)
+                {
+                    output.WriteUInt32(slot.AnimalAt(i));
+                    output.WriteContentId(slot.VariantAt(i));
+                    output.WriteContentId(slot.SpeciesAt(i));
+                }
+                output.WriteInt64(slot.StartUnixMs);
+                output.WriteInt64(slot.ReturnUnixMs);
+                output.WriteByte(slot.Stars);
+                output.WriteByte(unchecked((byte)slot.Challenge));
+                output.WriteBool(slot.FirstStroll);
+                output.WriteUInt32(slot.Seed);
+                WriteLoot(output, in slot.Loot);
+            }
+            int cards = Math.Min(e.PostcardCount, e.Postcards.Length);
+            output.WriteInt32(cards);
+            for (int i = 0; i < cards; i++)
+            {
+                ref readonly var card = ref e.Postcards[i];
+                output.WriteInt32(card.Id);
+                output.WriteContentId(card.Destination);
+                output.WriteInt32(card.UnixDay);
+                output.WriteBool(card.Rendered);
+                output.WriteBool(card.FirstOfDestination);
+            }
+        }
+
+        private static void WriteLoot(ByteBufferWriter output, in ExpeditionLoot loot)
+        {
+            output.WriteDouble(loot.LightMinutes);
+            output.WriteContentId(loot.Treat);
+            output.WriteInt32(loot.Treats);
+            output.WriteInt32(loot.SeedKinds);
+            for (int i = 0; i < 4; i++)
+            {
+                output.WriteContentId(loot.SeedAt(i));
+                output.WriteInt32(loot.SeedsAt(i));
+            }
+            output.WriteInt32(loot.StickerChance);
+            output.WriteInt32(loot.Stickers);
+            output.WriteInt32(loot.DiscoveryChance);
+            output.WriteInt32(loot.DiscoveryEggs);
+            output.WriteInt32(loot.Tickets);
+            output.WriteContentId(loot.Ingredient0);
+            output.WriteInt32(loot.Ingredients0);
+            output.WriteContentId(loot.Ingredient1);
+            output.WriteInt32(loot.Ingredients1);
+            output.WriteInt32(loot.BondPoints);
+            output.WriteInt32(loot.MasteryXp);
+            output.WriteInt32(loot.EventCurrency);
+        }
+
+        private static void ReadExpeditions(SaveSection section, ExpeditionState e)
+        {
+            RequireVersion(section, ExpeditionsVersion);
+            var r = section.CreateReader();
+            e.SlotBought = r.ReadBool();
+            e.FirstStrollDone = r.ReadBool();
+            e.LongWithoutEgg = Math.Max(0, r.ReadInt32());
+            e.Started = Math.Max(0, r.ReadInt32());
+            e.Completed = Math.Max(0, r.ReadInt32());
+            e.SpeedUpDayKey = r.ReadInt32();
+            e.SpeedUpsToday = Math.Max(0, r.ReadInt32());
+            e.NextPostcardId = Math.Max(1, r.ReadInt32());
+            e.JournalWeekKey = r.ReadInt32();
+            e.JournalPlacesMask = (ulong)r.ReadInt64();
+            int slots = ReadCount(ref r);
+            for (int s = 0; s < slots; s++)
+            {
+                var slot = new ExpeditionSlotRecord { Active = r.ReadBool(), Challenge = -1 };
+                if (slot.Active)
+                {
+                    slot.Destination = r.ReadContentId();
+                    slot.Duration = (ExpeditionDuration)Math.Min((int)ExpeditionDuration.TwelveHours, (int)r.ReadByte());
+                    slot.TeamSize = (byte)Math.Min(ExpeditionState.MaxTeam, (int)r.ReadByte());
+                    for (int i = 0; i < ExpeditionState.MaxTeam; i++)
+                    {
+                        uint animal = r.ReadUInt32();
+                        var variant = r.ReadContentId();
+                        var species = r.ReadContentId();
+                        slot.SetMember(i, animal, variant, species);
+                    }
+                    slot.StartUnixMs = r.ReadInt64();
+                    slot.ReturnUnixMs = Math.Max(slot.StartUnixMs, r.ReadInt64());
+                    slot.Stars = (byte)Math.Min(3, (int)r.ReadByte());
+                    slot.Challenge = unchecked((sbyte)r.ReadByte());
+                    slot.FirstStroll = r.ReadBool();
+                    slot.Seed = r.ReadUInt32();
+                    slot.Loot = ReadLoot(ref r);
+                }
+                // A newer build may own more slots: their teams are read and dropped.
+                if (s < e.Slots.Length)
+                    e.Slots[s] = slot;
+            }
+            int cards = ReadCount(ref r);
+            e.PostcardCount = 0;
+            for (int i = 0; i < cards; i++)
+            {
+                var card = new PostcardRecord
+                {
+                    Id = r.ReadInt32(),
+                    Destination = r.ReadContentId(),
+                    UnixDay = r.ReadInt32(),
+                    Rendered = r.ReadBool(),
+                    FirstOfDestination = r.ReadBool(),
+                };
+                if (e.PostcardCount < e.Postcards.Length)
+                    e.Postcards[e.PostcardCount++] = card;
+            }
+        }
+
+        private static ExpeditionLoot ReadLoot(ref ByteBufferReader r)
+        {
+            var loot = new ExpeditionLoot
+            {
+                LightMinutes = Math.Max(0.0, r.ReadDouble()),
+                Treat = r.ReadContentId(),
+                Treats = Math.Max(0, r.ReadInt32()),
+                SeedKinds = Math.Max(0, Math.Min(4, r.ReadInt32())),
+            };
+            loot.Seed0 = r.ReadContentId();
+            loot.Seeds0 = Math.Max(0, r.ReadInt32());
+            loot.Seed1 = r.ReadContentId();
+            loot.Seeds1 = Math.Max(0, r.ReadInt32());
+            loot.Seed2 = r.ReadContentId();
+            loot.Seeds2 = Math.Max(0, r.ReadInt32());
+            loot.Seed3 = r.ReadContentId();
+            loot.Seeds3 = Math.Max(0, r.ReadInt32());
+            loot.StickerChance = Math.Max(0, r.ReadInt32());
+            loot.Stickers = Math.Max(0, r.ReadInt32());
+            loot.DiscoveryChance = Math.Max(0, r.ReadInt32());
+            loot.DiscoveryEggs = Math.Max(0, r.ReadInt32());
+            loot.Tickets = Math.Max(0, r.ReadInt32());
+            loot.Ingredient0 = r.ReadContentId();
+            loot.Ingredients0 = Math.Max(0, r.ReadInt32());
+            loot.Ingredient1 = r.ReadContentId();
+            loot.Ingredients1 = Math.Max(0, r.ReadInt32());
+            loot.BondPoints = Math.Max(0, r.ReadInt32());
+            loot.MasteryXp = Math.Max(0, r.ReadInt32());
+            loot.EventCurrency = Math.Max(0, r.ReadInt32());
+            return loot;
         }
 
         private static void ReadCounters(ref ByteBufferReader r, System.Collections.Generic.Dictionary<ContentId, int> counters)

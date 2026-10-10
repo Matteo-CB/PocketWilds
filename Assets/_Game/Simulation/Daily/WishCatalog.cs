@@ -110,6 +110,9 @@ namespace PocketWilds.Simulation
 
         /// <summary>An upgrade kind (<see cref="WishRecord.ParamExtra"/>) in the biome of <see cref="WishRecord.Param"/>.</summary>
         Upgrade = 4,
+
+        /// <summary>T42: an expedition destination ({destination}, WISH-046): its id in <see cref="WishRecord.Param"/>.</summary>
+        Destination = 5,
     }
 
     /// <summary>
@@ -144,7 +147,7 @@ namespace PocketWilds.Simulation
         /// <summary>A score wish (one game): its amount follows the score rule (<see cref="WishCatalog.ScoreTarget"/>).</summary>
         public readonly bool Score;
 
-        /// <summary>Its system exists in this build (T36: SYS-01, 02, 03, 04, 06; T38: SYS-09; T39: SYS-10; T40: SYS-11). Other templates are never drawn.</summary>
+        /// <summary>Its system exists in this build (T36: SYS-01, 02, 03, 04, 06; T38: SYS-09; T39: SYS-10; T40: SYS-11; T41: SYS-12; T42: SYS-13). Other templates are never drawn.</summary>
         public readonly bool ShippedInThisBuild;
 
         public WishTemplate(WishTemplateId id, WishSystem system, int weight, int typicalSeconds, bool timer, int p1, int p2, int p3, int p4,
@@ -309,8 +312,8 @@ namespace PocketWilds.Simulation
             T(WishTemplateId.SendTeamOfThree, WishSystem.Expeditions, 3, 1 * Min, 1, 1, 1, 1),
             // WISH-045 "Open a postcard": 1 expedition running (timer: its return).
             T(WishTemplateId.OpenPostcard, WishSystem.Expeditions, 4, 0, 1, 1, 1, 1, timer: true),
-            // WISH-046 "Head to {destination}": the destination open.
-            T(WishTemplateId.HeadToDestination, WishSystem.Expeditions, 3, 1 * Min, 1, 1, 1, 1),
+            // WISH-046 "Head to {destination}": the destination open (T42: an open destination drawn, in WishRecord.Param).
+            T(WishTemplateId.HeadToDestination, WishSystem.Expeditions, 3, 1 * Min, 1, 1, 1, 1, WishParamKind.Destination),
 
             // ---- SYS-16 Photo (Travels) ----
             // WISH-047 "Take a photo of {animal}": photo mode open.
@@ -338,12 +341,13 @@ namespace PocketWilds.Simulation
             // WISH-056 "Get a {n} streak in Nut Drop": open; score wish.
             T(WishTemplateId.NutDropStreak, WishSystem.NutRain, 3, 1 * Min, 15, 20, 25, 30, score: true),
 
-            // ---- SYS-12 Pawprint Memory (Games) ----
-            // WISH-057 "Play Pawprint Memory": open; 1 game.
+            // ---- SYS-12 Pawprint Memory (Games; T41) ----
+            // WISH-057 "Play Pawprint Memory": open; 1 game played to its end.
             T(WishTemplateId.PlayPawMemory, WishSystem.PawMemory, 5, 1 * Min, 1, 1, 1, 1),
             // WISH-058 "Find {n} pairs in Memory": open; cumulated.
             T(WishTemplateId.PawMemoryPairs, WishSystem.PawMemory, 4, 2 * Min, 6, 8, 10, 12),
-            // WISH-059 "Finish Memory in {n} moves or fewer": open; n = 2 x the grid's pairs + 6, set by the game (0 here).
+            // WISH-059 "Finish Memory in {n} moves or fewer": open; n = 2 x the grid's pairs + 6, set at the draw from the
+            // player's Memory grid (0 here; WishService) and checked against each game's own grid.
             T(WishTemplateId.PawMemoryMoves, WishSystem.PawMemory, 3, 1 * Min, 0, 0, 0, 0),
 
             // ---- SYS-14 Treasure Fishing (Games) ----
@@ -422,13 +426,16 @@ namespace PocketWilds.Simulation
         private static readonly string[] Keys = BuildKeys();
 
         /// <summary>The systems whose wishes exist in this build (T36: Hatching, Discoveries and mastery, Cuddles and treats,
-        /// Upgrades, Expansions; T38: Grooming, T39: Hide and Seek and T40: Nut Drop, each with its activity).</summary>
+        /// Upgrades, Expansions; T38: Grooming, T39: Hide and Seek, T40: Nut Drop, T41: Pawprint Memory and T42: Expeditions,
+        /// each with its activity).</summary>
         public static bool IsShipped(WishSystem system) =>
             system == WishSystem.Hatching || system == WishSystem.DiscoveriesAndMastery || system == WishSystem.CuddlesAndTreats
             || system == WishSystem.Upgrades || system == WishSystem.Expansions
             || (system == WishSystem.Grooming && ActivityCatalog.Get(ActivityId.Grooming).ShippedInThisBuild)
             || (system == WishSystem.HideAndSeek && ActivityCatalog.Get(ActivityId.HideAndSeek).ShippedInThisBuild)
-            || (system == WishSystem.NutRain && ActivityCatalog.Get(ActivityId.NutRain).ShippedInThisBuild);
+            || (system == WishSystem.NutRain && ActivityCatalog.Get(ActivityId.NutRain).ShippedInThisBuild)
+            || (system == WishSystem.PawMemory && ActivityCatalog.Get(ActivityId.PawMemory).ShippedInThisBuild)
+            || (system == WishSystem.Expeditions && ActivityCatalog.Get(ActivityId.Expeditions).ShippedInThisBuild);
 
         /// <summary>Index in <see cref="All"/> (number - 1), or -1 (the tutorial and unknown ids).</summary>
         public static int IndexOf(WishTemplateId id)

@@ -149,7 +149,8 @@ namespace PocketWilds.Tests.PlayMode
             int total = 0;
             for (int i = 0; i < (int)VfxId.Count; i++)
                 total += vfx.ParticleCount((VfxId)i);
-            Assert.LessOrEqual(total, 320, "Everything at once on High stays a few hundred small particles.");
+            // T42 adds the expedition arrival dust (H-VFX-076: 8 dots, 10 on High): 320 became 340.
+            Assert.LessOrEqual(total, 340, "Everything at once on High stays a few hundred small particles.");
         }
     }
 }

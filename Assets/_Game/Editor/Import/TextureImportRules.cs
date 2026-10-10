@@ -42,6 +42,15 @@ namespace PocketWilds.Editor.Import
                 case "UI_Pill_9Slice": return new Vector4(64f, 70f, 64f, 62f);
                 case "UI_Panel_Primary_9Slice": return new Vector4(64f, 74f, 64f, 62f);
                 case "UI_Button_Primary_9Slice": return new Vector4(72f, 98f, 72f, 70f);
+                // T42 (pw_ui_sprites_t42.py): the expeditions' slot cards and duration chips (Sliced), the postcard's
+                // deckled frame (Tiled at 592 x 848: its 64 px middle tile and deckle repeat without a seam).
+                case "UI_Exp_Slot_Empty":
+                case "UI_Exp_Slot_Away":
+                case "UI_Exp_Slot_Back":
+                case "UI_Exp_Slot_Locked": return new Vector4(64f, 64f, 64f, 64f);
+                case "UI_Exp_Chip":
+                case "UI_Exp_Chip_Selected": return new Vector4(64f, 60f, 64f, 56f);
+                case "UI_Exp_PostcardFrame": return new Vector4(72f, 72f, 72f, 72f);
                 default: return Vector4.zero;
             }
         }

@@ -1214,6 +1214,256 @@ def nutdrop_special(v):
     return _soft_start(wet(x, ROOM, 0.16), 0.003)
 
 
+# ---------------------------------------------------------------- T41: pawprint memory (doc 01 Contenu, S-ACT-004 "Sons
+# et effets"; doc Audio, J-SFX-ACT-004-01 to 04). Cards of soft card stock turned over on a cream tablecloth: a paper
+# rustle and the muted touch of the cloth, a third at the music box for a pair (climbing with the pairs found), one low
+# felted note for a miss (never a buzzer), a warm cup of glass for the glow card; F major.
+
+# The pair's third, step by step up the F major scale (MemoryAudio.MatchVariant spreads a game's pairs over the steps).
+MATCH_STEPS = (('F5', 'A5'), ('G5', 'Bb5'), ('A5', 'C6'), ('Bb5', 'D6'), ('C6', 'E6'), ('D6', 'F6'), ('E6', 'G6'),
+               ('F6', 'A6'))
+
+
+def memory_flip(v):
+    """J-SFX-ACT-004-01: a card turns over: the soft rustle of card stock under the finger (a swish whose colour lifts as
+    the card turns, at its fullest about 35 ms after the touch; a few tiny rounded grains of paper), then the card laid
+    on the tablecloth (a muted touch of cloth, no knock, no click). No note: the pair's third stays the game's only melody. Three variants of length and colour,
+    so quick taps never repeat one sound. About 0.15 s, light enough for two flips in a quarter of a second."""
+    rng = np.random.default_rng(2200 + v)
+    seconds, peak_at, lo, hi, grains, touch_at, touch_hz = ((0.12, 0.3, 650.0, 1700.0, 9, 0.085, 300.0),
+                                                            (0.135, 0.33, 600.0, 1550.0, 11, 0.097, 280.0),
+                                                            (0.11, 0.275, 700.0, 1850.0, 8, 0.077, 320.0))[v]
+    n = samples(seconds)
+    env = _rise_fall(n, peak_at, 1.6)
+    u = np.arange(n) / n
+    centre = lo * (hi / lo) ** u
+    swish = _moving_band(n, centre, rng, width=0.5, low=400.0, high=3200.0) * env * (1.0 + 0.3 * _flutter(n, 40.0, rng))
+    paper = _leaf_grains(n, grains, env, rng, 1100.0, 2600.0)
+    out = np.zeros(samples(0.26))
+    place(out, swish * 0.32 + paper * 0.14, 0.0, release=0.02)
+    t = t_axis(0.07)
+    touch = np.sin(phase_of(glide(t, touch_hz * 1.08, touch_hz, 0.01))) * env_ad(t, 0.003, 0.014) * 0.3
+    touch += band_noise(len(t), 300.0, 1300.0, rng) * env_ad(t, 0.002, 0.009) * 0.16
+    place(out, touch, touch_at, release=0.02)
+    x = fft_filter(out, chain(lowpass(3800.0, 3), highpass(220.0, 2), peak(3000.0, -3.0, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.04), 0.002)
+
+
+def memory_match(v):
+    """J-SFX-ACT-004-02: a pair is found: two notes a third apart at the music box, the lower one then the upper one 75 ms
+    later (a happy "ding-ding"), each a warm kalimba tine with the glass of the music box on it, a quiet tine an octave
+    under the first. The third climbs the F major scale with the pairs found: 8 steps, F and A up to F and A an octave
+    higher (MemoryAudio.MatchVariant spreads a game's pairs over them, so the last pair always lands on the top F, under
+    the end chord). The glass thins out as the notes climb, so the top steps stay warm. About 0.6 s."""
+    rng = np.random.default_rng(2210 + v)
+    low, high = (hz(note) for note in MATCH_STEPS[v])
+    out = np.zeros(samples(0.9))
+    for f, at, vel, tau, level in ((low, 0.0, 0.6, 0.2, 0.42), (high, 0.075, 0.68, 0.3, 0.5)):
+        place(out, _tine_under(f, 0.75, vel, tau, rng) * level, at)
+        place(out, _glass_note(f, 0.6, 0.4, tau * 0.7) * level * 0.4 * (hz('F5') / f) ** 1.5, at + 0.002)
+    place(out, _tine_under(low / 2.0, 0.7, 0.45, 0.25, rng) * 0.16, 0.0)
+    x = fft_filter(out, chain(lowpass(7000.0, 2), highpass(160.0, 2), peak(3000.0, -2.5, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.12))
+
+
+def memory_miss(v):
+    """J-SFX-ACT-004-03: two cards do not match: one low felted note, very soft, a felt mallet laid on the low bar of a
+    wooden box. D, the gentle minor colour inside F major; a round body that settles a hair into its pitch (never a
+    falling "wrong" interval), the warmth of its octave and twelfth so a phone speaker carries it, the puff of the felt;
+    no click, nothing above 2 kHz. Kind: it only says "not these two", and the cards turn back. About 0.35 s."""
+    rng = np.random.default_rng(2220)
+    f0 = hz('D4')
+    out = np.zeros(samples(0.5))
+    t = t_axis(0.4)
+    ph = phase_of(glide(t, f0 * 1.012, f0, 0.015))
+    body = np.sin(ph) * env_ad(t, 0.006, 0.085) + 0.7 * np.sin(2.0 * ph) * env_ad(t, 0.006, 0.05)
+    body += 0.25 * np.sin(3.0 * ph) * env_ad(t, 0.006, 0.025)
+    felt = band_noise(len(t), 260.0, 1100.0, rng) * env_ad(t, 0.007, 0.022) * 0.14
+    place(out, body * 0.5 + felt, 0.0, release=0.05)
+    x = fft_filter(out, chain(lowpass(1800.0, 2), highpass(220.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.06), 0.004)
+
+
+def memory_glow(v):
+    """J-SFX-ACT-004-04: the glow card is turned and the card of its pair glows for 1 s (H-VFX-ACT-004-02, a gold edge
+    that pulses): a warm cup of glass. A and C struck together softly at the music box (a warm third) over a quiet tine
+    on F, the F above them a breath later as a small glass chime; under them the glass sings softly (a breath through
+    two narrow resonances, F and the F below), swelling and settling while the edge glows. Short partials, no long ring,
+    no inharmonic hum: a cup of glass, never a bell. About 1 s."""
+    rng = np.random.default_rng(2230)
+    out = np.zeros(samples(1.4))
+    place(out, _tine_under(hz('F5'), 0.9, 0.45, 0.3, rng) * 0.2, 0.0)
+    place(out, _glass_note(hz('A5'), 0.6, 0.36, 0.16) * 0.2, 0.0)
+    place(out, _glass_note(hz('C6'), 0.6, 0.38, 0.18) * 0.2, 0.006)
+    place(out, _small_chime(hz('F6'), 0.9, 0.48, 0.3) * 0.34, 0.06)
+    n = samples(0.95)
+    song = fft_filter(white(n, rng), lambda f: _resonance(hz('F6'), 0.012)(f) + 0.4 * _resonance(hz('F5'), 0.012)(f))
+    song = song / (np.std(song) + 1e-12) * _rise_fall(n, 0.3, 1.8)
+    place(out, song * 0.05, 0.05, release=0.08)
+    x = fft_filter(out, chain(lowpass(7000.0, 2), highpass(180.0, 2), peak(3000.0, -3.0, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.14))
+
+
+# ---------------------------------------------------------------- T42: expeditions (doc 01 Contenu, S-ACT-005 "Sons et
+# effets"; doc Audio, J-SFX-ACT-005-01 to 04; doc 05 Sensations, sheet 23 and section 6.1, J-SFX-FEEL-016). A little team
+# packs its bag and trots off, and comes home with a postcard: soft paws on grass, cloth and paper, a small shop door
+# bell, warm pops, wooden bars; F major.
+
+# The loot's warm pop climbs the F major pentatonic, item by item: the five notes of the reward card (CARD_STEPS), then on
+# up to the A above (ExpeditionAudio.LootVariant: past the eighth item, the top).
+LOOT_STEPS = ('F5', 'G5', 'A5', 'C6', 'D6', 'F6', 'G6', 'A6')
+
+
+def _paw_step(rng, weight=1.0, body_hz=190.0, grass=0.5, seconds=0.09):
+    """One small paw set down on soft grass: a felted thump that settles a little lower (no knock), the puff of the pad
+    and a few blades of grass brushing (tiny rounded grains). weight scales the thump, grass the blades. About 60 ms;
+    never a click (rounded over 3 ms)."""
+    t = t_axis(seconds)
+    ph = phase_of(glide(t, body_hz * 1.25, body_hz, 0.008))
+    thump = (np.sin(ph) + 0.35 * np.sin(2.0 * ph)) * env_ad(t, 0.003, 0.016) * weight
+    pad = band_noise(len(t), 260.0, 1100.0, rng) * env_ad(t, 0.004, 0.012) * 0.45 * weight
+    n = len(t)
+    blades = _leaf_grains(n, 4, _rise_fall(n, 0.25, 1.8), rng, 1100.0, 2600.0) * 0.12 * grass
+    return thump * 0.5 + pad + blades
+
+
+def _trot(rng, count, start, gap, accel, weights, body_hz=190.0, jitter=0.006):
+    """A run of small paw steps (two little feet, the second of each pair a touch lighter and lower): count steps from
+    start, gap seconds apart, the gap scaled by accel at each step (under 1: hurrying), the weight on a line from
+    weights[0] to weights[1] (approaching or walking away). Returns the buffer."""
+    out = np.zeros(samples(start + count * gap * 1.2 + 0.2))
+    at = start
+    for k in range(count):
+        u = k / max(count - 1, 1)
+        w = weights[0] + (weights[1] - weights[0]) * u
+        foot = 1.0 if k % 2 == 0 else 0.86
+        step = _paw_step(rng, w * foot, body_hz * (1.0 if k % 2 == 0 else 0.93), grass=0.4 + 0.4 * w)
+        place(out, step, max(at + rng.uniform(-jitter, jitter), 0.0), release=0.02)
+        at += gap
+        gap *= accel
+    return out
+
+
+def _paper_slide(rng, seconds, lo, hi, peak_at=0.4, grain=0.18):
+    """A card slid across paper: a smooth swish whose colour rises as the card glides, then settles (a band that follows
+    the movement), the faint tooth of the paper (a slow fine wobble), never a scratch."""
+    n = samples(seconds)
+    u = np.arange(n) / n
+    centre = lo * (hi / lo) ** np.sin(np.pi * np.clip(u / (2.0 * peak_at), 0.0, 0.5))
+    env = _rise_fall(n, peak_at, 1.5)
+    swish = _moving_band(n, centre, rng, width=0.5, low=400.0, high=3600.0) * env
+    return swish * (1.0 + grain * _flutter(n, 55.0, rng))
+
+
+def expedition_depart(v):
+    """J-SFX-ACT-005-01: the team leaves: the little cloth bag closes, then small steps trot away. The drawstring pulled
+    through the cloth (a quick swish rising), the flap folded down (a soft felt thump and a rustle of cloth), its wooden
+    toggle touched once, very lightly; then six small paw steps on grass, each a little softer and duller as the team
+    goes (the grass hides them), the last ones only a whisper. About 1 s."""
+    rng = np.random.default_rng(2300)
+    out = np.zeros(samples(1.25))
+    n = samples(0.12)
+    u = np.arange(n) / n
+    cord = _moving_band(n, 560.0 * 2.0 ** (1.2 * u), rng, width=0.45, low=400.0, high=2400.0) * _rise_fall(n, 0.7, 1.6)
+    place(out, cord * (1.0 + 0.2 * _flutter(n, 50.0, rng)) * 0.22, 0.0, release=0.015)
+    t = t_axis(0.14)
+    flap = np.sin(phase_of(glide(t, 260.0, 210.0, 0.012))) * env_ad(t, 0.005, 0.03) * 0.34
+    flap += band_noise(len(t), 300.0, 1500.0, rng) * env_ad(t, 0.006, 0.03) * 0.3
+    place(out, flap, 0.13, release=0.03)
+    m = samples(0.09)
+    place(out, _leaf_grains(m, 7, _rise_fall(m, 0.3, 1.5), rng, 800.0, 2400.0) * 0.1, 0.14, release=0.02)
+    place(out, fade(_wood_knock(hz('C6'), rng, seconds=0.08), 0.002, 0.0) * 0.07, 0.25, release=0.02)
+    steps = _trot(rng, 6, 0.38, 0.105, 1.02, (0.9, 0.3))
+    near = fft_filter(steps, lowpass(2600.0, 2))
+    far = fft_filter(steps, lowpass(900.0, 2))
+    k = np.clip((np.arange(len(steps)) / SR - 0.38) / 0.6, 0.0, 1.0)
+    place(out, (near * (1.0 - k) + far * k) * 0.9, 0.0, release=0.05)
+    x = fft_filter(out, chain(lowpass(3200.0, 2), highpass(150.0, 2), peak(2800.0, -3.0, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.05), 0.002)
+
+
+def _shop_bell(f, seconds, vel, rng):
+    """A small bell of a shop door: the house glass note with the brighter inharmonic partials of a little cast bell
+    (x2.76 and x5.4, short) and a soft clapper contact, damped sooner than the music box."""
+    t = t_axis(seconds)
+    x = glass(f, seconds, vel, ratio=2.0) * np.exp(-t / 0.32)
+    on = np.clip(t / 0.002, 0.0, 1.0)
+    x += 0.22 * vel * np.sin(2.0 * np.pi * f * 2.76 * t + 0.3) * np.exp(-t / 0.1) * on
+    x += 0.06 * vel * np.sin(2.0 * np.pi * f * 5.4 * t + 1.1) * np.exp(-t / 0.03) * on
+    x += band_noise(len(t), 2000.0, 5000.0, rng) * env_ad(t, 0.0004, 0.0018) * 0.08 * vel
+    return x
+
+
+def expedition_back(v):
+    """J-SFX-ACT-005-02: a team is back: a small door bell, as when the door of a little shop opens. The bell swings on
+    its spring and rings three times, the clapper touching one side, the other, then the first again (C, a hair flatter
+    as it swings back, C again softer); a second small bell on the F below rings quietly with it, and the spring sways
+    the tail slowly. Short warm partials: a homely shop bell. About 0.9 s."""
+    rng = np.random.default_rng(2310)
+    out = np.zeros(samples(1.3))
+    for at, f, vel, level in ((0.0, hz('C6'), 0.6, 0.42), (0.1, hz('C6') * 0.996, 0.48, 0.32),
+                              (0.23, hz('C6'), 0.38, 0.24)):
+        place(out, _shop_bell(f, 0.9, vel, rng) * level, at)
+    for at, level in ((0.012, 0.2), (0.165, 0.12)):
+        place(out, _shop_bell(hz('F5'), 0.9, 0.42, rng) * level, at)
+    place(out, _tine_under(hz('F4'), 1.0, 0.4, 0.35, rng) * 0.1, 0.0)
+    t = np.arange(len(out)) / SR
+    out *= 1.0 + 0.18 * np.sin(2.0 * np.pi * 5.5 * t) * np.clip((t - 0.25) / 0.2, 0.0, 1.0)
+    x = fft_filter(out, chain(lowpass(7000.0, 2), highpass(200.0, 2), peak(3000.0, -3.0, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.14))
+
+
+def expedition_postcard(v):
+    """J-SFX-ACT-005-03: the postcard comes in front: a card of thick paper slid across paper (a smooth swish whose
+    colour rises as it glides, the faint tooth of the paper), then laid flat (the muted touch of card on card). Under the
+    card's 400 ms pivot. About 0.5 s."""
+    rng = np.random.default_rng(2320)
+    out = np.zeros(samples(0.7))
+    place(out, _paper_slide(rng, 0.36, 520.0, 1300.0, 0.42) * 0.3, 0.0, release=0.03)
+    t = t_axis(0.08)
+    lay = np.sin(phase_of(glide(t, 330.0, 290.0, 0.01))) * env_ad(t, 0.003, 0.014) * 0.26
+    lay += band_noise(len(t), 400.0, 1600.0, rng) * env_ad(t, 0.002, 0.01) * 0.14
+    place(out, lay, 0.33, release=0.02)
+    x = fft_filter(out, chain(lowpass(3200.0, 3), highpass(220.0, 2), peak(2800.0, -4.0, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.05), 0.002)
+
+
+def expedition_loot(v):
+    """J-SFX-ACT-005-04: a loot item turns over: a warm pop, one step higher per item, up the F major pentatonic: F, G,
+    A, C, D (the reward card's five notes, so the two land as one when they play together), then F, G, A an octave up.
+    A round pop that bends up into its note, a warm tine an octave under it for the body a phone keeps, a breath of air
+    as it opens. The pop rounds off as it climbs, so the top steps stay warm. About 0.3 s."""
+    rng = np.random.default_rng(2330 + v)
+    note = hz(LOOT_STEPS[v])
+    thin = (hz('F5') / note) ** 0.8
+    out = np.zeros(samples(0.5))
+    place(out, _puff(0.05, 500.0, 1800.0, 0.006, 0.012, rng) * 0.05, 0.0, release=0.01)
+    place(out, _pop(note, start=0.6, tau=0.045, bright=0.2 * thin) * 0.5, 0.004, release=0.03)
+    place(out, _tine_under(note / 2.0, 0.45, 0.55, 0.12, rng) * 0.26, 0.006)
+    x = fft_filter(out, chain(lowpass(6000.0, 2), highpass(180.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.08))
+
+
+def expedition_return(v):
+    """J-SFX-FEEL-016: the team is home (doc 05, sheet 23): small hurried felted steps coming closer (seven little paws
+    on grass, the gaps shrinking as they hurry, louder and clearer as they come), the postcard slid out of the bag (a
+    short paper swish), then two wooden notes, C then the F above it (the fourth that comes home), the F left to ring on
+    a soft wooden bar. About 1 s; the presenter starts it with the welcome so the notes land as the postcard pivots in."""
+    rng = np.random.default_rng(2340)
+    out = np.zeros(samples(1.5))
+    steps = _trot(rng, 7, 0.0, 0.075, 0.92, (0.35, 1.0), body_hz=200.0, jitter=0.004)
+    far = fft_filter(steps, lowpass(1000.0, 2))
+    near = fft_filter(steps, lowpass(2800.0, 2))
+    k = np.clip(np.arange(len(steps)) / SR / 0.38, 0.0, 1.0)
+    place(out, (far * (1.0 - k) + near * k) * 0.85, 0.0, release=0.04)
+    place(out, _paper_slide(rng, 0.22, 600.0, 1500.0, 0.45) * 0.17, 0.4, release=0.03)
+    place(out, mallet(hz('C5'), 0.4, 0.6, damp=0.7) * 0.36, 0.6)
+    place(out, mallet(hz('F5'), 0.5, 0.66, damp=0.75) * 0.42, 0.71)
+    place(out, _tine_under(hz('F4'), 0.6, 0.4, 0.22, rng) * 0.1, 0.71)
+    x = fft_filter(out, chain(lowpass(6000.0, 2), highpass(150.0, 2), peak(3000.0, -2.0, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.1), 0.002)
+
+
 # ---------------------------------------------------------------- catalog
 
 # name: (recipe, variants, loudness target (loudest 200 ms, K-weighted, LUFS scale), group)
@@ -1291,4 +1541,20 @@ SFX = {
     'SFX_NutDrop_Golden': (nutdrop_golden, 1, -20.0, 'Rewards'),
     'SFX_NutDrop_Pinecone': (nutdrop_pinecone, 2, -23.0, 'World'),
     'SFX_NutDrop_Special': (nutdrop_special, 1, -20.0, 'Rewards'),
+    # T41 pawprint memory (doc 01 Contenu, S-ACT-004 "Sons et effets"). The flip is the touch feedback, two per try: -24
+    # with the UI, a little over the brush; the pair's third with the rewards at -20, under the result star (-19); the
+    # miss the softest (-25, under the flip it comes with: it only says "not these two"); the glow card's glass at -21.
+    'SFX_Memory_Flip': (memory_flip, 3, -24.0, 'UI'),
+    'SFX_Memory_Match': (memory_match, len(MATCH_STEPS), -20.0, 'Rewards'),
+    'SFX_Memory_Miss': (memory_miss, 1, -25.0, 'UI'),
+    'SFX_Memory_Glow': (memory_glow, 1, -21.0, 'Rewards'),
+    # T42 expeditions (doc 01 Contenu, S-ACT-005 "Sons et effets"; doc 05 Sensations, section 6.1 for J-SFX-FEEL-016). The
+    # departure confirms « Partir » with the UI at -21 (over the confirm, -22: the bag and the steps are softer sounds);
+    # the door bell with the rewards at -20; the postcard's paper slide with the UI at -22, a little over the card flip
+    # (-23); the loot's pop at -21, over the reward card it may play with; the team's return at -18 (doc 05, section 6.1).
+    'SFX_Expedition_Depart': (expedition_depart, 1, -21.0, 'UI'),
+    'SFX_Expedition_Back': (expedition_back, 1, -20.0, 'Rewards'),
+    'SFX_Expedition_Postcard': (expedition_postcard, 1, -22.0, 'UI'),
+    'SFX_Expedition_Loot': (expedition_loot, len(LOOT_STEPS), -21.0, 'Rewards'),
+    'SFX_Reward_ExpeditionReturn': (expedition_return, 1, -18.0, 'Rewards'),
 }

@@ -923,7 +923,8 @@ namespace PocketWilds.Presentation
                         ref readonly var animal = ref collection[(start + n) % count];
                         bool isVisible = Contains(_visibleIds, visible, animal.InstanceId);
                         bool wanted = pass == 0 ? isVisible && animal.IsFavorite : pass == 1 ? isVisible : pass != 2 || animal.IsFavorite;
-                        if (!wanted || Picked(animal.InstanceId) || (repeat == 0 && PickedSpecies(animal.Species)) || !HasVisual(animal.Species))
+                        if (!wanted || Picked(animal.InstanceId) || (repeat == 0 && PickedSpecies(animal.Species)) || !HasVisual(animal.Species)
+                            || IsAway(animal.InstanceId))
                             continue;
                         _picks[_pickCount++] = animal;
                     }
@@ -939,11 +940,11 @@ namespace PocketWilds.Presentation
             for (int i = 0; i < count; i++)
             {
                 var species = collection[i].Species;
-                if (species == best || !HasVisual(species))
+                if (species == best || !HasVisual(species) || IsAway(collection[i].InstanceId))
                     continue;
                 int n = 0;
                 for (int j = 0; j < count; j++)
-                    if (collection[j].Species == species)
+                    if (collection[j].Species == species && !IsAway(collection[j].InstanceId))
                         n++;
                 if (n > bestCount)
                 {
@@ -952,9 +953,12 @@ namespace PocketWilds.Presentation
                 }
             }
             for (int i = 0; i < count && _pickCount < _picks.Length; i++)
-                if (collection[i].Species == best)
+                if (collection[i].Species == best && !IsAway(collection[i].InstanceId))
                     _picks[_pickCount++] = collection[i];
         }
+
+        /// <summary>T42: an animal away on an expedition is not in the refuge, so it never hides.</summary>
+        private bool IsAway(uint instanceId) => _context != null && _context.Expeditions != null && _context.Expeditions.IsAway(instanceId);
 
         private static bool Contains(uint[] ids, int count, uint id)
         {

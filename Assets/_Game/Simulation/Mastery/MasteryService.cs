@@ -16,6 +16,9 @@ namespace PocketWilds.Simulation
 
         /// <summary>T37: a rewarded activity game played with an animal of the species (econ.mastery_xp.activity_*star).</summary>
         Activity = 5,
+
+        /// <summary>T42: an animal of the species back from an expedition (doc 08 econ.mastery_xp.expedition).</summary>
+        Expedition = 6,
     }
 
     /// <summary>Where a species stands: level, XP inside the level, XP needed for the next one.</summary>

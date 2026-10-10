@@ -92,6 +92,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>The featured activity of a running event.</summary>
         public bool Featured;
+
+        /// <summary>T42: a timer activity's line (« De retour dans 3 h 12 », « 2 de retour »); null: none.</summary>
+        public string Status;
     }
 
     public struct ChallengeCellModel
@@ -331,6 +334,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>A ticket is left for « Rejouer » (else Rejouer leads to the « no ticket » card or practice).</summary>
         public bool CanReplay;
+
+        /// <summary>T42: the line under the title instead of the activity's name (an expedition's destination); null: the name.</summary>
+        public string Subtitle;
     }
 
     public interface IActivityResultActions

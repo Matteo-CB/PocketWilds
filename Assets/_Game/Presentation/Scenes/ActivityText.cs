@@ -108,6 +108,11 @@ namespace PocketWilds.Presentation
         public const string NutDropTipSlide = "activity.nut_drop.tip.slide";
         public const string NutDropTipPinecone = "activity.nut_drop.tip.pinecone";
 
+        // T41 Pawprint Memory (doc 01 Contenu S-ACT-004; doc « Mini-jeux & activités » section 1): the tip the HUD's bubble
+        // shows over the first game with the tapping paw (a card, then its pair) until the first match. Its 10 challenges
+        // use the catalog's ids (challenge.memory.01 to .10, see ChallengeNameKey and ChallengeGoalKey).
+        public const string MemoryTipPairs = "activity.memory.tip.pairs";
+
         /// <summary>
         /// T39: the item icons the activity HUD lends to the Hide and Seek stage (<c>IActivityHudView.Icon</c>), packed in
         /// Atlas_Activities: the magnifier and the whistle (doc 01 S-ACT-002 « Objets »).

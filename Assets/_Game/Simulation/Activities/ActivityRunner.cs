@@ -246,6 +246,8 @@ namespace PocketWilds.Simulation
                 case TicketSource.Visitor: return 14;
                 case TicketSource.Wish: return 15;
                 case TicketSource.Debug: return 16;
+                // T42: not in doc 08's list yet (appended after it, like Calendar, Visitor and Wish).
+                case TicketSource.Expedition: return 17;
                 default: return 0;
             }
         }
@@ -356,7 +358,10 @@ namespace PocketWilds.Simulation
 
             int challenge = request.Mode == ActivityMode.Free ? -1 : request.Challenge;
             bool slower = _services.SlowerActivities;
-            float seconds = rules.ChallengeSeconds(challenge, definition.Seconds);
+            // d: the challenge's fixed level, else the free mode's adaptive one. T41: the length and the free mode's thresholds
+            // may depend on it (Pawprint Memory's grid: 45, 60 or 90 s), so both are read at this d.
+            int level = challenge >= 0 ? rules.Challenges[challenge].Level : AdaptiveDifficulty.Level(in record);
+            float seconds = rules.ChallengeSeconds(challenge, rules.SecondsAt(level, definition.Seconds));
             var theme = request.Theme.IsValid ? request.Theme : (record.LastTheme.IsValid ? record.LastTheme : definition.BaseBiome);
             var events = _services.Rewards.Events;
             _setup = new ActivitySetup
@@ -364,7 +369,7 @@ namespace PocketWilds.Simulation
                 Activity = request.Activity,
                 Mode = request.Mode,
                 Challenge = challenge,
-                Difficulty = challenge >= 0 ? rules.Challenges[challenge].Level : AdaptiveDifficulty.Level(in record),
+                Difficulty = level,
                 Seed = _ctx.GameSeed(state.GamesStarted, request.Activity),
                 Seconds = seconds * (slower ? ActivityConfig.SlowerTimeMultiplier : 1f),
                 Slower = slower,
@@ -376,7 +381,7 @@ namespace PocketWilds.Simulation
                 Animal1 = request.Animal1,
                 Animal2 = request.Animal2,
                 Rules = rules,
-                Thresholds = rules.Thresholds(challenge),
+                Thresholds = rules.Thresholds(challenge, level),
             };
             state.GamesStarted++;
             if (request.Theme.IsValid)

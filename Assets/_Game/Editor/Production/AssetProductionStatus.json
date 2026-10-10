@@ -343,14 +343,14 @@
     {
       "task": "T41",
       "title": "Memory des empreintes",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "DONE 2026-10-10. Memory des empreintes (S-ACT-004), the first all-interface activity: PF_UI_Memory (Activity_Memory group, Atlas_Memory) on a soft gingham cloth, 20 pooled cards, wide grids turned upright in portrait, portraits borrowed from the codex thumbnails (player's own variants first), one pawprint per variant (species shape, coat colour) at levels 6 to 10, flip squash and lift, preview, glow card, double pair, gentle mismatch shake, tutorial paw. MemoryController and rules: 4x3/4x4/5x4 grids by level, level-dependent thresholds and duration in the activity framework (4x3 3 stars raised to 980), 10 challenges, Seed Cookie at 3 stars, Sweet Clover seed once the Garden opens (T43), JRN-052. Sounds SFX_Memory_* (88 to 91), hand-drawn sprites (pw_ui_sprites_t41.py). Design note Docs/Design/T41_Memory_des_empreintes.md."
     },
     {
       "task": "T42",
       "title": "Expéditions",
-      "status": "PLANNED",
-      "notes": ""
+      "status": "DONE",
+      "notes": "DONE 2026-10-10. Expeditions (S-ACT-005), the first meta activity: ExpeditionService (absolute UTC timers in the new ExpeditionState, save section 18, schema 12; a team back waits for ever; a clock set back never lengthens a wait), loot drawn at departure with the expedition seed, team rating 10-80 and stars, 13 biome + 24 event destinations (Flower Meadows open), 4 slots (800 Gems, Wild Club), speed-up 1 Gem per 6 min (5 min., 3 a day), Discovery egg guarantee at the 12th long expedition, 10 challenges, WISH-041..046, JRN-024..026, analytics 140-142. PF_UI_Expeditions (Activity_Expeditions): map card, slots, planning sheet with live rating and loot preview, welcome (team walks back in the refuge, postcard pivot, loot in PF_UI_ActivityResult, Send again, Claim all), hub card status, tutorial A18/A19. Runtime postcards 512x768 of the team on the hand-made Flower Meadows set (PF_Activity_Postcard_FlowerMeadows), AsyncGPUReadback, PNG off the main thread. Sounds 92-95 and 45, sprites pw_ui_sprites_t42.py. Design note Docs/Design/T42_Expeditions.md."
     },
     {
       "task": "T43",

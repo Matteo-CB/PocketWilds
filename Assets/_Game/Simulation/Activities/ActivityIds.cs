@@ -62,5 +62,8 @@ namespace PocketWilds.Simulation
         Visitor = 11,
         Debug = 12,
         Wish = 13,
+
+        /// <summary>T42: the tickets an expedition brings back (8 h and 12 h; the Frosted Pines' specialty).</summary>
+        Expedition = 14,
     }
 }

@@ -184,6 +184,9 @@ namespace PocketWilds.Presentation
             for (int i = 0; i < collection.Count; i++)
             {
                 ref readonly var animal = ref collection[i];
+                // T42: an animal away on an expedition does not play.
+                if (context.Expeditions != null && context.Expeditions.IsAway(animal.InstanceId))
+                    continue;
                 if (animal.Species == SquirrelSpecies)
                 {
                     if (squirrel == 0)

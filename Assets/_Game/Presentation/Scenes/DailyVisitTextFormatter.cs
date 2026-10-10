@@ -22,7 +22,7 @@ namespace PocketWilds.Presentation
     public sealed class DailyVisitTextFormatter
     {
         /// <summary>The placeholders this formatter fills (the text tests check every shipped sentence against it).</summary>
-        public static readonly string[] Placeholders = { "n", "total", "species", "species_the", "biome", "biome_the", "animal", "upgrade", "reward" };
+        public static readonly string[] Placeholders = { "n", "total", "species", "species_the", "biome", "biome_the", "animal", "upgrade", "reward", "destination" };
 
         /// <summary>WISH-026 « Upgrade {upgrade} in {biome} »: one sentence per upgrade kind (key « wish.026.&lt;kind&gt; »).</summary>
         public static readonly string[] UpgradeWishKeys =
@@ -325,6 +325,12 @@ namespace PocketWilds.Presentation
                     else
                         args.Upgrade = string.Empty;
                     break;
+                case WishParamKind.Destination:
+                    // T42 (WISH-046 « Pars vers {destination} »): the destination's name, built once with the wish text.
+                    args.Destination = ExpeditionCatalog.TryGet(wish.Param, out var destination)
+                        ? _text.Get(destination.Destination.Key + ".name")
+                        : string.Empty;
+                    break;
             }
             return Expand(_text.GetPlural(key, wish.Target), in args);
         }
@@ -380,6 +386,8 @@ namespace PocketWilds.Presentation
                 AppendValue(args.Upgrade);
             else if (Is(template, start, length, "reward"))
                 AppendValue(args.Reward);
+            else if (Is(template, start, length, "destination"))
+                AppendValue(args.Destination);
             else
                 return false;
             return true;
@@ -680,6 +688,9 @@ namespace PocketWilds.Presentation
             public string Animal;
             public string Upgrade;
             public string Reward;
+
+            /// <summary>T42: {destination}.</summary>
+            public string Destination;
         }
 
         private struct WishEntry

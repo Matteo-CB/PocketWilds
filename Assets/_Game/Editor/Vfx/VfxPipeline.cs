@@ -70,6 +70,8 @@ namespace PocketWilds.Editor.Vfx
                 Effect(VfxId.ZoneOpen, Build("VFX_ZoneOpen", material, ConfigureZoneOpen), 1, 2, 1),
                 // T36: up to three wishes come true together (doc 05 sheet 17: 400 ms apart, three at most), all warmed.
                 Effect(VfxId.WishDone, Build("VFX_WishDone", material, ConfigureWishDone), 3, 3, 3),
+                // T42: up to three animals back from an expedition arrive together (doc 05 sheet 23).
+                Effect(VfxId.ArrivalDust, Build("VFX_ArrivalDust", material, ConfigureArrivalDust), 3, 3, 3),
             };
             catalog.effects = effects.ToArray();
             catalog.lowCountScale = 0.5f;
@@ -808,6 +810,22 @@ namespace PocketWilds.Editor.Vfx
             Bursts(hearts, (0.04f, 4));
             Tile(hearts, TileHeart);
             Pop(hearts, new Color(1f, 0.88f, 0.93f));
+        }
+
+        /// <summary>
+        /// H-VFX-076 (T42): 8 round dust dots at the feet of an animal back from an expedition, low and quick; white here,
+        /// tinted at play time with the biome's soil colour.
+        /// </summary>
+        private static void ConfigureArrivalDust(GameObject root, Material material)
+        {
+            var puff = AddSystem(root, "Dust", material, true);
+            Life(puff, 0.38f, 0.55f, 0.18f, 0.42f, 0.05f, 0.09f);
+            Colors(puff, new Color(1f, 1f, 1f, 0.6f), new Color(1f, 1f, 1f, 0.5f));
+            Gravity(puff, 0.02f);
+            Shape(puff, ParticleSystemShapeType.Circle, 0.12f, up: true);
+            Bursts(puff, (0f, 8));
+            Tile(puff, TileDot);
+            Fade(puff, Color.white, 0.8f, 1.5f);
         }
 
         // ---------------- Helpers ----------------

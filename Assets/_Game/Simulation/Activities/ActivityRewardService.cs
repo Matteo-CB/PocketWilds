@@ -163,6 +163,8 @@ namespace PocketWilds.Simulation
     /// <item>T40: up to two items counted from the game (<see cref="SetCountReward"/>, the counts from
     /// <see cref="IActivityRewardCounts"/>): one item per so many gathered, capped, some only with the Pâtisserie open; into
     /// the inventory, in every rewarded game with at least 1 star; never doubled.</item>
+    /// <item>T41: a counted item may also need more stars and the Garden open (Pawprint Memory: 1 seed at 3 stars, « Jardin
+    /// ouvert »).</item>
     /// </list>
     /// <see cref="Compute"/> reads only; <see cref="Grant"/> computes, writes the counters and gives through the T36
     /// <see cref="RewardGranter"/> (Gems with <see cref="EconomyReason.Activity"/>, Light, treats, decoration, stickers).
@@ -204,6 +206,10 @@ namespace PocketWilds.Simulation
         private readonly int[] _countMax = new int[ActivityCatalog.SlotCount * CountRewards];
         private readonly bool[] _countBakery = new bool[ActivityCatalog.SlotCount * CountRewards];
 
+        // T41: the Garden gate and the stars a counted item needs (Pawprint Memory's seed: 3 stars, the Garden open).
+        private readonly bool[] _countGarden = new bool[ActivityCatalog.SlotCount * CountRewards];
+        private readonly int[] _countStars = new int[ActivityCatalog.SlotCount * CountRewards];
+
         public ActivityRewardService(ActivityContext ctx)
         {
             _ctx = ctx;
@@ -240,11 +246,13 @@ namespace PocketWilds.Simulation
         /// <summary>
         /// T40: a counted item of an activity (doc 01 Contenu, « Objets gagnés »): 1 <paramref name="item"/> per
         /// <paramref name="per"/> of the game's count <paramref name="index"/> (0 or 1), <paramref name="max"/> at most; with
-        /// <paramref name="needsBakery"/>, only once the Pâtisserie is open (<see cref="ActivityContext.BakeryOpen"/>).
-        /// Registered by <see cref="ActivityRegistry.RegisterShipped"/>; a <paramref name="per"/> or <paramref name="max"/> of 0
-        /// removes it.
+        /// <paramref name="needsBakery"/>, only once the Pâtisserie is open (<see cref="ActivityContext.BakeryOpen"/>); T41: with
+        /// <paramref name="needsGarden"/>, only once the Garden is open (<see cref="ActivityContext.GardenOpen"/>), and only in a
+        /// game reaching <paramref name="minStars"/> stars (1 to 3). Registered by <see cref="ActivityRegistry.RegisterShipped"/>;
+        /// a <paramref name="per"/> or <paramref name="max"/> of 0 removes it.
         /// </summary>
-        public void SetCountReward(ActivityId activity, int index, ContentId item, int per, int max, bool needsBakery = false)
+        public void SetCountReward(ActivityId activity, int index, ContentId item, int per, int max, bool needsBakery = false,
+            bool needsGarden = false, int minStars = 1)
         {
             int slot = ActivityCatalog.SlotOf(activity);
             if (slot < 0 || (uint)index >= CountRewards)
@@ -255,6 +263,19 @@ namespace PocketWilds.Simulation
             _countPer[k] = valid ? per : 0;
             _countMax[k] = valid ? max : 0;
             _countBakery[k] = valid && needsBakery;
+            _countGarden[k] = valid && needsGarden;
+            _countStars[k] = valid ? Math.Max(1, Math.Min(3, minStars)) : 0;
+        }
+
+        /// <summary>T41: a counted item's other conditions: the Garden gate and the stars it needs (0 without the item).</summary>
+        public bool CountRewardGates(ActivityId activity, int index, out bool needsGarden, out int minStars)
+        {
+            int slot = ActivityCatalog.SlotOf(activity);
+            int k = slot * CountRewards + index;
+            bool known = slot >= 0 && (uint)index < CountRewards && _countPer[k] > 0;
+            needsGarden = known && _countGarden[k];
+            minStars = known ? _countStars[k] : 0;
+            return known;
         }
 
         /// <summary>A counted item of an activity: the item (None: none), how many of the count make one, the cap, the Pâtisserie gate.</summary>
@@ -379,8 +400,8 @@ namespace PocketWilds.Simulation
             }
 
             // T40: the items counted from the game, items too: never doubled.
-            outcome.CountItems0 = Counted(item * CountRewards, request.Count0, out outcome.CountItem0);
-            outcome.CountItems1 = Counted(item * CountRewards + 1, request.Count1, out outcome.CountItem1);
+            outcome.CountItems0 = Counted(item * CountRewards, request.Count0, stars, out outcome.CountItem0);
+            outcome.CountItems1 = Counted(item * CountRewards + 1, request.Count1, stars, out outcome.CountItem1);
 
             if (events != null && events.EventRunning)
             {
@@ -482,11 +503,15 @@ namespace PocketWilds.Simulation
             _ctx.RequestSave(SaveUrgency.Priority);
         }
 
-        /// <summary>One counted item: count / per, capped; 0 without a rule, or while it waits for the Pâtisserie.</summary>
-        private int Counted(int k, int count, out ContentId item)
+        /// <summary>
+        /// One counted item: count / per, capped; 0 without a rule, under its stars, or while it waits for the Pâtisserie or
+        /// the Garden.
+        /// </summary>
+        private int Counted(int k, int count, int stars, out ContentId item)
         {
             item = ContentId.None;
-            if (_countPer[k] <= 0 || count <= 0 || (_countBakery[k] && !_ctx.BakeryOpen))
+            if (_countPer[k] <= 0 || count <= 0 || stars < _countStars[k] || (_countBakery[k] && !_ctx.BakeryOpen)
+                || (_countGarden[k] && !_ctx.GardenOpen))
                 return 0;
             int n = Math.Min(_countMax[k], count / _countPer[k]);
             if (n <= 0)

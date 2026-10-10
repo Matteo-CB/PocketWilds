@@ -17,6 +17,7 @@ namespace PocketWilds.Services.Save
             new Migration0008AddRenewal(),
             new Migration0009AddDailyVisit(),
             new Migration0010AddActivities(),
+            new Migration0011AddExpeditions(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -158,6 +159,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 10;
         public int ToVersion => 11;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 11 to 12 (T42): the Expeditions section. Nothing to convert: without it no team is away, the first expedition
+    /// is still the 3-minute stroll, the Gems slot is not bought and the guarantee counter starts at zero.
+    /// </summary>
+    public sealed class Migration0011AddExpeditions : ISaveMigration
+    {
+        public int FromVersion => 11;
+        public int ToVersion => 12;
 
         public void Apply(SaveDocument document)
         {

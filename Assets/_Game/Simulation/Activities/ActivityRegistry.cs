@@ -7,7 +7,8 @@ namespace PocketWilds.Simulation
     /// section 5: each activity task adds its line and flips <see cref="ActivityDefinition.ShippedInThisBuild"/>). T37 shipped
     /// the framework alone; T38 ships « Toilettage » (S-ACT-001): its rules and its 3-star Clover Crunch; T39 ships
     /// « Cache-cache » (S-ACT-002): its rules and its 3-star Mushroom Biscuit; T40 ships « Pluie de noisettes » (S-ACT-003):
-    /// its rules, its 3-star Toasted Hazelnut and its counted Hazelnut and Strawberry ingredients. With one activity
+    /// its rules, its 3-star Toasted Hazelnut and its counted Hazelnut and Strawberry ingredients; T41 ships « Memory des
+    /// empreintes » (S-ACT-004): its rules, its 3-star Seed Cookie and its 3-star seed behind the Garden. With one activity
     /// registered the Play button exists and rendez-vous tickets become real tickets.
     /// </summary>
     public static class ActivityRegistry
@@ -36,6 +37,14 @@ namespace PocketWilds.Simulation
                 NutDropRules.HazelnutsPerIngredient, NutDropRules.HazelnutIngredientMax);
             services.Rewards.SetCountReward(ActivityId.NutRain, NutDropRules.BerryCount, NutDropRules.StrawberryIngredient,
                 NutDropRules.BerriesPerStrawberry, NutDropRules.StrawberryMax, needsBakery: true);
+
+            // T41 S-ACT-004 Memory des empreintes: free mode (thresholds and length per grid), stepped d1 to d10 parameters, 10
+            // challenges; « Objets gagnés : à 3 étoiles, 1 Biscuit aux graines et 1 graine (Jardin ouvert) ».
+            services.Rules.Register(MemoryRules.Create());
+            services.Rewards.SetItemReward(ActivityId.PawMemory, MemoryRules.ThreeStarTreat, MemoryRules.ThreeStarTreatCount,
+                MemoryRules.ThreeStarTreatStars);
+            services.Rewards.SetCountReward(ActivityId.PawMemory, MemoryRules.SeedCount, MemoryRules.ThreeStarSeed,
+                MemoryRules.SeedPer, MemoryRules.SeedMax, needsGarden: true, minStars: MemoryRules.SeedStars);
         }
     }
 }

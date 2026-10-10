@@ -82,6 +82,7 @@ namespace PocketWilds.Simulation
         private bool _focusOffered;
         private bool _treatStandOpen;
         private int _expansionsLeft;
+        private int _openDestinations;
 
         public WeeklyJournalService(DailyContext ctx)
         {
@@ -498,6 +499,11 @@ namespace PocketWilds.Simulation
             _systemOpen[(int)WishSystem.HideAndSeek] = welcomeOver && Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.HideAndSeek);
             // T40: Nut Drop (refuge level 10, day 4 or 15 animals) the same way.
             _systemOpen[(int)WishSystem.NutRain] = welcomeOver && Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.NutRain);
+            // T41: Pawprint Memory (refuge level 11 and day 5) the same way.
+            _systemOpen[(int)WishSystem.PawMemory] = welcomeOver && Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.PawMemory);
+            // T42: Expeditions (refuge level 5 and 8 animals) the same way; JRN-026 counts the destinations open.
+            _systemOpen[(int)WishSystem.Expeditions] = welcomeOver && Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.Expeditions);
+            _openDestinations = ExpeditionCatalog.OpenCount(_ctx.Progression);
         }
 
         private bool IsEligible(JournalGoalId id, int target)
@@ -512,7 +518,13 @@ namespace PocketWilds.Simulation
                 case JournalGoalId.Grooming:
                 case JournalGoalId.HideAndSeekFinds:
                 case JournalGoalId.NutsCaught:
+                case JournalGoalId.MemoryPairs:
+                case JournalGoalId.Expeditions:
+                case JournalGoalId.LongExpeditions:
                     return true;
+                case JournalGoalId.PostcardPlaces:
+                    // « au moins n destinations ouvertes ».
+                    return _openDestinations >= target;
                 case JournalGoalId.DiscoverVariants:
                     return _missingVariants >= target;
                 case JournalGoalId.NewSpecies:
@@ -776,6 +788,37 @@ namespace PocketWilds.Simulation
         /// a pinecone nor a special), practice included (section 5.1), even in a game left before its end (it really was caught).
         /// </summary>
         public void OnNutDropGame(in NutDropGameSummary game) => AddProgress(JournalGoalId.NutsCaught, game.Caught);
+
+        /// <summary>
+        /// T41: JRN-052 « Trouve {n} paires au Memory »: every pair found counts, practice included (section 5.1), even in a
+        /// game left before its end (it really was found).
+        /// </summary>
+        public void OnMemoryGame(in MemoryGameSummary game) => AddProgress(JournalGoalId.MemoryPairs, game.PairsFound);
+
+        /// <summary>
+        /// T42: a team left. An expedition challenge passed (its first star, recorded at departure) counts for JRN-012
+        /// « Réussis {n} défis d'activité »; an expedition never uses a ticket.
+        /// </summary>
+        public void OnExpeditionStarted(in ExpeditionStartInfo start)
+        {
+            if (start.Challenge >= 0 && start.ChallengeStarsBefore == 0 && start.ChallengeStars >= 1)
+                AddProgress(JournalGoalId.ActivityChallenges, 1);
+        }
+
+        /// <summary>
+        /// T42: a team welcomed. Its stars count for JRN-009 « Gagne {n} étoiles en activités » (section 7.2); JRN-024 « Fais
+        /// {n} expéditions » counts it; JRN-025 counts an expedition of 8 h or more; JRN-026 « Rapporte des cartes postales de
+        /// {n} destinations » counts a destination brought back for the first time this week.
+        /// </summary>
+        public void OnExpeditionWelcomed(in ExpeditionWelcomeInfo welcome)
+        {
+            AddProgress(JournalGoalId.ActivityStars, welcome.Return.Stars);
+            AddProgress(JournalGoalId.Expeditions, 1);
+            if (welcome.Long)
+                AddProgress(JournalGoalId.LongExpeditions, 1);
+            if (welcome.NewPlaceThisWeek)
+                AddProgress(JournalGoalId.PostcardPlaces, 1);
+        }
 
         /// <summary>Adds to every goal of this kind while its week runs, up to its target.</summary>
         private void AddProgress(JournalGoalId id, int amount)

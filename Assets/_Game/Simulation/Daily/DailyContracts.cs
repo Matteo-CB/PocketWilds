@@ -94,6 +94,9 @@ namespace PocketWilds.Simulation
         Treat = 1,
         Wish = 2,
         Activity = 3,
+
+        /// <summary>T42: 5 points to each animal of a team back from an expedition (doc 01 Contenu, section 7.3).</summary>
+        Expedition = 4,
     }
 
     /// <summary>Gives bond to an animal; returns the points really added (after multipliers and the cap).</summary>

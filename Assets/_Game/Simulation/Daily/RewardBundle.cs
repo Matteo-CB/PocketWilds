@@ -123,6 +123,7 @@ namespace PocketWilds.Simulation
             EconomyReason.ReturnGift => TicketSource.ReturnGift,
             EconomyReason.Wish => TicketSource.Wish,
             EconomyReason.Event => TicketSource.Event,
+            EconomyReason.Expedition => TicketSource.Expedition,
             _ => TicketSource.Debug,
         };
 

@@ -42,10 +42,19 @@ namespace PocketWilds.Simulation
         /// <summary>T37: a challenge's first 3 stars (5 Gems, once).</summary>
         ActivityChallenge = 17,
 
+        /// <summary>T42: what a team brings back from an expedition (doc 08 section 9.5, « 18 Expédition »).</summary>
+        Expedition = 18,
+
         WelcomeGift = 32,
 
         /// <summary>T37: ticket packs bought with Gems (« Achat de billets »).</summary>
         TicketPack = 37,
+
+        /// <summary>T42: « Finir maintenant » paid in Gems (doc 08 section 9.5, « 38 Accélération »).</summary>
+        SpeedUp = 38,
+
+        /// <summary>T42: a permanent slot bought with Gems (doc 08 section 9.5, « 39 Emplacement »).</summary>
+        Slot = 39,
 
         BiomeGate = 43,
         ReturnGift = 47,

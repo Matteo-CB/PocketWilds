@@ -59,6 +59,7 @@ namespace PocketWilds.Editor.UI
         /// T39 (agent HI): Hide and Seek's magnifier and whistle (Icons), packed when drawn.
         /// T40 (agent NA): the nut drop's three boost icons, the wide basket, the feather and the golden shower, and the
         /// result card's own reward icons (<see cref="RewardItemIcons"/>; Atlas_CommonHUD is full) (Icons).
+        /// T41 (agent MA): the Memory's Seed Cookie on the result card (Icons).
         /// </summary>
         public static readonly string[] ScreenOnlyIcons =
         {
@@ -66,28 +67,30 @@ namespace PocketWilds.Editor.UI
             "ICO_Bow_Pink", "ICO_Bow_SkyBlue", "ICO_Bow_Cream", "ICO_GoldenBrush", ActivityText.IconMagnifier, ActivityText.IconWhistle,
             "ICO_WideBasket", "ICO_Feather", "ICO_GoldenShower",
             "ICO_Treat_MushroomBiscuit", "ICO_Treat_ToastedHazelnut", "ICO_Ingredient_Hazelnut", "ICO_Ingredient_Strawberry",
+            "ICO_Treat_SeedCookie",
         };
 
         /// <summary>
         /// T40: the reward items with their own icon on the result card (RewardIconSet.items), beside T38's Clover Crunch:
-        /// the 3-star treats of T39 (Mushroom Biscuit) and T40 (Toasted Hazelnut), and Nut Drop's ingredients. A missing
-        /// sprite shows its kind's icon.
+        /// the 3-star treats of T39 (Mushroom Biscuit), T40 (Toasted Hazelnut) and T41 (Seed Cookie), and Nut Drop's
+        /// ingredients. A missing sprite shows its kind's icon.
         /// </summary>
         public static readonly string[,] RewardItemIcons =
         {
             { "treat.mushroom_biscuit", "ICO_Treat_MushroomBiscuit" }, { "treat.toasted_hazelnut", "ICO_Treat_ToastedHazelnut" },
             { "ingredient.hazelnut", "ICO_Ingredient_Hazelnut" }, { "ingredient.strawberry", "ICO_Ingredient_Strawberry" },
+            { "treat.seed_cookie", "ICO_Treat_SeedCookie" },
         };
 
         /// <summary>
         /// The icons PF_UI_ActivityHud lends to the stages by name (IActivityHudView.Icon), so their bundles never copy the UI
-        /// atlas: T38's bows and golden brush, T39's magnifier and whistle, T40's three boost icons. A missing one is left out
-        /// (the stage falls back).
+        /// atlas: T38's bows and golden brush, T39's magnifier and whistle, T40's three boost icons, T41's match heart and
+        /// matched check (the HUD's own ICO_Favorite_Heart and ICO_Check). A missing one is left out (the stage falls back).
         /// </summary>
         public static readonly string[] LentIcons =
         {
             "ICO_Bow_Pink", "ICO_Bow_SkyBlue", "ICO_Bow_Cream", "ICO_GoldenBrush", ActivityText.IconMagnifier, ActivityText.IconWhistle,
-            "ICO_WideBasket", "ICO_Feather", "ICO_GoldenShower",
+            "ICO_WideBasket", "ICO_Feather", "ICO_GoldenShower", "ICO_Favorite_Heart", "ICO_Check",
         };
 
         /// <summary>T39 night (Hide and Seek challenge 7): the handmade UI shader and its material.</summary>

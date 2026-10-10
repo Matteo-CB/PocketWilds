@@ -78,6 +78,11 @@ namespace PocketWilds.Services.Analytics
         // The weekly journal (block 130).
         JournalGoal = 130,
         JournalComplete = 131,
+
+        // Expeditions (block 140, doc 08; T42).
+        ExpeditionStart = 140,
+        ExpeditionReturn = 141,
+        ExpeditionSpeedup = 142,
     }
 
     /// <summary>Screens worth counting: the values of doc 08 section 9.5 (realigned in T37, before any data was sent).</summary>
@@ -199,6 +204,13 @@ namespace PocketWilds.Services.Analytics
             AnalyticsEventId.TicketsGain => new[] { Field.I(0), Field.I(1), Field.I(2) },
             // kind (1 short, 2 big), warm return, days away
             AnalyticsEventId.ReturnGift => new[] { Field.I(0), Field.I(1), Field.D(0, 0) },
+            // T42 (doc 08, block 140). destination, hours (the duration column; 0 for the 3-minute first stroll), team, slot
+            AnalyticsEventId.ExpeditionStart => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2) },
+            // destination, hours, reward_mask (1 Light, 2 treats, 4 seeds, 8 sticker, 16 Discovery egg, 32 tickets, 64
+            // ingredients, 128 event currency), discovery_egg, event_currency
+            AnalyticsEventId.ExpeditionReturn => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2), Field.I(3) },
+            // method (1 Gems, 2 ad, 3 Club), Gems, seconds that were left
+            AnalyticsEventId.ExpeditionSpeedup => new[] { Field.I(0), Field.I(1), Field.D(0, 0) },
             // index (1 to 3)
             AnalyticsEventId.WelcomeGift => new[] { Field.I(0) },
             // seconds from Today opened to the last claim, taps, items claimed

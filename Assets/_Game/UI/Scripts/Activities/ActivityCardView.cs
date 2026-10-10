@@ -172,6 +172,14 @@ namespace PocketWilds.UI
             {
                 _hintText.SetString(card.UnlockHint);
             }
+            else if (card.Activity == ActivityId.Expeditions)
+            {
+                // T42: a timer activity's line in the hint's place (« De retour dans 3 h 12 », « 2 de retour »).
+                bool status = !string.IsNullOrEmpty(card.Status);
+                SetActive(_hint.gameObject, status);
+                if (status)
+                    _hintText.SetString(card.Status);
+            }
             else
             {
                 int stars = Mathf.Clamp(card.BestStars, 0, 3);
@@ -200,8 +208,10 @@ namespace PocketWilds.UI
                     _pipText.SetRatio(done, Pips);
                 }
             }
-            SetActive(_newTag, !locked && card.State == ActivityCardState.New && !card.FreeGame);
-            SetActive(_freeTag, !locked && card.FreeGame);
+            // T42: a timer activity is always free: its card shows « Nouveau » (A18), never the « Gratuit » tag.
+            bool timer = card.Activity == ActivityId.Expeditions;
+            SetActive(_newTag, !locked && card.State == ActivityCardState.New && (!card.FreeGame || timer));
+            SetActive(_freeTag, !locked && card.FreeGame && !timer);
             SetActive(_featuredMark, card.Featured);
             SetActive(_lockMark, locked);
             int style = (selected ? 1 : 0) | (card.Featured ? 2 : 0);

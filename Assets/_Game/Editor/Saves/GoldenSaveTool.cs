@@ -37,6 +37,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Renewal_v9", BuildRenewal());
             created += WriteIfMissing("GoldenSave_DailyVisit_v10", BuildDailyVisit());
             created += WriteIfMissing("GoldenSave_Activities_v11", BuildActivities());
+            created += WriteIfMissing("GoldenSave_Expeditions_v12", BuildExpeditions());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -195,6 +196,72 @@ namespace PocketWilds.Editor.Saves
             a.ChallengeStars[ActivityState.ChallengeIndex(grooming, 6)] = 1;
             a.ChallengeAttempts[ActivityState.ChallengeIndex(grooming, 6)] = 4;
             state.Inventory.Tickets = 0;
+            return state;
+        }
+
+        /// <summary>
+        /// Schema 12 (T42): the expeditions: the Gems slot bought, the first stroll done, the guarantee counter, speed-ups of
+        /// the day, a team of two away to the Flower Meadows for 8 h on a challenge with its loot drawn at departure, a team
+        /// of one back in the Gems slot, three postcards (the first of its destination kept, one rendered).
+        /// </summary>
+        private static PlayerState BuildExpeditions()
+        {
+            var state = BuildActivities();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-0000000000a1");
+            state.Meta.Revision = 320;
+            var e = state.Expeditions;
+            var meadows = ContentId.FromSource("expedition.flower_meadows");
+            e.SlotBought = true;
+            e.FirstStrollDone = true;
+            e.LongWithoutEgg = 7;
+            e.Started = 15;
+            e.Completed = 13;
+            e.SpeedUpDayKey = 20261012;
+            e.SpeedUpsToday = 2;
+            e.NextPostcardId = 14;
+            e.JournalWeekKey = 20261012;
+            e.JournalPlacesMask = 1;
+            var away = new ExpeditionSlotRecord
+            {
+                Active = true,
+                Destination = meadows,
+                Duration = ExpeditionDuration.EightHours,
+                TeamSize = 2,
+                StartUnixMs = new DateTimeOffset(2026, 10, 12, 8, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(),
+                ReturnUnixMs = new DateTimeOffset(2026, 10, 12, 16, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(),
+                Stars = 2,
+                Challenge = 3,
+                Seed = 123457u,
+                Loot = new ExpeditionLoot
+                {
+                    LightMinutes = 99.0, Treat = ContentId.FromSource("treat.clover_crunch"), Treats = 4, SeedKinds = 2,
+                    Seed0 = ContentId.FromSource("plant.sweet_pea"), Seeds0 = 2, Seed1 = ContentId.FromSource("plant.daisy"), Seeds1 = 2,
+                    Stickers = 1, Tickets = 1, Ingredient0 = ContentId.FromSource("ingredient.gentle_honey"), Ingredients0 = 1,
+                    BondPoints = 5, MasteryXp = 15,
+                },
+            };
+            away.SetMember(0, 1, ContentId.FromSource("variant.rabbit.brown"), ContentId.FromSource("species.rabbit"));
+            away.SetMember(1, 2, ContentId.FromSource("variant.rabbit.white"), ContentId.FromSource("species.rabbit"));
+            e.Slots[0] = away;
+            var back = new ExpeditionSlotRecord
+            {
+                Active = true,
+                Destination = meadows,
+                Duration = ExpeditionDuration.OneHour,
+                TeamSize = 1,
+                StartUnixMs = new DateTimeOffset(2026, 10, 11, 18, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(),
+                ReturnUnixMs = new DateTimeOffset(2026, 10, 11, 19, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(),
+                Stars = 1,
+                Challenge = -1,
+                Seed = 98765u,
+                Loot = new ExpeditionLoot { LightMinutes = 15.0, Treat = ContentId.FromSource("treat.clover_crunch"), Treats = 1, BondPoints = 5, MasteryXp = 15 },
+            };
+            back.SetMember(0, 3, ContentId.FromSource("variant.rabbit.white"), ContentId.FromSource("species.rabbit"));
+            e.Slots[2] = back;
+            e.Postcards[0] = new PostcardRecord { Id = 1, Destination = meadows, UnixDay = 20372, Rendered = true, FirstOfDestination = true };
+            e.Postcards[1] = new PostcardRecord { Id = 12, Destination = meadows, UnixDay = 20372, Rendered = true };
+            e.Postcards[2] = new PostcardRecord { Id = 13, Destination = meadows, UnixDay = 20373 };
+            e.PostcardCount = 3;
             return state;
         }
 

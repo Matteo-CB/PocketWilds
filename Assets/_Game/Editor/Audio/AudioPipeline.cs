@@ -313,6 +313,27 @@ namespace PocketWilds.Editor.Audio
                 Def(AudioEventId.NutDropGolden, "SFX_NutDrop_Golden", AudioGroup.Rewards, 2, 0.1f, 2, volumeJitter: 0.03f, pitchJitter: 0f),
                 Def(AudioEventId.NutDropPinecone, "SFX_NutDrop_Pinecone", AudioGroup.World, 2, 0.15f, 2, volumeJitter: 0.06f, pitchJitter: 0.03f),
                 Def(AudioEventId.NutDropSpecial, "SFX_NutDrop_Special", AudioGroup.Rewards, 2, 0.5f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                // T41: the pawprint memory (doc 01 Contenu, S-ACT-004 « Sons et effets »; MemoryAudio), an interface screen.
+                // The flip is the touch feedback, two per try: 0.05 s and 2 voices, so two cards turned in a quick run each
+                // rustle (a rustle is under -40 dB in 0.22 s); level, pitch and its three variants vary. The pair's third is
+                // chosen by the stage (PlayVariant, climbing with the pairs found) and keeps its pitch; 2 voices let the
+                // last third ring under the next. The miss: one felt note at a time (0.3 s, a new try needs two flips). The
+                // glow card's glass once (0.5 s, one glow card a game).
+                Def(AudioEventId.MemoryFlip, "SFX_Memory_Flip", AudioGroup.UI, 1, 0.05f, 2, volumeJitter: 0.06f, pitchJitter: 0.04f),
+                Def(AudioEventId.MemoryMatch, "SFX_Memory_Match", AudioGroup.Rewards, 2, 0.1f, 2, volumeJitter: 0.02f, pitchJitter: 0f),
+                Def(AudioEventId.MemoryMiss, "SFX_Memory_Miss", AudioGroup.UI, 1, 0.3f, 1, volumeJitter: 0.04f, pitchJitter: 0f),
+                Def(AudioEventId.MemoryGlow, "SFX_Memory_Glow", AudioGroup.Rewards, 2, 0.5f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                // T42: the expeditions (doc 01 Contenu, S-ACT-005 « Sons et effets »; ExpeditionAudio), an interface screen.
+                // The departure and the door bell once a second at most (two slots ending together make one bell). The
+                // postcard's slide: 0.25 s and 2 voices, so the postcards of a « Tout réclamer » (300 ms apart) each slide.
+                // The loot's pop is chosen by the result (PlayVariant, one step higher per item) and keeps its pitch; 2
+                // voices let a pop ring under the next. J-SFX-FEEL-016, the team's return: doc 05 section 6.1, Rewards, 1
+                // voice, 1 s.
+                Def(AudioEventId.ExpeditionDepart, "SFX_Expedition_Depart", AudioGroup.UI, 1, 1f, 1, volumeJitter: 0.03f, pitchJitter: 0.01f),
+                Def(AudioEventId.ExpeditionBack, "SFX_Expedition_Back", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0.03f, pitchJitter: 0f),
+                Def(AudioEventId.ExpeditionPostcard, "SFX_Expedition_Postcard", AudioGroup.UI, 1, 0.25f, 2, volumeJitter: 0.04f, pitchJitter: 0.02f),
+                Def(AudioEventId.ExpeditionLoot, "SFX_Expedition_Loot", AudioGroup.Rewards, 2, 0.1f, 2, volumeJitter: 0.03f, pitchJitter: 0f),
+                Def(AudioEventId.ExpeditionReturn, "SFX_Reward_ExpeditionReturn", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
             };
             foreach (var (id, prefix) in new[]
                      {

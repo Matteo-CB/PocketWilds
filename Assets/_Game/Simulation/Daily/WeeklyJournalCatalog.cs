@@ -126,8 +126,9 @@ namespace PocketWilds.Simulation
     /// the comment of each line and lives in <see cref="WeeklyJournalService"/> for the goals this build ships. Text keys
     /// are « journal.001 » to « journal.052 » (section 0, localization keys).
     /// <para>T36 ships the goals whose systems exist (plan 1.7): JRN-001 to 005, 021 to 023, 031, 032, 034, 036 and 038;
-    /// T38 adds JRN-033 with Grooming, T39 JRN-016 with Hide and Seek, T40 JRN-017 with Nut Drop. The others wait for their
-    /// tasks (activities, expeditions and garden T43, albums T44, decoration T56...).</para>
+    /// T38 adds JRN-033 with Grooming, T39 JRN-016 with Hide and Seek, T40 JRN-017 with Nut Drop, T41 JRN-052 with Pawprint
+    /// Memory, T42 JRN-024 to 026 with Expeditions. The others wait for their tasks (activities and garden T43, albums T44,
+    /// decoration T56...).</para>
     /// <para>Systems of the goals the doc marks « toujours » (plan, gap 18): hatching goals to SYS-01, discoveries and
     /// mastery to SYS-02, wishes, gifts and calendar to the rendez-vous, care to SYS-03, upgrades to SYS-04, expansions to
     /// SYS-06.</para>
@@ -193,12 +194,16 @@ namespace PocketWilds.Simulation
             G(JournalGoalId.CalendarDays, JournalSlot.Rendezvous, WishSystem.Rendezvous, 4, 5, 5, 5, shipped: true),
 
             // ---------------- Timers ----------------
-            // JRN-024 « Fais {n} expéditions »: expeditions open.
-            G(JournalGoalId.Expeditions, JournalSlot.Timers, WishSystem.Expeditions, 5, 7, 9, 10),
-            // JRN-025 « Fais {n} expéditions de 8 h ou plus »: expeditions open.
-            G(JournalGoalId.LongExpeditions, JournalSlot.Timers, WishSystem.Expeditions, 2, 3, 4, 5),
-            // JRN-026 « Rapporte des cartes postales de {n} destinations »: at least n destinations open.
-            G(JournalGoalId.PostcardPlaces, JournalSlot.Timers, WishSystem.Expeditions, 2, 3, 4, 4),
+            // JRN-024 « Fais {n} expéditions »: expeditions open (T42: each team welcomed counts).
+            G(JournalGoalId.Expeditions, JournalSlot.Timers, WishSystem.Expeditions, 5, 7, 9, 10,
+                shipped: ActivityCatalog.Get(ActivityId.Expeditions).ShippedInThisBuild),
+            // JRN-025 « Fais {n} expéditions de 8 h ou plus »: expeditions open (T42: a team of 8 h or 12 h welcomed).
+            G(JournalGoalId.LongExpeditions, JournalSlot.Timers, WishSystem.Expeditions, 2, 3, 4, 5,
+                shipped: ActivityCatalog.Get(ActivityId.Expeditions).ShippedInThisBuild),
+            // JRN-026 « Rapporte des cartes postales de {n} destinations »: at least n destinations open (T42: a destination
+            // brought back for the first time this week counts one).
+            G(JournalGoalId.PostcardPlaces, JournalSlot.Timers, WishSystem.Expeditions, 2, 3, 4, 4,
+                shipped: ActivityCatalog.Get(ActivityId.Expeditions).ShippedInThisBuild),
             // JRN-027 « Récolte {n} plantes »: the Garden.
             G(JournalGoalId.Harvests, JournalSlot.Timers, WishSystem.Garden, 10, 15, 20, 25),
             // JRN-028 « Arrose {n} pousses »: the Garden.
@@ -256,8 +261,9 @@ namespace PocketWilds.Simulation
             G(JournalGoalId.TilePuzzles, JournalSlot.Activities, WishSystem.TilePuzzle, 3, 4, 5, 6),
             // JRN-051 « Réussis {n} atterrissages parfaits »: Lily Pad Hop.
             G(JournalGoalId.PerfectHops, JournalSlot.Activities, WishSystem.LilyHop, 10, 15, 20, 25),
-            // JRN-052 « Trouve {n} paires au Memory »: Pawprint Memory.
-            G(JournalGoalId.MemoryPairs, JournalSlot.Activities, WishSystem.PawMemory, 30, 40, 50, 60),
+            // JRN-052 « Trouve {n} paires au Memory »: Pawprint Memory (T41: every pair found counts).
+            G(JournalGoalId.MemoryPairs, JournalSlot.Activities, WishSystem.PawMemory, 30, 40, 50, 60,
+                shipped: ActivityCatalog.Get(ActivityId.PawMemory).ShippedInThisBuild),
         };
 
         private static readonly string[] TextKeys = BuildTextKeys();

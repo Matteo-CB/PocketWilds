@@ -5,7 +5,8 @@ namespace PocketWilds.Simulation
 {
     /// <summary>
     /// The scores for 1, 2 and 3 stars (doc 01 Contenu, section 12.0). Higher is better: an activity whose doc counts moves
-    /// or time turns them into points first. The free mode's thresholds never change with d.
+    /// or time turns them into points first. The free mode's thresholds never change with d, except for an activity whose
+    /// doc gives them per grid (T41 Pawprint Memory: <see cref="ActivityRules.FreeAt"/>).
     /// </summary>
     public readonly struct StarThresholds
     {
@@ -30,7 +31,8 @@ namespace PocketWilds.Simulation
 
     /// <summary>
     /// One parameter of an activity given at d = 1, 5 and 10 (doc 01 Contenu, section 12.0 « Difficulté qui s'adapte »):
-    /// straight lines between, rounded to <see cref="Decimals"/> digits (0: whole numbers).
+    /// straight lines between, rounded to <see cref="Decimals"/> digits (0: whole numbers). T41: a doc that gives a parameter
+    /// in steps (« 4 × 3 (d1 à d3), 4 × 4 (d4 à d7), 5 × 4 (d8 à d10) ») gives one value per d instead (<see cref="Steps"/>).
     /// </summary>
     public readonly struct DifficultyParameter
     {
@@ -42,6 +44,9 @@ namespace PocketWilds.Simulation
         public readonly double At10;
         public readonly int Decimals;
 
+        /// <summary>T41: one value per d (index d − 1, 10 values), or null for the straight lines.</summary>
+        public readonly double[]? ByLevel;
+
         public DifficultyParameter(string name, double at1, double at5, double at10, int decimals = 0)
         {
             Name = name;
@@ -49,9 +54,29 @@ namespace PocketWilds.Simulation
             At5 = at5;
             At10 = at10;
             Decimals = Math.Max(0, Math.Min(6, decimals));
+            ByLevel = null;
         }
 
-        public double At(int d) => AdaptiveDifficulty.Param(At1, At5, At10, d, Decimals);
+        private DifficultyParameter(string name, double[] byLevel)
+        {
+            Name = name;
+            ByLevel = byLevel;
+            At1 = byLevel[0];
+            At5 = byLevel[4];
+            At10 = byLevel[AdaptiveDifficulty.Max - 1];
+            Decimals = 6;
+        }
+
+        /// <summary>T41: a parameter in steps, one value for each d from 1 to 10 (copied).</summary>
+        public static DifficultyParameter Steps(string name, params double[] byLevel)
+        {
+            if (byLevel == null || byLevel.Length != AdaptiveDifficulty.Max)
+                throw new ArgumentException("A stepped parameter has one value per d (" + AdaptiveDifficulty.Max + ").");
+            return new DifficultyParameter(name, (double[])byLevel.Clone());
+        }
+
+        public double At(int d) =>
+            ByLevel != null ? ByLevel[AdaptiveDifficulty.Clamp(d) - 1] : AdaptiveDifficulty.Param(At1, At5, At10, d, Decimals);
     }
 
     /// <summary>
@@ -85,31 +110,73 @@ namespace PocketWilds.Simulation
     /// rules and challenges): the free mode's star thresholds, the difficulty parameters at d = 1, 5 and 10, and the 10
     /// challenges. Each activity task builds its own and registers it in <see cref="ActivityRulesRegistry"/>; a theme
     /// never changes them.
+    /// <para>T41: an activity whose doc gives the free mode's thresholds and length per grid (Pawprint Memory: « 4 × 3 : 500,
+    /// 700, 850 ; 4 × 4 : 700, 950, 1 150 ; 5 × 4 : 900, 1 250, 1 500 », « 45 s en 4 × 3, 60 s en 4 × 4, 90 s en 5 × 4 »)
+    /// gives them per d (<see cref="FreeByLevel"/>, <see cref="SecondsByLevel"/>); the runner reads them at the game's d
+    /// (<see cref="Thresholds(int, int)"/>, <see cref="SecondsAt"/>), so the HUD and the result card follow.</para>
     /// </summary>
     public sealed class ActivityRules
     {
         public readonly ActivityId Activity;
+
+        /// <summary>The free mode's thresholds (with <see cref="FreeByLevel"/>: those of the starting d, for tools and captures).</summary>
         public readonly StarThresholds Free;
+
         public readonly DifficultyParameter[] Parameters;
         public readonly ChallengeRule[] Challenges;
 
-        public ActivityRules(ActivityId activity, StarThresholds free, DifficultyParameter[] parameters, ChallengeRule[] challenges)
+        /// <summary>T41: the free mode's thresholds for each d (index d − 1, 10 values), or null: <see cref="Free"/> at every d.</summary>
+        public readonly StarThresholds[]? FreeByLevel;
+
+        /// <summary>T41: the free mode's length for each d (index d − 1, 10 values), or null: the activity's own length.</summary>
+        public readonly float[]? SecondsByLevel;
+
+        public ActivityRules(ActivityId activity, StarThresholds free, DifficultyParameter[] parameters, ChallengeRule[] challenges,
+            StarThresholds[]? freeByLevel = null, float[]? secondsByLevel = null)
         {
             if (ActivityCatalog.SlotOf(activity) < 0)
                 throw new ArgumentException("Unknown activity " + activity + ".");
             if (challenges.Length != ActivityCatalog.ChallengesPerActivity)
                 throw new ArgumentException("An activity has exactly " + ActivityCatalog.ChallengesPerActivity + " challenges.");
+            if (freeByLevel != null && freeByLevel.Length != AdaptiveDifficulty.Max)
+                throw new ArgumentException("Free thresholds per d need one entry per d (" + AdaptiveDifficulty.Max + ").");
+            if (secondsByLevel != null && secondsByLevel.Length != AdaptiveDifficulty.Max)
+                throw new ArgumentException("Seconds per d need one entry per d (" + AdaptiveDifficulty.Max + ").");
             Activity = activity;
             Free = free;
             Parameters = parameters;
             Challenges = challenges;
+            FreeByLevel = freeByLevel != null ? (StarThresholds[])freeByLevel.Clone() : null;
+            SecondsByLevel = secondsByLevel != null ? (float[])secondsByLevel.Clone() : null;
         }
 
         public int ParameterCount => Parameters.Length;
 
-        /// <summary>Thresholds of a challenge (0 to 9, rewarded or practiced), else of the free mode (−1).</summary>
+        /// <summary>Thresholds of a challenge (0 to 9, rewarded or practiced), else of the free mode (−1) at its starting d.</summary>
         public StarThresholds Thresholds(int challenge) =>
             (uint)challenge < (uint)Challenges.Length ? Challenges[challenge].Stars : Free;
+
+        /// <summary>T41: thresholds of a challenge, else of the free mode at d (the runner's reading).</summary>
+        public StarThresholds Thresholds(int challenge, int d) =>
+            (uint)challenge < (uint)Challenges.Length ? Challenges[challenge].Stars : FreeAt(d);
+
+        /// <summary>T41: the free mode's thresholds at d (<see cref="Free"/> when they do not change with d).</summary>
+        public StarThresholds FreeAt(int d)
+        {
+            if (FreeByLevel == null)
+                return Free;
+            var thresholds = FreeByLevel[AdaptiveDifficulty.Clamp(d) - 1];
+            return thresholds.IsValid ? thresholds : Free;
+        }
+
+        /// <summary>T41: the length of a game at d (its grid's), else <paramref name="fallback"/> (the activity's own length).</summary>
+        public float SecondsAt(int d, float fallback)
+        {
+            if (SecondsByLevel == null)
+                return fallback;
+            float seconds = SecondsByLevel[AdaptiveDifficulty.Clamp(d) - 1];
+            return seconds > 0f ? seconds : fallback;
+        }
 
         /// <summary>
         /// A parameter of a game: the challenge's fixed value (or its level's), else the value at d. NaN for an unknown index.
@@ -128,7 +195,7 @@ namespace PocketWilds.Simulation
             return Parameters[parameter].At(d);
         }
 
-        /// <summary>A challenge's duration, else the given default.</summary>
+        /// <summary>A challenge's duration, else the given default (the runner gives the length at the challenge's d).</summary>
         public float ChallengeSeconds(int challenge, float fallback) =>
             (uint)challenge < (uint)Challenges.Length && Challenges[challenge].Seconds > 0f ? Challenges[challenge].Seconds : fallback;
     }

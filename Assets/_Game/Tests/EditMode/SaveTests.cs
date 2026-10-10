@@ -534,6 +534,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Renewal_v9")]
         [TestCase("GoldenSave_DailyVisit_v10")]
         [TestCase("GoldenSave_Activities_v11")]
+        [TestCase("GoldenSave_Expeditions_v12")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -559,6 +560,12 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(0, state.World.DiscoveryEggs, "Older saves start with no Discovery egg.");
             if (version < 11)
                 Assert.IsFalse(state.Activities.TicketsStarted, "Older saves start the ticket pool on first use.");
+            if (version < 12)
+            {
+                Assert.IsFalse(state.Expeditions.AnyActive || state.Expeditions.SlotBought || state.Expeditions.FirstStrollDone,
+                    "Older saves: no team away, the first stroll still to come.");
+                Assert.AreEqual(0, state.Expeditions.PostcardCount + state.Expeditions.LongWithoutEgg);
+            }
             if (version < 10)
             {
                 Assert.AreEqual(state.Collection.Count >= 5, state.DailyVisit.OnboardingDone, "Five animals or more: the welcome is over.");
@@ -664,6 +671,45 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(6, activities.ChallengesDone((int)ActivityId.Grooming - 1));
                     Assert.AreEqual(4, activities.ChallengeAttempts[ActivityState.ChallengeIndex((int)ActivityId.Grooming - 1, 6)]);
                     Assert.AreEqual(20261012, state.DailyVisit.LastDayKey, "Everything of schema 10 still there.");
+                    break;
+
+                case "GoldenSave_Expeditions_v12":
+                    Assert.AreEqual(320, state.Meta.Revision);
+                    Assert.AreEqual(SaveSchema.CurrentVersion - 12, result.MigrationsApplied);
+                    var e = state.Expeditions;
+                    var meadows = ContentId.FromSource("expedition.flower_meadows");
+                    Assert.IsTrue(e.SlotBought && e.FirstStrollDone);
+                    Assert.AreEqual(7, e.LongWithoutEgg);
+                    Assert.AreEqual(15, e.Started);
+                    Assert.AreEqual(13, e.Completed);
+                    Assert.AreEqual(2, e.SpeedUpsToday);
+                    Assert.AreEqual(14, e.NextPostcardId);
+                    Assert.AreEqual(1UL, e.JournalPlacesMask);
+                    var away = e.Slots[0];
+                    Assert.IsTrue(away.Active);
+                    Assert.AreEqual(meadows, away.Destination);
+                    Assert.AreEqual(ExpeditionDuration.EightHours, away.Duration);
+                    Assert.AreEqual(2, away.TeamSize);
+                    Assert.AreEqual(2u, away.Animal1);
+                    Assert.AreEqual(ContentId.FromSource("variant.rabbit.white"), away.Variant1);
+                    Assert.AreEqual(new DateTimeOffset(2026, 10, 12, 16, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(), away.ReturnUnixMs);
+                    Assert.AreEqual(3, away.Challenge);
+                    Assert.AreEqual(123457u, away.Seed);
+                    Assert.AreEqual(99.0, away.Loot.LightMinutes);
+                    Assert.AreEqual(2, away.Loot.SeedKinds);
+                    Assert.AreEqual(ContentId.FromSource("plant.daisy"), away.Loot.Seed1);
+                    Assert.AreEqual(1, away.Loot.Stickers);
+                    Assert.AreEqual(ContentId.FromSource("ingredient.gentle_honey"), away.Loot.Ingredient0);
+                    Assert.IsFalse(e.Slots[1].Active);
+                    Assert.IsTrue(e.Slots[2].Active);
+                    Assert.AreEqual(-1, e.Slots[2].Challenge);
+                    Assert.AreEqual(3u, e.Slots[2].Animal0);
+                    Assert.IsTrue(e.IsAway(1) && e.IsAway(3) && !e.IsAway(4));
+                    Assert.AreEqual(3, e.PostcardCount);
+                    Assert.IsTrue(e.Postcards[0].FirstOfDestination && e.Postcards[0].Rendered);
+                    Assert.AreEqual(13, e.Postcards[2].Id);
+                    Assert.IsFalse(e.Postcards[2].Rendered);
+                    Assert.AreEqual(6, state.Activities.ChallengesThreeStars, "Everything of schema 11 still there.");
                     break;
 
                 case "GoldenSave_DailyVisit_v10":

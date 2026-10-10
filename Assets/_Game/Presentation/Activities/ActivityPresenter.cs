@@ -129,6 +129,7 @@ namespace PocketWilds.Presentation
             GroomingStage.Register(stages);
             HideSeekStage.Register(stages);
             NutDropStage.Register(stages);
+            MemoryStage.Register(stages);
             Stages = stages;
 
             _onEnded = OnEnded;
@@ -148,6 +149,8 @@ namespace PocketWilds.Presentation
             _empty?.Prewarm(_text);
             // A profile that already played never replays the button's appearance.
             _playAppeared = _services.Activities.GamesStarted > 0;
+            // T42: the expeditions screen, when the context has the expeditions (it registers itself as Expeditions).
+            ExpeditionScreenPresenter.Create(context, this);
         }
 
         /// <summary>Where the activities' stages come from (each shipped activity registers its own; tests add theirs).</summary>
@@ -159,8 +162,23 @@ namespace PocketWilds.Presentation
         /// <summary>The rendez-vous presenter: Today and the hub never show together.</summary>
         public DailyVisitPresenter Daily { get; set; }
 
+        /// <summary>
+        /// T42: the expeditions screen (a meta activity: the hub's Play opens its own screen instead of a game). Set by the
+        /// screen's presenter itself; ticked and disposed with this presenter.
+        /// </summary>
+        public ExpeditionScreenPresenter Expeditions { get; set; }
+
+        /// <summary>T42: the stage host (the scene root, the refuge, the world's rendering switch) for the meta screens.</summary>
+        internal ActivityStageHost Host => _host;
+
+        internal IActivityResultView ResultView => _result;
+
+        internal IPlayHud PlayHud => _playHud;
+
+        internal IRefugeHud RefugeHud => _refugeHud;
+
         /// <summary>Something of the activities covers the refuge: world touches and hatching wait.</summary>
-        public bool IsOpen => HubOpen || EmptyOpen || _phase != Phase.None;
+        public bool IsOpen => HubOpen || EmptyOpen || _phase != Phase.None || Expeditions != null && Expeditions.IsOpen;
 
         public bool HubOpen => _hub != null && _hub.IsOpen;
 
@@ -250,9 +268,17 @@ namespace PocketWilds.Presentation
                 return;
             bool pending = _services.IsAvailable(ActivityId.Grooming) && _services.FreeGameAvailable(ActivityId.Grooming)
                            && _services.Record(ActivityId.Grooming).GamesPlayed == 0;
+            var target = ActivityId.Grooming;
+            // T42 A18: once Grooming was tried, the paw shows the Expeditions card until the first expedition leaves.
+            if (!pending && Expeditions != null && _services.IsAvailable(ActivityId.Expeditions) && Expeditions.Expeditions.IsOpen
+                && Expeditions.CardStatus(out _) == ActivityCardState.New)
+            {
+                pending = true;
+                target = ActivityId.Expeditions;
+            }
             int card = -1;
             for (int i = 0; i < _cardCount; i++)
-                if (_cardIds[i] == ActivityId.Grooming)
+                if (_cardIds[i] == target)
                     card = i;
             if (!pending || card < 0)
             {
@@ -276,6 +302,15 @@ namespace PocketWilds.Presentation
         {
             if (_hub != null && _hub.IsOpen)
                 _hub.Close();
+        }
+
+        /// <summary>T42: a meta screen closed (Expeditions): the hub opens again on its card.</summary>
+        public void ReturnFromMeta()
+        {
+            if (InGame)
+                return;
+            _lastPlayed = ActivityId.Expeditions;
+            OpenHub();
         }
 
         // ---------------- T38: Grooming from the animal sheet ----------------
@@ -316,6 +351,13 @@ namespace PocketWilds.Presentation
             var activity = SelectedActivity;
             if (activity == ActivityId.None)
                 return;
+            // T42: a meta activity opens its own screen (Expeditions); the hub comes back when it closes.
+            if (activity == ActivityId.Expeditions && Expeditions != null)
+            {
+                HideCardHint();
+                Expeditions.OpenFromHub();
+                return;
+            }
             var request = _practice ? ActivityRequest.Practice(activity) : ActivityRequest.Free(activity);
             StartGame(request);
         }
@@ -707,7 +749,14 @@ namespace PocketWilds.Presentation
             _context.Haptics.Play(star >= 2 ? HapticEventId.Confirm : HapticEventId.TapLight);
         }
 
-        public void ResultRewardShown(int reward) => _context.Audio.PlayVariant(AudioEventId.CardFlip, reward);
+        public void ResultRewardShown(int reward)
+        {
+            // T42: an expedition's loot pops one step higher per item (J-SFX-ACT-005-04) instead of the card flip.
+            if (Expeditions != null && Expeditions.ResultOpen)
+                ExpeditionAudio.PlayLoot(_context.Audio, reward);
+            else
+                _context.Audio.PlayVariant(AudioEventId.CardFlip, reward);
+        }
 
         public void ResultRecordShown()
         {
@@ -723,6 +772,7 @@ namespace PocketWilds.Presentation
         public void Tick(float deltaTime, float unscaledDeltaTime)
         {
             _time += unscaledDeltaTime;
+            Expeditions?.Tick(unscaledDeltaTime);
             _hub?.Tick(unscaledDeltaTime);
             _empty?.Tick(unscaledDeltaTime);
             _hud?.Tick(unscaledDeltaTime);
@@ -758,6 +808,12 @@ namespace PocketWilds.Presentation
                 return;
             _nextCheck = _time + CheckInterval;
             UpdatePlayButton();
+            // T42: the Expeditions card's line (« De retour dans 3 h 12 », « 2 de retour ») changes at most once a minute.
+            if (HubOpen && Expeditions != null && Expeditions.StatusChanged)
+            {
+                RebuildCards();
+                _hub.Refresh();
+            }
             if (HubOpen || EmptyOpen)
             {
                 int minutes = _services.Tickets.MinutesToNext;
@@ -826,6 +882,13 @@ namespace PocketWilds.Presentation
                 if (!_services.IsAvailable(id))
                     continue;
                 available = true;
+                // T42: Expeditions dots the button when a team is back, or before its first expedition (A18).
+                if (id == ActivityId.Expeditions && Expeditions != null)
+                {
+                    if (Expeditions.WantsDot)
+                        dot = true;
+                    continue;
+                }
                 if (_services.FreeGameAvailable(id) || _services.Activities.Records[slot].GamesPlayed == 0)
                     dot = true;
             }
@@ -909,6 +972,14 @@ namespace PocketWilds.Presentation
                         FreeGame = unlocked && (_services.FreeGameAvailable(id) || !ActivityCatalog.Get(id).UsesTickets),
                         Featured = _services.Events != null && _services.Events.IsFeatured(id),
                     };
+                    // T42: the Expeditions card says « Nouveau » before the first expedition (A18), then the soonest return or
+                    // « {n} de retour » (no ticket: the hub's Play says « Gratuit », the card's own tag stays « Nouveau »).
+                    if (id == ActivityId.Expeditions && unlocked && Expeditions != null)
+                    {
+                        ref var card = ref _cards[_cardCount - 1];
+                        card.State = Expeditions.CardStatus(out string status);
+                        card.Status = status;
+                    }
                 }
             }
         }
@@ -990,7 +1061,8 @@ namespace PocketWilds.Presentation
             if (activity == ActivityId.Grooming)
             {
                 // A pending wish « Brosse {animal} » (WISH-019) names its animal: it comes first.
-                if (_context.Daily != null && _context.Daily.Wishes.GroomWishAnimal(out uint wished) && collection.TryGet(wished, out _))
+                if (_context.Daily != null && _context.Daily.Wishes.GroomWishAnimal(out uint wished) && collection.TryGet(wished, out _)
+                    && !IsAway(wished))
                     return wished;
                 uint visible = LowestBond(collection, true);
                 return visible != 0 ? visible : LowestBond(collection, false);
@@ -999,9 +1071,13 @@ namespace PocketWilds.Presentation
             for (int i = 0; i < count; i++)
             {
                 ref readonly var animal = ref collection[(start + i) % count];
-                if (animal.IsFavorite)
+                if (animal.IsFavorite && !IsAway(animal.InstanceId))
                     return animal.InstanceId;
             }
+            // T42: an animal away on an expedition never plays; everyone away: the first one anyway (never happens: 8 animals).
+            for (int i = 0; i < count; i++)
+                if (!IsAway(collection[(start + i) % count].InstanceId))
+                    return collection[(start + i) % count].InstanceId;
             return collection[start].InstanceId;
         }
 
@@ -1027,6 +1103,8 @@ namespace PocketWilds.Presentation
                 {
                     animal = collection[i];
                 }
+                if (IsAway(animal.InstanceId))
+                    continue;
                 if (animal.BondPoints < bestBond)
                 {
                     bestBond = animal.BondPoints;
@@ -1044,6 +1122,8 @@ namespace PocketWilds.Presentation
             for (int i = 0; i < collection.Count; i++)
             {
                 ref readonly var animal = ref collection[i];
+                if (IsAway(animal.InstanceId))
+                    continue;
                 int family = _context.Content.Species.TryGet(animal.Species, out var species) ? HeavyRank(species.RigFamily) : 0;
                 if (family > bestFamily)
                 {
@@ -1053,6 +1133,9 @@ namespace PocketWilds.Presentation
             }
             return best;
         }
+
+        /// <summary>T42: the animal is away on an expedition (not in the refuge, never in a game).</summary>
+        private bool IsAway(uint instanceId) => _context.Expeditions != null && _context.Expeditions.IsAway(instanceId);
 
         private static int HeavyRank(PocketWilds.Content.RigFamily family) =>
             family == PocketWilds.Content.RigFamily.HeavyQuadruped ? 3 : family == PocketWilds.Content.RigFamily.MediumQuadruped ? 2 : 1;
@@ -1125,6 +1208,8 @@ namespace PocketWilds.Presentation
             _stage = null;
             Stages?.ReleaseAll();
             ReleaseMusic();
+            Expeditions?.Dispose();
+            Expeditions = null;
         }
 
         /// <summary>Headless scenes without localization: keys stand for texts.</summary>

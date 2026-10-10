@@ -194,6 +194,11 @@ namespace PocketWilds.UI
                     _stickerCell = i;
             }
 
+            // T42: an expedition's loot: « Repartir » instead of « Rejouer », no score (its stars are the team rating).
+            bool expedition = model.Activity == ActivityId.Expeditions;
+            if (_text != null)
+                _replayText.SetString(_text.Get(expedition ? ExpeditionText.SendAgain : ActivityText.ResultReplay));
+            SetActive(_score.gameObject, !expedition);
             _icon.sprite = Icon(model.Activity);
             int stars = Mathf.Clamp(model.Stars, 0, 3);
             _titleText.SetString(_text != null ? _text.Get(ActivityText.ResultTitle(stars)) : string.Empty);
@@ -495,7 +500,8 @@ namespace PocketWilds.UI
         }
 
         /// <summary>The activity's name (the mode has its own line: « Défi n » with its stars, or « Partie d'entraînement »).</summary>
-        private void WriteSubtitle() => _subtitleText.SetString(_text != null ? NameOf(_model.Activity) : string.Empty);
+        private void WriteSubtitle() =>
+            _subtitleText.SetString(!string.IsNullOrEmpty(_model.Subtitle) ? _model.Subtitle : _text != null ? NameOf(_model.Activity) : string.Empty);
 
         /// <summary>Without the challenge rows the card is shorter and the rewards move up; the buttons stay at the thumb.</summary>
         private void LayoutCard(bool challenge)

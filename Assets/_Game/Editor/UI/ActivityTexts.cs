@@ -8,7 +8,8 @@ namespace PocketWilds.Editor.UI
     /// T37 shipped texts of the activities (doc « Mini-jeux & activités », doc 01 Contenu sections 0, A15 and 12; Writing
     /// Guide: short, warm, no em dash, no pressure words, real time never a countdown), and T38's Grooming texts (its tips,
     /// the sheet's « Brosser » and its 10 challenges, doc 01 S-ACT-001), T39's Hide and Seek texts (its tips and its 10
-    /// challenges, doc 01 S-ACT-002) and T40's Nut Drop texts (its two tips and its 10 challenges, doc 01 S-ACT-003). Columns:
+    /// challenges, doc 01 S-ACT-002), T40's Nut Drop texts (its two tips and its 10 challenges, doc 01 S-ACT-003) and T41's
+    /// Pawprint Memory texts (its pairs tip and its 10 challenges, doc 01 S-ACT-004). Columns:
     /// key, en, fr. Merged into
     /// LOC_en / LOC_fr by <see cref="UiPipeline.EnsureLocalization"/>. Keys are <see cref="ActivityText"/>'s.
     /// <para>Counted texts come as three rows: « key.one » and « key.other », read by
@@ -194,6 +195,29 @@ namespace PocketWilds.Editor.UI
 
             void NutDrop(int number, string enName, string frName, string enGoal, string frGoal) =>
                 ActivityChallenge(ActivityId.NutRain, number, enName, frName, enGoal, frGoal);
+
+            // T41 Pawprint Memory (doc 01 S-ACT-004): the first game's tip, with the tapping paw on a card and then its pair
+            // until the first match.
+            Plain(ActivityText.MemoryTipPairs, "Find the pairs", "Trouve les paires");
+
+            // The 10 Pawprint Memory challenges (doc 01 S-ACT-004 « Défis »): the doc's French names, natural English ones,
+            // and each goal in one short line with the challenge's twist (« Défi n : goal » on one line of the hub at 40
+            // units). Grid sizes keep their « × » between no-break spaces.
+            string grid43 = "4" + Nbsp + "×" + Nbsp + "3", grid44 = "4" + Nbsp + "×" + Nbsp + "4", grid54 = "5" + Nbsp + "×" + Nbsp + "4";
+            Memory(1, "Little Grid", "Petite grille", "Every pair on a " + grid43 + " grid", "Toutes les paires en " + grid43);
+            Memory(2, "Good Memory", "Bonne mémoire", "Every pair, with no preview", "Toutes les paires, sans aperçu");
+            Memory(3, "Medium Grid", "Grille moyenne", "Every pair on a " + grid44 + " grid", "Toutes les paires en " + grid44);
+            Memory(4, "Pawprints", "Empreintes", "Pawprints and portraits on " + grid44, "Empreintes et portraits en " + grid44);
+            Memory(5, "Flawless", "Sans faute", "A miss costs 50, not 20", "Une erreur retire 50, pas 20");
+            Memory(6, "Moving Cards", "Cartes qui bougent", "Two hidden cards swap places", "Deux cartes changent de place");
+            Memory(7, "Beat the Clock", "Chrono serré", "Every pair in 45" + Nbsp + "s", "Toutes les paires en 45" + Nbsp + "s");
+            Memory(8, "Big Grid", "Grande grille", "Every pair on a " + grid54 + " grid", "Toutes les paires en " + grid54);
+            Memory(9, "Same Biome", "Même biome", "Every card from one biome", "Toutes les cartes d'un même biome");
+            Memory(10, "Grand Memory", "Grand Memory", "Pawprints and portraits in 75" + Nbsp + "s",
+                "Empreintes et portraits en 75" + Nbsp + "s");
+
+            void Memory(int number, string enName, string frName, string enGoal, string frGoal) =>
+                ActivityChallenge(ActivityId.PawMemory, number, enName, frName, enGoal, frGoal);
 
             void ActivityChallenge(ActivityId activity, int number, string enName, string frName, string enGoal, string frGoal)
             {

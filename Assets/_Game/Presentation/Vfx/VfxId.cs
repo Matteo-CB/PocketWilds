@@ -24,7 +24,10 @@ namespace PocketWilds.Presentation
 
         /// <summary>T36 H-VFX-070 (doc 05 sheet 17): a wish comes true: its bubble bursts into soft bubbles, hearts and a ring.</summary>
         WishDone = 13,
-        Count = 14,
+
+        /// <summary>T42 (H-VFX-076): a small puff of dust in the biome's soil colour where an animal back from an expedition arrives (8 dots).</summary>
+        ArrivalDust = 14,
+        Count = 15,
     }
 
     /// <summary>What a hatch brings that the player did not have: shown by its own effect and the reveal banner.</summary>

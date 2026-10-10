@@ -146,18 +146,37 @@ namespace PocketWilds.Tests.PlayMode
             Assert.AreEqual(AnimalBehaviorState.Social, scheduler.GetState(b));
             // The pair may meet anywhere in the arrival zone: look at it (animators of animals off screen do not run).
             entry.CameraRig.SnapTo((scheduler.GetPosition(a) + scheduler.GetPosition(b)) * 0.5f);
-            // Let the crossfade and the last few degrees of turning finish.
-            for (int i = 0; i < 12; i++)
-                yield return null;
-
+            // Let the crossfade and the last few degrees of turning finish (time, not frames: a fast run has short frames).
             var viewA = ViewOf(scheduler, a);
             var viewB = ViewOf(scheduler, b);
-            Assert.IsTrue(PlaysSocial(viewA) && PlaysSocial(viewB), "Both Animators play the family Social clip.");
-            var toB = viewB.transform.position - viewA.transform.position;
-            toB.y = 0f;
-            Assert.Less(Vector3.Angle(viewA.transform.forward, toB), 10f, "Facing the partner.");
-            Assert.Less(Vector3.Angle(viewB.transform.forward, -toB), 10f, "Facing the partner.");
-            Assert.Less(toB.magnitude, 0.55f, "Noses close.");
+            // Watch the greeting for up to 3 s (time, not frames): each Animator must be seen in the family Social clip, and at
+            // some moment both must face each other nose to nose. A short greeting may end before the wait does.
+            float settle = Time.realtimeSinceStartup + 3f;
+            bool socialA = false, socialB = false;
+            float bestA = 180f, bestB = 180f, bestGap = float.MaxValue;
+            while (Time.realtimeSinceStartup < settle)
+            {
+                entry.CameraRig.SnapTo((viewA.transform.position + viewB.transform.position) * 0.5f);
+                socialA |= PlaysSocial(viewA);
+                socialB |= PlaysSocial(viewB);
+                var gap = viewB.transform.position - viewA.transform.position;
+                gap.y = 0f;
+                float angleA = Vector3.Angle(viewA.transform.forward, gap);
+                float angleB = Vector3.Angle(viewB.transform.forward, -gap);
+                if (Mathf.Max(angleA, angleB) < Mathf.Max(bestA, bestB))
+                {
+                    bestA = angleA;
+                    bestB = angleB;
+                    bestGap = gap.magnitude;
+                }
+                if (socialA && socialB && bestA < 10f && bestB < 10f)
+                    break;
+                yield return null;
+            }
+            Assert.IsTrue(socialA && socialB, "Both Animators play the family Social clip.");
+            Assert.Less(bestA, 10f, "Facing the partner.");
+            Assert.Less(bestB, 10f, "Facing the partner.");
+            Assert.Less(bestGap, 0.55f, "Noses close.");
 #else
             Assert.Ignore("Editor only.");
             yield break;

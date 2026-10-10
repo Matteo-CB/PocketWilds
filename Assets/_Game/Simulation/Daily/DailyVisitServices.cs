@@ -187,6 +187,36 @@ namespace PocketWilds.Simulation
         }
 
         /// <summary>
+        /// T41: a memory game ended (<see cref="MemoryHooks"/> calls it): its wishes (WISH-057 to 059) and the journal's
+        /// JRN-052. Allocation-free.
+        /// </summary>
+        public void OnMemoryGame(in MemoryGameSummary game)
+        {
+            Wishes.OnMemoryGame(in game);
+            Journal.OnMemoryGame(in game);
+        }
+
+        /// <summary>
+        /// T42: a team left on an expedition (<see cref="ExpeditionHooks"/> calls it): its wishes (WISH-041 to 044 and 046)
+        /// and a challenge passed for the journal (JRN-012). Allocation-free.
+        /// </summary>
+        public void OnExpeditionStarted(in ExpeditionStartInfo start)
+        {
+            Wishes.OnExpeditionStarted(in start);
+            Journal.OnExpeditionStarted(in start);
+        }
+
+        /// <summary>
+        /// T42: a team was welcomed (<see cref="ExpeditionHooks"/> calls it): WISH-045 « Ouvre une carte postale » and the
+        /// journal's JRN-009 stars, JRN-024, JRN-025 and JRN-026. Allocation-free.
+        /// </summary>
+        public void OnExpeditionWelcomed(in ExpeditionWelcomeInfo welcome)
+        {
+            Wishes.OnExpeditionWelcomed(in welcome);
+            Journal.OnExpeditionWelcomed(in welcome);
+        }
+
+        /// <summary>
         /// At boot (after the offline resolution) and when the app comes back: the day check first, then the return gift of
         /// this absence (doc 01, section 6).
         /// </summary>

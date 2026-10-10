@@ -104,6 +104,13 @@ namespace PocketWilds.Simulation
         /// </summary>
         public bool BakeryOpen => Config.BakeryAvailable;
 
+        /// <summary>
+        /// T41: the Garden is open (doc 01: « 1 graine (Jardin ouvert) »), the gate of Pawprint Memory's 3-star seed: built
+        /// (T43, <see cref="ActivityConfig.GardenAvailable"/>; false: no seed yet) and its refuge function reached (level 8,
+        /// day 3).
+        /// </summary>
+        public bool GardenOpen => Config.GardenAvailable && (Progression == null || Progression.Refuge.IsFeatureUnlocked(RefugeFeature.Garden));
+
         public void RequestSave(SaveUrgency urgency) => Save?.RequestSave(urgency);
 
         /// <summary>The seed of the n-th game since install for an activity: same game, same seed (an app kill never rerolls).</summary>

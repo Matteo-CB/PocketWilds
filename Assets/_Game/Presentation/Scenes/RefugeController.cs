@@ -41,7 +41,7 @@ namespace PocketWilds.Presentation
     /// pooled views, no per-animal logic, no allocation in steady state. Away time comes back through the
     /// offline return screen; its Light counts up into the HUD when collected (T18).
     /// </summary>
-    public sealed class RefugeController : IRefugeActions, IHatchListener, IOfflineReturnActions, ICodexActions, IAnimalSheetActions,
+    public sealed partial class RefugeController : IRefugeActions, IHatchListener, IOfflineReturnActions, ICodexActions, IAnimalSheetActions,
         IAnimalSheetGroomActions,
         IModalActions, IAnimalVoiceListener, IEggChoiceActions, IMultiHatchListener, IRewardSummaryActions, IAnimalSheetTreatActions,
         IDisposable
@@ -630,6 +630,7 @@ namespace PocketWilds.Presentation
                     _context.Audio.SetView(_rig.Focus, _rig.Camera.transform.right, _rig.Distance);
             }
             _scheduler.Tick(time, deltaTime);
+            TickArrivals(time);
             // T36: bubbles follow their animals; hidden under a screen or a hatch (the wish card alone keeps its bubble).
             Bubbles?.Tick(time, deltaTime, (ModalOpen && !(Daily != null && Daily.CardOnlyOpen)) || Hatching);
             _hatch.Tick(time, deltaTime);
@@ -1875,7 +1876,8 @@ namespace PocketWilds.Presentation
                     ref readonly var animal = ref collection[i];
                     // T36: an animal with a pending wish is shown first too (its bubble is in the world, doc 06 screen 002).
                     bool first = animal.IsFavorite || HasWish(animal.InstanceId);
-                    if (first != (pass == 0) || IsVisible(animal.InstanceId))
+                    // T42: an animal away on an expedition is not in the refuge (it still produces).
+                    if (first != (pass == 0) || IsVisible(animal.InstanceId) || IsAway(animal.InstanceId))
                         continue;
                     var position = area.PointAt(SeedHash.Unit(animal.Seed, 0x51A70001u) * 0.9f + 0.05f,
                         SeedHash.Unit(animal.Seed, 0x51A70002u) * 0.9f + 0.05f);
@@ -1904,7 +1906,7 @@ namespace PocketWilds.Presentation
         /// </summary>
         public void EnsureVisible(uint instanceId)
         {
-            if (IsVisible(instanceId) || Hatching || !_context.State.Collection.TryGet(instanceId, out var animal))
+            if (IsVisible(instanceId) || Hatching || IsAway(instanceId) || !_context.State.Collection.TryGet(instanceId, out var animal))
                 return;
             var area = _walkArea;
             var position = area.PointAt(SeedHash.Unit(animal.Seed, 0x51A70001u) * 0.9f + 0.05f, SeedHash.Unit(animal.Seed, 0x51A70002u) * 0.9f + 0.05f);

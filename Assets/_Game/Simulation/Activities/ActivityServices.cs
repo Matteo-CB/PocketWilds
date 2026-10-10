@@ -180,9 +180,14 @@ namespace PocketWilds.Simulation
         }
 
         /// <summary>
-        /// The hub shows it as playable: shipped in this build, enabled by Remote Config, its rules registered and open.
+        /// The hub shows it as playable: shipped in this build, enabled by Remote Config, its rules registered (a meta
+        /// activity has its own screen and service instead: T42 Expeditions) and open.
         /// </summary>
-        public bool IsAvailable(ActivityId activity) => IsShipped(activity) && Config.IsEnabled(activity) && Rules.Has(activity) && IsUnlocked(activity);
+        public bool IsAvailable(ActivityId activity) => IsShipped(activity) && Config.IsEnabled(activity) && HasRulesOrMeta(activity) && IsUnlocked(activity);
+
+        /// <summary>The runner has the activity's rules, or it is a meta activity shipped with its own service (no runner rules).</summary>
+        public bool HasRulesOrMeta(ActivityId activity) =>
+            Rules.Has(activity) || (ActivityCatalog.TryGet(activity, out var definition) && definition.Meta && definition.ShippedInThisBuild);
 
         /// <summary>
         /// The activity exists in this build (its task shipped it), or it is the framework's test activity and a test
@@ -200,7 +205,7 @@ namespace PocketWilds.Simulation
                 for (int slot = 0; slot < ActivityCatalog.SlotCount; slot++)
                 {
                     var id = ActivityCatalog.IdOfSlot(slot);
-                    if (IsShipped(id) && Config.IsEnabled(id) && Rules.Has(id))
+                    if (IsShipped(id) && Config.IsEnabled(id) && HasRulesOrMeta(id))
                         return true;
                 }
                 return false;

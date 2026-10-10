@@ -32,6 +32,9 @@ namespace PocketWilds.Simulation
         /// <summary>T37: the activities (tickets, records, challenges, adaptive difficulty, daily Gems).</summary>
         public ActivityState Activities { get; } = new ActivityState();
 
+        /// <summary>T42: the expeditions (slots, teams, timers, loot drawn at departure, the guarantee, the postcards).</summary>
+        public ExpeditionState Expeditions { get; } = new ExpeditionState();
+
         /// <summary>The welcome is over: the tutorial wish was done, or the save already holds 5 animals (doc 01, section 1.1).</summary>
         public bool IsOnboardingDone => DailyVisit.OnboardingDone || Collection.Count >= 5;
 

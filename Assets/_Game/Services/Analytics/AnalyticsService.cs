@@ -1010,8 +1010,86 @@ namespace PocketWilds.Services.Analytics
             _flowSums[slot] = BigValue.Add(_flowSums[slot], BigValue.FromDouble(count));
         }
 
+        // ------------------------------------------------------------------ T42: the expeditions (doc 08, block 140)
+
+        private ExpeditionService? _expeditions;
+        private ExpeditionStartedHandler? _onExpeditionStarted;
+        private ExpeditionWelcomedHandler? _onExpeditionWelcomed;
+        private Action<int, int, double>? _onExpeditionSpedUp;
+        private Action<int, int, int>? _onExpeditionChallenge;
+
+        /// <summary>Teams leaving and welcomed, speed-ups (doc 08 events 140 to 142), challenges improved (112).</summary>
+        public void AttachExpeditions(ExpeditionService? expeditions)
+        {
+            DetachExpeditions();
+            _expeditions = expeditions;
+            if (expeditions == null)
+                return;
+            _onExpeditionStarted ??= OnExpeditionStarted;
+            _onExpeditionWelcomed ??= OnExpeditionWelcomed;
+            _onExpeditionSpedUp ??= OnExpeditionSpedUp;
+            _onExpeditionChallenge ??= OnExpeditionChallenge;
+            expeditions.Started += _onExpeditionStarted;
+            expeditions.Welcomed += _onExpeditionWelcomed;
+            expeditions.SpedUp += _onExpeditionSpedUp;
+            expeditions.ChallengeImproved += _onExpeditionChallenge;
+        }
+
+        private void DetachExpeditions()
+        {
+            var e = _expeditions;
+            if (e == null)
+                return;
+            e.Started -= _onExpeditionStarted;
+            e.Welcomed -= _onExpeditionWelcomed;
+            e.SpedUp -= _onExpeditionSpedUp;
+            e.ChallengeImproved -= _onExpeditionChallenge;
+            _expeditions = null;
+        }
+
+        private int ExpeditionHours(ExpeditionDuration duration, bool firstStroll) =>
+            firstStroll ? 0 : (int)Math.Round(_expeditions?.Config.Hours(duration) ?? ExpeditionConfig.Default.Hours(duration));
+
+        private void OnExpeditionStarted(in ExpeditionStartInfo info)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.ExpeditionStart)
+            {
+                U0 = info.Destination.Value, I0 = ExpeditionHours(info.Duration, info.FirstStroll), I1 = info.TeamSize, I2 = info.Slot,
+            };
+            Record(ref e);
+        }
+
+        private void OnExpeditionWelcomed(in ExpeditionWelcomeInfo info)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.ExpeditionReturn)
+            {
+                U0 = info.Return.Destination.Value,
+                I0 = ExpeditionHours(info.Return.Duration, info.Return.FirstStroll),
+                I1 = info.RewardMask,
+                I2 = info.Return.Loot.DiscoveryEggs,
+                I3 = info.Return.Loot.EventCurrency,
+            };
+            Record(ref e);
+        }
+
+        private void OnExpeditionSpedUp(int slot, int gems, double seconds)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.ExpeditionSpeedup) { I0 = 1, I1 = gems, D0 = seconds };
+            Record(ref e);
+        }
+
+        private void OnExpeditionChallenge(int challenge, int stars, int attempts)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.ActivityChallenge)
+            {
+                U0 = ActivityContentId(ActivityId.Expeditions), I0 = challenge + 1, I1 = stars, I2 = attempts,
+            };
+            Record(ref e);
+        }
+
         public void Dispose()
         {
+            DetachExpeditions();
             DetachActivities();
             DetachDaily();
             DetachProgression();
