@@ -537,6 +537,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Expeditions_v12")]
         [TestCase("GoldenSave_Garden_v13")]
         [TestCase("GoldenSave_Albums_v14")]
+        [TestCase("GoldenSave_Achievements_v15")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -564,6 +565,9 @@ namespace PocketWilds.Tests.EditMode
                 Assert.IsFalse(state.Activities.TicketsStarted, "Older saves start the ticket pool on first use.");
             if (version < 14)
                 Assert.IsTrue(!state.Albums.Opened && state.Albums.Stars == 0 && state.Albums.PagesOpen == 0, "Older saves: no album opened yet.");
+            if (version < 15)
+                Assert.IsTrue(!state.Achievements.StartGiven && state.Achievements.Progress[0] == 0 && state.Achievements.SelectedTitle == -1,
+                    "Older saves: no achievement counted yet (the hooks backfill them).");
             if (version < 13)
             {
                 Assert.IsFalse(state.Garden.AnyActive || state.Garden.PlotBought, "Older saves: every plot bare, the Gems plot not bought.");
@@ -720,6 +724,39 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(13, e.Postcards[2].Id);
                     Assert.IsFalse(e.Postcards[2].Rendered);
                     Assert.AreEqual(6, state.Activities.ChallengesThreeStars, "Everything of schema 11 still there.");
+                    break;
+
+                case "GoldenSave_Achievements_v15":
+                    Assert.AreEqual(380, state.Meta.Revision);
+                    Assert.AreEqual(SaveSchema.CurrentVersion - 15, result.MigrationsApplied);
+                    var ac = state.Achievements;
+                    Assert.AreEqual(250, ac.Progress[82]);
+                    Assert.AreEqual((byte)AchievementTier.Silver, ac.Reached[82]);
+                    Assert.AreEqual((byte)AchievementTier.Bronze, ac.Claimed[82]);
+                    Assert.AreEqual(40, ac.Progress[189]);
+                    Assert.AreEqual(40, ac.RunHatches);
+                    Assert.AreEqual(7, ac.RunLightLevels);
+                    Assert.AreEqual(120, ac.BestRenewalEssence);
+                    Assert.AreEqual(20261015, ac.DayKey);
+                    Assert.AreEqual(12, ac.DayHatches);
+                    Assert.AreEqual(2, ac.DayWishes);
+                    Assert.AreEqual(2026 * 4 + 3, ac.SeasonKey);
+                    Assert.AreEqual(20261012, ac.JournalWeek);
+                    Assert.AreEqual(3, ac.JournalGoalsCounted);
+                    Assert.AreEqual(3u, ac.HatchBiomes);
+                    Assert.AreEqual(7u, ac.HatchRarities);
+                    Assert.AreEqual(5u, ac.PlantsHarvested);
+                    Assert.AreEqual(5, ac.SpeciesTraits[0]);
+                    Assert.AreEqual(2, ac.AnimalsPettedCount);
+                    Assert.AreEqual(9u, ac.AnimalsPetted[1]);
+                    Assert.IsTrue(ac.StartGiven);
+                    Assert.IsTrue(AchievementState.Bit(ac.TitlesOwned, 0) && AchievementState.Bit(ac.TitlesOwned, 4));
+                    Assert.IsTrue(AchievementState.Bit(ac.TitlesUnseen, 4) && !AchievementState.Bit(ac.TitlesUnseen, 0));
+                    Assert.AreEqual(1UL, ac.FramesOwned);
+                    Assert.AreEqual(1UL, ac.PosesOwned & ac.PosesUnseen);
+                    Assert.AreEqual(0, ac.SelectedTitle);
+                    Assert.AreEqual(0, ac.SelectedFrame);
+                    Assert.AreEqual(13, state.Albums.Stars, "Everything of schema 14 still there.");
                     break;
 
                 case "GoldenSave_Albums_v14":

@@ -105,6 +105,7 @@ namespace PocketWilds.Presentation
         private DailyVisitPresenter _dailyPresenter;
         private ActivityPresenter _activityPresenter;
         private AlbumScreenPresenter _albumPresenter;
+        private ProfileScreenPresenter _profilePresenter;
         private WishBubbleLayer _bubbles;
 
         public bool HasContext => _context != null;
@@ -137,6 +138,13 @@ namespace PocketWilds.Presentation
 
         /// <summary>T44A: the albums screen and its reveal layer (null in scenes without the albums).</summary>
         public AlbumScreenPresenter AlbumScreen => _albumPresenter;
+
+        /// <summary>T44B, tests: lets go of the scene's profile presenter so a test drives the HUD's achievements button alone.</summary>
+        public void DetachProfile()
+        {
+            _profilePresenter?.Dispose();
+            _profilePresenter = null;
+        }
 
         /// <summary>T44A, tests: lets go of the scene's albums presenter so a test drives the HUD's Albums button alone.</summary>
         public void DetachAlbums()
@@ -317,6 +325,18 @@ namespace PocketWilds.Presentation
                             refuge.AlbumsOpenCheck = () => albums.IsOpen;
                         }
                     }
+                    // T44B: the achievements screen and the profile card (titles, frames, poses).
+                    if (context.Achievements != null && context.ProfileItems != null)
+                    {
+                        _profilePresenter = ProfileScreenPresenter.Create(context, context.Achievements, context.ProfileItems,
+                            _activityPresenter, _hud as IProfileHud);
+                        if (_profilePresenter != null)
+                        {
+                            var profile = _profilePresenter;
+                            var albumsScreen = _albumPresenter;
+                            _refuge.AlbumsOpenCheck = () => profile.IsOpen || (albumsScreen != null && albumsScreen.IsOpen);
+                        }
+                    }
                 }
             }
             _onQuality = ApplyQuality;
@@ -388,6 +408,8 @@ namespace PocketWilds.Presentation
                 _refuge.Bubbles = null;
             }
             _activityPresenter?.Dispose();
+            _profilePresenter?.Dispose();
+            _profilePresenter = null;
             _albumPresenter?.Dispose();
             _albumPresenter = null;
             _activityPresenter = null;
@@ -527,6 +549,7 @@ namespace PocketWilds.Presentation
             _dailyPresenter?.Tick(Time.time, Time.unscaledDeltaTime);
             _activityPresenter?.Tick(Time.deltaTime, Time.unscaledDeltaTime);
             _albumPresenter?.Tick(Time.unscaledDeltaTime);
+            _profilePresenter?.Tick(Time.unscaledDeltaTime);
             _weather?.Tick(Time.unscaledTime);
             _atmosphere?.Tick(Time.unscaledTime);
             var camera = _cameraRig != null ? _cameraRig.Camera : null;

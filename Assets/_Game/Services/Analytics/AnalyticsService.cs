@@ -1234,8 +1234,53 @@ namespace PocketWilds.Services.Analytics
             Record(ref e);
         }
 
+        // ------------------------------------------------------------------ T44B: achievements and profile items (block 170)
+
+        private AchievementService? _achievements;
+        private ProfileItemService? _profileItems;
+        private Action<int, AchievementTier>? _onAchievementTier;
+        private ProfileItemHandler? _onProfileSelection;
+
+        /// <summary>Tiers reached (event 170: id, tier), the title and the frame shown (events 171 and 172).</summary>
+        public void AttachAchievements(AchievementService? achievements, ProfileItemService? items)
+        {
+            DetachAchievements();
+            _achievements = achievements;
+            _profileItems = items;
+            _onAchievementTier ??= OnAchievementTier;
+            _onProfileSelection ??= OnProfileSelection;
+            if (achievements != null)
+                achievements.TierReached += _onAchievementTier;
+            if (items != null)
+                items.SelectionChanged += _onProfileSelection;
+        }
+
+        private void DetachAchievements()
+        {
+            if (_achievements != null)
+                _achievements.TierReached -= _onAchievementTier;
+            if (_profileItems != null)
+                _profileItems.SelectionChanged -= _onProfileSelection;
+            _achievements = null;
+            _profileItems = null;
+        }
+
+        private void OnAchievementTier(int index, AchievementTier tier)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.AchievementTier) { I0 = index + 1, I1 = (int)tier };
+            Record(ref e);
+        }
+
+        private void OnProfileSelection(ProfileItemKind kind, int index)
+        {
+            var id = kind == ProfileItemKind.Title ? AnalyticsEventId.ProfileTitleSelected : AnalyticsEventId.ProfileFrameSelected;
+            var e = new AnalyticsEvent(id) { I0 = index };
+            Record(ref e);
+        }
+
         public void Dispose()
         {
+            DetachAchievements();
             DetachAlbums();
             DetachGarden();
             DetachExpeditions();

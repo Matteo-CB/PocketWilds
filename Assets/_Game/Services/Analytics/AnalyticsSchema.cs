@@ -96,6 +96,11 @@ namespace PocketWilds.Services.Analytics
         AlbumPageComplete = 163,
         AlbumComplete = 164,
         AlbumInfoOpened = 165,
+
+        // The achievements and the profile items (block 170, doc 01 Succès section 1 « Affichage et données »; T44B).
+        AchievementTier = 170,
+        ProfileTitleSelected = 171,
+        ProfileFrameSelected = 172,
     }
 
     /// <summary>Screens worth counting: the values of doc 08 section 9.5 (realigned in T37, before any data was sent).</summary>
@@ -241,6 +246,11 @@ namespace PocketWilds.Services.Analytics
             AnalyticsEventId.AlbumComplete => new[] { Field.I(0) },
             // stickers owned
             AnalyticsEventId.AlbumInfoOpened => new[] { Field.I(0) },
+            // T44B (block 170). achievement number (1 to 200), tier (1 Bronze, 2 Silver, 3 Gold, 4 Star)
+            AnalyticsEventId.AchievementTier => new[] { Field.I(0), Field.I(1) },
+            // title or frame index (−1: none shown)
+            AnalyticsEventId.ProfileTitleSelected => new[] { Field.I(0) },
+            AnalyticsEventId.ProfileFrameSelected => new[] { Field.I(0) },
             // index (1 to 3)
             AnalyticsEventId.WelcomeGift => new[] { Field.I(0) },
             // seconds from Today opened to the last claim, taps, items claimed

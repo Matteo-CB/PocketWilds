@@ -81,6 +81,9 @@ namespace PocketWilds.Bootstrap
         private GardenHooks _gardenHooks;
         private AlbumService _albums;
         private AlbumHooks _albumHooks;
+        private AchievementService _achievements;
+        private ProfileItemService _profileItems;
+        private AchievementHooks _achievementHooks;
         private GrantService _grants;
         private OfferService _offers;
         private StoreService _store;
@@ -260,6 +263,11 @@ namespace PocketWilds.Bootstrap
                 // Only stickers whose art was captured (and whose subject exists) are ever drawn.
                 _albums.SetAvailableArt(StickerArtKeys.Captured);
                 _albumHooks = new AlbumHooks(_albums, _activities, _daily, _expeditions, _garden);
+                // T44B: the 200 achievements (counters since the account began, four tiers) and the titles, frames and poses.
+                _profileItems = new ProfileItemService(_save.State.Achievements) { Save = _save };
+                _achievements = new AchievementService(_save.State.Achievements) { Save = _save };
+                _achievementHooks = new AchievementHooks(_achievements, _profileItems, _save.State, _clock, _content, _economy, _hatch,
+                    _mastery, _progression, _activities, _daily, _expeditions, _garden, _albums, _albumHooks);
                 if (_activities.AnyShipped)
                 {
                     _daily.Config.ActivitiesAvailable = true;
@@ -299,6 +307,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.AttachExpeditions(_expeditions);
                 _analytics.AttachGarden(_garden);
                 _analytics.AttachAlbums(_albums);
+                _analytics.AttachAchievements(_achievements, _profileItems);
                 _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
             });
 
@@ -371,6 +380,8 @@ namespace PocketWilds.Bootstrap
                 Context.Expeditions = _expeditions;
                 Context.Garden = _garden;
                 Context.Albums = _albums;
+                Context.Achievements = _achievements;
+                Context.ProfileItems = _profileItems;
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);
@@ -517,6 +528,10 @@ namespace PocketWilds.Bootstrap
             _gardenHooks?.Dispose();
             _gardenHooks = null;
             _garden = null;
+            _achievementHooks?.Dispose();
+            _achievementHooks = null;
+            _achievements = null;
+            _profileItems = null;
             _albumHooks?.Dispose();
             _albumHooks = null;
             _albums = null;

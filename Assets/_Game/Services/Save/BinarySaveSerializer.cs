@@ -35,9 +35,10 @@ namespace PocketWilds.Services.Save
         /// 2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids). 4: Pity counters.
         /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
         /// 8: Discovery egg stock (World 3). 9: Renewal memory and Essence tree. 10: daily rendez-vous and inventory (T36).
-        /// 11: activities (T37). 12: expeditions (T42). 13: garden (T43). 14: albums (T44A).
+        /// 11: activities (T37). 12: expeditions (T42). 13: garden (T43). 14: albums (T44A). 15: achievements and profile
+        /// items (T44B).
         /// </summary>
-        public const int CurrentVersion = 14;
+        public const int CurrentVersion = 15;
     }
 
     /// <summary>
@@ -67,6 +68,7 @@ namespace PocketWilds.Services.Save
         private const ushort ExpeditionsVersion = 1;
         private const ushort GardenVersion = 1;
         private const ushort AlbumsVersion = 1;
+        private const ushort AchievementsVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -195,6 +197,10 @@ namespace PocketWilds.Services.Save
 
             mark = BeginSection(output, SaveSectionId.Albums, AlbumsVersion);
             WriteAlbums(output, state.Albums);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Achievements, AchievementsVersion);
+            WriteAchievements(output, state.Achievements);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -380,6 +386,10 @@ namespace PocketWilds.Services.Save
                     ReadGarden(garden, state.Garden);
                 if (document.TryGetSection(SaveSectionId.Albums, out var albums))
                     ReadAlbums(albums, state.Albums);
+                // Saves older than schema 15 have no achievements: the hooks compute the state counters from the save
+                // (species, levels, masteries, bonds, decorations, albums) and give the starting title and frame (T44B).
+                if (document.TryGetSection(SaveSectionId.Achievements, out var achievements))
+                    ReadAchievements(achievements, state.Achievements);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -1108,6 +1118,142 @@ namespace PocketWilds.Services.Save
             for (int i = 0; i < a.PaidPoints.Length; i++)
                 if (a.PaidPoints[i] >= 100)
                     a.PaidPoints[i] = 99;
+        }
+
+        /// <summary>
+        /// T44B (doc 01 Succès): progress by achievement index, tiers reached and claimed, the run's and the day's counters,
+        /// the distinct sets and lists, the profile items owned, unseen and shown. Every array is preceded by its length.
+        /// </summary>
+        private static void WriteAchievements(ByteBufferWriter output, AchievementState a)
+        {
+            output.WriteInt32(a.Progress.Length);
+            for (int i = 0; i < a.Progress.Length; i++)
+                output.WriteInt64(a.Progress[i]);
+            WriteBytes(output, a.Reached);
+            WriteBytes(output, a.Claimed);
+            output.WriteInt64(a.RunHatches);
+            output.WriteInt64(a.RunLightLevels);
+            output.WriteBool(a.RunProductionBeaten);
+            output.WriteInt64(a.BestRenewalEssence);
+            output.WriteInt32(a.DayKey);
+            output.WriteInt32(a.DayHatches);
+            output.WriteInt32(a.DayWishes);
+            output.WriteInt32(a.SeasonKey);
+            output.WriteInt32(a.JournalWeek);
+            output.WriteInt32(a.JournalGoalsCounted);
+            output.WriteBool(a.JournalCompleteCounted);
+            output.WriteUInt32(a.HatchBiomes);
+            output.WriteUInt32(a.HatchRarities);
+            output.WriteUInt32(a.ActivitiesStarred);
+            output.WriteUInt32(a.Destinations);
+            output.WriteUInt32(a.PlantsHarvested);
+            output.WriteInt64(unchecked((long)a.PosesUsed));
+            WriteBytes(output, a.SpeciesTraits);
+            WriteIds(output, a.AnimalsPlayed, a.AnimalsPlayedCount);
+            WriteIds(output, a.AnimalsWished, a.AnimalsWishedCount);
+            WriteIds(output, a.AnimalsPetted, a.AnimalsPettedCount);
+            WriteIds(output, a.Accessories, a.AccessoriesCount);
+            output.WriteBool(a.StartGiven);
+            WriteBytes(output, a.TitlesOwned);
+            WriteBytes(output, a.TitlesUnseen);
+            output.WriteInt64(unchecked((long)a.FramesOwned));
+            output.WriteInt64(unchecked((long)a.FramesUnseen));
+            output.WriteInt64(unchecked((long)a.PosesOwned));
+            output.WriteInt64(unchecked((long)a.PosesUnseen));
+            output.WriteInt32(a.SelectedTitle);
+            output.WriteInt32(a.SelectedFrame);
+        }
+
+        private static void ReadAchievements(SaveSection section, AchievementState a)
+        {
+            RequireVersion(section, AchievementsVersion);
+            var r = section.CreateReader();
+            int count = ReadCount(ref r);
+            for (int i = 0; i < count; i++)
+            {
+                long value = r.ReadInt64();
+                // A newer build may hold more achievements: their progress is read and dropped.
+                if (i < a.Progress.Length)
+                    a.Progress[i] = Math.Max(0L, value);
+            }
+            ReadBytes(ref r, a.Reached);
+            ReadBytes(ref r, a.Claimed);
+            for (int i = 0; i < a.Reached.Length; i++)
+            {
+                if (a.Reached[i] > (byte)AchievementTier.Star)
+                    a.Reached[i] = (byte)AchievementTier.Star;
+                if (a.Claimed[i] > a.Reached[i])
+                    a.Claimed[i] = a.Reached[i];
+            }
+            a.RunHatches = Math.Max(0L, r.ReadInt64());
+            a.RunLightLevels = Math.Max(0L, r.ReadInt64());
+            a.RunProductionBeaten = r.ReadBool();
+            a.BestRenewalEssence = Math.Max(0L, r.ReadInt64());
+            a.DayKey = r.ReadInt32();
+            a.DayHatches = Math.Max(0, r.ReadInt32());
+            a.DayWishes = Math.Max(0, r.ReadInt32());
+            a.SeasonKey = r.ReadInt32();
+            a.JournalWeek = r.ReadInt32();
+            a.JournalGoalsCounted = Math.Max(0, r.ReadInt32());
+            a.JournalCompleteCounted = r.ReadBool();
+            a.HatchBiomes = r.ReadUInt32() & ((1u << AlbumState.Biomes) - 1u);
+            a.HatchRarities = r.ReadUInt32() & 0x3Fu;
+            a.ActivitiesStarred = r.ReadUInt32();
+            a.Destinations = r.ReadUInt32();
+            a.PlantsHarvested = r.ReadUInt32();
+            a.PosesUsed = unchecked((ulong)r.ReadInt64()) & ((1UL << AchievementState.Poses) - 1UL);
+            ReadBytes(ref r, a.SpeciesTraits);
+            for (int i = 0; i < a.SpeciesTraits.Length; i++)
+                a.SpeciesTraits[i] &= 0x3F;
+            a.AnimalsPlayedCount = ReadIds(ref r, a.AnimalsPlayed);
+            a.AnimalsWishedCount = ReadIds(ref r, a.AnimalsWished);
+            a.AnimalsPettedCount = ReadIds(ref r, a.AnimalsPetted);
+            a.AccessoriesCount = ReadIds(ref r, a.Accessories);
+            a.StartGiven = r.ReadBool();
+            ReadBytes(ref r, a.TitlesOwned);
+            ReadBytes(ref r, a.TitlesUnseen);
+            // The last byte holds bits past the 322 titles: cleared.
+            int tail = AchievementState.Titles & 7;
+            if (tail != 0)
+            {
+                byte keep = (byte)((1 << tail) - 1);
+                a.TitlesOwned[AchievementState.TitleBytes - 1] &= keep;
+                a.TitlesUnseen[AchievementState.TitleBytes - 1] &= keep;
+            }
+            const ulong frames = (1UL << AchievementState.Frames) - 1UL;
+            const ulong poses = (1UL << AchievementState.Poses) - 1UL;
+            a.FramesOwned = unchecked((ulong)r.ReadInt64()) & frames;
+            a.FramesUnseen = unchecked((ulong)r.ReadInt64()) & frames;
+            a.PosesOwned = unchecked((ulong)r.ReadInt64()) & poses;
+            a.PosesUnseen = unchecked((ulong)r.ReadInt64()) & poses;
+            int title = r.ReadInt32();
+            int frame = r.ReadInt32();
+            // A shown item must be owned (−1: none).
+            a.SelectedTitle = (short)(title >= 0 && title < AchievementState.Titles && AchievementState.Bit(a.TitlesOwned, title) ? title : -1);
+            a.SelectedFrame = (short)(frame >= 0 && frame < AchievementState.Frames && (a.FramesOwned & (1UL << frame)) != 0 ? frame : -1);
+        }
+
+        private static void WriteIds(ByteBufferWriter output, uint[] ids, int count)
+        {
+            if (count > ids.Length)
+                count = ids.Length;
+            output.WriteInt32(count);
+            for (int i = 0; i < count; i++)
+                output.WriteUInt32(ids[i]);
+        }
+
+        /// <summary>A length-prefixed id list into a fixed array (a longer one is read and its tail dropped); the ids kept.</summary>
+        private static int ReadIds(ref ByteBufferReader r, uint[] into)
+        {
+            int count = ReadCount(ref r);
+            int kept = 0;
+            for (int i = 0; i < count; i++)
+            {
+                uint id = r.ReadUInt32();
+                if (id != 0 && kept < into.Length)
+                    into[kept++] = id;
+            }
+            return kept;
         }
 
         private static void WriteBytes(ByteBufferWriter output, byte[] bytes)

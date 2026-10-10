@@ -39,6 +39,9 @@ namespace PocketWilds.Services.Save
 
         /// <summary>T44A: the albums: stickers owned and unseen, album stars, guarantees' counters, pages, rewards, seed (schema 14).</summary>
         Albums = 20,
+
+        /// <summary>T44B: the achievements (counters, tiers reached and claimed) and the profile's titles, frames and poses (schema 15).</summary>
+        Achievements = 21,
     }
 
     public sealed class SaveSection

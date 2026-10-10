@@ -113,6 +113,11 @@ namespace PocketWilds.Presentation
 
         /// <summary>T44A: the albums (set by the bootstrap after the context; null in scenes started without them).</summary>
         public AlbumService Albums { get; set; }
+
+        /// <summary>T44B: the 200 achievements and the profile's titles, frames and poses (set by the bootstrap).</summary>
+        public AchievementService Achievements { get; set; }
+
+        public ProfileItemService ProfileItems { get; set; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

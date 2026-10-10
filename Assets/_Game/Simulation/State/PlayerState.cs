@@ -41,6 +41,9 @@ namespace PocketWilds.Simulation
         /// <summary>T44A: the albums (stickers owned and unseen, album stars, guarantees' counters, pages open, rewards claimed, seed).</summary>
         public AlbumState Albums { get; } = new AlbumState();
 
+        /// <summary>T44B: the achievements (counters, tiers reached and claimed, run and day counters) and the profile's titles, frames and poses.</summary>
+        public AchievementState Achievements { get; } = new AchievementState();
+
         /// <summary>The welcome is over: the tutorial wish was done, or the save already holds 5 animals (doc 01, section 1.1).</summary>
         public bool IsOnboardingDone => DailyVisit.OnboardingDone || Collection.Count >= 5;
 

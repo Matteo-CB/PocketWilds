@@ -20,6 +20,7 @@ namespace PocketWilds.Services.Save
             new Migration0011AddExpeditions(),
             new Migration0012AddGarden(),
             new Migration0013AddAlbums(),
+            new Migration0014AddAchievements(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -204,6 +205,22 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 13;
         public int ToVersion => 14;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 14 to 15 (T44B): the Achievements section. Nothing to convert: without it every counter starts at zero, then
+    /// the achievement hooks compute the ones that count a saved state (species, variants, levels, masteries, bonds,
+    /// decorations, albums, refuge level, Renewals) from the save, unlock the titles and frames those states give, and give
+    /// the starting title and frame (doc 01 Succès, section 1 « Ce qui compte »). Action counters begin with this version.
+    /// </summary>
+    public sealed class Migration0014AddAchievements : ISaveMigration
+    {
+        public int FromVersion => 14;
+        public int ToVersion => 15;
 
         public void Apply(SaveDocument document)
         {

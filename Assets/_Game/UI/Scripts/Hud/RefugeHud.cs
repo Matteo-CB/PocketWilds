@@ -17,7 +17,7 @@ namespace PocketWilds.UI
     /// owned in a small round badge and its dot; while a game plays the whole HUD fades out and catches no touch.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IDailyHud, IPlayHud, IAlbumHud, IMotionSettings
+    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IDailyHud, IPlayHud, IAlbumHud, IProfileHud, IMotionSettings
     {
         private const float PulseSeconds = 0.4f;
 
@@ -1300,6 +1300,51 @@ namespace PocketWilds.UI
             _albumsButton = button;
             _albumsRoot = root;
             _albumsDot = dot;
+        }
+
+        // ---------------- T44B profile (IProfileHud) ----------------
+
+        [Header("T44B profile: the round Succès button above the Albums button")]
+        [SerializeField] private Button _profileButton;
+        [SerializeField] private RectTransform _profileRoot;
+        [SerializeField] private GameObject _profileDot;
+
+        private IProfileHudActions _profileActions;
+
+        public bool ProfileVisible => _profileRoot != null && _profileRoot.gameObject.activeSelf;
+        public bool ProfileDotVisible => _profileDot != null && _profileDot.activeSelf;
+        public Button ProfileButton => _profileButton;
+        public RectTransform ProfileRoot => _profileRoot;
+
+        public void BindProfile(IProfileHudActions actions)
+        {
+            _profileActions = actions;
+            if (_profileButton == null)
+                return;
+            _profileButton.onClick.RemoveListener(OnProfilePressed);
+            _profileButton.onClick.AddListener(OnProfilePressed);
+        }
+
+        /// <summary>The dot while an achievement tier waits to be claimed.</summary>
+        public void SetProfile(bool visible, bool dot)
+        {
+            if (_profileRoot == null)
+                return;
+            if (_profileRoot.gameObject.activeSelf != visible)
+                _profileRoot.gameObject.SetActive(visible);
+            bool showDot = visible && dot;
+            if (_profileDot != null && _profileDot.activeSelf != showDot)
+                _profileDot.SetActive(showDot);
+        }
+
+        private void OnProfilePressed() => _profileActions?.OpenProfile();
+
+        /// <summary>Prefab builder hook for the Succès button (Editor UiPipeline).</summary>
+        public void SetProfileReferences(Button button, RectTransform root, GameObject dot)
+        {
+            _profileButton = button;
+            _profileRoot = root;
+            _profileDot = dot;
         }
 
         /// <summary>Prefab builder hook for the shortcut row (Editor UiPipeline).</summary>

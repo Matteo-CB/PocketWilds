@@ -280,6 +280,14 @@ namespace PocketWilds.Editor.UI
                 var stickers = StickerTexts.Texts;
                 for (int i = 0; i < stickers.GetLength(0); i++)
                     table.Set(stickers[i, 0], stickers[i, language + 1]);
+                // T44B: the profile screen's texts, then the 200 achievements', 322 titles', 42 frames' and 47 poses' names,
+                // goals and sources (agent BC's generated ProfileTexts, found by reflection).
+                var profile = ProfileScreenTexts.Texts;
+                for (int i = 0; i < profile.GetLength(0); i++)
+                    table.Set(profile[i, 0], profile[i, language + 1]);
+                var profileNames = ProfileScreenTexts.ContentNames();
+                for (int i = 0; i < profileNames.GetLength(0); i++)
+                    table.Set(profileNames[i, 0], profileNames[i, language + 1]);
                 EditorUtility.SetDirty(table);
                 if (!database.localization.Contains(table))
                     database.localization.Insert(Mathf.Min(language, database.localization.Count), table);
@@ -486,6 +494,23 @@ namespace PocketWilds.Editor.UI
                 albumsDot.gameObject.SetActive(false);
                 albumsRoot.gameObject.SetActive(false);
                 hud.SetAlbumsReferences(albumsButton, albumsRoot, albumsDot.gameObject);
+
+                // T44B Succès: above the Albums button (bottom right), in the shortcuts' style; the dot while a tier waits.
+                var profileRoot = Rect("Profile", shortcuts);
+                Place(profileRoot, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-52f, 556f), new Vector2(176f, 176f));
+                var profileImage = AddImage("Button", profileRoot, circle, tokens.panelPrimary, Image.Type.Simple);
+                profileImage.raycastTarget = true;
+                Stretch(profileImage.rectTransform);
+                var profileButton = profileImage.gameObject.AddComponent<Button>();
+                ConfigureButton(profileButton, profileImage);
+                var profileIcon = AddImage("Icon", profileImage.rectTransform, ProfileIcon(), Color.white, Image.Type.Simple);
+                Place(profileIcon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 6f), new Vector2(112f, 112f));
+                profileIcon.preserveAspect = true;
+                var profileDot = AddImage("Dot", profileRoot, AssetDatabase.LoadAssetAtPath<Sprite>(DotPath), tokens.errorSoft, Image.Type.Simple);
+                Place(profileDot.rectTransform, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-26f, -26f), new Vector2(46f, 46f));
+                profileDot.gameObject.SetActive(false);
+                profileRoot.gameObject.SetActive(false);
+                hud.SetProfileReferences(profileButton, profileRoot, profileDot.gameObject);
 
                 // Mastery toast above the hatch action: own canvas, animated only while shown.
                 var masteryRoot = Rect("Mastery", safe);
@@ -714,6 +739,16 @@ namespace PocketWilds.Editor.UI
                 return album;
             Debug.LogWarning("[UiPipeline] ICO_Album.png is missing in " + IconFolder + ": the Albums button shows ICO_Paw until it is drawn.");
             return IconSprite("ICO_Paw");
+        }
+
+        /// <summary>T44B ICO_Achievement (agent BA); the album star (a round five-point star) stands in until it is drawn.</summary>
+        internal static Sprite ProfileIcon()
+        {
+            var icon = AssetDatabase.LoadAssetAtPath<Sprite>(IconFolder + "/ICO_Achievement.png");
+            if (icon != null)
+                return icon;
+            Debug.LogWarning("[UiPipeline] ICO_Achievement.png is missing in " + IconFolder + ": the Succès button shows ICO_AlbumStar until it is drawn.");
+            return AssetDatabase.LoadAssetAtPath<Sprite>(IconFolder + "/ICO_AlbumStar.png") ?? IconSprite("ICO_Paw");
         }
 
         /// <summary>ICO_Play (doc 06 icon inventory, T37 icons); the paw stands in until it is drawn.</summary>

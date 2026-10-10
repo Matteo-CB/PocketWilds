@@ -26,7 +26,9 @@ namespace PocketWilds.Editor.Import
             if (assetPath.StartsWith(UiRoot, StringComparison.Ordinal) && name.StartsWith("TH_", StringComparison.Ordinal))
                 ApplyThumbnail((TextureImporter)assetImporter);
             else if (assetPath.StartsWith(UiRoot, StringComparison.Ordinal)
-                && (name.StartsWith("UI_", StringComparison.Ordinal) || name.StartsWith("ICO_", StringComparison.Ordinal)))
+                && (name.StartsWith("UI_", StringComparison.Ordinal) || name.StartsWith("ICO_", StringComparison.Ordinal)
+                    // T44B: the profile frames' motifs (M_Daisy…) are UI sprites too.
+                    || (name.StartsWith("M_", StringComparison.Ordinal) && assetPath.Contains("/Profile/Frames/"))))
                 ApplyUiSprite((TextureImporter)assetImporter, name);
             else if (name.StartsWith("T_", StringComparison.Ordinal) && name.Contains("Mask"))
                 ApplyMask((TextureImporter)assetImporter, assetPath.StartsWith(AssetImportRules.EggsRoot, StringComparison.Ordinal));

@@ -40,6 +40,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Expeditions_v12", BuildExpeditions());
             created += WriteIfMissing("GoldenSave_Garden_v13", BuildGarden());
             created += WriteIfMissing("GoldenSave_Albums_v14", BuildAlbums());
+            created += WriteIfMissing("GoldenSave_Achievements_v15", BuildAchievements());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -361,6 +362,52 @@ namespace PocketWilds.Editor.Saves
             a.PlantsHarvested = 0b101;
             a.DyesObtained = 3;
             a.GardenSpedUp = 0b10;
+            return state;
+        }
+
+        /// <summary>
+        /// Schema 15 (T44B): 250 eggs hatched (ACH-083 Silver reached, Bronze claimed), 40 eggs in the run, a day of 12 eggs
+        /// and 2 wishes, biomes and rarities hatched, two species and trait pairs, two animals petted, the season counted, the
+        /// starting title and frame owned and shown, title.lucky_star owned and unseen, the base pose « Sit » owned.
+        /// </summary>
+        private static PlayerState BuildAchievements()
+        {
+            var state = BuildAlbums();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-0000000000c5");
+            state.Meta.Revision = 380;
+            var a = state.Achievements;
+            a.Progress[82] = 250;
+            a.Reached[82] = (byte)AchievementTier.Silver;
+            a.Claimed[82] = (byte)AchievementTier.Bronze;
+            a.Progress[189] = 40;
+            a.RunHatches = 40;
+            a.RunLightLevels = 7;
+            a.BestRenewalEssence = 120;
+            a.DayKey = 20261015;
+            a.DayHatches = 12;
+            a.DayWishes = 2;
+            a.SeasonKey = 2026 * 4 + 3;
+            a.JournalWeek = 20261012;
+            a.JournalGoalsCounted = 3;
+            a.HatchBiomes = 0b11;
+            a.HatchRarities = 0b111;
+            a.ActivitiesStarred = 1;
+            a.Destinations = 1;
+            a.PlantsHarvested = 0b101;
+            a.PosesUsed = 0;
+            a.SpeciesTraits[0] = 0b101;
+            a.AnimalsPetted[0] = 7;
+            a.AnimalsPetted[1] = 9;
+            a.AnimalsPettedCount = 2;
+            a.StartGiven = true;
+            AchievementState.SetBit(a.TitlesOwned, 0, true);
+            AchievementState.SetBit(a.TitlesOwned, 4, true);
+            AchievementState.SetBit(a.TitlesUnseen, 4, true);
+            a.FramesOwned = 1;
+            a.PosesOwned = 1;
+            a.PosesUnseen = 1;
+            a.SelectedTitle = 0;
+            a.SelectedFrame = 0;
             return state;
         }
 
