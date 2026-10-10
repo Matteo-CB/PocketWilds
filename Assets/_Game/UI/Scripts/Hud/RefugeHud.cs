@@ -17,7 +17,7 @@ namespace PocketWilds.UI
     /// owned in a small round badge and its dot; while a game plays the whole HUD fades out and catches no touch.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IDailyHud, IPlayHud, IMotionSettings
+    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IDailyHud, IPlayHud, IAlbumHud, IMotionSettings
     {
         private const float PulseSeconds = 0.4f;
 
@@ -1252,6 +1252,54 @@ namespace PocketWilds.UI
             _masteryBar = bar;
             _masteryFill = fill;
             _masteryGlow = glow;
+        }
+
+        // ---------------- T44A albums (IAlbumHud) ----------------
+
+        [Header("T44A albums: the round Albums button above the shop")]
+        [SerializeField] private Button _albumsButton;
+        [SerializeField] private RectTransform _albumsRoot;
+        [SerializeField] private GameObject _albumsDot;
+
+        private IAlbumHudActions _albumActions;
+
+        public bool AlbumsVisible => _albumsRoot != null && _albumsRoot.gameObject.activeSelf;
+        public bool AlbumsDotVisible => _albumsDot != null && _albumsDot.activeSelf;
+        public Button AlbumsButton => _albumsButton;
+        public RectTransform AlbumsRoot => _albumsRoot;
+
+        /// <summary>Where gained stickers fly while the albums screen is closed.</summary>
+        public Vector2 AlbumsScreenPosition => ScreenCenter(_albumsRoot);
+
+        public void BindAlbums(IAlbumHudActions actions)
+        {
+            _albumActions = actions;
+            if (_albumsButton == null)
+                return;
+            _albumsButton.onClick.RemoveListener(OnAlbumsPressed);
+            _albumsButton.onClick.AddListener(OnAlbumsPressed);
+        }
+
+        /// <summary>Shown once the albums open (refuge level 12 and day 5); the dot while a sticker waits to be seen.</summary>
+        public void SetAlbums(bool visible, bool dot)
+        {
+            if (_albumsRoot == null)
+                return;
+            if (_albumsRoot.gameObject.activeSelf != visible)
+                _albumsRoot.gameObject.SetActive(visible);
+            bool showDot = visible && dot;
+            if (_albumsDot != null && _albumsDot.activeSelf != showDot)
+                _albumsDot.SetActive(showDot);
+        }
+
+        private void OnAlbumsPressed() => _albumActions?.OpenAlbums();
+
+        /// <summary>Prefab builder hook for the Albums button (Editor UiPipeline).</summary>
+        public void SetAlbumsReferences(Button button, RectTransform root, GameObject dot)
+        {
+            _albumsButton = button;
+            _albumsRoot = root;
+            _albumsDot = dot;
         }
 
         /// <summary>Prefab builder hook for the shortcut row (Editor UiPipeline).</summary>

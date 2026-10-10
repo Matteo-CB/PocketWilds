@@ -88,6 +88,14 @@ namespace PocketWilds.Services.Analytics
         GardenPlant = 150,
         GardenHarvest = 151,
         GardenSpeedup = 152,
+
+        // The albums (block 160, doc 01 Albums section 1.14, after T29's catalogue; T44A).
+        AlbumStickerGained = 160,
+        AlbumStarSpent = 161,
+        AlbumPageHalf = 162,
+        AlbumPageComplete = 163,
+        AlbumComplete = 164,
+        AlbumInfoOpened = 165,
     }
 
     /// <summary>Screens worth counting: the values of doc 08 section 9.5 (realigned in T37, before any data was sent).</summary>
@@ -222,6 +230,17 @@ namespace PocketWilds.Services.Analytics
             AnalyticsEventId.GardenHarvest => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2) },
             // method (1 Gems, 2 ad, 3 Club), Gems, seconds that were left
             AnalyticsEventId.GardenSpeedup => new[] { Field.I(0), Field.I(1), Field.D(0, 0) },
+            // T44A (block 160). sticker index, source (StickerSource), new (1) or duplicate (0), rarity (0 Common, 1 Rare, 2 Shiny), page
+            AnalyticsEventId.AlbumStickerGained => new[] { Field.I(0), Field.I(1), Field.I(2), Field.I(3), Field.D(0, 0) },
+            // sticker index chosen, stars left
+            AnalyticsEventId.AlbumStarSpent => new[] { Field.I(0), Field.I(1) },
+            // page index, album index
+            AnalyticsEventId.AlbumPageHalf => new[] { Field.I(0), Field.I(1) },
+            AnalyticsEventId.AlbumPageComplete => new[] { Field.I(0), Field.I(1) },
+            // album index
+            AnalyticsEventId.AlbumComplete => new[] { Field.I(0) },
+            // stickers owned
+            AnalyticsEventId.AlbumInfoOpened => new[] { Field.I(0) },
             // index (1 to 3)
             AnalyticsEventId.WelcomeGift => new[] { Field.I(0) },
             // seconds from Today opened to the last claim, taps, items claimed

@@ -345,6 +345,11 @@ namespace PocketWilds.Editor.Audio
                 Def(AudioEventId.GardenWater, "SFX_Garden_Water", AudioGroup.World, 2, 1f, 1, volumeJitter: 0.03f, pitchJitter: 0.02f),
                 Def(AudioEventId.GardenStage, "SFX_Garden_Stage", AudioGroup.World, 2, 0.15f, 2, volumeJitter: 0.04f, pitchJitter: 0.02f),
                 Def(AudioEventId.GardenLevelUp, "SFX_Reward_MasteryUp", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                // T44A: the albums (doc 01 Albums et autocollants; doc 05 section 6.4, slots 43 and 44), Rewards. A sticker
+                // won: once every 0.4 s at most (a draw of several stickers reveals them one after another, the peel is
+                // 0.5 s). The page turn: once every 0.9 s (a page takes that long to turn, the notes ring 0.9 s).
+                Def(AudioEventId.Sticker, "SFX_Reward_Sticker", AudioGroup.Rewards, 2, 0.4f, 1, volumeJitter: 0.02f, pitchJitter: 0f),
+                Def(AudioEventId.AlbumPage, "SFX_Reward_AlbumPage", AudioGroup.Rewards, 2, 0.9f, 1, volumeJitter: 0.02f, pitchJitter: 0f),
             };
             foreach (var (id, prefix) in new[]
                      {

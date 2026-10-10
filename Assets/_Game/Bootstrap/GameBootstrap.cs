@@ -79,6 +79,8 @@ namespace PocketWilds.Bootstrap
         private ExpeditionHooks _expeditionHooks;
         private GardenService _garden;
         private GardenHooks _gardenHooks;
+        private AlbumService _albums;
+        private AlbumHooks _albumHooks;
         private GrantService _grants;
         private OfferService _offers;
         private StoreService _store;
@@ -253,6 +255,11 @@ namespace PocketWilds.Bootstrap
                 // and journal goals (JRN-027 to 030); both GardenAvailable flags are set by the service and its hooks.
                 _garden = new GardenService(_activities);
                 _gardenHooks = new GardenHooks(_garden, _daily);
+                // T44A: the albums (720 stickers, draws with their guarantees, album stars, page rewards) fed by every source.
+                _albums = new AlbumService(_save.State.Albums);
+                // Only stickers whose art was captured (and whose subject exists) are ever drawn.
+                _albums.SetAvailableArt(StickerArtKeys.Captured);
+                _albumHooks = new AlbumHooks(_albums, _activities, _daily, _expeditions, _garden);
                 if (_activities.AnyShipped)
                 {
                     _daily.Config.ActivitiesAvailable = true;
@@ -291,6 +298,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.AttachActivities(_activities);
                 _analytics.AttachExpeditions(_expeditions);
                 _analytics.AttachGarden(_garden);
+                _analytics.AttachAlbums(_albums);
                 _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
             });
 
@@ -362,6 +370,7 @@ namespace PocketWilds.Bootstrap
                     _audio, _haptics, _offline, _localization, _codex, _store, _analytics, _progression, _daily, _activities);
                 Context.Expeditions = _expeditions;
                 Context.Garden = _garden;
+                Context.Albums = _albums;
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);
@@ -508,6 +517,9 @@ namespace PocketWilds.Bootstrap
             _gardenHooks?.Dispose();
             _gardenHooks = null;
             _garden = null;
+            _albumHooks?.Dispose();
+            _albumHooks = null;
+            _albums = null;
             _activities?.Dispose();
             _activities = null;
             _daily?.Dispose();

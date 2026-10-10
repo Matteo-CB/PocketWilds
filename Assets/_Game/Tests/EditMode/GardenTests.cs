@@ -762,7 +762,7 @@ namespace PocketWilds.Tests.EditMode
             Assert.IsTrue(g.Plots[0].FlowerBeside);
             CollectionAssert.AreEqual(g.Dyes, loaded.Dyes);
             Assert.AreEqual(g.Palettes, loaded.Palettes);
-            Assert.AreEqual(13, SaveSchema.CurrentVersion);
+            Assert.GreaterOrEqual(SaveSchema.CurrentVersion, 13, "The garden came with schema 13 (T44A albums made it 14).");
             Assert.AreEqual(19, (int)SaveSectionId.Garden);
         }
 

@@ -35,9 +35,9 @@ namespace PocketWilds.Services.Save
         /// 2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids). 4: Pity counters.
         /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
         /// 8: Discovery egg stock (World 3). 9: Renewal memory and Essence tree. 10: daily rendez-vous and inventory (T36).
-        /// 11: activities (T37). 12: expeditions (T42). 13: garden (T43).
+        /// 11: activities (T37). 12: expeditions (T42). 13: garden (T43). 14: albums (T44A).
         /// </summary>
-        public const int CurrentVersion = 13;
+        public const int CurrentVersion = 14;
     }
 
     /// <summary>
@@ -66,6 +66,7 @@ namespace PocketWilds.Services.Save
         private const ushort ActivitiesVersion = 1;
         private const ushort ExpeditionsVersion = 1;
         private const ushort GardenVersion = 1;
+        private const ushort AlbumsVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -190,6 +191,10 @@ namespace PocketWilds.Services.Save
 
             mark = BeginSection(output, SaveSectionId.Garden, GardenVersion);
             WriteGarden(output, state.Garden);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Albums, AlbumsVersion);
+            WriteAlbums(output, state.Albums);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -373,6 +378,8 @@ namespace PocketWilds.Services.Save
                 // Saves older than schema 13 have no garden: every plot bare, level 1, no dye (T43).
                 if (document.TryGetSection(SaveSectionId.Garden, out var garden))
                     ReadGarden(garden, state.Garden);
+                if (document.TryGetSection(SaveSectionId.Albums, out var albums))
+                    ReadAlbums(albums, state.Albums);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -1046,6 +1053,80 @@ namespace PocketWilds.Services.Save
                     g.Dyes[i] = owned;
             }
             g.Palettes = r.ReadUInt32() & ((1u << GardenCatalog.PaletteCount) - 1u);
+        }
+
+        /// <summary>T44A (doc 01 Albums, section 1.14): bit sets and counters at fixed sizes, each preceded by its length.</summary>
+        private static void WriteAlbums(ByteBufferWriter output, AlbumState a)
+        {
+            output.WriteBool(a.Opened);
+            WriteBytes(output, a.Owned);
+            WriteBytes(output, a.Unseen);
+            output.WriteInt32(a.Stars);
+            output.WriteByte(a.DuplicateStreak);
+            WriteBytes(output, a.ShinyDraws);
+            WriteBytes(output, a.PaidPoints);
+            output.WriteInt32(a.SignatureSeen);
+            WriteBytes(output, a.PageRewards);
+            output.WriteInt32(a.AlbumRewards);
+            output.WriteInt64(unchecked((long)a.Seed));
+            output.WriteInt64(unchecked((long)a.PagesOpen));
+            output.WriteInt32(a.WishDayKey);
+            output.WriteByte(a.WishesToday);
+            WriteBytes(output, a.Records);
+            output.WriteInt32(a.LongExpeditions);
+            output.WriteInt32(a.ExpeditionBiomes);
+            output.WriteUInt32(a.PlantsHarvested);
+            output.WriteInt32(a.DyesObtained);
+            output.WriteByte(a.GardenSpedUp);
+        }
+
+        private static void ReadAlbums(SaveSection section, AlbumState a)
+        {
+            RequireVersion(section, AlbumsVersion);
+            var r = section.CreateReader();
+            a.Opened = r.ReadBool();
+            ReadBytes(ref r, a.Owned);
+            ReadBytes(ref r, a.Unseen);
+            a.Stars = Math.Max(0, r.ReadInt32());
+            a.DuplicateStreak = r.ReadByte();
+            ReadBytes(ref r, a.ShinyDraws);
+            ReadBytes(ref r, a.PaidPoints);
+            a.SignatureSeen = (ushort)(r.ReadInt32() & ((1 << AlbumState.Biomes) - 1));
+            ReadBytes(ref r, a.PageRewards);
+            a.AlbumRewards = (ushort)(r.ReadInt32() & 0xFFFF);
+            a.Seed = unchecked((ulong)r.ReadInt64());
+            a.PagesOpen = unchecked((ulong)r.ReadInt64()) & ((1UL << AlbumState.Pages) - 1UL);
+            a.WishDayKey = r.ReadInt32();
+            a.WishesToday = r.ReadByte();
+            ReadBytes(ref r, a.Records);
+            a.LongExpeditions = Math.Max(0, r.ReadInt32());
+            a.ExpeditionBiomes = (ushort)(r.ReadInt32() & ((1 << AlbumState.Biomes) - 1));
+            a.PlantsHarvested = r.ReadUInt32();
+            a.DyesObtained = Math.Max(0, r.ReadInt32());
+            a.GardenSpedUp = r.ReadByte();
+            // Paid counters stay under 100 (a sticker is given at 100).
+            for (int i = 0; i < a.PaidPoints.Length; i++)
+                if (a.PaidPoints[i] >= 100)
+                    a.PaidPoints[i] = 99;
+        }
+
+        private static void WriteBytes(ByteBufferWriter output, byte[] bytes)
+        {
+            output.WriteInt32(bytes.Length);
+            for (int i = 0; i < bytes.Length; i++)
+                output.WriteByte(bytes[i]);
+        }
+
+        /// <summary>A length-prefixed byte run into a fixed array: a longer run (a newer build's) is read and its tail dropped.</summary>
+        private static void ReadBytes(ref ByteBufferReader r, byte[] into)
+        {
+            int count = ReadCount(ref r);
+            for (int i = 0; i < count; i++)
+            {
+                byte b = r.ReadByte();
+                if (i < into.Length)
+                    into[i] = b;
+            }
         }
 
         private static void ReadCounters(ref ByteBufferReader r, System.Collections.Generic.Dictionary<ContentId, int> counters)

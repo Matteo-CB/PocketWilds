@@ -536,6 +536,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Activities_v11")]
         [TestCase("GoldenSave_Expeditions_v12")]
         [TestCase("GoldenSave_Garden_v13")]
+        [TestCase("GoldenSave_Albums_v14")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -561,6 +562,8 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(0, state.World.DiscoveryEggs, "Older saves start with no Discovery egg.");
             if (version < 11)
                 Assert.IsFalse(state.Activities.TicketsStarted, "Older saves start the ticket pool on first use.");
+            if (version < 14)
+                Assert.IsTrue(!state.Albums.Opened && state.Albums.Stars == 0 && state.Albums.PagesOpen == 0, "Older saves: no album opened yet.");
             if (version < 13)
             {
                 Assert.IsFalse(state.Garden.AnyActive || state.Garden.PlotBought, "Older saves: every plot bare, the Gems plot not bought.");
@@ -717,6 +720,35 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(13, e.Postcards[2].Id);
                     Assert.IsFalse(e.Postcards[2].Rendered);
                     Assert.AreEqual(6, state.Activities.ChallengesThreeStars, "Everything of schema 11 still there.");
+                    break;
+
+                case "GoldenSave_Albums_v14":
+                    Assert.AreEqual(360, state.Meta.Revision);
+                    Assert.AreEqual(SaveSchema.CurrentVersion - 14, result.MigrationsApplied);
+                    var al = state.Albums;
+                    Assert.IsTrue(al.Opened);
+                    Assert.IsTrue(al.IsOwned(0) && al.IsOwned(6) && al.IsOwned(12) && al.IsOwned(13) && al.IsOwned(1) && al.IsOwned(2));
+                    Assert.IsFalse(al.IsOwned(3));
+                    Assert.IsFalse(AlbumState.Bit(al.Unseen, 0));
+                    Assert.IsTrue(AlbumState.Bit(al.Unseen, 13));
+                    Assert.AreEqual(13, al.Stars);
+                    Assert.AreEqual(2, al.DuplicateStreak);
+                    Assert.AreEqual(7, al.ShinyDraws[0]);
+                    Assert.AreEqual(3, al.ShinyDraws[1]);
+                    Assert.AreEqual(45, al.PaidPoints[5]);
+                    Assert.AreEqual(1, al.SignatureSeen);
+                    Assert.IsTrue(AlbumState.Bit(al.PageRewards, 0) && !AlbumState.Bit(al.PageRewards, 1));
+                    Assert.AreEqual(0x0123456789ABCDEFUL, al.Seed);
+                    Assert.IsTrue(al.IsPageOpen(0) && al.IsPageOpen(1) && al.IsPageOpen(42) && al.IsPageOpen(38) && !al.IsPageOpen(2));
+                    Assert.AreEqual(20261014, al.WishDayKey);
+                    Assert.AreEqual(2, al.WishesToday);
+                    Assert.AreEqual(2, al.Records[0]);
+                    Assert.AreEqual(1, al.LongExpeditions);
+                    Assert.AreEqual(1, al.ExpeditionBiomes);
+                    Assert.AreEqual(5u, al.PlantsHarvested);
+                    Assert.AreEqual(3, al.DyesObtained);
+                    Assert.AreEqual(2, al.GardenSpedUp);
+                    Assert.AreEqual(230, state.Garden.Points, "Everything of schema 13 still there.");
                     break;
 
                 case "GoldenSave_Garden_v13":

@@ -1,6 +1,6 @@
 # T35C : simulation de l'économie
 
-Rapport écrit par le simulateur (menu Pocket Wilds/Economy/Run Simulator, test EconomySimulatorTests), avec les valeurs des docs telles que le jeu les a. 6 profils sur 120 jours en 5,31 s. Garde-fous : 81 respectés sur 94, 13 en attente d'une décision du propriétaire, 0 hors bornes.
+Rapport écrit par le simulateur (menu Pocket Wilds/Economy/Run Simulator, test EconomySimulatorTests), avec les valeurs des docs telles que le jeu les a. 6 profils sur 120 jours en 5,34 s. Garde-fous : 81 respectés sur 94, 13 en attente d'une décision du propriétaire, 0 hors bornes.
 
 Analyse, contradictions entre les docs et décisions à prendre : `T35C_Decisions.md`. Données jour par jour : `T35C_Simulation.csv` (même dossier).
 
@@ -101,7 +101,7 @@ Analyse, contradictions entre les docs et décisions à prendre : `T35C_Decision
 | Régulier gratuit : Gemmes non dépensées sous 1 500 au jour 30 | 389 | respecté |
 | Club : environ deux fois les Gemmes d'un régulier gratuit (1,6 à 2,5) | × 1,63 | respecté |
 | Club + Pass : collection 20 à 25 % plus rapide, jamais plus | -15 % | respecté |
-| 6 profils sur 120 jours en moins de 10 s | 5,31 s | respecté |
+| 6 profils sur 120 jours en moins de 10 s | 5,34 s | respecté |
 
 En attente de décision mais respectés aujourd'hui (à retirer de la liste) : G5.target.casual.mastery30, G5.discovery.late.club, G5.goals.club_pass_packs, G5.discovery.early.collector, G4.payer.speed.
 

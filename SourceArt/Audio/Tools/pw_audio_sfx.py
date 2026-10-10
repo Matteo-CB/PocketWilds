@@ -1596,6 +1596,52 @@ def world_harvest(v):
     return _soft_start(wet(x, ROOM, 0.06), 0.003)
 
 
+# ---------------------------------------------------------------- T44A: albums (doc 01 Albums et autocollants; doc 05
+# Sensations, section 6.4, slots 43 Sticker and 44 AlbumPage). A sticker peeled off its sheet and pressed into the album,
+# a page turned and two warm wooden notes; F major. Soft paper, a round pop, wood: no glass, no chime.
+
+def reward_sticker(v):
+    """J-SFX-REWARD (slot 43): a sticker is won: a soft paper peel (a quick swish whose band rises as the sticker comes
+    away from its sheet, the faint tooth of the paper), then a light round pop on A as it is pressed down, with a quiet
+    wooden tine an octave under for the warmth a phone keeps. About 0.5 s."""
+    rng = np.random.default_rng(2500)
+    out = np.zeros(samples(0.7))
+    n = samples(0.17)
+    u = np.arange(n) / n
+    peel = _moving_band(n, 700.0 * 2.0 ** (1.5 * u), rng, width=0.45, low=450.0, high=3400.0) * _rise_fall(n, 0.7, 1.5)
+    place(out, peel * (1.0 + 0.3 * _flutter(n, 60.0, rng)) * 0.2, 0.0, release=0.02)
+    tt = t_axis(0.06)
+    tap = damped_sine(tt, 410.0, 0.01) * np.clip(tt / 0.0015, 0.0, 1.0) * 0.26
+    tap += fft_filter(white(len(tt), rng) * env_ad(tt, 0.0006, 0.004), bandpass(1000.0, 3200.0)) * 0.08
+    place(out, tap, 0.17, release=0.02)
+    place(out, _pop(hz('A5'), start=0.62, tau=0.05, bright=0.14) * 0.42, 0.172, release=0.03)
+    place(out, _tine_under(hz('A4'), 0.4, 0.45, 0.12, rng) * 0.16, 0.175)
+    x = fft_filter(out, chain(lowpass(5500.0, 2), highpass(200.0, 2), peak(3000.0, -2.5, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.07))
+
+
+def reward_album_page(v):
+    """J-SFX-REWARD (slot 44): an album page turns: the air of a thick page (a swish whose band rises then settles, a
+    soft thump of the page laid down), then two warm wooden notes, F then A, a third apart, the second ringing a little
+    longer over a quiet tine. About 0.9 s."""
+    rng = np.random.default_rng(2510)
+    out = np.zeros(samples(1.2))
+    n = samples(0.26)
+    u = np.arange(n) / n
+    air = _moving_band(n, 520.0 * 2.0 ** (1.7 * u), rng, width=0.5, low=350.0, high=3000.0) * _rise_fall(n, 0.55, 1.5)
+    place(out, air * (1.0 + 0.25 * _flutter(n, 45.0, rng)) * 0.2, 0.0, release=0.03)
+    t = t_axis(0.12)
+    laid = np.sin(phase_of(glide(t, 230.0, 180.0, 0.014))) * env_ad(t, 0.004, 0.028) * 0.3
+    laid += band_noise(len(t), 250.0, 1300.0, rng) * env_ad(t, 0.005, 0.02) * 0.22
+    place(out, laid, 0.25, release=0.03)
+    place(out, mallet(hz('F5'), 0.28, 0.55, damp=0.5) * 0.32, 0.3)
+    place(out, mallet(hz('A5'), 0.4, 0.6, damp=0.7) * 0.34, 0.46)
+    place(out, _tine_under(hz('F4'), 0.35, 0.4, 0.1, rng) * 0.12, 0.302)
+    place(out, _tine_under(hz('A4'), 0.4, 0.45, 0.12, rng) * 0.14, 0.462)
+    x = fft_filter(out, chain(lowpass(6000.0, 2), highpass(180.0, 2), peak(3200.0, -2.5, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.08))
+
+
 # ---------------------------------------------------------------- catalog
 
 # name: (recipe, variants, loudness target (loudest 200 ms, K-weighted, LUFS scale), group)
@@ -1697,4 +1743,8 @@ SFX = {
     'SFX_Garden_Water': (garden_water, 1, -24.0, 'World'),
     'SFX_Garden_Stage': (garden_stage, 1, -23.0, 'World'),
     'SFX_World_Harvest': (world_harvest, 3, -20.0, 'World'),
+    # T44A albums (doc 05 Sensations, section 6.4, slots 43 and 44), both in the Rewards group: the sticker at -20 (a
+    # reward card's level), the album page at -21, a touch softer (a page turned is more frequent than a sticker won).
+    'SFX_Reward_Sticker_01': (reward_sticker, 1, -20.0, 'Rewards'),
+    'SFX_Reward_AlbumPage_01': (reward_album_page, 1, -21.0, 'Rewards'),
 }

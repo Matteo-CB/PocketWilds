@@ -39,6 +39,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Activities_v11", BuildActivities());
             created += WriteIfMissing("GoldenSave_Expeditions_v12", BuildExpeditions());
             created += WriteIfMissing("GoldenSave_Garden_v13", BuildGarden());
+            created += WriteIfMissing("GoldenSave_Albums_v14", BuildAlbums());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -321,6 +322,45 @@ namespace PocketWilds.Editor.Saves
             state.Inventory.Add(ContentId.FromSource("plant.sweet_clover"), 4);
             state.Inventory.Add(ContentId.FromSource("crop.clover_flower"), 9);
             state.Inventory.Add(ContentId.FromSource("ingredient.strawberry"), 4);
+            return state;
+        }
+
+        /// <summary>
+        /// Schema 14 (T44A): the albums open: STK-GL-01, the Hamster companion, the Start and Meadow zones owned, the Prairie
+        /// pages, the Grooming page and the Éveil page open, 13 album stars, a duplicate streak of 2, Shiny counters, a paid
+        /// counter for the Garden, the Prairie's signature moment seen, page 1's half reward claimed, the seed, the day's
+        /// wishes, two new records in Grooming, a 12 h expedition, plants and dyes, a Garden plot finished with Gems.
+        /// </summary>
+        private static PlayerState BuildAlbums()
+        {
+            var state = BuildGarden();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-0000000000c4");
+            state.Meta.Revision = 360;
+            var a = state.Albums;
+            a.Opened = true;
+            foreach (int sticker in new[] { 0, 6, 12, 13, 1, 2 })
+            {
+                AlbumState.SetBit(a.Owned, sticker, true);
+                AlbumState.SetBit(a.Unseen, sticker, sticker != 0);
+            }
+            a.Stars = 13;
+            a.DuplicateStreak = 2;
+            a.ShinyDraws[0] = 7;
+            a.ShinyDraws[1] = 3;
+            a.PaidPoints[5] = 45;
+            a.SignatureSeen = 1;
+            AlbumState.SetBit(a.PageRewards, 0, true);
+            a.AlbumRewards = 0;
+            a.Seed = 0x0123456789ABCDEFUL;
+            a.PagesOpen = (1UL << 0) | (1UL << 1) | (1UL << 42) | (1UL << 38);
+            a.WishDayKey = 20261014;
+            a.WishesToday = 2;
+            a.Records[0] = 2;
+            a.LongExpeditions = 1;
+            a.ExpeditionBiomes = 1;
+            a.PlantsHarvested = 0b101;
+            a.DyesObtained = 3;
+            a.GardenSpedUp = 0b10;
             return state;
         }
 

@@ -110,6 +110,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>T43: the garden (set by the bootstrap after the context; null in scenes started without it).</summary>
         public GardenService Garden { get; set; }
+
+        /// <summary>T44A: the albums (set by the bootstrap after the context; null in scenes started without them).</summary>
+        public AlbumService Albums { get; set; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

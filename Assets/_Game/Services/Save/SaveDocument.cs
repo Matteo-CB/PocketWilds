@@ -36,6 +36,9 @@ namespace PocketWilds.Services.Save
 
         /// <summary>T43: the garden: plots, sprouts, timers, draws made at planting, points, challenge, dyes, palettes (schema 13).</summary>
         Garden = 19,
+
+        /// <summary>T44A: the albums: stickers owned and unseen, album stars, guarantees' counters, pages, rewards, seed (schema 14).</summary>
+        Albums = 20,
     }
 
     public sealed class SaveSection

@@ -113,6 +113,12 @@ namespace PocketWilds.Simulation
         /// <summary>T37: the activity ticket pool; null before it exists (tickets then wait in the inventory).</summary>
         public ITicketSink? Tickets { get; set; }
 
+        /// <summary>
+        /// T44A: the albums take a bundle's stickers (count, reason) and return true once handled (drawn by their source's
+        /// hook, or turned into album stars); null or false: they wait in <see cref="InventoryState.PendingStickers"/> as before.
+        /// </summary>
+        public Func<int, EconomyReason, bool>? StickerSink { get; set; }
+
         /// <summary>Where a rendez-vous ticket comes from, for analytics 114 (doc 08).</summary>
         public static TicketSource TicketSourceOf(EconomyReason reason) => reason switch
         {
@@ -161,7 +167,8 @@ namespace PocketWilds.Simulation
                 else
                     inventory.Tickets += bundle.Tickets;
             }
-            inventory.PendingStickers += Math.Max(0, bundle.Stickers);
+            if (bundle.Stickers > 0 && (StickerSink == null || !StickerSink(bundle.Stickers, reason)))
+                inventory.PendingStickers += bundle.Stickers;
             if (bundle.Seeds > 0)
                 inventory.Add(bundle.SeedPlant, bundle.Seeds);
             if (bundle.FlowerSugar > 0)

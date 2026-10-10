@@ -90,6 +90,15 @@
       "builders": ["Assets/_Game/Editor/Capture/WorldCapture.T35A.cs"]
     },
     {
+      "final": "Assets/_Game/Art/UI/Albums/Stickers/",
+      "from": "the album stickers: captures of the game's own animal prefabs, props, plants and Prairie zones with the game shaders, palettes and light profiles (masters in SourceArt/UI/Stickers)",
+      "builders": [
+        "Assets/_Game/Editor/Albums/StickerCapturePipeline.cs",
+        "Assets/_Game/Editor/Albums/StickerCaptureDefinitions.cs",
+        "Assets/_Game/Editor/Albums/StickerImage.cs"
+      ]
+    },
+    {
       "final": "Assets/_Game/Art/UI/Activities/Expeditions/Destinations/",
       "from": "each destination's postcard set (PC_FlowerMeadows.fbx from BL_Activity_Postcards.blend, the T38 backdrop, the Prairie kit) rendered in Unity without animals, with the game shaders and the set's light",
       "builders": ["Assets/_Game/Editor/Activities/PostcardSetPipeline.cs"]

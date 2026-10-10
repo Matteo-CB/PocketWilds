@@ -19,6 +19,7 @@ namespace PocketWilds.Services.Save
             new Migration0010AddActivities(),
             new Migration0011AddExpeditions(),
             new Migration0012AddGarden(),
+            new Migration0013AddAlbums(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -188,6 +189,21 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 12;
         public int ToVersion => 13;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 13 to 14 (T44A): the Albums section. Nothing to convert: without it no sticker is owned and the albums open
+    /// at refuge level 12 and day 5 with their opening's progress; stickers kept in the inventory before become a sticker
+    /// of choice each (10 album stars) when they open.
+    /// </summary>
+    public sealed class Migration0013AddAlbums : ISaveMigration
+    {
+        public int FromVersion => 13;
+        public int ToVersion => 14;
 
         public void Apply(SaveDocument document)
         {

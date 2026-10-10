@@ -47,28 +47,36 @@ def warm_orb(c, r, ox, oy):
 
 
 def icon_upgrade():
-    """ICO_Upgrade: a big cream paw print, its two middle toes holding up a warm orb that rests on them. No arrow."""
+    """
+    ICO_Upgrade: a big cream paw print with a round green badge holding a soft white plus at its top right (« améliorer »).
+    Redrawn 2026-10-10 at the owner's request: the warm orb resting on the toes read as a strange golden blob at HUD size.
+    """
     c = Canvas(128, 128, cy=64.0)
-    orb_y, orb_r = 32.0, 21.0
-    orb = sd_circle(c, orb_r, 0.0, orb_y)
-    pad = sd_ellipse(c, 25.0, 20.0, ox=0.0, oy=-34.0)
+    pad = sd_ellipse(c, 27.0, 21.0, ox=-6.0, oy=-30.0)
     toes = None
-    for tx, ty, rx, ry, ang in ((-34.0, -6.0, 8.0, 10.5, 24.0), (-13.0, 6.0, 8.0, 10.5, 8.0),
-                                (13.0, 6.0, 8.0, 10.5, -8.0), (34.0, -6.0, 8.0, 10.5, -24.0)):
+    for tx, ty, rx, ry, ang in ((-42.0, -2.0, 8.5, 11.0, 24.0), (-21.0, 12.0, 8.5, 11.0, 8.0),
+                                (3.0, 12.0, 8.5, 11.0, -8.0), (24.0, -2.0, 8.5, 11.0, -24.0)):
         d = sd_ellipse(c, rx, ry, ox=tx, oy=ty, angle_deg=ang)
         toes = d if toes is None else np.minimum(toes, d)
     paw = np.minimum(pad, toes)
-    outline = np.minimum(paw, orb) - 4.5
+    badge_x, badge_y, badge_r = 34.0, 32.0, 22.0
+    badge = sd_circle(c, badge_r, badge_x, badge_y)
+    outline = np.minimum(paw, badge) - 4.5
     drop_shadow(c, outline)
-    c.over(hexrgb(OUTLINE), fill(outline))
+    c.over(hexrgb(OUTLINE), fill(paw - 4.5))
     t = np.clip((16.0 - c.y) / 70.0, 0, 1)
     c.over(lerp(hexrgb("FFF1D6"), hexrgb("E6C397"), t), fill(paw))
-    # Warm light falls from the orb on the toes under it.
-    c.over(hexrgb("FFE29A"), soft(sd_circle(c, orb_r, 0.0, orb_y), 22.0) * fill(paw) * 0.6)
-    c.over(hexrgb("F2B0A2"), fill(sd_ellipse(c, 14.0, 9.5, ox=0.0, oy=-37.0)) * 0.45)
-    for tx in (-13.0, 13.0):
-        c.over(hexrgb("F2B0A2"), fill(sd_ellipse(c, 4.0, 4.5, ox=tx, oy=3.0)) * 0.35)
-    warm_orb(c, orb_r, 0.0, orb_y)
+    c.over(hexrgb("F2B0A2"), fill(sd_ellipse(c, 15.0, 10.0, ox=-6.0, oy=-33.0)) * 0.45)
+    for tx in (-21.0, 3.0):
+        c.over(hexrgb("F2B0A2"), fill(sd_ellipse(c, 4.0, 4.5, ox=tx, oy=9.0)) * 0.35)
+    # The badge: a deep green rim, a soft green face lit from the top, a rounded white plus.
+    c.over(hexrgb("3E7D3A"), fill(badge - 4.0))
+    tb = np.clip((badge_y + badge_r - c.y) / (2.0 * badge_r), 0, 1)
+    c.over(lerp(hexrgb("9BD67E"), hexrgb("5EA94C"), tb), fill(badge))
+    bar_h = sd_ellipse(c, 12.0, 3.6, ox=badge_x, oy=badge_y)
+    bar_v = sd_ellipse(c, 3.6, 12.0, ox=badge_x, oy=badge_y)
+    c.over((255, 255, 255), fill(np.minimum(bar_h, bar_v)))
+    c.over((255, 255, 255), soft(sd_circle(c, 9.0, badge_x - 8.0, badge_y + 9.0), 6.0) * fill(badge) * 0.35)
     return "ICO_Upgrade", c, RUNTIME_ICONS
 
 

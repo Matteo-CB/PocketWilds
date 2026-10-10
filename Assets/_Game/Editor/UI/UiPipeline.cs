@@ -273,6 +273,13 @@ namespace PocketWilds.Editor.UI
                 var garden = GardenTexts.Texts;
                 for (int i = 0; i < garden.GetLength(0); i++)
                     table.Set(garden[i, 0], garden[i, language + 1]);
+                // T44A: the albums' screen texts and the 16 albums, 60 pages and 720 stickers' names (generated from the doc).
+                var albums = AlbumTexts.Texts;
+                for (int i = 0; i < albums.GetLength(0); i++)
+                    table.Set(albums[i, 0], albums[i, language + 1]);
+                var stickers = StickerTexts.Texts;
+                for (int i = 0; i < stickers.GetLength(0); i++)
+                    table.Set(stickers[i, 0], stickers[i, language + 1]);
                 EditorUtility.SetDirty(table);
                 if (!database.localization.Contains(table))
                     database.localization.Insert(Mathf.Min(language, database.localization.Count), table);
@@ -463,6 +470,22 @@ namespace PocketWilds.Editor.UI
                 Place(gemsValue.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(98f, 4f), new Vector2(130f, 64f));
                 gemsChip.gameObject.SetActive(false);
                 hud.SetShopReferences(shopButton, shopRoot, gemsChip, gemsValue);
+
+                // T44A Albums: above the shop (bottom right), in the shortcuts' style; hidden until the albums open.
+                var albumsRoot = Rect("Albums", shortcuts);
+                Place(albumsRoot, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-52f, 344f), new Vector2(176f, 176f));
+                var albumsImage = AddImage("Button", albumsRoot, circle, tokens.panelPrimary, Image.Type.Simple);
+                albumsImage.raycastTarget = true;
+                Stretch(albumsImage.rectTransform);
+                var albumsButton = albumsImage.gameObject.AddComponent<Button>();
+                ConfigureButton(albumsButton, albumsImage);
+                var albumsIcon = AddImage("Icon", albumsImage.rectTransform, AlbumIcon(), Color.white, Image.Type.Simple);
+                Place(albumsIcon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 6f), new Vector2(112f, 112f));
+                var albumsDot = AddImage("Dot", albumsRoot, AssetDatabase.LoadAssetAtPath<Sprite>(DotPath), tokens.errorSoft, Image.Type.Simple);
+                Place(albumsDot.rectTransform, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-26f, -26f), new Vector2(46f, 46f));
+                albumsDot.gameObject.SetActive(false);
+                albumsRoot.gameObject.SetActive(false);
+                hud.SetAlbumsReferences(albumsButton, albumsRoot, albumsDot.gameObject);
 
                 // Mastery toast above the hatch action: own canvas, animated only while shown.
                 var masteryRoot = Rect("Mastery", safe);
@@ -681,6 +704,16 @@ namespace PocketWilds.Editor.UI
             playRoot.gameObject.SetActive(false);
             hud.SetPlayReferences(playButton, playRoot, playGroup, playIcon.rectTransform, badge.rectTransform, count, playDot.rectTransform, rootGroup);
             return playRoot;
+        }
+
+        /// <summary>T44A ICO_Album (doc 06 icon inventory); the paw stands in until it is drawn.</summary>
+        internal static Sprite AlbumIcon()
+        {
+            var album = AssetDatabase.LoadAssetAtPath<Sprite>(IconFolder + "/ICO_Album.png");
+            if (album != null)
+                return album;
+            Debug.LogWarning("[UiPipeline] ICO_Album.png is missing in " + IconFolder + ": the Albums button shows ICO_Paw until it is drawn.");
+            return IconSprite("ICO_Paw");
         }
 
         /// <summary>ICO_Play (doc 06 icon inventory, T37 icons); the paw stands in until it is drawn.</summary>

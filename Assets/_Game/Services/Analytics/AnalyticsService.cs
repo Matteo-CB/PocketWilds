@@ -1165,8 +1165,78 @@ namespace PocketWilds.Services.Analytics
             Record(ref e);
         }
 
+        // ------------------------------------------------------------------ T44A: the albums (block 160)
+
+        private AlbumService? _albums;
+        private AlbumGainHandler? _onAlbumGain;
+        private Action<int>? _onAlbumStarSpent;
+        private AlbumRewardHandler? _onAlbumReward;
+
+        /// <summary>Stickers gained, stars spent, pages half and complete, albums complete (events 160 to 164).</summary>
+        public void AttachAlbums(AlbumService? albums)
+        {
+            DetachAlbums();
+            _albums = albums;
+            if (albums == null)
+                return;
+            _onAlbumGain ??= OnAlbumGain;
+            _onAlbumStarSpent ??= OnAlbumStarSpent;
+            _onAlbumReward ??= OnAlbumReward;
+            albums.StickerGained += _onAlbumGain;
+            albums.StarsSpent += _onAlbumStarSpent;
+            albums.RewardEarned += _onAlbumReward;
+        }
+
+        private void DetachAlbums()
+        {
+            var a = _albums;
+            if (a == null)
+                return;
+            a.StickerGained -= _onAlbumGain;
+            a.StarsSpent -= _onAlbumStarSpent;
+            a.RewardEarned -= _onAlbumReward;
+            _albums = null;
+        }
+
+        /// <summary>The odds screen of the albums was opened (event 165; the albums screen calls it).</summary>
+        public void AlbumInfoOpened()
+        {
+            int owned = 0;
+            var albums = _albums;
+            if (albums != null)
+                for (int p = 0; p < albums.PageCount; p++)
+                    owned += albums.OwnedOnPage(p);
+            var e = new AnalyticsEvent(AnalyticsEventId.AlbumInfoOpened) { I0 = owned };
+            Record(ref e);
+        }
+
+        private void OnAlbumGain(in AlbumGainInfo info)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.AlbumStickerGained)
+            {
+                I0 = info.Sticker, I1 = (int)info.Source, I2 = info.New ? 1 : 0, I3 = (int)info.Rarity, D0 = info.Page,
+            };
+            Record(ref e);
+        }
+
+        private void OnAlbumStarSpent(int sticker)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.AlbumStarSpent) { I0 = sticker, I1 = _albums?.AlbumStars ?? 0 };
+            Record(ref e);
+        }
+
+        private void OnAlbumReward(in AlbumReward reward)
+        {
+            var id = reward.Kind == AlbumRewardKind.PageHalf ? AnalyticsEventId.AlbumPageHalf
+                : reward.Kind == AlbumRewardKind.PageComplete ? AnalyticsEventId.AlbumPageComplete
+                : AnalyticsEventId.AlbumComplete;
+            var e = new AnalyticsEvent(id) { I0 = reward.Kind == AlbumRewardKind.AlbumComplete ? reward.Album : reward.Page, I1 = reward.Album };
+            Record(ref e);
+        }
+
         public void Dispose()
         {
+            DetachAlbums();
             DetachGarden();
             DetachExpeditions();
             DetachActivities();

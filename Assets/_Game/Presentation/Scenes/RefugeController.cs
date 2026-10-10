@@ -559,7 +559,10 @@ namespace PocketWilds.Presentation
         /// <summary>A screen covers the refuge: world touches and hatching wait.</summary>
         public bool ModalOpen =>
             OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen || ProgressionOpen || SummaryOpen || DailyOpen
-            || ActivitiesOpen;
+            || ActivitiesOpen || (AlbumsOpenCheck != null && AlbumsOpenCheck());
+
+        /// <summary>T44A: the albums screen is open (world touches wait), set by the scene entry.</summary>
+        public Func<bool> AlbumsOpenCheck { get; set; }
 
         /// <summary>T35B: the summary card of a multi hatch (screen 028) is up.</summary>
         public bool SummaryOpen => _summaryView != null && _summaryView.IsOpen;

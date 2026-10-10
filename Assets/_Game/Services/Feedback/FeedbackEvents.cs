@@ -121,7 +121,17 @@ namespace PocketWilds.Services.Feedback
         /// </summary>
         StarEarned = 42,
 
-        // 43 and 44 are reserved by doc 05 section 6.4 (Sticker, AlbumPage).
+        /// <summary>
+        /// T44A J-SFX-REWARD (doc 05 section 6.4, slot 43): a sticker is won (a soft paper peel, a light round pop on A over
+        /// a quiet wooden tine). SFX_Reward_Sticker_01, Rewards, 1 voice, 0.5 s.
+        /// </summary>
+        Sticker = 43,
+
+        /// <summary>
+        /// T44A J-SFX-REWARD (doc 05 section 6.4, slot 44): an album page turns (the air of a thick page, then two warm
+        /// wooden notes, F and A). SFX_Reward_AlbumPage_01, Rewards, 1 voice, 0.9 s.
+        /// </summary>
+        AlbumPage = 44,
 
         /// <summary>
         /// T42 J-SFX-FEEL-016: the team is home (doc 05 sheet 23: small hurried felted steps coming closer, the postcard slid
