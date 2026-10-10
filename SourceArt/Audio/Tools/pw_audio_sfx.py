@@ -1120,6 +1120,100 @@ def hideseek_all_found(v):
     return _soft_start(wet(x, ROOM, 0.14))
 
 
+# ---------------------------------------------------------------- T40: nut drop (doc 01 Contenu, S-ACT-003 "Sons et
+# effets"; doc Audio, J-SFX-ACT-003-01 to 05). Nuts and berries land in a wicker basket: round woody pops, the music
+# box's glass for the golden hazelnut, a felt mallet for the pinecone, a breath and a soft chord for a special; F major.
+# The streak step (-04) is the shared J-SFX-ACT-000-06 (SFX_Activity_Streak), played by NutDropAudio on each +0.1 of
+# the multiplier instead of on every catch.
+
+CATCH_NOTES = ('F5', 'A5', 'C6')  # hazelnut, acorn, berry: the three notes of the F major chord, like the result stars
+
+
+def _wicker(rng, seconds=0.035, grains=5, lo=1000.0, hi=2600.0):
+    """The wicker taking the weight: a few tiny soft grains of dry reed (3 to 8 ms, rounded windows), gone in 35 ms.
+    A texture under the pop, never a crackle."""
+    n = samples(seconds)
+    return _leaf_grains(n, grains, _rise_fall(n, 0.2, 1.8), rng, lo, hi)
+
+
+def nutdrop_catch(v):
+    """J-SFX-ACT-003-01: an item lands in the wicker basket: a round woody pop whose pitch follows the item, F for the
+    hazelnut, A for the acorn, C for the berry (variants 1 to 3, chosen by NutDropAudio.CatchVariant), over the knock of
+    its shell a fourth below and a whisper of the wicker. The hazelnut knocks hollow (the air of its round shell, an
+    octave under the pop), the acorn a little drier with the tiny tap of its cap just after, the berry rounder and softer
+    (more pop, less wood). Rounded over 2 ms. About 0.2 s, light enough to repeat two or three times a second."""
+    rng = np.random.default_rng(2100 + v)
+    note = hz(CATCH_NOTES[v])
+    knock, cavity, pop, bright = ((0.34, 0.5, 0.48, 0.2), (0.32, 0.0, 0.46, 0.18), (0.16, 0.0, 0.52, 0.12))[v]
+    out = np.zeros(samples(0.3))
+    shell = _wood_knock(note * 0.75, rng, cavity=note * cavity, seconds=0.2)
+    place(out, fade(shell, 0.002, 0.0) * knock, 0.0, release=0.03)
+    place(out, _pop(note, start=0.7, tau=(0.03, 0.026, 0.034)[v], bright=bright) * pop, 0.003, release=0.02)
+    if v == 1:
+        place(out, fade(_wood_knock(note * 1.5, rng, seconds=0.05), 0.002, 0.0) * 0.07, 0.024, release=0.015)
+    place(out, _wicker(rng) * 0.05, 0.004, release=0.01)
+    x = fft_filter(out, chain(lowpass(5000.0, 2), highpass(200.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.05), 0.002)
+
+
+def nutdrop_golden(v):
+    """J-SFX-ACT-003-02: the golden hazelnut lands: the hazelnut's woody pop on F, then a small chime of glass, A, C and
+    F rolled quickly upward at the music box, each over a quiet tine an octave below, the F left to ring a little. Warm
+    and short: a cup of glass, never a bell. About 0.6 s, so a golden shower (one every half second) stays light."""
+    rng = np.random.default_rng(2110)
+    out = np.zeros(samples(0.9))
+    place(out, fade(_wood_knock(hz('C5'), rng, cavity=hz('F4'), seconds=0.2), 0.002, 0.0) * 0.24, 0.0, release=0.03)
+    place(out, _pop(hz('F5'), start=0.7, tau=0.03, bright=0.14) * 0.34, 0.003, release=0.02)
+    for i, (note, vel, seconds, tau, level) in enumerate((('A5', 0.4, 0.4, 0.1, 0.22), ('C6', 0.45, 0.45, 0.12, 0.26),
+                                                          ('F6', 0.5, 0.8, 0.24, 0.32))):
+        at = 0.03 + 0.032 * i
+        place(out, _small_chime(hz(note), seconds, vel, tau) * level, at)
+        place(out, _tine_under(hz(note) / 2.0, seconds, 0.45, tau * 1.2, rng) * level * 0.35, at)
+    x = fft_filter(out, chain(lowpass(7500.0, 2), highpass(180.0, 2), peak(3000.0, -2.5, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.12))
+
+
+def nutdrop_pinecone(v):
+    """J-SFX-ACT-003-03: a pinecone lands in the basket: a soft felted « bonk », gentle, never punishing. A felt mallet on
+    a small wooden box (a round note that bends down a little into C, or B flat for the second variant, in 12 ms: the
+    bonk), the puff of its felt, the dry scales of the cone brushing the wicker in a whisper, then two small leaves
+    drifting down (H-VFX-ACT-003-03). No buzzer, no falling melody; under the catches. About 0.3 s."""
+    rng = np.random.default_rng(2120 + v)
+    f0 = hz(('C5', 'Bb4')[v])
+    out = np.zeros(samples(0.45))
+    t = t_axis(0.2)
+    ph = phase_of(glide(t, f0 * 1.16, f0, 0.012))
+    body = np.sin(ph) * env_ad(t, 0.004, 0.045) + 0.3 * np.sin(2.0 * ph) * env_ad(t, 0.004, 0.02)
+    body += 0.08 * np.sin(2.0 * np.pi * f0 * 2.32 * t) * env_ad(t, 0.004, 0.012)
+    felt = band_noise(len(t), 350.0, 1400.0, rng) * env_ad(t, 0.005, 0.022) * 0.4
+    place(out, body * 0.5 + felt, 0.0, release=0.03)
+    n = samples(0.05)
+    place(out, _leaf_grains(n, 6, _rise_fall(n, 0.3, 1.6), rng, 900.0, 2200.0) * 0.06, 0.006, release=0.01)
+    place(out, _leaf_flight(0.22, (11.0, 13.0)[v], rng, 450.0, 1500.0) * 0.035, 0.07, release=0.03)
+    x = fft_filter(out, chain(lowpass(3000.0, 2), highpass(200.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.05), 0.003)
+
+
+def nutdrop_special(v):
+    """J-SFX-ACT-003-05: a special is caught (the wide basket, the feather, the golden shower): a breath and a chord. A
+    soft breath of air whose colour rises as the soft ring opens around the basket (H-VFX-ACT-003-04), then an F major
+    chord blooming out of it: a soft swell (F, A, C) and three tines rolled upward, A, C, F, the F's glass a whisper
+    above. Airy where the Claim chord is strummed. About 1 s."""
+    rng = np.random.default_rng(2130)
+    out = np.zeros(samples(1.4))
+    n = samples(0.34)
+    env = _rise_fall(n, 0.72, 1.6)
+    u = np.arange(n) / n
+    breath = _moving_band(n, 520.0 * 2.0 ** (1.4 * u), rng, width=0.55, low=300.0, high=2600.0) * env
+    place(out, breath * 0.3, 0.0, release=0.04)
+    place(out, swell([hz('F4'), hz('A4'), hz('C5')], 1.0, 0.07, 0.6, 0.16), 0.2, release=0.25)
+    for i, (note, level) in enumerate((('A5', 0.24), ('C6', 0.26), ('F6', 0.3))):
+        place(out, _tine_under(hz(note), 0.9, 0.55, 0.3 + 0.04 * i, rng) * level, 0.21 + 0.04 * i)
+    place(out, _glass_note(hz('F6'), 0.7, 0.36, 0.22) * 0.1, 0.292)
+    x = fft_filter(out, chain(lowpass(6500.0, 2), highpass(160.0, 2), peak(3000.0, -3.0, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.16), 0.003)
+
+
 # ---------------------------------------------------------------- catalog
 
 # name: (recipe, variants, loudness target (loudest 200 ms, K-weighted, LUFS scale), group)
@@ -1189,4 +1283,12 @@ SFX = {
     'SFX_HideSeek_Magnifier': (hideseek_magnifier, 1, -23.0, 'UI'),
     'SFX_HideSeek_Whistle': (hideseek_whistle, 1, -21.0, 'UI'),
     'SFX_HideSeek_AllFound': (hideseek_all_found, 1, -20.0, 'Rewards'),
+    # T40 nut drop (doc 01 Contenu, S-ACT-003 "Sons et effets"). The catch is the game's main feedback and its most
+    # frequent sound (up to 2.5 a second): -21, a little over the busy "Pattes pressees" music, under the golden hazelnut
+    # (-20) and the result star (-19); the pinecone's bonk under the catch (-23: never punishing); the special's breath
+    # and chord with the rewards (-20).
+    'SFX_NutDrop_Catch': (nutdrop_catch, len(CATCH_NOTES), -21.0, 'Rewards'),
+    'SFX_NutDrop_Golden': (nutdrop_golden, 1, -20.0, 'Rewards'),
+    'SFX_NutDrop_Pinecone': (nutdrop_pinecone, 2, -23.0, 'World'),
+    'SFX_NutDrop_Special': (nutdrop_special, 1, -20.0, 'Rewards'),
 }

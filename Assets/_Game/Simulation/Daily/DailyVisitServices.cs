@@ -177,6 +177,16 @@ namespace PocketWilds.Simulation
         }
 
         /// <summary>
+        /// T40: a nut drop game ended (<see cref="NutDropHooks"/> calls it): its wishes (WISH-054 to 056) and the journal's
+        /// JRN-017. Allocation-free.
+        /// </summary>
+        public void OnNutDropGame(in NutDropGameSummary game)
+        {
+            Wishes.OnNutDropGame(in game);
+            Journal.OnNutDropGame(in game);
+        }
+
+        /// <summary>
         /// At boot (after the offline resolution) and when the app comes back: the day check first, then the return gift of
         /// this absence (doc 01, section 6).
         /// </summary>

@@ -948,7 +948,7 @@ namespace PocketWilds.Simulation
         /// Section 2.2: SYS-01 to SYS-03 open at the end of the welcome (A10); SYS-04 with the first upgrade bought or the
         /// Upgrade button (A07); SYS-06 when a biome offers its first expansion (zone signs shown, the next zone allowed);
         /// T38: SYS-09 with Grooming (refuge level 3 and 5 animals) once the build has activities; T39: SYS-10 with Hide and
-        /// Seek (refuge level 4 and 8 animals) the same way.
+        /// Seek (refuge level 4 and 8 animals) the same way; T40: SYS-11 with Nut Drop (refuge level 10, day 4 or 15 animals).
         /// </summary>
         private bool SystemOpensNow(WishSystem system)
         {
@@ -968,6 +968,8 @@ namespace PocketWilds.Simulation
                     return GroomingOpen;
                 case WishSystem.HideAndSeek:
                     return HideSeekOpen;
+                case WishSystem.NutRain:
+                    return NutDropOpen;
                 default:
                     return false;
             }
@@ -978,6 +980,9 @@ namespace PocketWilds.Simulation
 
         /// <summary>« Cache-cache débloqué »: the build has its activities and Hide and Seek's function is open (level 4, 8 animals).</summary>
         private bool HideSeekOpen => Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.HideAndSeek);
+
+        /// <summary>« Pluie de noisettes débloquée »: the build has its activities and Nut Drop's function is open (level 10, day 4 or 15 animals).</summary>
+        private bool NutDropOpen => Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.NutRain);
 
         /// <summary>Each shipped template's eligibility now (section 2.3, plan § 1.6), with the services of this build.</summary>
         private bool IsEligible(in WishTemplate template)
@@ -1023,6 +1028,11 @@ namespace PocketWilds.Simulation
                 case WishTemplateId.FindEveryHiddenAnimal:
                     // « Cache-cache débloqué ».
                     return HideSeekOpen;
+                case WishTemplateId.PlayNutDrop:
+                case WishTemplateId.NutDropCatch:
+                case WishTemplateId.NutDropStreak:
+                    // « Pluie de noisettes débloquée ».
+                    return NutDropOpen;
                 default:
                     return false;
             }
@@ -1728,6 +1738,38 @@ namespace PocketWilds.Simulation
                     case WishTemplateId.FindEveryHiddenAnimal:
                         if (game.Finished && game.AllFound)
                             Advance(i, 1);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// T40 (SYS-11, section 2.3): a nut drop game ended. WISH-054 « Joue à Pluie de noisettes »: a game played to its end,
+        /// practice included (a game left early is not a game played); WISH-055 « Attrape {n} noisettes en une partie » and
+        /// WISH-056 « Fais une série de {n} »: score wishes, one game's nuts caught and its longest streak, practice included
+        /// and even a game left early (they really happened); the wish keeps the best game so far as its progress.
+        /// Allocation-free.
+        /// </summary>
+        public void OnNutDropGame(in NutDropGameSummary game)
+        {
+            var wishes = State.DailyVisit.Wishes;
+            for (int i = Pending - 1; i >= 0; i--)
+            {
+                if (i >= Pending || wishes[i].IsDone)
+                    continue;
+                switch ((WishTemplateId)wishes[i].Template)
+                {
+                    case WishTemplateId.PlayNutDrop:
+                        if (game.Finished)
+                            Advance(i, 1);
+                        break;
+                    case WishTemplateId.NutDropCatch:
+                        if (game.Caught > wishes[i].Progress)
+                            Advance(i, game.Caught - Math.Max(0, wishes[i].Progress));
+                        break;
+                    case WishTemplateId.NutDropStreak:
+                        if (game.BestStreak > wishes[i].Progress)
+                            Advance(i, game.BestStreak - Math.Max(0, wishes[i].Progress));
                         break;
                 }
             }

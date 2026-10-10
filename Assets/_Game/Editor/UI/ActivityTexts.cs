@@ -7,8 +7,9 @@ namespace PocketWilds.Editor.UI
     /// <summary>
     /// T37 shipped texts of the activities (doc « Mini-jeux & activités », doc 01 Contenu sections 0, A15 and 12; Writing
     /// Guide: short, warm, no em dash, no pressure words, real time never a countdown), and T38's Grooming texts (its tips,
-    /// the sheet's « Brosser » and its 10 challenges, doc 01 S-ACT-001), and T39's Hide and Seek texts (its tips and its 10
-    /// challenges, doc 01 S-ACT-002). Columns: key, en, fr. Merged into
+    /// the sheet's « Brosser » and its 10 challenges, doc 01 S-ACT-001), T39's Hide and Seek texts (its tips and its 10
+    /// challenges, doc 01 S-ACT-002) and T40's Nut Drop texts (its two tips and its 10 challenges, doc 01 S-ACT-003). Columns:
+    /// key, en, fr. Merged into
     /// LOC_en / LOC_fr by <see cref="UiPipeline.EnsureLocalization"/>. Keys are <see cref="ActivityText"/>'s.
     /// <para>Counted texts come as three rows: « key.one » and « key.other », read by
     /// <see cref="PocketWilds.Core.ILocalization.GetPlural"/>, and the key itself (the usual plural) for a plain Get.</para>
@@ -172,6 +173,27 @@ namespace PocketWilds.Editor.UI
 
             void HideSeek(int number, string enName, string frName, string enGoal, string frGoal) =>
                 ActivityChallenge(ActivityId.HideAndSeek, number, enName, frName, enGoal, frGoal);
+
+            // T40 Nut Drop (doc 01 S-ACT-003): the first game's tips (the slide tip with the swiping paw until the first catch,
+            // the pinecone tip when the first one falls).
+            Plain(ActivityText.NutDropTipSlide, "Slide to catch", "Glisse pour attraper");
+            Plain(ActivityText.NutDropTipPinecone, "Avoid the pinecones", "Évite les pommes de pin");
+
+            // The 10 Nut Drop challenges (doc 01 S-ACT-003 « Défis »): the doc's French names, natural English ones, and each
+            // goal in one short line with the challenge's twist (« Défi n : goal » on one line of the hub at 40 units).
+            NutDrop(1, "First Nuts", "Premières noisettes", "Catch nuts at a gentle pace", "Attrape des noisettes en douceur");
+            NutDrop(2, "No Pinecones", "Sans pomme de pin", "No pinecones, quicker falls", "Aucune pomme de pin, chute plus vive");
+            NutDrop(3, "Pinecone Alert", "Gare aux pommes de pin", "Lots of pinecones to dodge", "Plein de pommes de pin à éviter");
+            NutDrop(4, "Little Basket", "Petit panier", "Catch with a smaller basket", "Attrape avec un panier plus petit");
+            NutDrop(5, "Downpour", "Averse", "More nuts fall at once", "Plus de noisettes à la fois");
+            NutDrop(6, "Golden Streak", "Série d'or", "Make your longest streak", "Fais ta plus longue série");
+            NutDrop(7, "Berries Only", "Baies seulement", "Only the berries score", "Seules les baies comptent");
+            NutDrop(8, "Crosswind", "Vent de côté", "The wind pushes the nuts aside", "Le vent pousse les noisettes");
+            NutDrop(9, "Golden Nuts", "Noisettes dorées", "Golden nuts, falling fast", "Noisettes dorées et chute vive");
+            NutDrop(10, "Big Harvest", "Grande récolte", "90 s at the busiest pace", "90" + Nbsp + "s au rythme le plus vif");
+
+            void NutDrop(int number, string enName, string frName, string enGoal, string frGoal) =>
+                ActivityChallenge(ActivityId.NutRain, number, enName, frName, enGoal, frGoal);
 
             void ActivityChallenge(ActivityId activity, int number, string enName, string frName, string enGoal, string frGoal)
             {

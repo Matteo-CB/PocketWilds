@@ -144,7 +144,7 @@ namespace PocketWilds.Simulation
         /// <summary>A score wish (one game): its amount follows the score rule (<see cref="WishCatalog.ScoreTarget"/>).</summary>
         public readonly bool Score;
 
-        /// <summary>Its system exists in this build (T36: SYS-01, 02, 03, 04, 06; T38: SYS-09; T39: SYS-10). Other templates are never drawn.</summary>
+        /// <summary>Its system exists in this build (T36: SYS-01, 02, 03, 04, 06; T38: SYS-09; T39: SYS-10; T40: SYS-11). Other templates are never drawn.</summary>
         public readonly bool ShippedInThisBuild;
 
         public WishTemplate(WishTemplateId id, WishSystem system, int weight, int typicalSeconds, bool timer, int p1, int p2, int p3, int p4,
@@ -330,8 +330,8 @@ namespace PocketWilds.Simulation
             // WISH-053 "Find every animal in one game": open.
             T(WishTemplateId.FindEveryHiddenAnimal, WishSystem.HideAndSeek, 3, 1 * Min, 1, 1, 1, 1),
 
-            // ---- SYS-11 Nut Drop (Games) ----
-            // WISH-054 "Play Nut Drop": open; 1 game.
+            // ---- SYS-11 Nut Drop (Games; T40) ----
+            // WISH-054 "Play Nut Drop": open; 1 game played to its end.
             T(WishTemplateId.PlayNutDrop, WishSystem.NutRain, 5, 1 * Min, 1, 1, 1, 1),
             // WISH-055 "Catch {n} nuts in one game": open; score wish.
             T(WishTemplateId.NutDropCatch, WishSystem.NutRain, 4, 1 * Min, 30, 40, 50, 60, score: true),
@@ -422,12 +422,13 @@ namespace PocketWilds.Simulation
         private static readonly string[] Keys = BuildKeys();
 
         /// <summary>The systems whose wishes exist in this build (T36: Hatching, Discoveries and mastery, Cuddles and treats,
-        /// Upgrades, Expansions; T38: Grooming and T39: Hide and Seek, each with its activity).</summary>
+        /// Upgrades, Expansions; T38: Grooming, T39: Hide and Seek and T40: Nut Drop, each with its activity).</summary>
         public static bool IsShipped(WishSystem system) =>
             system == WishSystem.Hatching || system == WishSystem.DiscoveriesAndMastery || system == WishSystem.CuddlesAndTreats
             || system == WishSystem.Upgrades || system == WishSystem.Expansions
             || (system == WishSystem.Grooming && ActivityCatalog.Get(ActivityId.Grooming).ShippedInThisBuild)
-            || (system == WishSystem.HideAndSeek && ActivityCatalog.Get(ActivityId.HideAndSeek).ShippedInThisBuild);
+            || (system == WishSystem.HideAndSeek && ActivityCatalog.Get(ActivityId.HideAndSeek).ShippedInThisBuild)
+            || (system == WishSystem.NutRain && ActivityCatalog.Get(ActivityId.NutRain).ShippedInThisBuild);
 
         /// <summary>Index in <see cref="All"/> (number - 1), or -1 (the tutorial and unknown ids).</summary>
         public static int IndexOf(WishTemplateId id)

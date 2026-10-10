@@ -552,6 +552,12 @@ namespace PocketWilds.Simulation
                     Animal1 = _setup.Animal1,
                     Animal2 = _setup.Animal2,
                 };
+                // T40: what the game gathered, for its counted items (Nut Drop: hazelnuts and berries).
+                if (controller is IActivityRewardCounts counts)
+                {
+                    request.Count0 = counts.RewardCount(0);
+                    request.Count1 = counts.RewardCount(1);
+                }
                 _services.Rewards.Grant(in request, out outcome);
             }
             else

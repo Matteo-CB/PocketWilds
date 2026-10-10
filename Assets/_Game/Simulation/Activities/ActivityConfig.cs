@@ -95,6 +95,9 @@ namespace PocketWilds.Simulation
         /// <summary>Albums and stickers exist (T44); before, a sticker becomes 3 treats of the newest biome (as T36).</summary>
         public bool AlbumsAvailable;
 
+        /// <summary>The Pâtisserie exists and is open (T63); before, Nut Drop's Strawberries are not given (T40).</summary>
+        public bool BakeryAvailable;
+
         // ---- Accessors (cross rules of doc 08, section 5) ----
 
         public int Reserve(bool club) => Math.Max(1, club ? Math.Max(TicketsMax, TicketsMaxClub) : TicketsMax);

@@ -231,7 +231,7 @@ namespace PocketWilds.Simulation
 
         private const string M = "biome.grassland";
 
-        /// <summary>By slot: Grooming (slot 0) to Grand Contest (slot 17), then Test. T38 ships Grooming, T39 Hide and Seek.</summary>
+        /// <summary>By slot: Grooming (slot 0) to Grand Contest (slot 17), then Test. T38 ships Grooming, T39 Hide and Seek, T40 Nut Drop.</summary>
         private static readonly ActivityDefinition[] Definitions =
         {
             // id, key, feature, level, animals, day, animals instead of day, special, seconds, min, max, biome, music, tickets, meta, free first, wave, shipped
@@ -240,7 +240,7 @@ namespace PocketWilds.Simulation
             new ActivityDefinition(ActivityId.HideAndSeek, "hide_seek", RefugeFeature.HideAndSeek, 4, 8, 0, 0, ActivitySpecialUnlock.None,
                 60, 60, 60, M, ActivityMusic.Lively, true, false, false, 1, true),
             new ActivityDefinition(ActivityId.NutRain, "nut_drop", RefugeFeature.NutRain, 10, 0, 4, 15, ActivitySpecialUnlock.None,
-                60, 60, 90, M, ActivityMusic.Lively, true, false, false, 1, false),
+                60, 60, 90, M, ActivityMusic.Lively, true, false, false, 1, true),
             new ActivityDefinition(ActivityId.PawMemory, "memory", RefugeFeature.PawMemory, 11, 0, 5, 0, ActivitySpecialUnlock.None,
                 60, 45, 90, M, ActivityMusic.Calm, true, false, false, 1, false),
             new ActivityDefinition(ActivityId.Expeditions, "expeditions", RefugeFeature.Expeditions, 5, 8, 0, 0, ActivitySpecialUnlock.None,

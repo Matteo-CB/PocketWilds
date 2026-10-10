@@ -86,6 +86,9 @@ namespace PocketWilds.Presentation
         public const string RewardFlowerSugar = "reward.flower_sugar";
         public const string RewardBond = "reward.bond";
 
+        /// <summary>T40: pastry ingredients won in a game (Nut Drop's Hazelnuts and Strawberries).</summary>
+        public const string RewardIngredients = "reward.ingredients";
+
         // Animal sheet (section 10.1).
         public const string SheetTreat = "sheet.treat";
     }

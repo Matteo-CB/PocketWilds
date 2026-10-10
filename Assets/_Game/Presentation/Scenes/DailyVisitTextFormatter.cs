@@ -271,6 +271,7 @@ namespace PocketWilds.Presentation
                 case RewardKind.Sticker: text = Counted(DailyVisitText.RewardSticker, cell.Amount); break;
                 case RewardKind.FlowerSugar: text = Counted(DailyVisitText.RewardFlowerSugar, cell.Amount); break;
                 case RewardKind.Bond: text = Counted(DailyVisitText.RewardBond, cell.Amount); break;
+                case RewardKind.Ingredient: text = Counted(DailyVisitText.RewardIngredients, cell.Amount); break;
                 case RewardKind.Decoration:
                     string name = cell.Amount <= 1 ? ItemName(cell.Item) : string.Empty;
                     text = name.Length > 0 ? name : Counted(DailyVisitText.RewardDecoration, Math.Max(1L, cell.Amount));

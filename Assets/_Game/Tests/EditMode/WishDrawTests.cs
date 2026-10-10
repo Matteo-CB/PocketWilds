@@ -189,9 +189,9 @@ namespace PocketWilds.Tests.EditMode
     /// </summary>
     public class WishDrawTests
     {
-        // T36: SYS-01, 02, 03, 04 and 06; T38 adds SYS-09 Grooming (WISH-019 to 022) and T39 SYS-10 Hide and Seek (WISH-051 to
-        // 053), each with its activity.
-        private static readonly int[] Shipped = { 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 30, 51, 52, 53 };
+        // T36: SYS-01, 02, 03, 04 and 06; T38 adds SYS-09 Grooming (WISH-019 to 022), T39 SYS-10 Hide and Seek (WISH-051 to
+        // 053) and T40 SYS-11 Nut Drop (WISH-054 to 056), each with its activity.
+        private static readonly int[] Shipped = { 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 30, 51, 52, 53, 54, 55, 56 };
 
         // ---------------- Catalog (section 2.3) ----------------
 
@@ -207,7 +207,7 @@ namespace PocketWilds.Tests.EditMode
                 Assert.Greater(t.Weight, 0, t.Id.ToString());
                 Assert.AreEqual(WishSystems.FamilyOf(t.System), t.Family);
                 Assert.AreEqual(!t.Timer && t.TypicalSeconds <= 120, t.Quick, t.Id + ": quick is 2 min or less, no timer.");
-                Assert.AreEqual(Shipped.Contains(i + 1), t.ShippedInThisBuild, t.Id + " ships with SYS-01, 02, 03, 04, 06, 09 and 10 only.");
+                Assert.AreEqual(Shipped.Contains(i + 1), t.ShippedInThisBuild, t.Id + " ships with SYS-01, 02, 03, 04, 06, 09, 10 and 11 only.");
                 Assert.AreEqual("wish." + (i + 1).ToString("000"), WishCatalog.TextKey(t.Id));
             }
 
@@ -468,7 +468,7 @@ namespace PocketWilds.Tests.EditMode
         {
             var config = new DailyVisitConfig();
             Assert.IsTrue(config.TryOverride("daily.wishes_stock_days", 7));
-            // T39: 22 shipped templates (21 pending below); a stock of 4 × 7 = 28 keeps room for the one left.
+            // T40: 25 shipped templates (24 pending below); a stock of 4 × 7 = 28 keeps room for the one left.
             Assert.IsTrue(config.TryOverride("daily.wishes_per_day", 4));
             var rig = WishTestRig.Create(config: config);
             int day1 = rig.SetDay(1);

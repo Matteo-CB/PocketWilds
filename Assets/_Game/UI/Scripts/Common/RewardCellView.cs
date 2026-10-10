@@ -217,6 +217,8 @@ namespace PocketWilds.UI
                 case RewardKind.Sticker: return sticker;
                 case RewardKind.FlowerSugar: return flowerSugar != null ? flowerSugar : treat;
                 case RewardKind.Bond: return bond;
+                // T40: an ingredient shows its item's own icon (items); one without falls back to the treat's.
+                case RewardKind.Ingredient: return treat;
                 default: return null;
             }
         }
@@ -264,7 +266,7 @@ namespace PocketWilds.UI
     /// </summary>
     public sealed class RewardTexts
     {
-        private readonly UiCounted[] _words = new UiCounted[11];
+        private readonly UiCounted[] _words = new UiCounted[(int)RewardKind.Ingredient + 1];
         private UiCounted _lightWords;
 
         /// <summary>The cell's amount beside the Light icon, « {n} min ».</summary>
@@ -285,6 +287,7 @@ namespace PocketWilds.UI
             _words[(int)RewardKind.Sticker] = UiCounted.From(text, DailyVisitText.RewardSticker);
             _words[(int)RewardKind.FlowerSugar] = UiCounted.From(text, DailyVisitText.RewardFlowerSugar);
             _words[(int)RewardKind.Bond] = UiCounted.From(text, DailyVisitText.RewardBond);
+            _words[(int)RewardKind.Ingredient] = UiCounted.From(text, DailyVisitText.RewardIngredients);
         }
 
         /// <summary>The words of <paramref name="n"/> of a kind (a template with {n}), or null before <see cref="Bind"/>.</summary>

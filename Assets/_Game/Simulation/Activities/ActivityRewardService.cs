@@ -17,6 +17,18 @@ namespace PocketWilds.Simulation
         void GrantEventCurrency(int amount, ActivityId activity);
     }
 
+    /// <summary>
+    /// T40: a controller whose rewards count what its game gathered (doc 01 Contenu, « Objets gagnés »: Nut Drop gives 1
+    /// Hazelnut per 10 hazelnuts caught and 1 Strawberry per 10 berries). The runner reads counts 0 and 1 into
+    /// <see cref="ActivityRewardRequest.Count0"/> and <see cref="ActivityRewardRequest.Count1"/>; the reward service turns them
+    /// into items by the activity's rules (<see cref="ActivityRewardService.SetCountReward"/>).
+    /// </summary>
+    public interface IActivityRewardCounts
+    {
+        /// <summary>The game's count <paramref name="index"/> (0 or 1; 0 for anything else).</summary>
+        int RewardCount(int index);
+    }
+
     /// <summary>What a finished game asks the reward service (built by the runner).</summary>
     public struct ActivityRewardRequest
     {
@@ -47,6 +59,10 @@ namespace PocketWilds.Simulation
         public uint Animal0;
         public uint Animal1;
         public uint Animal2;
+
+        /// <summary>T40: what the game gathered for its counted items (<see cref="IActivityRewardCounts"/>; Nut Drop: hazelnuts, berries).</summary>
+        public int Count0;
+        public int Count1;
 
         public uint Animal(int index) => index == 0 ? Animal0 : index == 1 ? Animal1 : Animal2;
     }
@@ -107,6 +123,16 @@ namespace PocketWilds.Simulation
         public ContentId ItemTreat;
         public int ItemTreats;
 
+        /// <summary>
+        /// T40: the items counted from the game (doc 01 Contenu, « Objets gagnés »: Nut Drop gives 1 Hazelnut per 10 hazelnuts
+        /// caught, 3 at most, and 1 Strawberry per 10 berries, 2 at most, the Pâtisserie open), into the inventory and shown on
+        /// the result card; None and 0 without. Items: never doubled by the weekend.
+        /// </summary>
+        public ContentId CountItem0;
+        public int CountItems0;
+        public ContentId CountItem1;
+        public int CountItems1;
+
         public int EventCurrency;
         public bool Weekend;
 
@@ -134,6 +160,9 @@ namespace PocketWilds.Simulation
     /// <item>T38: the activity's item (« Objet gagné »), a treat set by <see cref="SetItemReward"/> (Grooming: 1 Clover
     /// Crunch at 3 stars), in every rewarded game reaching its stars, free mode or challenge; an item, so the weekend never
     /// doubles it.</item>
+    /// <item>T40: up to two items counted from the game (<see cref="SetCountReward"/>, the counts from
+    /// <see cref="IActivityRewardCounts"/>): one item per so many gathered, capped, some only with the Pâtisserie open; into
+    /// the inventory, in every rewarded game with at least 1 star; never doubled.</item>
     /// </list>
     /// <see cref="Compute"/> reads only; <see cref="Grant"/> computes, writes the counters and gives through the T36
     /// <see cref="RewardGranter"/> (Gems with <see cref="EconomyReason.Activity"/>, Light, treats, decoration, stickers).
@@ -166,6 +195,15 @@ namespace PocketWilds.Simulation
         private readonly int[] _itemCount = new int[ActivityCatalog.SlotCount];
         private readonly int[] _itemStars = new int[ActivityCatalog.SlotCount];
 
+        /// <summary>Counted items per activity (<see cref="ActivityRewardRequest.Count0"/> and <see cref="ActivityRewardRequest.Count1"/>).</summary>
+        public const int CountRewards = 2;
+
+        // T40: each activity's counted items, by slot × 2 + index.
+        private readonly ContentId[] _countItem = new ContentId[ActivityCatalog.SlotCount * CountRewards];
+        private readonly int[] _countPer = new int[ActivityCatalog.SlotCount * CountRewards];
+        private readonly int[] _countMax = new int[ActivityCatalog.SlotCount * CountRewards];
+        private readonly bool[] _countBakery = new bool[ActivityCatalog.SlotCount * CountRewards];
+
         public ActivityRewardService(ActivityContext ctx)
         {
             _ctx = ctx;
@@ -197,6 +235,38 @@ namespace PocketWilds.Simulation
             count = slot >= 0 ? _itemCount[slot] : 0;
             minStars = slot >= 0 ? _itemStars[slot] : 0;
             return slot >= 0 && count > 0 ? _itemTreat[slot] : ContentId.None;
+        }
+
+        /// <summary>
+        /// T40: a counted item of an activity (doc 01 Contenu, « Objets gagnés »): 1 <paramref name="item"/> per
+        /// <paramref name="per"/> of the game's count <paramref name="index"/> (0 or 1), <paramref name="max"/> at most; with
+        /// <paramref name="needsBakery"/>, only once the Pâtisserie is open (<see cref="ActivityContext.BakeryOpen"/>).
+        /// Registered by <see cref="ActivityRegistry.RegisterShipped"/>; a <paramref name="per"/> or <paramref name="max"/> of 0
+        /// removes it.
+        /// </summary>
+        public void SetCountReward(ActivityId activity, int index, ContentId item, int per, int max, bool needsBakery = false)
+        {
+            int slot = ActivityCatalog.SlotOf(activity);
+            if (slot < 0 || (uint)index >= CountRewards)
+                return;
+            int k = slot * CountRewards + index;
+            bool valid = per > 0 && max > 0 && item.IsValid;
+            _countItem[k] = valid ? item : ContentId.None;
+            _countPer[k] = valid ? per : 0;
+            _countMax[k] = valid ? max : 0;
+            _countBakery[k] = valid && needsBakery;
+        }
+
+        /// <summary>A counted item of an activity: the item (None: none), how many of the count make one, the cap, the Pâtisserie gate.</summary>
+        public ContentId CountReward(ActivityId activity, int index, out int per, out int max, out bool needsBakery)
+        {
+            int slot = ActivityCatalog.SlotOf(activity);
+            int k = slot * CountRewards + index;
+            bool known = slot >= 0 && (uint)index < CountRewards && _countPer[k] > 0;
+            per = known ? _countPer[k] : 0;
+            max = known ? _countMax[k] : 0;
+            needsBakery = known && _countBakery[k];
+            return known ? _countItem[k] : ContentId.None;
         }
 
         /// <summary>The n-th challenge decoration (0 = E-DEC-CH-01 Brosse géante), None past the 36th.</summary>
@@ -308,6 +378,10 @@ namespace PocketWilds.Simulation
                 outcome.ItemTreats = _itemCount[item];
             }
 
+            // T40: the items counted from the game, items too: never doubled.
+            outcome.CountItems0 = Counted(item * CountRewards, request.Count0, out outcome.CountItem0);
+            outcome.CountItems1 = Counted(item * CountRewards + 1, request.Count1, out outcome.CountItem1);
+
             if (events != null && events.EventRunning)
             {
                 double featured = events.IsFeatured(request.Activity) ? Math.Max(1.0, config.FeaturedMultiplier) : 1.0;
@@ -378,6 +452,12 @@ namespace PocketWilds.Simulation
                 var item = new RewardBundle { Treat = outcome.ItemTreat, Treats = outcome.ItemTreats };
                 _ctx.Granter.Grant(in item, EconomyReason.Activity, DiscoverySource.Debug);
             }
+            // T40: the counted items (ingredients) go to the inventory, as the granter puts seeds and flower sugar there.
+            var inventory = _ctx.State.Inventory;
+            if (outcome.CountItems0 > 0)
+                inventory.Add(outcome.CountItem0, outcome.CountItems0);
+            if (outcome.CountItems1 > 0)
+                inventory.Add(outcome.CountItem1, outcome.CountItems1);
 
             int added = 0;
             var bond = _ctx.Bond;
@@ -400,6 +480,19 @@ namespace PocketWilds.Simulation
             if (outcome.EventCurrency > 0)
                 Events?.GrantEventCurrency(outcome.EventCurrency, request.Activity);
             _ctx.RequestSave(SaveUrgency.Priority);
+        }
+
+        /// <summary>One counted item: count / per, capped; 0 without a rule, or while it waits for the Pâtisserie.</summary>
+        private int Counted(int k, int count, out ContentId item)
+        {
+            item = ContentId.None;
+            if (_countPer[k] <= 0 || count <= 0 || (_countBakery[k] && !_ctx.BakeryOpen))
+                return 0;
+            int n = Math.Min(_countMax[k], count / _countPer[k]);
+            if (n <= 0)
+                return 0;
+            item = _countItem[k];
+            return n;
         }
 
         private bool SpeciesSeenBefore(in ActivityRewardRequest request, int index, ContentId species)

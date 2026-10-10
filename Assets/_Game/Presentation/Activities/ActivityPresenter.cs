@@ -128,6 +128,7 @@ namespace PocketWilds.Presentation
             // The stages of the activities shipped in this build (each registers its factory and its themes).
             GroomingStage.Register(stages);
             HideSeekStage.Register(stages);
+            NutDropStage.Register(stages);
             Stages = stages;
 
             _onEnded = OnEnded;
@@ -601,6 +602,12 @@ namespace PocketWilds.Presentation
             }
             if (itemTreats > 0 && n < _cells.Length)
                 _cells[n++] = new RewardCell(RewardKind.Treat, itemTreats, rewards.ItemTreat);
+            // T40: the items counted from the game (Nut Drop: Hazelnuts, then Strawberries), after the treats, each with its
+            // own icon. The result card shows its first ActivityResultScreen.MaxRewards cells.
+            if (rewards.CountItems0 > 0 && n < _cells.Length)
+                _cells[n++] = new RewardCell(RewardKind.Ingredient, rewards.CountItems0, rewards.CountItem0);
+            if (rewards.CountItems1 > 0 && n < _cells.Length)
+                _cells[n++] = new RewardCell(RewardKind.Ingredient, rewards.CountItems1, rewards.CountItem1);
             return n;
         }
 

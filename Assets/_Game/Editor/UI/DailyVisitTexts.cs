@@ -144,6 +144,8 @@ namespace PocketWilds.Editor.UI
             CountedSingly(DailyVisitText.RewardSticker, "{n} sticker", "{n} stickers", "{n} autocollant", "{n} autocollants");
             CountedSingly(DailyVisitText.RewardFlowerSugar, "{n} Flower Sugar", "{n} Flower Sugar", "{n} Sucre de fleurs", "{n} Sucres de fleurs");
             Counted(DailyVisitText.RewardBond, "{n} bond point", "{n} bond points", "{n} point de lien", "{n} points de lien");
+            // T40: the pastry ingredients a game gives (Nut Drop's Hazelnuts and Strawberries).
+            Counted(DailyVisitText.RewardIngredients, "{n} ingredient", "{n} ingredients", "{n} ingrédient", "{n} ingrédients");
 
             // ---------------- Animal sheet (section 10.1) ----------------
             Plain(DailyVisitText.SheetTreat, "Treat", "Friandise");

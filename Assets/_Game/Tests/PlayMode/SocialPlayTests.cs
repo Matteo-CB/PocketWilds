@@ -140,6 +140,9 @@ namespace PocketWilds.Tests.PlayMode
                 yield return null;
             }
             Assert.Less(pairs, 6, "Most pairs meet: " + lastPair);
+            // The meadow may have paired A anew on its own meanwhile: the partner is the one it greets now.
+            b = scheduler.GetPartner(a);
+            Assert.GreaterOrEqual(b, 0, "A greets a partner.");
             Assert.AreEqual(AnimalBehaviorState.Social, scheduler.GetState(b));
             // The pair may meet anywhere in the arrival zone: look at it (animators of animals off screen do not run).
             entry.CameraRig.SnapTo((scheduler.GetPosition(a) + scheduler.GetPosition(b)) * 0.5f);

@@ -6,8 +6,9 @@ namespace PocketWilds.Simulation
     /// The activities shipped in this build register their rules here, once, at boot (doc « Mini-jeux &amp; activités »,
     /// section 5: each activity task adds its line and flips <see cref="ActivityDefinition.ShippedInThisBuild"/>). T37 shipped
     /// the framework alone; T38 ships « Toilettage » (S-ACT-001): its rules and its 3-star Clover Crunch; T39 ships
-    /// « Cache-cache » (S-ACT-002): its rules and its 3-star Mushroom Biscuit. With one activity registered the Play button
-    /// exists and rendez-vous tickets become real tickets.
+    /// « Cache-cache » (S-ACT-002): its rules and its 3-star Mushroom Biscuit; T40 ships « Pluie de noisettes » (S-ACT-003):
+    /// its rules, its 3-star Toasted Hazelnut and its counted Hazelnut and Strawberry ingredients. With one activity
+    /// registered the Play button exists and rendez-vous tickets become real tickets.
     /// </summary>
     public static class ActivityRegistry
     {
@@ -24,6 +25,17 @@ namespace PocketWilds.Simulation
             services.Rules.Register(HideSeekRules.Create());
             services.Rewards.SetItemReward(ActivityId.HideAndSeek, HideSeekRules.ThreeStarTreat, HideSeekRules.ThreeStarTreatCount,
                 HideSeekRules.ThreeStarTreatStars);
+
+            // T40 S-ACT-003 Pluie de noisettes: free mode, d1 / d5 / d10 parameters, 10 challenges; « Objets gagnés : 1 Noisette
+            // par 10 noisettes attrapées, 3 au plus ; 1 Fraise par 10 baies, 2 au plus (Pâtisserie ouverte) ; 1 Noisette grillée
+            // à 3 étoiles ».
+            services.Rules.Register(NutDropRules.Create());
+            services.Rewards.SetItemReward(ActivityId.NutRain, NutDropRules.ThreeStarTreat, NutDropRules.ThreeStarTreatCount,
+                NutDropRules.ThreeStarTreatStars);
+            services.Rewards.SetCountReward(ActivityId.NutRain, NutDropRules.HazelnutCount, NutDropRules.HazelnutIngredient,
+                NutDropRules.HazelnutsPerIngredient, NutDropRules.HazelnutIngredientMax);
+            services.Rewards.SetCountReward(ActivityId.NutRain, NutDropRules.BerryCount, NutDropRules.StrawberryIngredient,
+                NutDropRules.BerriesPerStrawberry, NutDropRules.StrawberryMax, needsBakery: true);
         }
     }
 }

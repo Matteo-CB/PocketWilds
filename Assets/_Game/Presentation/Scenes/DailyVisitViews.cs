@@ -24,6 +24,12 @@ namespace PocketWilds.Presentation
         Sticker = 8,
         FlowerSugar = 9,
         Bond = 10,
+
+        /// <summary>
+        /// T40: a pastry ingredient counted from a game (Nut Drop's Hazelnuts and Strawberries, doc 01 Contenu S-ACT-003
+        /// « Objets gagnés »), shown by its item's own icon (RewardIconSet.items) and « ×n ».
+        /// </summary>
+        Ingredient = 11,
     }
 
     /// <summary>

@@ -212,6 +212,24 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>T39 J-SFX-ACT-002-06: every animal found (a three-note music box motif, C, D, F, over the end chord).</summary>
         HideSeekAllFound = 83,
+
+        // T40: the nut drop (doc 01 Contenu, S-ACT-003 « Sons et effets »; J-SFX-ACT-003-04, the streak step, is the shared
+        // ActivityStreak, played on each +0.1 of the multiplier). See NutDropAudio.
+
+        /// <summary>
+        /// T40 J-SFX-ACT-003-01: an item lands in the basket (a round woody pop over the knock of its shell). Its pitch
+        /// follows the item: variant 0 hazelnut (F), 1 acorn (A), 2 berry (C), NutDropAudio.CatchVariant.
+        /// </summary>
+        NutDropCatch = 84,
+
+        /// <summary>T40 J-SFX-ACT-003-02: the golden hazelnut lands (its woody pop, then a small chime of glass, A, C, F).</summary>
+        NutDropGolden = 85,
+
+        /// <summary>T40 J-SFX-ACT-003-03: a pinecone lands in the basket (a soft felted « bonk », gentle), 2 variants.</summary>
+        NutDropPinecone = 86,
+
+        /// <summary>T40 J-SFX-ACT-003-05: a special is caught (a breath, then a soft F major chord).</summary>
+        NutDropSpecial = 87,
     }
 
     /// <summary>T37: the three activity musics (doc 01 Contenu, section 12.0, J-MUS-ACT-01 to 03). Stable values.</summary>
@@ -294,10 +312,12 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>
         /// T38: the activity sounds its own streak, so the shared ActivityStreak (J-SFX-ACT-000-06) does not play over it:
-        /// the grooming's clean zone climbs a semitone per zone in a row (J-SFX-ACT-001-05, GroomZoneClean).
+        /// the grooming's clean zone climbs a semitone per zone in a row (J-SFX-ACT-001-05, GroomZoneClean). T40: the nut
+        /// drop plays the shared step on each +0.1 of its multiplier (every 5 catches, J-SFX-ACT-003-04, NutDropAudio), not
+        /// on every catch.
         /// </summary>
         public static bool HasOwnStreakSound(PocketWilds.Simulation.ActivityId activity) =>
-            activity == PocketWilds.Simulation.ActivityId.Grooming;
+            activity == PocketWilds.Simulation.ActivityId.Grooming || activity == PocketWilds.Simulation.ActivityId.NutRain;
     }
 
     /// <summary>
@@ -462,6 +482,92 @@ namespace PocketWilds.Services.Feedback
         {
             audio.Play(AudioEventId.HideSeekCoucou, position, ContentId.None);
             audio.PlayPitched(AudioEventId.AnimalHappy, position, species, CoucouPitch);
+        }
+    }
+
+    /// <summary>
+    /// T40: how a nut drop game sounds (doc 01 Contenu, S-ACT-003 « Sons et effets »; doc Audio, J-SFX-ACT-003-01 to 05).
+    /// The stage hands every drained game event to <see cref="Play"/>; everything plays from the centre (the set's
+    /// close-up). The catch's pitch follows the item (F, A, C: the hazelnut, the acorn, the berry); the streak step is the
+    /// shared ActivityStreak, once per +0.1 of the multiplier (the presenter keeps its per-catch step quiet for this
+    /// activity, <see cref="ActivityAudio.HasOwnStreakSound"/>). The end chord stays the presenter's (ActivityEnd). No
+    /// allocation.
+    /// </summary>
+    public static class NutDropAudio
+    {
+        /// <summary>NutDropCatch's clips, one pitch per item: the hazelnut's pop on F.</summary>
+        public const int HazelnutVariant = 0;
+
+        /// <summary>NutDropCatch's clips: the acorn's pop on A (a little drier, the tap of its cap).</summary>
+        public const int AcornVariant = 1;
+
+        /// <summary>NutDropCatch's clips: the berry's pop on C (rounder, softer).</summary>
+        public const int BerryVariant = 2;
+
+        /// <summary>ActivityStreak's steps (F up to C, a semitone each); past the eighth +0.1 the step stays on the top.</summary>
+        public const int StreakSteps = 8;
+
+        /// <summary>The catch's pitch for an item: its NutDropCatch variant (any other item: the hazelnut's).</summary>
+        public static int CatchVariant(PocketWilds.Simulation.NutDropItemKind kind)
+        {
+            switch (kind)
+            {
+                case PocketWilds.Simulation.NutDropItemKind.Acorn:
+                    return AcornVariant;
+                case PocketWilds.Simulation.NutDropItemKind.Berry:
+                    return BerryVariant;
+                default:
+                    return HazelnutVariant;
+            }
+        }
+
+        /// <summary>
+        /// The streak step for a multiplier (in tenths, 11 for × 1.1 at 5 catches in a row): 0 for the first step, then a
+        /// semitone higher each step, the top (7) from × 1.8 on.
+        /// </summary>
+        public static int StreakVariant(int multiplierTenths)
+        {
+            int step = multiplierTenths - 11;
+            return step <= 0 ? 0 : step >= StreakSteps ? StreakSteps - 1 : step;
+        }
+
+        /// <summary>True for the three specials (the wide basket, the feather, the golden shower).</summary>
+        public static bool IsSpecial(PocketWilds.Simulation.NutDropItemKind kind) =>
+            kind == PocketWilds.Simulation.NutDropItemKind.WideBasket || kind == PocketWilds.Simulation.NutDropItemKind.Feather
+                                                                       || kind == PocketWilds.Simulation.NutDropItemKind.GoldenShower;
+
+        /// <summary>
+        /// The sound of one nut drop event (doc 01 S-ACT-003 « Sons et effets »). A catch plays its item's pop, the golden
+        /// hazelnut its glass chime, a pinecone the felted bonk, a special the breath and chord, a +0.1 of the multiplier
+        /// the shared streak step. Whether the game reports a pinecone or a special as a catch, as its own event, or both in
+        /// the same frame, it sounds once (the definitions' cooldowns keep the first). Our defaults where the doc is silent:
+        /// a spawned item, a missed one (it rolls into the grass: no loss, no sound), the end of a special and the end of
+        /// the game (the presenter's chord) are silent. position: the basket.
+        /// </summary>
+        public static void Play(IAudioService audio, in PocketWilds.Simulation.NutDropEvent e, Vector3 position)
+        {
+            switch (e.Kind)
+            {
+                case PocketWilds.Simulation.NutDropEventKind.Caught:
+                    if (e.ItemKind == PocketWilds.Simulation.NutDropItemKind.GoldenNut)
+                        audio.Play(AudioEventId.NutDropGolden, position, ContentId.None);
+                    else if (e.ItemKind == PocketWilds.Simulation.NutDropItemKind.Pinecone)
+                        audio.Play(AudioEventId.NutDropPinecone, position, ContentId.None);
+                    else if (IsSpecial(e.ItemKind))
+                        audio.Play(AudioEventId.NutDropSpecial, position, ContentId.None);
+                    else
+                        audio.PlayVariant(AudioEventId.NutDropCatch, CatchVariant(e.ItemKind));
+                    break;
+                case PocketWilds.Simulation.NutDropEventKind.Pinecone:
+                    audio.Play(AudioEventId.NutDropPinecone, position, ContentId.None);
+                    break;
+                case PocketWilds.Simulation.NutDropEventKind.SpecialStarted:
+                    audio.Play(AudioEventId.NutDropSpecial, position, ContentId.None);
+                    break;
+                case PocketWilds.Simulation.NutDropEventKind.MultiplierUp:
+                    audio.PlayVariant(AudioEventId.ActivityStreak, StreakVariant(e.MultiplierTenths));
+                    break;
+            }
         }
     }
 

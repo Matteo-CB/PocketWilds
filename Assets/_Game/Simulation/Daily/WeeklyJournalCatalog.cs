@@ -126,8 +126,8 @@ namespace PocketWilds.Simulation
     /// the comment of each line and lives in <see cref="WeeklyJournalService"/> for the goals this build ships. Text keys
     /// are « journal.001 » to « journal.052 » (section 0, localization keys).
     /// <para>T36 ships the goals whose systems exist (plan 1.7): JRN-001 to 005, 021 to 023, 031, 032, 034, 036 and 038;
-    /// T38 adds JRN-033 with Grooming, T39 JRN-016 with Hide and Seek. The others wait for their tasks (activities,
-    /// expeditions and garden T43, albums T44, decoration T56...).</para>
+    /// T38 adds JRN-033 with Grooming, T39 JRN-016 with Hide and Seek, T40 JRN-017 with Nut Drop. The others wait for their
+    /// tasks (activities, expeditions and garden T43, albums T44, decoration T56...).</para>
     /// <para>Systems of the goals the doc marks « toujours » (plan, gap 18): hatching goals to SYS-01, discoveries and
     /// mastery to SYS-02, wishes, gifts and calendar to the rendez-vous, care to SYS-03, upgrades to SYS-04, expansions to
     /// SYS-06.</para>
@@ -174,8 +174,9 @@ namespace PocketWilds.Simulation
             // JRN-016 « Trouve {n} animaux à Cache-cache »: Hide and Seek open (T39: every animal found counts).
             G(JournalGoalId.HideAndSeekFinds, JournalSlot.Activities, WishSystem.HideAndSeek, 20, 30, 40, 50,
                 shipped: ActivityCatalog.Get(ActivityId.HideAndSeek).ShippedInThisBuild),
-            // JRN-017 « Attrape {n} noisettes »: Nut Rain open.
-            G(JournalGoalId.NutsCaught, JournalSlot.Activities, WishSystem.NutRain, 150, 250, 350, 450),
+            // JRN-017 « Attrape {n} noisettes »: Nut Rain open (T40: every nut caught counts, never a pinecone).
+            G(JournalGoalId.NutsCaught, JournalSlot.Activities, WishSystem.NutRain, 150, 250, 350, 450,
+                shipped: ActivityCatalog.Get(ActivityId.NutRain).ShippedInThisBuild),
             // JRN-018 « Remonte {n} trésors »: Treasure Fishing open.
             G(JournalGoalId.TreasuresReeled, JournalSlot.Activities, WishSystem.TreasureFishing, 40, 60, 80, 100),
             // JRN-019 « Dessine {n} constellations »: Constellations open.

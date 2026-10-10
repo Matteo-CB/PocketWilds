@@ -4,7 +4,7 @@ namespace PocketWilds.Presentation
 {
     /// <summary>
     /// T37 text keys of the activities (doc « Mini-jeux & activités » sections 1 and 2, doc 01 Contenu sections 0, A15 and
-    /// 12.0, doc 06 screens 029 and 030, doc 05 Sensations sheet 20), T38 Grooming's and T39 Hide and Seek's (Writing
+    /// 12.0, doc 06 screens 029 and 030, doc 05 Sensations sheet 20), T38 Grooming's, T39 Hide and Seek's and T40 Nut Drop's (Writing
     /// Guide: short, warm, no em dash, never a pressure word, real time never a ticking countdown). The texts live in the
     /// shipped localization tables, written by the UI
     /// pipeline from Editor/UI/ActivityTexts.cs. Counted texts have « key.one » and « key.other » forms, read with
@@ -100,6 +100,13 @@ namespace PocketWilds.Presentation
         public const string HideSeekTipHint = "activity.hide_seek.tip.hint";
         public const string HideSeekTipItems = "activity.hide_seek.tip.items";
         public const string HideSeekTipPaused = "activity.hide_seek.tip.paused";
+
+        // T40 Nut Drop (doc 01 Contenu S-ACT-003; doc « Mini-jeux & activités » section 1): the tips the HUD's bubble shows
+        // over the first game: the slide tip with the swiping paw until the first catch, and the pinecone tip when the first
+        // pinecone falls. Its 10 challenges use the catalog's ids (challenge.nut_drop.01 to .10, see ChallengeNameKey and
+        // ChallengeGoalKey).
+        public const string NutDropTipSlide = "activity.nut_drop.tip.slide";
+        public const string NutDropTipPinecone = "activity.nut_drop.tip.pinecone";
 
         /// <summary>
         /// T39: the item icons the activity HUD lends to the Hide and Seek stage (<c>IActivityHudView.Icon</c>), packed in

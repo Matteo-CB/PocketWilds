@@ -98,6 +98,12 @@ namespace PocketWilds.Simulation
         /// <summary>Albums are open: built (T44) and their refuge function reached (level 12, day 5).</summary>
         public bool AlbumsOpen => Config.AlbumsAvailable && (Progression == null || Progression.Refuge.IsFeatureUnlocked(RefugeFeature.Albums));
 
+        /// <summary>
+        /// T40: the Pâtisserie is open (doc 01: « Pâtisserie ouverte »), the gate of the Strawberries Nut Drop gives. A build
+        /// gate until T63 builds it (<see cref="ActivityConfig.BakeryAvailable"/>; false: no Strawberry yet).
+        /// </summary>
+        public bool BakeryOpen => Config.BakeryAvailable;
+
         public void RequestSave(SaveUrgency urgency) => Save?.RequestSave(urgency);
 
         /// <summary>The seed of the n-th game since install for an activity: same game, same seed (an app kill never rerolls).</summary>

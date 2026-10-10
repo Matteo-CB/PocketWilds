@@ -62,8 +62,8 @@ namespace PocketWilds.Tests.PlayMode
             var state = context.State;
             var hud = Object.FindAnyObjectByType<RefugeHud>();
 
-            // A new profile: Grooming (T38) and Hide and Seek (T39) exist but open at refuge level 3 with 5 animals and level 4
-            // with 8: no Play button yet.
+            // A new profile: Grooming (T38), Hide and Seek (T39) and Nut Drop (T40) exist but open at refuge level 3 with 5
+            // animals, level 4 with 8 and level 10 on day 4 or with 15: no Play button yet.
             yield return new WaitForSecondsRealtime(0.6f);
             Assert.IsTrue(services.AnyShipped, "Grooming ships with T38.");
             Assert.IsFalse(presenter.PlayAvailable, "No activity open yet: no Play button.");
@@ -79,12 +79,14 @@ namespace PocketWilds.Tests.PlayMode
             presenter.OpenActivities();
             yield return null;
             Assert.IsTrue(presenter.HubOpen, "Play opens the hub.");
-            Assert.AreEqual(3, presenter.CardCount, "The hub lists the activities of this build: the test one, Grooming and Hide and Seek still closed.");
+            Assert.AreEqual(4, presenter.CardCount, "The hub lists the activities of this build: the test one, Grooming, Hide and Seek and Nut Drop still closed.");
             Assert.AreEqual(ActivityId.Test, presenter.Card(0).Activity, "The open ones first.");
             Assert.AreEqual(ActivityId.Grooming, presenter.Card(1).Activity);
             Assert.AreEqual(ActivityCardState.Locked, presenter.Card(1).State);
             Assert.AreEqual(ActivityId.HideAndSeek, presenter.Card(2).Activity, "T39: Hide and Seek ships, closed until level 4 and 8 animals.");
             Assert.AreEqual(ActivityCardState.Locked, presenter.Card(2).State);
+            Assert.AreEqual(ActivityId.NutRain, presenter.Card(3).Activity, "T40: Nut Drop ships, closed until level 10, day 4 or 15 animals.");
+            Assert.AreEqual(ActivityCardState.Locked, presenter.Card(3).State);
             Assert.IsFalse(string.IsNullOrEmpty(presenter.Card(1).UnlockHint), "A closed card says what opens it.");
             Assert.AreEqual(ActivityCardState.New, presenter.Card(0).State, "Never played: « Nouveau ».");
             Assert.AreEqual(5, presenter.Tickets.Count, "The first use fills the reserve (doc 01 A15).");

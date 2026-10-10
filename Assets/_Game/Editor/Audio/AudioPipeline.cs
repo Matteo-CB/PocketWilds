@@ -303,6 +303,16 @@ namespace PocketWilds.Editor.Audio
                 Def(AudioEventId.HideSeekMagnifier, "SFX_HideSeek_Magnifier", AudioGroup.UI, 1, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
                 Def(AudioEventId.HideSeekWhistle, "SFX_HideSeek_Whistle", AudioGroup.UI, 1, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
                 Def(AudioEventId.HideSeekAllFound, "SFX_HideSeek_AllFound", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                // T40: the nut drop (doc 01 Contenu, S-ACT-003 « Sons et effets »; NutDropAudio), from the centre (the set's
+                // close-up). The catch is the game's most frequent sound (up to 2.5 a second, two items can land together):
+                // 0.04 s and 3 voices, each pop gone under -40 dB in about 0.2 s; its item's pitch is chosen by the stage
+                // (PlayVariant), a touch of pitch jitter keeps a run of hazelnuts alive. The golden hazelnut: 0.1 s and 2
+                // voices (a golden shower lands one about every 0.4 s, each chime rings 0.75 s). The pinecone: 0.15 s, so a
+                // pinecone reported as a catch and as its own event sounds once. The special: once (0.5 s), the same.
+                Def(AudioEventId.NutDropCatch, "SFX_NutDrop_Catch", AudioGroup.Rewards, 2, 0.04f, 3, volumeJitter: 0.05f, pitchJitter: 0.015f),
+                Def(AudioEventId.NutDropGolden, "SFX_NutDrop_Golden", AudioGroup.Rewards, 2, 0.1f, 2, volumeJitter: 0.03f, pitchJitter: 0f),
+                Def(AudioEventId.NutDropPinecone, "SFX_NutDrop_Pinecone", AudioGroup.World, 2, 0.15f, 2, volumeJitter: 0.06f, pitchJitter: 0.03f),
+                Def(AudioEventId.NutDropSpecial, "SFX_NutDrop_Special", AudioGroup.Rewards, 2, 0.5f, 1, volumeJitter: 0f, pitchJitter: 0f),
             };
             foreach (var (id, prefix) in new[]
                      {
