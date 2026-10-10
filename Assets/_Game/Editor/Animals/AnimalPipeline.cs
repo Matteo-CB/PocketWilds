@@ -92,6 +92,26 @@ namespace PocketWilds.Editor.Animals
             BuildSpecies("Hedgehog", "SmallQuadruped", EnsureHedgehogDefinition, LowBodyClips, behavior => behavior.moveSpeed = 0.28f);
         }
 
+        [MenuItem("Pocket Wilds/Animals/Build Field Mouse (T45)", priority = 153)]
+        public static void BuildFieldMouse()
+        {
+            // Hops quickly with the default hop clip.
+            BuildSpecies("FieldMouse", "SmallQuadruped", EnsureFieldMouseDefinition, null, b => b.moveSpeed = 0.36f);
+        }
+
+        [MenuItem("Pocket Wilds/Animals/Build Guinea Pig (T45)", priority = 154)]
+        public static void BuildGuineaPig()
+        {
+            BuildSpecies("GuineaPig", "SmallQuadruped", EnsureGuineaPigDefinition, LowBodyClips, b => b.moveSpeed = 0.26f);
+        }
+
+        [MenuItem("Pocket Wilds/Animals/Build Field Mouse and Guinea Pig (T45)", priority = 155)]
+        public static void BuildT45()
+        {
+            BuildFieldMouse();
+            BuildGuineaPig();
+        }
+
         public static void BuildSpecies(string species, string family, Func<SpeciesDefinitionAsset> ensureDefinition,
             (string Family, string Species)[] clipOverrides = null, Action<BehaviorProfile> behavior = null)
         {
@@ -418,8 +438,76 @@ namespace PocketWilds.Editor.Animals
             return asset;
         }
 
+        private static SpeciesDefinitionAsset EnsureFieldMouseDefinition()
+        {
+            var asset = LoadOrCreate<SpeciesDefinitionAsset>(DefinitionPath("FieldMouse"));
+            asset.sourceId = "species.fieldmouse";
+            asset.displayKey = "species.fieldmouse.name";
+            asset.rigFamily = RigFamily.SmallQuadruped;
+            asset.biomeId = "biome.grassland";
+            asset.baseProduction = 1.0;
+            asset.visualKey = "PF_Animal_FieldMouse";
+
+            // Field mouse regions: secondary = inner ears, tail and paws, belly = chest, underside, chin and muzzle,
+            // mask A = big patches, mask B = back stripe.
+            // Secret rows are the mastery colors (T46, mastery 10/20/30) and one plain secret color: never in eggs, wishes or genetics.
+            asset.variants = new List<SpeciesDefinitionAsset.VariantEntry>
+            {
+                Variant("variant.fieldmouse.warmbrown", RarityTier.Common, Hex("A8734E"), Hex("F2C2C0"), Hex("F3E6D0"), Hex("E8A0A6"), Hex("1E1414")),
+                Variant("variant.fieldmouse.sand", RarityTier.Common, Hex("D9B47E"), Hex("F2C4C0"), Hex("F7EEDC"), Hex("E8A0A6"), Hex("1E1414")),
+                Variant("variant.fieldmouse.grey", RarityTier.Uncommon, Hex("9C9799"), Hex("D9B3B5"), Hex("DAD6D4"), Hex("E3A2A8"), Hex("1A1414")),
+                Variant("variant.fieldmouse.white", RarityTier.Uncommon, Hex("F7F2EA"), Hex("F4C6C8"), Hex("FFFFFF"), Hex("EE9AA6"), Hex("1E1414")),
+                Variant("variant.fieldmouse.black", RarityTier.Rare, Hex("4A4446"), Hex("C9A1A5"), Hex("6B6466"), Hex("D898A0"), Hex("120C0C")),
+                Variant("variant.fieldmouse.piebald", RarityTier.Epic, Hex("F7F2EA"), Hex("F2C4C2"), Hex("FFFFFF"), Hex("E8A0A6"), Hex("1E1414"),
+                    pattern: Hex("A8734E"), channel: PatternChannel.MaskA, strength: 16),
+                Variant("variant.fieldmouse.hazelnut", RarityTier.Rare, Hex("C9935F"), Hex("F5C9B4"), Hex("EEDCC2"), Hex("E8A0A0"), Hex("1E1414"), secret: true, mastery: 10),
+                Variant("variant.fieldmouse.lilac", RarityTier.Epic, Hex("B7A9BE"), Hex("E9C3CF"), Hex("FBF8FA"), Hex("E6A2B2"), Hex("1E1414"),
+                    pattern: Hex("8E6E9E"), channel: PatternChannel.MaskA, strength: 10, secret: true, mastery: 20),
+                Variant("variant.fieldmouse.goldenwheat", RarityTier.Legendary, Hex("DDB46A"), Hex("F4CFB0"), Hex("F6E7C4"), Hex("E8A49A"), Hex("1E1414"),
+                    pattern: Hex("8A6236"), channel: PatternChannel.MaskB, strength: 14, secret: true, mastery: 30),
+                Variant("variant.fieldmouse.buttercup", RarityTier.Epic, Hex("F2D46B"), Hex("F6C6B4"), Hex("FBF1D6"), Hex("EBA39C"), Hex("1E1414"), secret: true),
+            };
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
+        private static SpeciesDefinitionAsset EnsureGuineaPigDefinition()
+        {
+            var asset = LoadOrCreate<SpeciesDefinitionAsset>(DefinitionPath("GuineaPig"));
+            asset.sourceId = "species.guineapig";
+            asset.displayKey = "species.guineapig.name";
+            asset.rigFamily = RigFamily.SmallQuadruped;
+            asset.biomeId = "biome.grassland";
+            asset.baseProduction = 1.0;
+            asset.visualKey = "PF_Animal_GuineaPig";
+
+            // Guinea pig regions: secondary = ears and paws (a darker tone of the coat: pink tiny ears read as a patch), belly = chest, underside, chin and muzzle,
+            // mask A = big patches, mask B = face blaze and middle belt.
+            // Secret rows are the mastery colors (T46, mastery 10/20/30) and one plain secret color: never in eggs, wishes or genetics.
+            asset.variants = new List<SpeciesDefinitionAsset.VariantEntry>
+            {
+                Variant("variant.guineapig.caramel", RarityTier.Common, Hex("C98A4E"), Hex("A86C3A"), Hex("F4E6CF"), Hex("B07A55"), Hex("1E1414")),
+                Variant("variant.guineapig.cream", RarityTier.Common, Hex("F1DFC0"), Hex("D9C29C"), Hex("FFFDF7"), Hex("D6B894"), Hex("1E1414")),
+                Variant("variant.guineapig.black", RarityTier.Uncommon, Hex("3E3836"), Hex("6B5A57"), Hex("5E5654"), Hex("6E5A52"), Hex("100A0A")),
+                Variant("variant.guineapig.tricolor", RarityTier.Uncommon, Hex("C98A4E"), Hex("A86C3A"), Hex("FFFFFF"), Hex("B07A55"), Hex("1E1414"),
+                    pattern: Hex("3E3836"), channel: PatternChannel.MaskA, strength: 16),
+                Variant("variant.guineapig.greywhite", RarityTier.Rare, Hex("7D8288"), Hex("62666C"), Hex("FFFFFF"), Hex("D9A9A8"), Hex("1A1414"),
+                    pattern: Hex("FBFAF7"), channel: PatternChannel.MaskB, strength: 16),
+                Variant("variant.guineapig.golden", RarityTier.Epic, Hex("E3AE52"), Hex("C38E3A"), Hex("F7E3B5"), Hex("B97C45"), Hex("1E1414")),
+                Variant("variant.guineapig.cinnamon", RarityTier.Rare, Hex("C07F5A"), Hex("A0623F"), Hex("F5E5CF"), Hex("E59A9E"), Hex("1E1414"), secret: true, mastery: 10),
+                Variant("variant.guineapig.marshmallow", RarityTier.Epic, Hex("FBF1EF"), Hex("E9C9CC"), Hex("FFFFFF"), Hex("EEA2AE"), Hex("1E1414"),
+                    pattern: Hex("F2BFCB"), channel: PatternChannel.MaskA, strength: 14, secret: true, mastery: 20),
+                Variant("variant.guineapig.apricot", RarityTier.Legendary, Hex("EDB07A"), Hex("D08F5A"), Hex("FBEBD8"), Hex("D98C78"), Hex("1E1414"),
+                    pattern: Hex("FFFBF5"), channel: PatternChannel.MaskB, strength: 16, secret: true, mastery: 30),
+                Variant("variant.guineapig.milkcloud", RarityTier.Epic, Hex("FAF4E8"), Hex("D9C3A6"), Hex("FFFFFF"), Hex("EA9EA8"), Hex("1E1414"),
+                    pattern: Hex("C9A27E"), channel: PatternChannel.MaskA, strength: 13, secret: true),
+            };
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
         private static SpeciesDefinitionAsset.VariantEntry Variant(string id, RarityTier rarity, Color primary, Color secondary,
-            Color belly, Color detail, Color eye, Color? pattern = null, PatternChannel channel = PatternChannel.None, int strength = 0, bool secret = false, bool visitor = false)
+            Color belly, Color detail, Color eye, Color? pattern = null, PatternChannel channel = PatternChannel.None, int strength = 0, bool secret = false, bool visitor = false, int mastery = 0)
         {
             return new SpeciesDefinitionAsset.VariantEntry
             {
@@ -437,6 +525,7 @@ namespace PocketWilds.Editor.Animals
                 patternStrength = strength,
                 secret = secret,
                 visitor = visitor,
+                masteryLevel = mastery,
             };
         }
 
@@ -446,7 +535,8 @@ namespace PocketWilds.Editor.Animals
         [MenuItem("Pocket Wilds/Animals/Update Species Definitions", priority = 160)]
         public static void UpdateSpeciesDefinitions()
         {
-            foreach (var ensure in new Func<SpeciesDefinitionAsset>[] { EnsureRabbitDefinition, EnsureSquirrelDefinition, EnsureHedgehogDefinition })
+            foreach (var ensure in new Func<SpeciesDefinitionAsset>[] { EnsureRabbitDefinition, EnsureSquirrelDefinition, EnsureHedgehogDefinition,
+                EnsureFieldMouseDefinition, EnsureGuineaPigDefinition })
                 EnsureContentDatabase(ensure());
             AssetDatabase.SaveAssets();
         }

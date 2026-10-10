@@ -63,7 +63,98 @@ def _shell_lobes(center, radii, rows, half, push=0.004, lean=0.72, stiff=1.4):
 HEDGEHOG_SHELL = ((0, 0.045, 0.160), (0.140, 0.170, 0.125))
 
 
+def _chain(points, radii, stiff=2.0):
+    """A thin solid volume along a polyline (Field Mouse tail): one ellipsoid per segment, overlapping."""
+    out = []
+    for i in range(len(points) - 1):
+        a = Vector(points[i]); b = Vector(points[i + 1])
+        r = radii[i]
+        out.append(_ell(tuple((a + b) * 0.5), (r, (b - a).length * 0.62, r), stiff=stiff, axis=tuple((b - a).normalized())))
+    return out
+
+
+# The tail curls up behind the rump like a question mark: long and thin, but the body stays compact on the ground
+# (a tail trailing 22 cm made the measured body longer than the squirrel's, so fewer hiding spots fit every species).
+FIELDMOUSE_TAIL = [(0, 0.140, 0.090), (0, 0.188, 0.070), (0, 0.232, 0.078), (0, 0.262, 0.108),
+                   (0, 0.272, 0.150), (0, 0.258, 0.190)]
+
+
 SPECS = {
+    # Field Mouse (A-SP-004): the smallest of the meadow. Big round head, large round ears that belong to the
+    # head (they turn with it), bead eyes, small pointed muzzle, compact pear body, short legs, a thin long tail
+    # curling up at the end (one solid chain on the two tail bones, half their motion).
+    "FieldMouse": dict(
+        blockout=[
+            _ell((0, -0.100, 0.175), (0.084, 0.080, 0.076), part="head"),
+            _ell((0.040, -0.136, 0.152), (0.040, 0.040, 0.034), stiff=1.6, mirror=True, part="head"),  # cheeks
+            _ell((0, -0.178, 0.148), (0.028, 0.046, 0.026), rot=(-10, 0, 0), stiff=1.5, part="head"),  # muzzle
+            _ell((0.064, -0.078, 0.246), (0.052, 0.013, 0.050), rot=(-12, 28, 22), stiff=2.2, mirror=True, part="head"),  # ears
+            _ell((0, -0.040, 0.108), (0.068, 0.070, 0.070)),                         # chest
+            _ell((0, 0.050, 0.098), (0.082, 0.102, 0.082)),                          # body
+            _ell((0.055, 0.085, 0.072), (0.040, 0.056, 0.050), mirror=True),        # haunches
+            _ell((0.060, 0.045, 0.014), (0.022, 0.050, 0.014), mirror=True),        # hind feet
+            _ell((0.038, -0.070, 0.045), (0.018, 0.020, 0.035), mirror=True),       # front legs
+            _ell((0.038, -0.090, 0.013), (0.019, 0.026, 0.013), mirror=True),       # front paws
+        ] + _chain(FIELDMOUSE_TAIL, (0.021, 0.019, 0.017, 0.016, 0.015)),
+        tail_path=FIELDMOUSE_TAIL,
+        tail_member_y=(0.125, 0.150),
+        tail_gain=0.5,
+        eyes=dict(x=0.044, z=0.188, r=0.022, sink=0.35),
+        nose=dict(x=0.0, z=0.150, r=0.012, sink=0.45),
+        head_center=(0, -0.100, 0.175),
+        head_radii=(0.084, 0.080, 0.076),
+        ear_mode="none",
+        hind_leg_band=(0.055, 0.025),
+        front_leg_band=(0.055, 0.025),
+        leg_band_bones=("Upper", "Lower"),
+        lod0_faces=1500,
+        lod1_mode="collapse",
+        lod1_tris=900,
+        lod2_tris=420,
+        back_probe_y=0.05,
+        sockets={
+            "SOCK_Neck": (0.0, -0.060, 0.130),
+            "SOCK_TailBase": (0.0, 0.145, 0.088),
+            "SOCK_Ear_L": (-0.066, -0.078, 0.270),
+            "SOCK_Ear_R": (0.066, -0.078, 0.270),
+        },
+    ),
+    # Guinea Pig (A-SP-005): a potato body with no neck and no tail, a broad blunt face with round cheeks, tiny
+    # petal ears on the head, short legs hidden under the body (only the feet show).
+    "GuineaPig": dict(
+        blockout=[
+            _ell((0, 0.025, 0.112), (0.108, 0.135, 0.098)),                          # body
+            _ell((0, 0.105, 0.108), (0.104, 0.085, 0.092)),                          # round rump
+            _ell((0, -0.070, 0.105), (0.092, 0.080, 0.090)),                         # chest
+            _ell((0, -0.125, 0.142), (0.084, 0.082, 0.077), part="head"),
+            _ell((0.045, -0.165, 0.120), (0.042, 0.040, 0.036), stiff=1.6, mirror=True, part="head"),  # cheeks
+            _ell((0, -0.200, 0.122), (0.034, 0.030, 0.028), stiff=1.5, part="head"),  # blunt muzzle
+            _ell((0.062, -0.105, 0.200), (0.026, 0.010, 0.020), rot=(-10, 35, 30), stiff=2.2, mirror=True, part="head"),  # ears
+            _ell((0.050, -0.080, 0.045), (0.022, 0.022, 0.030), mirror=True),       # front legs
+            _ell((0.050, -0.092, 0.016), (0.020, 0.026, 0.016), mirror=True),       # front feet
+            _ell((0.068, 0.100, 0.045), (0.026, 0.026, 0.032), mirror=True),        # hind legs
+            _ell((0.066, 0.092, 0.016), (0.024, 0.034, 0.016), mirror=True),        # hind feet
+        ],
+        eyes=dict(x=0.050, z=0.160, r=0.019, sink=0.35),
+        nose=dict(x=0.0, z=0.128, r=0.012, sink=0.45),
+        head_center=(0, -0.125, 0.142),
+        head_radii=(0.084, 0.082, 0.077),
+        ear_mode="none",
+        hind_leg_band=(0.055, 0.025),
+        front_leg_band=(0.055, 0.025),
+        leg_band_bones=("Upper", "Lower"),
+        lod0_faces=900,
+        lod1_mode="collapse",
+        lod1_tris=860,
+        lod2_tris=400,
+        back_probe_y=0.03,
+        sockets={
+            "SOCK_Neck": (0.0, -0.085, 0.175),
+            "SOCK_TailBase": (0.0, 0.200, 0.110),
+            "SOCK_Ear_L": (-0.062, -0.105, 0.212),
+            "SOCK_Ear_R": (0.062, -0.105, 0.212),
+        },
+    ),
     # Squirrel (A-SP-002): slightly narrower face than Rabbit, compact body, front paws tucked close to
     # the chest, small tufted ears on the Ear_01 bones, very large curled tail as one solid volume.
     "Squirrel": dict(
@@ -417,8 +508,8 @@ def _rigid_lobes(target, source, frames):
         if p not in cache:
             _, idx, _ = kd.find(frames[p - 1]["base"])
             cache[p] = {svg[g.group].name: g.weight for g in body[idx].groups if g.weight > 0.0}
-        for g in list(v.groups):
-            tvg[g.group].remove([v.index])
+        for index in [g.group for g in v.groups]:
+            tvg[index].remove([v.index])
         for k, x in cache[p].items():
             tvg[k].add([v.index], x, 'REPLACE')
         count += 1
@@ -561,8 +652,9 @@ def _get(vg, v):
 def _put(vg, v, w):
     w = {k: x for k, x in w.items() if x > 1e-4}
     total = sum(w.values()) or 1.0
-    for g in list(v.groups):
-        vg[g.group].remove([v.index])
+    # Read the indices first: removing a group invalidates the vertex's group elements (Blender 5).
+    for index in [g.group for g in v.groups]:
+        vg[index].remove([v.index])
     for k, x in w.items():
         vg[k].add([v.index], x / total, 'REPLACE')
 
@@ -581,9 +673,15 @@ def tail_weights(species, co):
     s, d, total = path_project(co, path)
     if d > 0.13:
         return 0.0, None
-    member = smooth(0.005, 0.05, s) * max(smooth(0.17, 0.22, co.y), smooth(0.30, 0.36, co.z))
+    y0, y1 = spec.get("tail_member_y", (0.17, 0.22))
+    member = smooth(0.005, 0.05, s) * max(smooth(y0, y1, co.y), smooth(0.30, 0.36, co.z))
     upper = smooth(0.08, 0.20, s)
-    return member, {"Tail_01": 1.0 - upper, "Tail_02": upper}
+    # A thin tail far below the tail bones (Field Mouse) takes only part of their motion; the rest follows the pelvis.
+    gain = spec.get("tail_gain", 1.0)
+    weights = {"Tail_01": (1.0 - upper) * gain, "Tail_02": upper * gain}
+    if gain < 1.0:
+        weights["Pelvis"] = 1.0 - gain
+    return member, weights
 
 
 def _ear_weights(species, arm, co):
@@ -828,6 +926,10 @@ def place_sockets(species):
         "SOCK_Ear_L": (arm.data.bones["Ear_L_01"].head_local.copy(), "Ear_L_01"),
         "SOCK_Ear_R": (arm.data.bones["Ear_R_01"].head_local.copy(), "Ear_R_01"),
     }
+    # Species whose head, neck or tail sit far from the shared bones move those sockets; the parent bone stays the
+    # family's (clips and the asset validator bind by the same hierarchy).
+    for name, co in spec.get("sockets", {}).items():
+        spec_sockets[name] = (Vector(co), spec_sockets[name][1])
     out = {}
     for name, (co, bone) in spec_sockets.items():
         o = bpy.data.objects[name]

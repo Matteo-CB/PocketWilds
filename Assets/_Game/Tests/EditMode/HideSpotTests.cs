@@ -125,9 +125,9 @@ namespace PocketWilds.Tests.EditMode
             int good = Zones().Count(z => z.zone.spotCount >= HideSpotPipeline.GoodZoneSpots);
             Assert.GreaterOrEqual(good, HideSpotPipeline.GoodZones,
                 $"Zones holding a full game ({HideSpotPipeline.GoodZoneSpots} spots or more): " + string.Join(", ", counts));
-            int roomy = Zones().Count(z => z.zone.spotCount >= HideSpotPipeline.TargetSpots);
+            int roomy = Zones().Count(z => z.zone.spotCount >= HideSpotPipeline.DecoySpots);
             Assert.GreaterOrEqual(roomy, HideSpotPipeline.RoomyZones,
-                $"Zones holding d10 with its decoys ({HideSpotPipeline.TargetSpots} spots): " + string.Join(", ", counts));
+                $"Zones holding d10 with a decoy ({HideSpotPipeline.DecoySpots} spots): " + string.Join(", ", counts));
             int meadow = Set.FindZone("chunk.grassland.meadow");
             Assert.GreaterOrEqual(meadow, 0);
             Assert.GreaterOrEqual(Set.GetZone(meadow).spotCount, HideSpotPipeline.GoodZoneSpots,

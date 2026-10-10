@@ -270,7 +270,7 @@ namespace PocketWilds.Simulation
             for (int t = 0; t < 6; t++)
                 if ((a.TraitBits & TraitBit(t)) != 0)
                     _journal.MarkDone(JournalMoment.FirstTiny + t);
-            if (_content != null && _content.Variants.TryGet(a.Variant, out var variant) && !variant.IsVisitor)
+            if (_content != null && _content.Variants.TryGet(a.Variant, out var variant) && !variant.IsVisitor && variant.MasteryLevel <= 0)
             {
                 if (variant.IsSecret)
                     _journal.MarkDone(JournalMoment.FirstSecret);
@@ -308,7 +308,7 @@ namespace PocketWilds.Simulation
             VariantDefinition? variant = null;
             if (_content != null && _content.Variants.TryGet(animal.Variant, out var found))
                 variant = found;
-            if (variant != null && !variant.IsVisitor)
+            if (variant != null && !variant.IsVisitor && variant.MasteryLevel <= 0)
             {
                 if (variant.IsSecret && newVariant)
                     _journal.Add(JournalMoment.FirstSecret, 0, id, Key(variant.DisplayKey));

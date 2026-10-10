@@ -109,11 +109,11 @@ COUNTERS = {
     200: 'JournalPages',
 }
 
-# Event species have no build id yet: their future content ids (snake case, as the build names species).
+# Event species: their content ids as the roster writes them (doc 03, « ID de contenu »: one word, Ermine and Chickadee).
 EVENT_SPECIES = {
-    'stoat': 'stoat', 'angorarabbit': 'angora_rabbit', 'mole': 'mole', 'hummingbird': 'hummingbird',
-    'storkchick': 'stork_chick', 'dormouse': 'dormouse', 'quokka': 'quokka', 'fennec': 'fennec',
-    'flyingsquirrel': 'flying_squirrel', 'chipmunk': 'chipmunk', 'firesalamander': 'fire_salamander', 'tit': 'tit',
+    'stoat': 'ermine', 'angorarabbit': 'angorarabbit', 'mole': 'mole', 'hummingbird': 'hummingbird',
+    'storkchick': 'storkchick', 'dormouse': 'dormouse', 'quokka': 'quokka', 'fennec': 'fennec',
+    'flyingsquirrel': 'flyingsquirrel', 'chipmunk': 'chipmunk', 'firesalamander': 'firesalamander', 'tit': 'chickadee',
 }
 SPECIES_ALIASES = {'rainette aux yeux rouges': 'rainette'}
 

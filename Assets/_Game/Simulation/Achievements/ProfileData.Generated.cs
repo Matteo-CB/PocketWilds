@@ -225,21 +225,21 @@ namespace PocketWilds.Simulation
         /// <summary>The 78 biome species (6 per biome, in biome order) then the 12 event species: their content ids.</summary>
         private static readonly string[] SpeciesKeys =
         {
-            "species.rabbit", "species.squirrel", "species.hedgehog", "species.field_mouse", "species.guinea_pig", "species.fawn",
-            "species.fox", "species.raccoon", "species.badger", "species.owl", "species.red_panda", "species.boar_piglet",
-            "species.duckling", "species.frog", "species.otter", "species.beaver", "species.axolotl", "species.turtle",
-            "species.goat_kid", "species.marmot", "species.lynx", "species.eaglet", "species.yak", "species.pika",
-            "species.arctic_fox", "species.penguin", "species.polar_bear_cub", "species.seal_pup", "species.snowy_owl", "species.reindeer_calf",
-            "species.capybara", "species.monkey", "species.sloth", "species.parrot", "species.tapir", "species.tree_frog",
-            "species.jerboa", "species.meerkat", "species.sand_cat", "species.armadillo", "species.leopard_gecko", "species.oryx",
-            "species.crane", "species.mandarin_duck", "species.macaque", "species.marten", "species.pangolin", "species.chevrotain",
-            "species.shrew", "species.toad", "species.fruit_bat", "species.truffon", "species.kiwi", "species.opossum",
-            "species.alpaca", "species.albatross_chick", "species.cloud_whale", "species.sugar_glider", "species.feather_rabbit", "species.chinchilla",
-            "species.wolf", "species.slow_loris", "species.kinkajou", "species.wombat", "species.skunk", "species.nightjar",
-            "species.tiny_rex", "species.stegosaurus", "species.brachiosaurus", "species.pterosaur", "species.parasaurolophus", "species.mammoth",
-            "species.star_fawn", "species.nebula_ray", "species.star_lemur", "species.star_seahorse", "species.star_peafowl", "species.comet_koala",
-            "species.stoat", "species.angora_rabbit", "species.mole", "species.hummingbird", "species.stork_chick", "species.dormouse",
-            "species.quokka", "species.fennec", "species.flying_squirrel", "species.chipmunk", "species.fire_salamander", "species.tit",
+            "species.rabbit", "species.squirrel", "species.hedgehog", "species.fieldmouse", "species.guineapig", "species.fawn",
+            "species.fox", "species.raccoon", "species.badger", "species.owl", "species.redpanda", "species.boarpiglet",
+            "species.duck", "species.frog", "species.otter", "species.beaver", "species.axolotl", "species.turtle",
+            "species.goatkid", "species.marmot", "species.lynx", "species.eagle", "species.yakcalf", "species.pika",
+            "species.arcticfox", "species.penguin", "species.polarbearcub", "species.sealpup", "species.snowyowl", "species.reindeercalf",
+            "species.capybara", "species.monkey", "species.sloth", "species.parrot", "species.tapircalf", "species.redeyedfrog",
+            "species.jerboa", "species.meerkat", "species.sandcat", "species.armadillo", "species.leopardgecko", "species.oryxcalf",
+            "species.cranechick", "species.mandarinduckling", "species.macaque", "species.marten", "species.pangolin", "species.chevrotain",
+            "species.shrew", "species.toad", "species.fruitbat", "species.truffon", "species.kiwi", "species.opossum",
+            "species.alpacacria", "species.albatrosschick", "species.cloudwhalecalf", "species.sugarglider", "species.featherrabbit", "species.chinchilla",
+            "species.wolfpup", "species.slowloris", "species.kinkajou", "species.wombat", "species.skunk", "species.nightjar",
+            "species.rexhatchling", "species.stegosaurushatchling", "species.brachiosaurushatchling", "species.pterosaurhatchling", "species.parasaurolophushatchling", "species.mammothcalf",
+            "species.starfawn", "species.nebularay", "species.starlemur", "species.starseahorse", "species.starpeachick", "species.cometkoala",
+            "species.ermine", "species.angorarabbit", "species.mole", "species.hummingbird", "species.storkchick", "species.dormouse",
+            "species.quokka", "species.fennec", "species.flyingsquirrel", "species.chipmunk", "species.firesalamander", "species.chickadee",
         };
 
         private static readonly ProfileRow[] TitleRows =

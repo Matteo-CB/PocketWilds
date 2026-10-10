@@ -53,13 +53,16 @@ namespace PocketWilds.Editor.Activities
         /// game, else the largest open one (the game then hides fewer). A real portrait corner of the refuge holds 3 to 7
         /// spots under the capture rules (T39, four measured rounds), so: every zone holds at least 3 (a d1 game, the start
         /// chunk's tutorial included), at least <see cref="GoodZones"/> zones hold <see cref="GoodZoneSpots"/> (a full game
-        /// from d3, every challenge), and one zone holds <see cref="TargetSpots"/> (d8 to d10 with their decoys). The
+        /// from d3, every challenge), and one zone holds <see cref="DecoySpots"/> (d10's five hidden and a decoy; the search
+        /// still aims at <see cref="TargetSpots"/>, both decoys: since the small field mouse and guinea pig (T45), whose
+        /// placements spread wider to show their share, the roomiest Prairie zone frames 6). The
         /// economy simulator opens the second Prairie zone (Meadow, 5 spots) within the first hour, before refuge level 4
         /// unlocks Hide and Seek. The stage takes the spots best first (<see cref="HideSpotSet"/>).
         /// </summary>
         public const int MinSpots = 3;
         public const int StartMinSpots = 3;
         public const int TargetSpots = 7;
+        public const int DecoySpots = 6;
         public const int GoodZoneSpots = 5;
         public const int GoodZones = 4;
         public const int RoomyZones = 1;
@@ -276,6 +279,35 @@ namespace PocketWilds.Editor.Activities
         }
 
         /// <summary>Diagnostics: the authored focus of each listed chunk, every decor's verdict, the chosen spots. Writes nothing.</summary>
+        /// <summary>One zone's five focuses side by side (spots, frame fit, levels met): why a focus wins.</summary>
+        public static string CompareFocuses(string address)
+        {
+            var report = new StringBuilder();
+            var species = LoadSpecies(report);
+            var worlds = WorldContentPipeline.GrasslandChunks.Select(c => ChunkWorld.Load(c.address, c.path, c.origin)).Where(w => w != null).ToList();
+            foreach (var w in worlds)
+                w.AddNeighbourObstacles(worlds);
+            var world = worlds.FirstOrDefault(w => w.Address == address);
+            if (world == null)
+                return "no chunk " + address;
+            var hint = GrasslandPipeline.HideZoneFocusFor(world.Address) ?? Vector2.zero;
+            foreach (var focus in new[] { hint, hint + new Vector2(0.75f, 0f), hint - new Vector2(0.75f, 0f), hint + new Vector2(0f, 0.75f), hint - new Vector2(0f, 0.75f) })
+            {
+                ConflictReasons.Clear();
+                var trace = new StringBuilder();
+                Trace = trace;
+                ZoneResult zone;
+                try { zone = Attempt(world, species, focus); }
+                finally { Trace = null; }
+                foreach (var line in trace.ToString().Split('\n'))
+                    if (line.Contains(" left ") || line.Contains(" chosen "))
+                        report.Append(line).Append('\n');
+                report.Append($"focus ({focus.x:F2}, {focus.y:F2}): {zone.Spots.Count} spots of {zone.Candidates}, frame fits {zone.FrameFits}, " +
+                              $"hits {zone.HitRatio:P0}, conflicts {string.Join(", ", ConflictReasons.Select(p => $"{p.Key} {p.Value}"))}\n");
+            }
+            return report.ToString();
+        }
+
         public static string Diagnose(params string[] addresses)
         {
             var report = new StringBuilder();

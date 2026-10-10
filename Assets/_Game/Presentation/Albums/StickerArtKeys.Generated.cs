@@ -7,6 +7,11 @@ namespace PocketWilds.Presentation
         {
             "sticker.gl.01",
             "sticker.gl.02",
+            "sticker.gl.04",
+            "sticker.gl.05",
+            "sticker.gl.08",
+            "sticker.gl.09",
+            "sticker.gl.11",
             "sticker.gl.13",
             "sticker.gl.14",
             "sticker.gl.15",

@@ -26,10 +26,12 @@ namespace PocketWilds.Content
         public const int PaletteSize = 8;
 
         public VariantDefinition(ContentId id, ContentId species, string displayKey, RarityTier rarity,
-            Color32[] palette, PatternChannel patternChannel, byte patternStrength, bool isSecret = false, bool isVisitor = false)
+            Color32[] palette, PatternChannel patternChannel, byte patternStrength, bool isSecret = false, bool isVisitor = false,
+            int masteryLevel = 0)
         {
             IsSecret = isSecret;
             IsVisitor = isVisitor;
+            MasteryLevel = masteryLevel;
             Id = id;
             Species = species;
             DisplayKey = displayKey;
@@ -52,6 +54,9 @@ namespace PocketWilds.Content
         /// but never counted with the secret variants nor in the main Codex (it has the « Visiteurs » page).
         /// </summary>
         public bool IsVisitor { get; }
+
+        /// <summary>A-SP mastery color, given at that species mastery level (T46); 0 = not a mastery color.</summary>
+        public int MasteryLevel { get; }
 
         /// <summary>Exactly <see cref="PaletteSize"/> colors.</summary>
         public Color32[] Palette { get; }

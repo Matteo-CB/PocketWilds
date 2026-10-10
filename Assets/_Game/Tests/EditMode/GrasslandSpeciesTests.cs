@@ -46,6 +46,20 @@ namespace PocketWilds.Tests.EditMode
                     ("black", RarityTier.Uncommon), ("white", RarityTier.Rare), ("mushroom", RarityTier.Epic) },
                 Lods = new[] { (2200, 3000), (900, 1200), (350, 500) },
             };
+            yield return new Case
+            {
+                Name = "FieldMouse",
+                Variants = new[] { ("warmbrown", RarityTier.Common), ("sand", RarityTier.Common), ("grey", RarityTier.Uncommon),
+                    ("white", RarityTier.Uncommon), ("black", RarityTier.Rare), ("piebald", RarityTier.Epic) },
+                Lods = new[] { (2400, 3000), (800, 1100), (350, 500) },
+            };
+            yield return new Case
+            {
+                Name = "GuineaPig",
+                Variants = new[] { ("caramel", RarityTier.Common), ("cream", RarityTier.Common), ("black", RarityTier.Uncommon),
+                    ("tricolor", RarityTier.Uncommon), ("greywhite", RarityTier.Rare), ("golden", RarityTier.Epic) },
+                Lods = new[] { (1700, 2400), (750, 1000), (350, 500) },
+            };
         }
 
         private const string Family = "SmallQuadruped";
@@ -87,9 +101,35 @@ namespace PocketWilds.Tests.EditMode
             }
             int count = 0;
             for (int i = 0; i < registry.Variants.Count; i++)
-                if (registry.Variants[i].Species == id && !registry.Variants[i].IsVisitor)
+                if (registry.Variants[i].Species == id && !registry.Variants[i].IsSecret)
                     count++;
-            Assert.AreEqual(6, count, "the six roster colors (the T44C visitors' colors apart)");
+            Assert.AreEqual(6, count, "the six roster colors (visitors and mastery colors are secret)");
+        }
+
+        [Test]
+        public void MasteryColors_AreThreePerNewSpecies_AtTenTwentyThirty_NeverInEggs()
+        {
+            var registry = Registry();
+            foreach (var (species, plain) in new[] { ("fieldmouse", "buttercup"), ("guineapig", "milkcloud") })
+            {
+                var id = ContentId.FromSource("species." + species);
+                var levels = new List<int>();
+                for (int i = 0; i < registry.Variants.Count; i++)
+                {
+                    var variant = registry.Variants[i];
+                    if (variant.Species != id || variant.MasteryLevel <= 0)
+                        continue;
+                    levels.Add(variant.MasteryLevel);
+                    Assert.IsTrue(variant.IsSecret, species + " mastery color " + variant.MasteryLevel + " must be secret (never in eggs)");
+                    Assert.IsFalse(variant.IsVisitor, species);
+                }
+                levels.Sort();
+                CollectionAssert.AreEqual(new[] { 10, 20, 30 }, levels, species);
+
+                Assert.IsTrue(registry.Variants.TryGet(ContentId.FromSource($"variant.{species}.{plain}"), out var secret), plain);
+                Assert.IsTrue(secret.IsSecret, plain);
+                Assert.AreEqual(0, secret.MasteryLevel, plain);
+            }
         }
 
         [TestCaseSource(nameof(Species))]

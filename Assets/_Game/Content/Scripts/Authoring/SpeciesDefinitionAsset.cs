@@ -31,6 +31,8 @@ namespace PocketWilds.Content
 
             [Tooltip("T44C: a rare visitor's seasonal variant (secret for the draws, its own Codex page).")]
             public bool visitor;
+            [Tooltip("T45: A-SP mastery color, given at that species mastery level (T46); 0 = not a mastery color.")]
+            public int masteryLevel;
         }
 
         [Tooltip("Stable source ID, e.g. species.rabbit. Never change it once shipped.")]
@@ -64,7 +66,7 @@ namespace PocketWilds.Content
             palette[6] = entry.primary;
             palette[7] = entry.primary;
             return new VariantDefinition(ContentId.FromSource(entry.sourceId), ContentId.FromSource(sourceId), entry.displayKey,
-                entry.rarity, palette, entry.patternChannel, (byte)Mathf.Clamp(entry.patternStrength, 0, 15), entry.secret, entry.visitor);
+                entry.rarity, palette, entry.patternChannel, (byte)Mathf.Clamp(entry.patternStrength, 0, 15), entry.secret, entry.visitor, entry.masteryLevel);
         }
     }
 }

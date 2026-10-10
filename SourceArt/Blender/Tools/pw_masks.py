@@ -156,6 +156,86 @@ def hedgehog_masks(co, n, ctx):
     return shell, belly, 0.0, 0.0
 
 
+FIELDMOUSE_EARS = ((0.064, -0.078, 0.246), (-0.064, -0.078, 0.246))
+
+
+def fieldmouse_masks(co, n, ctx):
+    """Secondary = inner ears, tail and paws (pale pink), belly = chest, underside, chin and muzzle,
+    mask A = piebald patches (spots), mask B = thin dark stripe along the back."""
+    ear_c = Vector(FIELDMOUSE_EARS[0] if co.x > 0 else FIELDMOUSE_EARS[1])
+    ear_d = (co - ear_c).length
+    on_ear = co.z > 0.205 and ear_d < 0.060 and abs(co.x) > 0.025
+    facing = n.dot(Vector((0, -1, 0)))
+    inner = smoothstep(0.15, 0.45, facing) * smoothstep(0.046, 0.030, ear_d) if on_ear else 0.0
+
+    s, d, total = _path_project(co, ctx["tail_path"])
+    tail = smoothstep(0.035, 0.022, d) * smoothstep(0.005, 0.03, s) * smoothstep(0.125, 0.150, co.y) if total > 0 else 0.0
+    paws = smoothstep(0.024, 0.010, co.z) * (1.0 - tail)
+    secondary = max(inner, tail, paws)
+
+    hc = ctx["head_center"]; hr = ctx["head_radii"]
+    dh = co - hc
+    head_s = math.sqrt((dh.x / hr[0]) ** 2 + (dh.y / hr[1]) ** 2 + (dh.z / hr[2]) ** 2)
+    belly = 0.0
+    if not on_ear and tail < 0.5:
+        front = max(facing, 0.85 * n.dot(Vector((0, 0, -1))))
+        body = smoothstep(0.25, 0.65, front) * (1.0 - smoothstep(0.12, 0.16, co.z)) * (1.0 - smoothstep(0.03, 0.11, co.y))
+        body *= smoothstep(0.85, 1.05, head_s)
+        under = smoothstep(-0.30, -0.70, n.z) * (1.0 - smoothstep(0.10, 0.14, co.y))
+        nose = ctx["nose"]
+        muzzle = smoothstep(0.045, 0.020, (co - nose).length)
+        chin = smoothstep(0.30, 0.70, max(facing, 0.8 * n.dot(Vector((0, 0, -1))))) * smoothstep(nose.z + 0.002, nose.z - 0.026, co.z)
+        chin *= 1.0 - smoothstep(1.05, 1.25, head_s)
+        belly = max(body, under, muzzle, chin) * (1.0 - paws)
+
+    mask_a = 0.0
+    if not on_ear and tail < 0.5:
+        for center, radius in ctx["spots"]:
+            mask_a = max(mask_a, smoothstep(radius * 1.15, radius * 0.35, (co - Vector(center)).length))
+        mask_a *= 1.0 - belly * 0.85
+
+    mask_b = smoothstep(0.024, 0.010, abs(co.x)) * smoothstep(-0.11, -0.06, co.y) * (1.0 - smoothstep(0.12, 0.15, co.y))
+    mask_b *= smoothstep(0.25, 0.55, n.z) * (1.0 - belly) * (1.0 - tail)
+    return secondary, belly, mask_a, mask_b
+
+
+GUINEAPIG_EARS = ((0.062, -0.105, 0.200), (-0.062, -0.105, 0.200))
+
+
+def guineapig_masks(co, n, ctx):
+    """Secondary = ears and paws (pale pink), belly = underside, chin and muzzle, mask A = big patches
+    (tricolor, marshmallow, milk cloud), mask B = white blaze up the face and a belt around the middle."""
+    ear_c = Vector(GUINEAPIG_EARS[0] if co.x > 0 else GUINEAPIG_EARS[1])
+    on_ear = co.z > 0.180 and (co - ear_c).length < 0.034 and abs(co.x) > 0.035
+    ears = 1.0 if on_ear else 0.0
+    paws = smoothstep(0.022, 0.010, co.z)
+    secondary = max(ears, paws)
+
+    hc = ctx["head_center"]; hr = ctx["head_radii"]
+    dh = co - hc
+    head_s = math.sqrt((dh.x / hr[0]) ** 2 + (dh.y / hr[1]) ** 2 + (dh.z / hr[2]) ** 2)
+    nose = ctx["nose"]
+    facing = n.dot(Vector((0, -1, 0)))
+    belly = 0.0
+    if not on_ear:
+        under = smoothstep(-0.30, -0.70, n.z)
+        muzzle = smoothstep(0.050, 0.024, (co - nose).length)
+        chin = smoothstep(0.30, 0.70, max(facing, 0.8 * n.dot(Vector((0, 0, -1))))) * smoothstep(nose.z + 0.002, nose.z - 0.030, co.z)
+        chin *= 1.0 - smoothstep(1.05, 1.25, head_s)
+        belly = max(under, muzzle, chin) * (1.0 - paws)
+
+    mask_a = 0.0
+    if not on_ear:
+        for center, radius in ctx["spots"]:
+            mask_a = max(mask_a, smoothstep(radius * 1.15, radius * 0.35, (co - Vector(center)).length))
+        mask_a *= 1.0 - belly * 0.85
+
+    blaze = smoothstep(0.026, 0.012, abs(co.x)) * smoothstep(-0.07, -0.10, co.y) * smoothstep(nose.z - 0.005, nose.z + 0.010, co.z)
+    belt = smoothstep(0.015, 0.035, co.y) * (1.0 - smoothstep(0.075, 0.095, co.y))
+    mask_b = max(blaze, belt) * (1.0 - belly) * (1.0 - secondary)
+    return secondary, belly, mask_a, mask_b
+
+
 RULES = {
     "Rabbit": dict(
         fn=rabbit_masks,
@@ -169,6 +249,22 @@ RULES = {
         head_center=(0.0, -0.105, 0.165),
         head_radii=(0.078, 0.085, 0.078),
         spots=[],
+    ),
+    "FieldMouse": dict(
+        fn=fieldmouse_masks,
+        head_center=(0.0, -0.100, 0.175),
+        head_radii=(0.084, 0.080, 0.076),
+        # Big piebald patches (A-SP-004): back, both flanks, rump and one over the left eye and ear.
+        spots=[((0.040, 0.055, 0.170), 0.070), ((-0.080, 0.020, 0.110), 0.060), ((0.0, 0.125, 0.130), 0.060),
+               ((0.085, 0.095, 0.085), 0.055), ((-0.050, -0.125, 0.215), 0.045), ((-0.070, 0.110, 0.070), 0.045)],
+    ),
+    "GuineaPig": dict(
+        fn=guineapig_masks,
+        head_center=(0.0, -0.125, 0.142),
+        head_radii=(0.084, 0.082, 0.077),
+        # Big patches (A-SP-005): over one eye and ear, the shoulders, both flanks and the rump.
+        spots=[((0.055, -0.135, 0.175), 0.060), ((-0.060, -0.040, 0.170), 0.075), ((0.085, 0.050, 0.130), 0.070),
+               ((-0.095, 0.110, 0.110), 0.070), ((0.030, 0.150, 0.165), 0.065)],
     ),
     "Squirrel": dict(
         fn=squirrel_masks,

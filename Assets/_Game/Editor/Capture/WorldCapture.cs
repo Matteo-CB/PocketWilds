@@ -211,6 +211,13 @@ namespace PocketWilds.Editor.Capture
         public static void CaptureSpeciesMenu() =>
             Debug.Log("[WorldCapture] " + CaptureSpecies("T24", "hedgehog", new[] { "brown", "cream", "grey", "black", "white", "mushroom" }));
 
+        [MenuItem("Pocket Wilds/Capture/Field Mouse and Guinea Pig Variants (T45)", priority = 523)]
+        public static void CaptureT45Menu()
+        {
+            Debug.Log("[WorldCapture] " + CaptureSpecies("T45", "fieldmouse", new[] { "warmbrown", "sand", "grey", "white", "black", "piebald", "hazelnut", "lilac", "goldenwheat", "buttercup" }));
+            Debug.Log("[WorldCapture] " + CaptureSpecies("T45", "guineapig", new[] { "caramel", "cream", "black", "tricolor", "greywhite", "golden", "cinnamon", "marshmallow", "apricot", "milkcloud" }));
+        }
+
         /// <summary>
         /// Shared variant prompt: the six palettes of one species on one prefab in a 2 x 3 grid on the meadow
         /// (Medium lighting), then the gameplay frame with a species mix and a closer three-quarter view.

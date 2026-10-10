@@ -48,7 +48,7 @@ namespace PocketWilds.Simulation
 
         private static readonly VisitorDefinition[] Rows =
         {
-            new VisitorDefinition("visitor.white_fawn", 1, 1, "species.deer", "variant.deer.white_visitor"),
+            new VisitorDefinition("visitor.white_fawn", 1, 1, "species.fawn", "variant.fawn.white_visitor"),
             new VisitorDefinition("visitor.meadow_rabbit", 1, 2, "species.rabbit", "variant.rabbit.meadow_visitor"),
             new VisitorDefinition("visitor.flowery_hedgehog", 1, 3, "species.hedgehog", "variant.hedgehog.flower_visitor"),
             new VisitorDefinition("visitor.golden_fox", 2, 1, "species.fox", "variant.fox.golden_visitor"),
@@ -57,9 +57,9 @@ namespace PocketWilds.Simulation
             new VisitorDefinition("visitor.amber_badger", 3, 1, "species.badger", "variant.badger.amber_visitor"),
             new VisitorDefinition("visitor.russet_owl", 3, 2, "species.owl", "variant.owl.russet_visitor"),
             new VisitorDefinition("visitor.golden_chipmunk", 3, 3, "species.chipmunk", "variant.chipmunk.golden_visitor"),
-            new VisitorDefinition("visitor.white_stoat", 4, 1, "species.stoat", "variant.stoat.white_visitor"),
+            new VisitorDefinition("visitor.white_stoat", 4, 1, "species.ermine", "variant.ermine.white_visitor"),
             new VisitorDefinition("visitor.snow_rabbit", 4, 2, "species.rabbit", "variant.rabbit.snow_visitor"),
-            new VisitorDefinition("visitor.crystal_tit", 4, 3, "species.tit", "variant.tit.crystal_visitor"),
+            new VisitorDefinition("visitor.crystal_tit", 4, 3, "species.chickadee", "variant.chickadee.crystal_visitor"),
         };
 
         public static ref readonly VisitorDefinition Row(int index) => ref Rows[index];

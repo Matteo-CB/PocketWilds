@@ -90,6 +90,16 @@ SPECIES = {
     'lémurien des étoiles': 'star_lemur', 'hippocampe des étoiles': 'star_seahorse', 'paon des étoiles': 'star_peafowl',
     'koala des comètes': 'comet_koala',
 }
+# The roster's content ids (doc 03 « Roster complet », « ID de contenu »): one word, no underscore; the young animals keep
+# their roster names (calf, pup, hatchling...).
+ROSTER_IDS = {
+    'duckling': 'duck', 'eaglet': 'eagle', 'yak': 'yakcalf', 'tapir': 'tapircalf', 'tree_frog': 'redeyedfrog',
+    'oryx': 'oryxcalf', 'crane': 'cranechick', 'mandarin_duck': 'mandarinduckling', 'alpaca': 'alpacacria',
+    'cloud_whale': 'cloudwhalecalf', 'wolf': 'wolfpup', 'tiny_rex': 'rexhatchling', 'stegosaurus': 'stegosaurushatchling',
+    'brachiosaurus': 'brachiosaurushatchling', 'pterosaur': 'pterosaurhatchling',
+    'parasaurolophus': 'parasaurolophushatchling', 'mammoth': 'mammothcalf', 'star_peafowl': 'starpeachick',
+}
+SPECIES = {name: ROSTER_IDS.get(english, english.replace('_', '')) for name, english in SPECIES.items()}
 
 # « Tirage pendant {météo} » (biome weather and light) and « Tirage de saison pendant {météo} »: the weather's key.
 WEATHER = {
