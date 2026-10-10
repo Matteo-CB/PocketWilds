@@ -32,6 +32,7 @@ MonoBehaviour:
     patternChannel: 2
     patternStrength: 12
     secret: 0
+    visitor: 0
   - sourceId: variant.hedgehog.cream
     displayKey: variant.hedgehog.cream.name
     rarity: 0
@@ -44,6 +45,7 @@ MonoBehaviour:
     patternChannel: 2
     patternStrength: 10
     secret: 0
+    visitor: 0
   - sourceId: variant.hedgehog.grey
     displayKey: variant.hedgehog.grey.name
     rarity: 1
@@ -56,6 +58,7 @@ MonoBehaviour:
     patternChannel: 2
     patternStrength: 12
     secret: 0
+    visitor: 0
   - sourceId: variant.hedgehog.black
     displayKey: variant.hedgehog.black.name
     rarity: 1
@@ -68,6 +71,7 @@ MonoBehaviour:
     patternChannel: 2
     patternStrength: 10
     secret: 0
+    visitor: 0
   - sourceId: variant.hedgehog.white
     displayKey: variant.hedgehog.white.name
     rarity: 2
@@ -80,6 +84,7 @@ MonoBehaviour:
     patternChannel: 0
     patternStrength: 0
     secret: 0
+    visitor: 0
   - sourceId: variant.hedgehog.mushroom
     displayKey: variant.hedgehog.mushroom.name
     rarity: 3
@@ -92,3 +97,17 @@ MonoBehaviour:
     patternChannel: 1
     patternStrength: 15
     secret: 0
+    visitor: 0
+  - sourceId: variant.hedgehog.flower_visitor
+    displayKey: variant.hedgehog.flower_visitor.name
+    rarity: 2
+    primary: {r: 0.9490196, g: 0.8901961, b: 0.80784315, a: 1}
+    secondary: {r: 0.92156863, g: 0.8509804, b: 0.7372549, a: 1}
+    belly: {r: 1, g: 0.9647059, b: 0.91764706, a: 1}
+    detail: {r: 0.2901961, g: 0.20784314, b: 0.19607843, a: 1}
+    eye: {r: 0.10980392, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.9647059, g: 0.7490196, b: 0.8235294, a: 1}
+    patternChannel: 2
+    patternStrength: 14
+    secret: 1
+    visitor: 1

@@ -348,6 +348,10 @@ namespace PocketWilds.Editor.Animals
                 Variant("variant.rabbit.spotted", RarityTier.Rare, Hex("F4EBDD"), Hex("F2BCBC"), Hex("FFF8EE"), Hex("E98A93"), Hex("1E1414"),
                     pattern: Hex("C9A27E"), channel: PatternChannel.MaskA, strength: 15),
                 Variant("variant.rabbit.sakura", RarityTier.Epic, Hex("F6C9D4"), Hex("FBE3E8"), Hex("FFF1F4"), Hex("E77D95"), Hex("2B1820")),
+                // T44C visitor variants (doc Rétention, rare visitors): palettes only, secret so they are never in the egg
+                // odds, the pities or the genetics (HatchService skips IsSecret; doc 02 Oeufs: « jamais de visiteur »).
+                Variant("variant.rabbit.meadow_visitor", RarityTier.Rare, Hex("B9CBA6"), Hex("F4C3D2"), Hex("FBF3DE"), Hex("E98A93"), Hex("2A1E1C"), secret: true, visitor: true),
+                Variant("variant.rabbit.snow_visitor", RarityTier.Rare, Hex("F8FBFF"), Hex("CFE3F5"), Hex("E3EFFA"), Hex("F2B6C2"), Hex("22303F"), secret: true, visitor: true),
             };
             EditorUtility.SetDirty(asset);
             return asset;
@@ -406,13 +410,16 @@ namespace PocketWilds.Editor.Animals
                 Variant("variant.hedgehog.white", RarityTier.Rare, Hex("F8F0E8"), Hex("EDE2D6"), Hex("FFFFFF"), Hex("E49AA0"), Hex("2A1A1C")),
                 Variant("variant.hedgehog.mushroom", RarityTier.Epic, Hex("EAD6BD"), Hex("D2433A"), Hex("FFF4E6"), Hex("3A2A28"), Hex("1A1212"),
                     pattern: Hex("FFF8F0"), channel: PatternChannel.MaskA, strength: 15),
+                // T44C visitor variant: warm cream spines tipped with soft blossom pink (light lobe tips, mask B). Secret: never in eggs.
+                Variant("variant.hedgehog.flower_visitor", RarityTier.Rare, Hex("F2E3CE"), Hex("EBD9BC"), Hex("FFF6EA"), Hex("4A3532"), Hex("1C1414"),
+                    pattern: Hex("F6BFD2"), channel: PatternChannel.MaskB, strength: 14, secret: true, visitor: true),
             };
             EditorUtility.SetDirty(asset);
             return asset;
         }
 
         private static SpeciesDefinitionAsset.VariantEntry Variant(string id, RarityTier rarity, Color primary, Color secondary,
-            Color belly, Color detail, Color eye, Color? pattern = null, PatternChannel channel = PatternChannel.None, int strength = 0)
+            Color belly, Color detail, Color eye, Color? pattern = null, PatternChannel channel = PatternChannel.None, int strength = 0, bool secret = false, bool visitor = false)
         {
             return new SpeciesDefinitionAsset.VariantEntry
             {
@@ -428,6 +435,8 @@ namespace PocketWilds.Editor.Animals
                 pattern = pattern ?? CarriedPatternTint(primary),
                 patternChannel = channel,
                 patternStrength = strength,
+                secret = secret,
+                visitor = visitor,
             };
         }
 

@@ -26,9 +26,10 @@ namespace PocketWilds.Content
         public const int PaletteSize = 8;
 
         public VariantDefinition(ContentId id, ContentId species, string displayKey, RarityTier rarity,
-            Color32[] palette, PatternChannel patternChannel, byte patternStrength, bool isSecret = false)
+            Color32[] palette, PatternChannel patternChannel, byte patternStrength, bool isSecret = false, bool isVisitor = false)
         {
             IsSecret = isSecret;
+            IsVisitor = isVisitor;
             Id = id;
             Species = species;
             DisplayKey = displayKey;
@@ -45,6 +46,12 @@ namespace PocketWilds.Content
 
         /// <summary>Secret variant (Moon Rabbit...): purely cosmetic, never targeted by the variant pity.</summary>
         public bool IsSecret { get; }
+
+        /// <summary>
+        /// T44C: a rare visitor's seasonal variant. Also secret for the draws (never in eggs, pities, genetics or wishes),
+        /// but never counted with the secret variants nor in the main Codex (it has the « Visiteurs » page).
+        /// </summary>
+        public bool IsVisitor { get; }
 
         /// <summary>Exactly <see cref="PaletteSize"/> colors.</summary>
         public Color32[] Palette { get; }

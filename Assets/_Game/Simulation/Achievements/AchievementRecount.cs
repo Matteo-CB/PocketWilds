@@ -86,7 +86,8 @@ namespace PocketWilds.Simulation
             int secret = 0, plain = 0;
             foreach (var id in c.DiscoveredVariants)
             {
-                if (!_content.Variants.TryGet(id, out var variant))
+                // T44C: a visitor's variant has its own Codex page; it never counts with the collection's variants.
+                if (!_content.Variants.TryGet(id, out var variant) || variant.IsVisitor)
                     continue;
                 if (variant.IsSecret)
                     secret++;

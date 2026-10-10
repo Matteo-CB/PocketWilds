@@ -129,6 +129,9 @@ namespace PocketWilds.Editor.UI
             { "variant.rabbit.black.name", "Black", "Noir" },
             { "variant.rabbit.spotted.name", "Spotted", "Tacheté" },
             { "variant.rabbit.sakura.name", "Sakura", "Sakura" },
+            // T44C visitor variants (never in eggs).
+            { "variant.rabbit.meadow_visitor.name", "Meadow Rabbit", "Lapin des prés" },
+            { "variant.rabbit.snow_visitor.name", "Snow Rabbit", "Lapin de neige" },
             { "species.squirrel.name", "Squirrel", "Écureuil" },
             { "variant.squirrel.red.name", "Red", "Roux" },
             { "variant.squirrel.brown.name", "Brown", "Brun" },
@@ -162,6 +165,7 @@ namespace PocketWilds.Editor.UI
             { "variant.hedgehog.black.name", "Black", "Noir" },
             { "variant.hedgehog.white.name", "White", "Blanc" },
             { "variant.hedgehog.mushroom.name", "Mushroom", "Champignon" },
+            { "variant.hedgehog.flower_visitor.name", "Flower Hedgehog", "Hérisson fleuri" },
             // T35A Upgrades screen (doc 02 Améliorations, section 11.7). Gains are what the purchase brings.
             { ProgressionText.UpgradesTitle, "Upgrades", "Améliorer" },
             { ProgressionText.QtyOne, "× 1", "× 1" },
@@ -288,6 +292,14 @@ namespace PocketWilds.Editor.UI
                 var profileNames = ProfileScreenTexts.ContentNames();
                 for (int i = 0; i < profileNames.GetLength(0); i++)
                     table.Set(profileNames[i, 0], profileNames[i, language + 1]);
+                // T44C: the journal screen's words, the visitor's banner and gift, then agent CC's JournalTexts (the memories, the
+                // surprises' and visitors' names), found by reflection.
+                var journal = JournalScreenTexts.Texts;
+                for (int i = 0; i < journal.GetLength(0); i++)
+                    table.Set(journal[i, 0], journal[i, language + 1]);
+                var memories = JournalScreenTexts.ContentTexts();
+                for (int i = 0; i < memories.GetLength(0); i++)
+                    table.Set(memories[i, 0], memories[i, language + 1]);
                 EditorUtility.SetDirty(table);
                 if (!database.localization.Contains(table))
                     database.localization.Insert(Mathf.Min(language, database.localization.Count), table);

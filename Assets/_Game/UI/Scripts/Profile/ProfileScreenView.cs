@@ -23,7 +23,7 @@ namespace PocketWilds.UI
     /// borrowed from what the scene loaded (<see cref="Lend"/>). Nothing allocates per frame after <see cref="Bind"/>; no cell
     /// is ever instantiated at run time.
     /// </summary>
-    public sealed class ProfileScreenView : MonoBehaviour, IProfileScreenView
+    public sealed class ProfileScreenView : MonoBehaviour, IProfileScreenView, IJournalEntryView
     {
         /// <summary>The icons, borrowed by name: the screen's own, then the 13 categories (by <see cref="AchievementCategory"/>).</summary>
         public enum ProfileIcon
@@ -37,9 +37,12 @@ namespace PocketWilds.UI
             BadgeRound = 6,
             BadgeStar = 7,
             Category0 = 8,
+
+            /// <summary>T44C: the journal's entry on the card (after the 13 categories).</summary>
+            Journal = Category0 + ProfileLayout.Categories,
         }
 
-        public const int IconCount = (int)ProfileIcon.Category0 + ProfileLayout.Categories;
+        public const int IconCount = (int)ProfileIcon.Journal + 1;
 
         private const float NoteIn = 0.15f;
         private const float NoteHold = 2f;
@@ -92,6 +95,7 @@ namespace PocketWilds.UI
 
         private readonly SafeAreaFitter _fitter = new SafeAreaFitter();
         private IProfileScreenActions _actions;
+        private Action _openJournal;
         private CanvasScaler _scaler;
         private Sprite[] _icons;
         private bool _lent;
@@ -335,6 +339,7 @@ namespace PocketWilds.UI
             }
             for (int c = 0; c < p.chips.Length; c++)
                 SetIcon(p.chips[c].icon, c == 0 ? IconOf(ProfileIcon.BadgeStar) : IconOf(ProfileIcon.Category0 + (c - 1)));
+            SetIcon(p.journalIcon, IconOf(ProfileIcon.Journal));
         }
 
         private static void SetIcon(Image image, Sprite sprite)
@@ -355,6 +360,7 @@ namespace PocketWilds.UI
             for (int i = 0; i < p.tabs.Length && i < 4; i++)
                 SetText(p.tabs[i].label, T(ProfileText.Tab((ProfileTab)i)));
             SetText(p.photoSoon, T(ProfileText.PhotoSoon));
+            SetText(p.journalLabel, T(JournalText.Entry));
             string claim = T(ProfileText.Claim), isNew = T(ProfileText.New);
             foreach (var b in p.badges)
                 SetText(b.claimLabel, claim);
@@ -378,6 +384,8 @@ namespace PocketWilds.UI
                 if (_frameStyles[i] != null && !string.IsNullOrEmpty(_frameStyles[i].key) && !_styleIndex.ContainsKey(_frameStyles[i].key))
                     _styleIndex.Add(_frameStyles[i].key, i);
             p.close.onClick.AddListener(() => _actions?.CloseScreen());
+            if (p.journalButton != null)
+                p.journalButton.onClick.AddListener(() => _openJournal?.Invoke());
             for (int i = 0; i < p.tabs.Length; i++)
             {
                 var tab = (ProfileTab)i;
@@ -502,6 +510,29 @@ namespace PocketWilds.UI
         public const float RowsTop = 820f;
 
         public const float RowsTopPoses = 900f;
+
+        // ---------------- IJournalEntryView (T44C) ----------------
+
+        public void BindJournal(Action open)
+        {
+            Initialize();
+            _openJournal = open;
+        }
+
+        public void SetJournal(bool shown, bool dot)
+        {
+            var p = _parts;
+            if (p.journalButton == null)
+                return;
+            SetActive(p.journalButton.gameObject, shown);
+            if (p.journalDot != null)
+                SetActive(p.journalDot.gameObject, shown && dot);
+        }
+
+        /// <summary>Tests: the journal's entry shows, and its dot.</summary>
+        public bool JournalEntryShown => _parts.journalButton != null && _parts.journalButton.gameObject.activeSelf;
+
+        public bool JournalDotShown => JournalEntryShown && _parts.journalDot != null && _parts.journalDot.gameObject.activeSelf;
 
         public void SetTabDots(bool achievements, bool titles, bool frames, bool poses)
         {

@@ -84,6 +84,9 @@ namespace PocketWilds.Bootstrap
         private AchievementService _achievements;
         private ProfileItemService _profileItems;
         private AchievementHooks _achievementHooks;
+        private JournalService _journal;
+        private VisitorService _visitors;
+        private JournalHooks _journalHooks;
         private GrantService _grants;
         private OfferService _offers;
         private StoreService _store;
@@ -268,6 +271,18 @@ namespace PocketWilds.Bootstrap
                 _achievements = new AchievementService(_save.State.Achievements) { Save = _save };
                 _achievementHooks = new AchievementHooks(_achievements, _profileItems, _save.State, _clock, _content, _economy, _hatch,
                     _mastery, _progression, _activities, _daily, _expeditions, _garden, _albums, _albumHooks);
+                // T44C: the refuge journal (63 moments, pictures captured once) and the rare visitors (one or two a day).
+                _journal = new JournalService(_save.State.Journal, _clock, _save.State) { Save = _save };
+                var activities = _activities;
+                var daily = _daily;
+                _visitors = new VisitorService(_save.State, _content, _clock, _save)
+                {
+                    Refuge = _progression.Refuge, Rewards = _daily.Context.Granter, Albums = _albums, Mastery = _mastery, Economy = _economy,
+                    Essence = _progression.Essence, Achievements = _achievements, AchievementHooks = _achievementHooks,
+                    TicketsOpen = () => daily.Config.ActivitiesAvailable && activities.AnyShipped,
+                };
+                _journalHooks = new JournalHooks(_journal, _save.State, _clock, _content, _hatch, _mastery, _progression, _activities, _daily,
+                    _expeditions, _garden, _albums, _achievements, _profileItems, _visitors);
                 if (_activities.AnyShipped)
                 {
                     _daily.Config.ActivitiesAvailable = true;
@@ -308,6 +323,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.AttachGarden(_garden);
                 _analytics.AttachAlbums(_albums);
                 _analytics.AttachAchievements(_achievements, _profileItems);
+                _analytics.AttachJournal(_journal, _visitors);
                 _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
             });
 
@@ -382,6 +398,8 @@ namespace PocketWilds.Bootstrap
                 Context.Albums = _albums;
                 Context.Achievements = _achievements;
                 Context.ProfileItems = _profileItems;
+                Context.Journal = _journal;
+                Context.Visitors = _visitors;
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);
@@ -528,6 +546,10 @@ namespace PocketWilds.Bootstrap
             _gardenHooks?.Dispose();
             _gardenHooks = null;
             _garden = null;
+            _journalHooks?.Dispose();
+            _journalHooks = null;
+            _journal = null;
+            _visitors = null;
             _achievementHooks?.Dispose();
             _achievementHooks = null;
             _achievements = null;

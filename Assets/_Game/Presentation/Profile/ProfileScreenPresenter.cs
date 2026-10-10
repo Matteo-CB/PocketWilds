@@ -121,6 +121,11 @@ namespace PocketWilds.Presentation
         /// <summary>Reduce Motion for captures and tests without a save.</summary>
         public bool? ReduceMotionOverride { get; set; }
 
+        /// <summary>T44C: the journal the card's « Journal » button opens (null: the button hides); ticked with this screen.</summary>
+        public JournalScreenPresenter Journal { get; set; }
+
+        private int _journalShown = -1;
+
         public bool IsOpen => _screenOpen;
 
         public bool ScreenShown => _screenShown;
@@ -194,6 +199,8 @@ namespace PocketWilds.Presentation
 
         private void Close()
         {
+            if (Journal != null && Journal.IsOpen)
+                Journal.CloseScreen();
             MarkSeen(_tab);
             _screenOpen = false;
             if (_screenShown)
@@ -284,6 +291,8 @@ namespace PocketWilds.Presentation
             }
             Index();
             _view.Bind(_text, this);
+            (_view as IJournalEntryView)?.BindJournal(OpenJournal);
+            _journalShown = -1;
             _view.Hide();
         }
 
@@ -298,6 +307,7 @@ namespace PocketWilds.Presentation
             BindChips();
             BindTabDots();
             ShowTab(_tab, true);
+            BindJournal();
             _dirty = false;
             _view.Tick(0f);
         }
@@ -383,12 +393,33 @@ namespace PocketWilds.Presentation
                     _view.RefreshList(ListOf(_tab));
                 }
                 _view.Tick(deltaTime);
+                BindJournal();
             }
+            Journal?.Tick(deltaTime);
             if (_hudDirty)
             {
                 _hudDirty = false;
                 UpdateHud();
             }
+        }
+
+        /// <summary>T44C: the card's « Journal » button and its dot while pages are unseen (an int compared per frame).</summary>
+        private void BindJournal()
+        {
+            if (_view is not IJournalEntryView entry)
+                return;
+            int state = Journal == null ? 0 : Journal.Journal.UnseenCount > 0 ? 2 : 1;
+            if (state == _journalShown)
+                return;
+            _journalShown = state;
+            entry.SetJournal(state > 0, state == 2);
+        }
+
+        private void OpenJournal()
+        {
+            if (!_screenShown || Journal == null)
+                return;
+            Journal.OpenJournal();
         }
 
         private void UpdateHud()
@@ -767,6 +798,8 @@ namespace PocketWilds.Presentation
         {
             _achievements.Changed -= _onChanged;
             _items.Changed -= _onChanged;
+            if (Journal != null && Journal.IsOpen)
+                Journal.CloseScreen();
             if (_screenOpen)
                 Close();
             Release();

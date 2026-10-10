@@ -634,6 +634,8 @@ namespace PocketWilds.Presentation
             }
             _scheduler.Tick(time, deltaTime);
             TickArrivals(time);
+            // T44C: a rare visitor walks in, sits, is greeted, walks out.
+            TickVisitors(time, deltaTime);
             // T36: bubbles follow their animals; hidden under a screen or a hatch (the wish card alone keeps its bubble).
             Bubbles?.Tick(time, deltaTime, (ModalOpen && !(Daily != null && Daily.CardOnlyOpen)) || Hatching);
             _hatch.Tick(time, deltaTime);
@@ -737,6 +739,10 @@ namespace PocketWilds.Presentation
                 RequestHatch();
                 return;
             }
+
+            // T44C: the rare visitor (greeted, never an animal of the collection yet).
+            if (TryTapVisitor(ray))
+                return;
 
             int bestView = -1;
             float bestDistance = float.MaxValue;

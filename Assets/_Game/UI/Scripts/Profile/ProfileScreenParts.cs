@@ -26,6 +26,13 @@ namespace PocketWilds.UI
         public TMP_Text cardTitle;
         public TMP_Text cardFrameName;
 
+        [Header("Card: the journal's entry (T44C)")]
+        public Button journalButton;
+        public Image journalBack;
+        public Image journalIcon;
+        public TMP_Text journalLabel;
+        public Image journalDot;
+
         [Header("Tabs")]
         public ProfileTabParts[] tabs = Array.Empty<ProfileTabParts>();
 

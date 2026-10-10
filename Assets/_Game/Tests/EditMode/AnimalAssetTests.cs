@@ -35,8 +35,8 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual("PF_Animal_Rabbit", species.VisualKey);
             int variants = 0;
             for (int i = 0; i < registry.Variants.Count; i++)
-                if (registry.Variants[i].Species == rabbit) variants++;
-            Assert.AreEqual(6, variants);
+                if (registry.Variants[i].Species == rabbit && !registry.Variants[i].IsVisitor) variants++;
+            Assert.AreEqual(6, variants, "the six roster colors (the T44C visitors' colors apart)");
         }
 
         [Test]

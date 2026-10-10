@@ -46,7 +46,10 @@ namespace PocketWilds.Simulation
         public long Zones;
         public long BiomeMastery;
 
-        public long Total => Species + Variants + Traits + SpeciesMastery + Biomes + Zones + BiomeMastery;
+        /// <summary>T44C: rare visitors kept in the collection, 8 points each (Discovery part).</summary>
+        public long Visitors;
+
+        public long Total => Species + Variants + Traits + SpeciesMastery + Biomes + Zones + BiomeMastery + Visitors;
     }
 
     public readonly struct RefugeLevelUp
@@ -92,6 +95,9 @@ namespace PocketWilds.Simulation
     /// </summary>
     public sealed class RefugeLevelService
     {
+        /// <summary>« Visiteur rare ajouté à la collection »: 8 points (doc 02 Améliorations, section 6.1).</summary>
+        public const int PointsVisitorKept = 8;
+
         private readonly PlayerState _state;
         private readonly ContentRegistry _content;
         private readonly ProgressionConfig _config;
@@ -157,7 +163,8 @@ namespace PocketWilds.Simulation
                 long points = 0;
                 foreach (var id in collection.DiscoveredVariants)
                 {
-                    bool secret = _content.Variants.TryGet(id, out var variant) && variant.IsSecret;
+                    // A visitor's variant is kept out of the eggs as a secret one but scores as a variant (doc 02, section 6.1).
+                    bool secret = _content.Variants.TryGet(id, out var variant) && variant.IsSecret && !variant.IsVisitor;
                     points += secret ? _config.PointsSecretVariant : _config.PointsVariant;
                 }
                 _variantPoints = points;
@@ -165,6 +172,7 @@ namespace PocketWilds.Simulation
             }
             b.Variants = _variantPoints;
             b.Traits = _traitPoints;
+            b.Visitors = (long)_state.Visitors.KeptCount * PointsVisitorKept;
             int every = 5;
             foreach (var pair in _state.Mastery.Species)
                 b.SpeciesMastery += (long)(pair.Value.Level / every) * _config.PointsSpeciesMasteryMilestone;

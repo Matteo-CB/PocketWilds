@@ -41,6 +41,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Garden_v13", BuildGarden());
             created += WriteIfMissing("GoldenSave_Albums_v14", BuildAlbums());
             created += WriteIfMissing("GoldenSave_Achievements_v15", BuildAchievements());
+            created += WriteIfMissing("GoldenSave_Journal_v16", BuildJournal());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -408,6 +409,61 @@ namespace PocketWilds.Editor.Saves
             a.PosesUnseen = 1;
             a.SelectedTitle = 0;
             a.SelectedFrame = 0;
+            return state;
+        }
+
+        /// <summary>
+        /// Schema 16 (T44C): the journal set up with three pages (the first egg, captured; the first hatch, waiting for its
+        /// portrait, « {name} » the rabbit's species key; a new species, its thumbnail standing in), 2 unseen, a surprise seen,
+        /// two garden plants, a best Renewal; the visitors open on day 9800, the meadow rabbit touched twice, the snow rabbit
+        /// kept, today's first visit greeted, the guaranteed first visit, 3 greetings.
+        /// </summary>
+        private static PlayerState BuildJournal()
+        {
+            var state = BuildAchievements();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-0000000000c6");
+            state.Meta.Revision = 420;
+            var j = state.Journal;
+            j.Initialized = true;
+            ref var egg = ref j.Append();
+            egg.Id = 1;
+            egg.Moment = JournalMoment.FirstEgg;
+            egg.Day = 9773;
+            egg.Flags = JournalEntry.FlagCaptured;
+            ref var hatch = ref j.Append();
+            hatch.Id = 2;
+            hatch.Moment = JournalMoment.FirstHatch;
+            hatch.Day = 9773;
+            hatch.ImageRef = 1;
+            hatch.Flags = JournalEntry.FlagPending;
+            hatch.Value0 = "#species.rabbit.name";
+            ref var species = ref j.Append();
+            species.Id = 3;
+            species.Moment = JournalMoment.NewSpecies;
+            species.Day = 9774;
+            species.ImageRef = 1;
+            species.Subject = 77;
+            species.Flags = JournalEntry.FlagThumbnail;
+            species.Value0 = "#species.rabbit.name";
+            j.NextId = 4;
+            j.SetFirstDone(JournalMoment.FirstEgg);
+            j.SetFirstDone(JournalMoment.FirstHatch);
+            j.AddSubject(JournalMoment.NewSpecies, 77);
+            j.AddSubject(JournalMoment.Season, 3);
+            j.Unseen = 2;
+            j.GardenPlants = 0b11;
+            j.BestRenewalEssence = 120;
+            j.AddSurprise("surprise.visitor_arrival");
+            var v = state.Visitors;
+            v.Contacts[1] = 2;
+            v.Contacts[10] = 4;
+            v.JoinedMask = 1 << 10;
+            v.GreetedDay = 9800;
+            v.GreetedMask = 1;
+            v.OpenedDay = 9800;
+            v.FirstVisitUnixMs = 1_791_000_000_000L;
+            v.FirstVisitor = 1;
+            v.Greetings = 3;
             return state;
         }
 

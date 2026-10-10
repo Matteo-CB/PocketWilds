@@ -1278,8 +1278,87 @@ namespace PocketWilds.Services.Analytics
             Record(ref e);
         }
 
+        private JournalService? _journal;
+        private VisitorService? _visitors;
+        private Action<int, int>? _onJournalWritten;
+        private Action<int>? _onVisitorArrived;
+        private Action<int, bool>? _onVisitorLeft;
+        private VisitorGreetedHandler? _onVisitorGreeted;
+
+        /// <summary>T44C: the refuge journal's pages (journal_entry) and the rare visitors (visitor_arrive, _touch, _left).</summary>
+        public void AttachJournal(JournalService? journal, VisitorService? visitors)
+        {
+            DetachJournal();
+            _journal = journal;
+            _visitors = visitors;
+            _onJournalWritten ??= OnJournalWritten;
+            _onVisitorArrived ??= OnVisitorArrived;
+            _onVisitorLeft ??= OnVisitorLeft;
+            _onVisitorGreeted ??= OnVisitorGreeted;
+            if (journal != null)
+                journal.Written += _onJournalWritten;
+            if (visitors != null)
+            {
+                visitors.Arrived += _onVisitorArrived;
+                visitors.Left += _onVisitorLeft;
+                visitors.Greeted += _onVisitorGreeted;
+            }
+        }
+
+        private void DetachJournal()
+        {
+            if (_journal != null)
+                _journal.Written -= _onJournalWritten;
+            if (_visitors != null)
+            {
+                _visitors.Arrived -= _onVisitorArrived;
+                _visitors.Left -= _onVisitorLeft;
+                _visitors.Greeted -= _onVisitorGreeted;
+            }
+            _journal = null;
+            _visitors = null;
+        }
+
+        private void OnJournalWritten(int pageId, int moment)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.JournalEntry)
+            {
+                I0 = moment + 1,
+                I1 = (int)JournalData.Row(moment).Image,
+                I2 = _journal != null ? _journal.PageCount : 0,
+            };
+            Record(ref e);
+        }
+
+        private void OnVisitorArrived(int visitor)
+        {
+            int contacts = _visitors != null ? _visitors.State.Contacts[visitor] : 0;
+            var e = new AnalyticsEvent(AnalyticsEventId.VisitorArrive) { I0 = visitor + 1, I1 = contacts };
+            Record(ref e);
+        }
+
+        private void OnVisitorLeft(int visitor, bool greeted)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.VisitorLeft) { I0 = visitor + 1, I1 = greeted ? 1 : 0 };
+            Record(ref e);
+        }
+
+        private void OnVisitorGreeted(in VisitorGreeting greeting, int visitor)
+        {
+            int contacts = _visitors != null ? _visitors.State.Contacts[visitor] : 0;
+            var e = new AnalyticsEvent(AnalyticsEventId.VisitorTouch)
+            {
+                I0 = visitor + 1,
+                I1 = contacts,
+                I2 = greeting.FirstTouch ? 1 : 0,
+                I3 = greeting.Joined ? 1 : 0,
+            };
+            Record(ref e);
+        }
+
         public void Dispose()
         {
+            DetachJournal();
             DetachAchievements();
             DetachAlbums();
             DetachGarden();

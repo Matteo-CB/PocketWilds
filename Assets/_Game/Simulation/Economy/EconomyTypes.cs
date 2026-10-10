@@ -71,6 +71,9 @@ namespace PocketWilds.Simulation
 
         /// <summary>Bond rewards (T36; not in the doc's list, appended after it).</summary>
         Bond = 58,
+
+        /// <summary>A rare visitor's gift (T44C; not in the doc's list, appended after it).</summary>
+        Visitor = 59,
     }
 
     public readonly struct EconomyChange

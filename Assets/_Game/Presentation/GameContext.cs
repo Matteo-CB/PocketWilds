@@ -118,6 +118,11 @@ namespace PocketWilds.Presentation
         public AchievementService Achievements { get; set; }
 
         public ProfileItemService ProfileItems { get; set; }
+
+        /// <summary>T44C: the refuge journal and the rare visitors (set by the bootstrap).</summary>
+        public JournalService Journal { get; set; }
+
+        public VisitorService Visitors { get; set; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

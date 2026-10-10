@@ -28,6 +28,9 @@ namespace PocketWilds.Content
             [Range(0, 15)] public int patternStrength = 0;
             [Tooltip("Secret variant: cosmetic, never given by the variant pity.")]
             public bool secret;
+
+            [Tooltip("T44C: a rare visitor's seasonal variant (secret for the draws, its own Codex page).")]
+            public bool visitor;
         }
 
         [Tooltip("Stable source ID, e.g. species.rabbit. Never change it once shipped.")]
@@ -61,7 +64,7 @@ namespace PocketWilds.Content
             palette[6] = entry.primary;
             palette[7] = entry.primary;
             return new VariantDefinition(ContentId.FromSource(entry.sourceId), ContentId.FromSource(sourceId), entry.displayKey,
-                entry.rarity, palette, entry.patternChannel, (byte)Mathf.Clamp(entry.patternStrength, 0, 15), entry.secret);
+                entry.rarity, palette, entry.patternChannel, (byte)Mathf.Clamp(entry.patternStrength, 0, 15), entry.secret, entry.visitor);
         }
     }
 }

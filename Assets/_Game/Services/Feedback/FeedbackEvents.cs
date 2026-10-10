@@ -148,7 +148,14 @@ namespace PocketWilds.Services.Feedback
         /// </summary>
         GardenHarvest = 46,
 
-        // 47 and 48 are reserved by doc 05 section 6.4 (VisitorArrive, BondUp).
+        /// <summary>
+        /// T44C J-SFX-FEEL-018 (doc 05 section 6.4, slot 47): a visitor arrives (five soft paw steps, then a light chime of
+        /// three round wooden notes, A, C, F). SFX_World_VisitorArrive_01, World, 1 voice, 1.2 s, once per 10 s, only when
+        /// the visitor is in frame.
+        /// </summary>
+        VisitorArrive = 47,
+
+        // 48 is reserved by doc 05 section 6.4 (BondUp).
 
         /// <summary>
         /// T38 J-SFX-FEEL-020: a soft puff of bubbles (a breath of air, a small cluster of round bubbles popping around F).
@@ -310,6 +317,10 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>T43 J-SFX-REWARD-002 (doc 01 S-ACT-006): the garden levels up, the species mastery motif played again.</summary>
         GardenLevelUp = 99,
+
+        /// <summary>T44C (doc 01 Journal du refuge): a page is added to the journal (a paper rustle and a soft felt tap, no
+        /// note). SFX_UI_JournalPage_01, UI, 1 voice, 0.5 s.</summary>
+        JournalPage = 100,
     }
 
     /// <summary>T37: the three activity musics (doc 01 Contenu, section 12.0, J-MUS-ACT-01 to 03). Stable values.</summary>

@@ -39,7 +39,13 @@ namespace PocketWilds.Presentation
 
         /// <summary>T43 (H-VFX-ACT-006-04): neighbours help, 2 small green hearts between two beds.</summary>
         GardenHelp = 18,
-        Count = 19,
+
+        /// <summary>T44C (doc 05 sheet 25): one round soft dot behind a walking visitor, played every 250 ms (8 visible at most).</summary>
+        VisitorTrail = 19,
+
+        /// <summary>T44C (doc 05 sheet 25, H-VFX-078): a visitor arrives, a soft warm ring on the grass where it stops.</summary>
+        VisitorArrive = 20,
+        Count = 21,
     }
 
     /// <summary>What a hatch brings that the player did not have: shown by its own effect and the reveal banner.</summary>

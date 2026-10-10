@@ -1642,6 +1642,46 @@ def reward_album_page(v):
     return _soft_start(wet(x, ROOM, 0.08))
 
 
+# ---------------------------------------------------------------- T44C: journal and visitors (doc 05 Sensations,
+# sheet 25 and section 6.4 slot 47 VisitorArrive; doc 01 Journal). A visitor walks in and a few round wooden notes ring
+# far away; a journal page is added with a paper rustle. F major, wood and paper: no glass, no sparkle.
+
+def visitor_arrive(v):
+    """J-SFX-FEEL-018 (slot 47): a visitor arrives: five soft little paw steps on grass coming closer (louder and clearer
+    as they come), then a light wind chime made of round wooden notes, A then C then F (three notes, a third and a fourth
+    apart, each ringing a little longer), a quiet tine under the last. About 1.2 s."""
+    rng = np.random.default_rng(2610)
+    out = np.zeros(samples(1.5))
+    steps = _trot(rng, 5, 0.0, 0.11, 0.95, (0.3, 0.8), body_hz=190.0, jitter=0.004)
+    far = fft_filter(steps, lowpass(1000.0, 2))
+    near = fft_filter(steps, lowpass(2600.0, 2))
+    k = np.clip(np.arange(len(steps)) / SR / 0.5, 0.0, 1.0)
+    place(out, (far * (1.0 - k) + near * k) * 0.8, 0.0, release=0.04)
+    place(out, mallet(hz('A5'), 0.3, 0.5, damp=0.55) * 0.3, 0.46)
+    place(out, mallet(hz('C6'), 0.35, 0.52, damp=0.6) * 0.3, 0.6)
+    place(out, mallet(hz('F5'), 0.55, 0.6, damp=0.75) * 0.36, 0.76)
+    place(out, _tine_under(hz('F4'), 0.5, 0.38, 0.18, rng) * 0.09, 0.76)
+    x = fft_filter(out, chain(lowpass(6000.0, 2), highpass(150.0, 2), peak(3000.0, -2.0, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.12), 0.002)
+
+
+def journal_page(v):
+    """J-SFX-UI (journal): a page is added to the journal: a paper rustle (a quick swish rising, the faint tooth of the
+    paper, a little crinkle of fine grains) and a soft felt tap as it is laid down, no note. About 0.5 s."""
+    rng = np.random.default_rng(2620)
+    out = np.zeros(samples(0.7))
+    place(out, _paper_slide(rng, 0.3, 550.0, 1700.0, 0.4) * 0.2, 0.0, release=0.03)
+    n = samples(0.22)
+    crinkle = _leaf_grains(n, 7, _rise_fall(n, 0.4, 1.6), rng, 1400.0, 3600.0)
+    place(out, crinkle * 0.1, 0.06, release=0.03)
+    t = t_axis(0.1)
+    laid = np.sin(phase_of(glide(t, 240.0, 190.0, 0.012))) * env_ad(t, 0.004, 0.024) * 0.26
+    laid += band_noise(len(t), 250.0, 1200.0, rng) * env_ad(t, 0.005, 0.018) * 0.18
+    place(out, laid, 0.3, release=0.03)
+    x = fft_filter(out, chain(lowpass(5500.0, 2), highpass(200.0, 2), peak(3000.0, -2.0, 1.0)))
+    return _soft_start(wet(x, ROOM, 0.06))
+
+
 # ---------------------------------------------------------------- catalog
 
 # name: (recipe, variants, loudness target (loudest 200 ms, K-weighted, LUFS scale), group)
@@ -1747,4 +1787,8 @@ SFX = {
     # reward card's level), the album page at -21, a touch softer (a page turned is more frequent than a sticker won).
     'SFX_Reward_Sticker_01': (reward_sticker, 1, -20.0, 'Rewards'),
     'SFX_Reward_AlbumPage_01': (reward_album_page, 1, -21.0, 'Rewards'),
+    # T44C journal and visitors: the visitor's arrival at doc 05's -21 (World, once per 10 s); the journal page with the UI
+    # at -24, a little under the card flip's -23 (a capture is added often, it must never nag).
+    'SFX_World_VisitorArrive_01': (visitor_arrive, 1, -21.0, 'World'),
+    'SFX_UI_JournalPage_01': (journal_page, 1, -24.0, 'UI'),
 }

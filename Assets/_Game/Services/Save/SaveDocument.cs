@@ -42,6 +42,9 @@ namespace PocketWilds.Services.Save
 
         /// <summary>T44B: the achievements (counters, tiers reached and claimed) and the profile's titles, frames and poses (schema 15).</summary>
         Achievements = 21,
+
+        /// <summary>T44C: the refuge journal (pages, first times, capture flags, surprises seen) and the rare visitors (schema 16).</summary>
+        Journal = 22,
     }
 
     public sealed class SaveSection

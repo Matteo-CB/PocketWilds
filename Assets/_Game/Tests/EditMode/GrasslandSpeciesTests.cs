@@ -87,9 +87,9 @@ namespace PocketWilds.Tests.EditMode
             }
             int count = 0;
             for (int i = 0; i < registry.Variants.Count; i++)
-                if (registry.Variants[i].Species == id)
+                if (registry.Variants[i].Species == id && !registry.Variants[i].IsVisitor)
                     count++;
-            Assert.AreEqual(6, count);
+            Assert.AreEqual(6, count, "the six roster colors (the T44C visitors' colors apart)");
         }
 
         [TestCaseSource(nameof(Species))]

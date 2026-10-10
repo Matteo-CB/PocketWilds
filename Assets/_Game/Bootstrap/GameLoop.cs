@@ -70,6 +70,8 @@ namespace PocketWilds.Bootstrap
                 _context.Expeditions?.Tick();
                 // T43: sprouts passing a stage or ripening (StageChanged, PlotChanged); reads the clock, no allocation.
                 _context.Garden?.Tick();
+                // T44C: a visitor arrives or leaves at its time (VisitChanged); no allocation.
+                _context.Visitors?.Tick();
 
                 _context.Save.Tick();
             }

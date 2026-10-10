@@ -350,6 +350,11 @@ namespace PocketWilds.Editor.Audio
                 // 0.5 s). The page turn: once every 0.9 s (a page takes that long to turn, the notes ring 0.9 s).
                 Def(AudioEventId.Sticker, "SFX_Reward_Sticker", AudioGroup.Rewards, 2, 0.4f, 1, volumeJitter: 0.02f, pitchJitter: 0f),
                 Def(AudioEventId.AlbumPage, "SFX_Reward_AlbumPage", AudioGroup.Rewards, 2, 0.9f, 1, volumeJitter: 0.02f, pitchJitter: 0f),
+                // T44C: the journal and the visitors. J-SFX-FEEL-018 (doc 05 section 6.1, slot 47): World, 1 voice, once per
+                // 10 s, only when the visitor is in frame. The journal page: UI, once every 0.5 s (the capture queue lets
+                // one through a second at most), a paper rustle that needs no variation.
+                Def(AudioEventId.VisitorArrive, "SFX_World_VisitorArrive", AudioGroup.World, 2, 10f, 1, volumeJitter: 0.02f, pitchJitter: 0f),
+                Def(AudioEventId.JournalPage, "SFX_UI_JournalPage", AudioGroup.UI, 1, 0.5f, 1, volumeJitter: 0.03f, pitchJitter: 0.01f),
             };
             foreach (var (id, prefix) in new[]
                      {

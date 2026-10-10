@@ -101,7 +101,8 @@ namespace PocketWilds.Tests.PlayMode
                 LoadTargetScene = true,
             };
             var bootstrap = new GameObject("GameBootstrap").AddComponent<GameBootstrap>();
-            float timeout = Time.realtimeSinceStartup + 20f;
+            // The refuge scene and its Addressables load cold when this is the run's first boot (as ActivityFlowPlayTests).
+            float timeout = Time.realtimeSinceStartup + 120f;
             while (bootstrap.State == BootState.NotStarted || bootstrap.State == BootState.Running)
             {
                 Assert.Less(Time.realtimeSinceStartup, timeout, "Boot timed out.");
@@ -124,7 +125,7 @@ namespace PocketWilds.Tests.PlayMode
             // The warmup tasks make their last check on the next frame: let them end first.
             yield return null;
             yield return null;
-            int viewsBefore = Object.FindObjectsByType<AnimalView>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
+            int viewsBefore = RefugeViewCount();
 
             // Hatch until a squirrel and a hedgehog came out of the grassland egg.
             bool squirrel = false, hedgehog = false;
@@ -147,13 +148,31 @@ namespace PocketWilds.Tests.PlayMode
                 }
             }
             Assert.IsTrue(squirrel && hedgehog, "Both new species hatch from the grassland egg: " + log);
-            int viewsAfter = Object.FindObjectsByType<AnimalView>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
+            int viewsAfter = RefugeViewCount();
             Assert.AreEqual(viewsBefore, viewsAfter, "Hatching reused pooled views: no Instantiate.");
             Assert.AreEqual(context.State.Collection.Count, refuge.VisibleAnimals);
 #else
             Assert.Ignore("Editor only.");
             yield break;
 #endif
+        }
+
+        /// <summary>The refuge's animal views: the journal's portrait stage (T44C) makes its own view once per species.</summary>
+        private static int RefugeViewCount()
+        {
+            int count = 0;
+            foreach (var view in Object.FindObjectsByType<AnimalView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (!InPortraitStage(view.transform))
+                    count++;
+            return count;
+        }
+
+        private static bool InPortraitStage(Transform t)
+        {
+            for (; t != null; t = t.parent)
+                if (t.name == "JournalPortraitStage")
+                    return true;
+            return false;
         }
     }
 }

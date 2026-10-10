@@ -44,6 +44,12 @@ namespace PocketWilds.Simulation
         /// <summary>T44B: the achievements (counters, tiers reached and claimed, run and day counters) and the profile's titles, frames and poses.</summary>
         public AchievementState Achievements { get; } = new AchievementState();
 
+        /// <summary>T44C: the refuge journal (pages, first times written, capture flags, surprises seen).</summary>
+        public JournalState Journal { get; } = new JournalState();
+
+        /// <summary>T44C: the rare visitors (contacts, visitors kept, visits greeted today, the guaranteed first visit).</summary>
+        public VisitorState Visitors { get; } = new VisitorState();
+
         /// <summary>The welcome is over: the tutorial wish was done, or the save already holds 5 animals (doc 01, section 1.1).</summary>
         public bool IsOnboardingDone => DailyVisit.OnboardingDone || Collection.Count >= 5;
 

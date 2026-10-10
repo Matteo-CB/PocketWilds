@@ -173,7 +173,10 @@ namespace PocketWilds.Tests.PlayMode
             Time.timeScale = 1f;
             if (special && game.ActiveSpecial != NutDropItemKind.None)
             {
-                yield return null;
+                // The stage reads the game's events in its own Update, before or after the game's tick depending on the
+                // scripts' order: the ring (0.75 s) shows within a few frames.
+                for (int wait = 0; wait < 5 && !stage.RingShown; wait++)
+                    yield return null;
                 Assert.IsTrue(stage.RingShown, "A soft ring around the basket (H-VFX-ACT-003-04).");
                 if (hud != null)
                     Assert.IsTrue(hud.BoostShown, "The HUD's boost chip shows the special.");

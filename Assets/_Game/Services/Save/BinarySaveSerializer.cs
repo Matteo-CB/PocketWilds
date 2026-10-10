@@ -36,9 +36,9 @@ namespace PocketWilds.Services.Save
         /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
         /// 8: Discovery egg stock (World 3). 9: Renewal memory and Essence tree. 10: daily rendez-vous and inventory (T36).
         /// 11: activities (T37). 12: expeditions (T42). 13: garden (T43). 14: albums (T44A). 15: achievements and profile
-        /// items (T44B).
+        /// items (T44B). 16: the refuge journal and the rare visitors (T44C).
         /// </summary>
-        public const int CurrentVersion = 15;
+        public const int CurrentVersion = 16;
     }
 
     /// <summary>
@@ -69,6 +69,7 @@ namespace PocketWilds.Services.Save
         private const ushort GardenVersion = 1;
         private const ushort AlbumsVersion = 1;
         private const ushort AchievementsVersion = 1;
+        private const ushort JournalVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -201,6 +202,10 @@ namespace PocketWilds.Services.Save
 
             mark = BeginSection(output, SaveSectionId.Achievements, AchievementsVersion);
             WriteAchievements(output, state.Achievements);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Journal, JournalVersion);
+            WriteJournal(output, state.Journal, state.Visitors);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -390,6 +395,10 @@ namespace PocketWilds.Services.Save
                 // (species, levels, masteries, bonds, decorations, albums) and give the starting title and frame (T44B).
                 if (document.TryGetSection(SaveSectionId.Achievements, out var achievements))
                     ReadAchievements(achievements, state.Achievements);
+                // Saves older than schema 16 have no journal: the journal hooks mark the account's past moments done without
+                // pages (no « first hatch » on an older account) and no visitor has been met yet (T44C).
+                if (document.TryGetSection(SaveSectionId.Journal, out var journal))
+                    ReadJournal(journal, state.Journal, state.Visitors);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -1231,6 +1240,116 @@ namespace PocketWilds.Services.Save
             // A shown item must be owned (−1: none).
             a.SelectedTitle = (short)(title >= 0 && title < AchievementState.Titles && AchievementState.Bit(a.TitlesOwned, title) ? title : -1);
             a.SelectedFrame = (short)(frame >= 0 && frame < AchievementState.Frames && (a.FramesOwned & (1UL << frame)) != 0 ? frame : -1);
+        }
+
+        /// <summary>
+        /// T44C (doc 01 Succès, section 6; doc Rétention): the journal's pages (id, moment, local day, image reference,
+        /// subject, capture flags, the variables' values), the first times written, the per-subject moments, the unseen count,
+        /// the garden plants and best Renewal, the surprises seen; then the visitors' contacts, kept ones, today's greetings
+        /// and the guaranteed first visit. The schedule itself is never saved (a function of the day).
+        /// </summary>
+        private static void WriteJournal(ByteBufferWriter output, JournalState j, VisitorState v)
+        {
+            output.WriteBool(j.Initialized);
+            output.WriteInt32(j.NextId);
+            output.WriteInt32(j.PageCount);
+            for (int i = 0; i < j.PageCount; i++)
+            {
+                ref readonly var p = ref j.Pages[i];
+                output.WriteInt32(p.Id);
+                output.WriteInt32(p.Moment);
+                output.WriteInt32(p.Day);
+                output.WriteUInt32(p.ImageRef);
+                output.WriteUInt32(p.Subject);
+                output.WriteByte(p.Flags);
+                output.WriteString(p.Value0);
+                output.WriteString(p.Value1);
+            }
+            output.WriteInt64(unchecked((long)j.FirstDone));
+            output.WriteInt32(j.SubjectCount);
+            for (int i = 0; i < j.SubjectCount; i++)
+                output.WriteInt64(unchecked((long)j.Subjects[i]));
+            output.WriteInt32(j.Unseen);
+            output.WriteUInt32(j.GardenPlants);
+            output.WriteInt64(j.BestRenewalEssence);
+            output.WriteInt32(j.SurpriseCount);
+            for (int i = 0; i < j.SurpriseCount; i++)
+                output.WriteString(j.Surprises[i]);
+
+            WriteBytes(output, v.Contacts);
+            output.WriteUInt16(v.JoinedMask);
+            output.WriteInt32(v.GreetedDay);
+            output.WriteByte(v.GreetedMask);
+            output.WriteInt32(v.OpenedDay);
+            output.WriteInt64(v.FirstVisitUnixMs);
+            output.WriteByte(v.FirstVisitor);
+            output.WriteInt32(v.Greetings);
+        }
+
+        private static void ReadJournal(SaveSection section, JournalState j, VisitorState v)
+        {
+            RequireVersion(section, JournalVersion);
+            var r = section.CreateReader();
+            j.Clear();
+            j.Initialized = r.ReadBool();
+            j.NextId = Math.Max(1, r.ReadInt32());
+            int pages = ReadCount(ref r);
+            int lastId = 0;
+            for (int i = 0; i < pages; i++)
+            {
+                int id = r.ReadInt32();
+                int moment = r.ReadInt32();
+                int day = r.ReadInt32();
+                uint imageRef = r.ReadUInt32();
+                uint subject = r.ReadUInt32();
+                byte flags = r.ReadByte();
+                string? value0 = r.ReadString();
+                string? value1 = r.ReadString();
+                // Ids rise with the pages (the screen and the captures find them by a binary search); unknown moments are dropped.
+                if (id <= lastId || moment < 0 || moment >= JournalData.Count)
+                    continue;
+                lastId = id;
+                ref var p = ref j.Append();
+                p.Id = id;
+                p.Moment = (short)moment;
+                p.Day = day;
+                p.ImageRef = imageRef;
+                p.Subject = subject;
+                p.Flags = (byte)(flags & (JournalEntry.FlagCaptured | JournalEntry.FlagPending | JournalEntry.FlagThumbnail));
+                p.Value0 = value0;
+                p.Value1 = value1;
+            }
+            if (j.NextId <= lastId)
+                j.NextId = lastId + 1;
+            j.FirstDone = unchecked((ulong)r.ReadInt64());
+            int subjects = ReadCount(ref r);
+            for (int i = 0; i < subjects; i++)
+            {
+                ulong key = unchecked((ulong)r.ReadInt64());
+                j.AddSubject((int)(key >> 32), (uint)key);
+            }
+            j.Unseen = Math.Min(Math.Max(0, r.ReadInt32()), j.PageCount);
+            j.GardenPlants = r.ReadUInt32();
+            j.BestRenewalEssence = Math.Max(0L, r.ReadInt64());
+            int surprises = ReadCount(ref r);
+            for (int i = 0; i < surprises; i++)
+            {
+                var key = r.ReadString();
+                if (!string.IsNullOrEmpty(key))
+                    j.AddSurprise(key!);
+            }
+
+            v.Clear();
+            ReadBytes(ref r, v.Contacts);
+            v.JoinedMask = (ushort)(r.ReadUInt16() & ((1 << VisitorState.Visitors) - 1));
+            v.GreetedDay = r.ReadInt32();
+            v.GreetedMask = r.ReadByte();
+            v.OpenedDay = Math.Max(0, r.ReadInt32());
+            v.FirstVisitUnixMs = Math.Max(0L, r.ReadInt64());
+            v.FirstVisitor = r.ReadByte();
+            if (v.FirstVisitor >= VisitorState.Visitors)
+                v.FirstVisitor = 0;
+            v.Greetings = Math.Max(0, r.ReadInt32());
         }
 
         private static void WriteIds(ByteBufferWriter output, uint[] ids, int count)

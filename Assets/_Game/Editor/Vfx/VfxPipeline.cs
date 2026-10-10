@@ -79,11 +79,16 @@ namespace PocketWilds.Editor.Vfx
                 Effect(VfxId.GardenGrow, Build("VFX_GardenGrow", material, ConfigureGardenGrow), 2, 5, 2),
                 Effect(VfxId.GardenHarvest, Build("VFX_GardenHarvest", material, ConfigureGardenHarvest), 5, 5, 5),
                 Effect(VfxId.GardenHelp, Build("VFX_GardenHelp", material, ConfigureGardenHelp), 2, 4, 2),
+                // T44C: the visitor (doc 05 sheet 25). The trail is one dot every 250 ms that lives 1.8 s: 8 slots, 1
+                // particle each. The arrival ring once at a time. Together at most 9 particles (the PlayMode cap is 350).
+                Effect(VfxId.VisitorTrail, Build("VFX_VisitorTrail", material, ConfigureVisitorTrail), 8, 8, 8),
+                Effect(VfxId.VisitorArrive, Build("VFX_VisitorArrive", material, ConfigureVisitorArrive), 1, 1, 1),
             };
             catalog.effects = effects.ToArray();
             catalog.lowCountScale = 0.5f;
             catalog.highCountScale = 1.25f;
-            catalog.maxPlaying = 20;
+            // Every effect at once still plays (21 since T44C's visitor effects), one slot to spare.
+            catalog.maxPlaying = 22;
             EditorUtility.SetDirty(catalog);
 
             var config = AssetDatabase.LoadAssetAtPath<HatchPresentationConfig>(HatchConfigPath);
@@ -903,6 +908,33 @@ namespace PocketWilds.Editor.Vfx
             Bursts(hearts, (0f, 1), (0.14f, 1));
             Tile(hearts, TileHeart);
             Pop(hearts, new Color(0.9f, 1f, 0.86f));
+        }
+
+        /// <summary>
+        /// T44C (doc 05 sheet 25, the visitor's walk): one round soft dot left behind a walking visitor, played every 250 ms
+        /// at its feet. 1 particle, 1.8 s (7 at most alive while it walks, 8 slots), a pale warm dot that shrinks and fades
+        /// as it drifts up a hand's breadth. A round dot, never a star.
+        /// </summary>
+        private static void ConfigureVisitorTrail(GameObject root, Material material)
+        {
+            var dot = AddSystem(root, "Dot", material, true);
+            Life(dot, 1.4f, 1.5f, 0.03f, 0.06f, 0.07f, 0.09f);
+            Colors(dot, new Color(1f, 0.96f, 0.84f, 0.8f), new Color(1f, 0.9f, 0.9f, 0.8f));
+            Gravity(dot, -0.01f);
+            var shape = Shape(dot, ParticleSystemShapeType.Circle, 0.02f, up: true);
+            shape.position = new Vector3(0f, 0.08f, 0f);
+            Bursts(dot, (0f, 1));
+            Tile(dot, TileDot);
+            Fade(dot, Color.white, 1f, 0.5f, 0.3f);
+        }
+
+        /// <summary>
+        /// T44C (doc 05 sheet 25): a visitor arrives: one soft warm ring opens on the grass where it stops (1 particle,
+        /// 0.7 s). Reduced animations: not played (the visitor fades in).
+        /// </summary>
+        private static void ConfigureVisitorArrive(GameObject root, Material material)
+        {
+            Ring(root, material, "Ring", true, WithAlpha(new Color(1f, 0.93f, 0.8f), 0.8f), 0.55f, 0.7f, 0.35f, 1.5f, flat: true);
         }
 
         // ---------------- Helpers ----------------

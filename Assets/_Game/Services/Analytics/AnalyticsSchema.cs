@@ -101,6 +101,12 @@ namespace PocketWilds.Services.Analytics
         AchievementTier = 170,
         ProfileTitleSelected = 171,
         ProfileFrameSelected = 172,
+
+        // The rare visitors (block 180, doc 08 section 9.5) and the refuge journal (344; T44C).
+        VisitorArrive = 180,
+        VisitorTouch = 181,
+        VisitorLeft = 182,
+        JournalEntry = 344,
     }
 
     /// <summary>Screens worth counting: the values of doc 08 section 9.5 (realigned in T37, before any data was sent).</summary>
@@ -251,6 +257,14 @@ namespace PocketWilds.Services.Analytics
             // title or frame index (−1: none shown)
             AnalyticsEventId.ProfileTitleSelected => new[] { Field.I(0) },
             AnalyticsEventId.ProfileFrameSelected => new[] { Field.I(0) },
+            // T44C. visitor number (1 to 12), contacts so far
+            AnalyticsEventId.VisitorArrive => new[] { Field.I(0), Field.I(1) },
+            // visitor number, contacts (this one included), first touch (1/0), joined the collection (1/0)
+            AnalyticsEventId.VisitorTouch => new[] { Field.I(0), Field.I(1), Field.I(2), Field.I(3) },
+            // visitor number, greeted (1) or left on its own (0)
+            AnalyticsEventId.VisitorLeft => new[] { Field.I(0), Field.I(1) },
+            // moment number (1 to 63, the doc's table order), image kind (JournalImageKind), pages in the journal
+            AnalyticsEventId.JournalEntry => new[] { Field.I(0), Field.I(1), Field.I(2) },
             // index (1 to 3)
             AnalyticsEventId.WelcomeGift => new[] { Field.I(0) },
             // seconds from Today opened to the last claim, taps, items claimed

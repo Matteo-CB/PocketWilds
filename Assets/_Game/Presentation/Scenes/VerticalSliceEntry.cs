@@ -106,6 +106,8 @@ namespace PocketWilds.Presentation
         private ActivityPresenter _activityPresenter;
         private AlbumScreenPresenter _albumPresenter;
         private ProfileScreenPresenter _profilePresenter;
+        private JournalScreenPresenter _journalPresenter;
+        private JournalCaptureLayer _journalCaptures;
         private WishBubbleLayer _bubbles;
 
         public bool HasContext => _context != null;
@@ -337,6 +339,15 @@ namespace PocketWilds.Presentation
                             _refuge.AlbumsOpenCheck = () => profile.IsOpen || (albumsScreen != null && albumsScreen.IsOpen);
                         }
                     }
+                    // T44C: the journal (opened from the profile; the profile ticks it), its picture captures and the visitors.
+                    if (context.Journal != null)
+                    {
+                        if (_profilePresenter != null)
+                            _journalPresenter = JournalScreenPresenter.Create(context, context.Journal, _activityPresenter, _profilePresenter);
+                        _journalCaptures = JournalCaptureLayer.Create(context, context.Journal, _refuge, _cameraRig, transform);
+                    }
+                    if (context.Visitors != null)
+                        _refuge.Visitors = context.Visitors;
                 }
             }
             _onQuality = ApplyQuality;
@@ -408,6 +419,12 @@ namespace PocketWilds.Presentation
                 _refuge.Bubbles = null;
             }
             _activityPresenter?.Dispose();
+            if (_refuge != null)
+                _refuge.Visitors = null;
+            _journalCaptures?.Dispose();
+            _journalCaptures = null;
+            _journalPresenter?.Dispose();
+            _journalPresenter = null;
             _profilePresenter?.Dispose();
             _profilePresenter = null;
             _albumPresenter?.Dispose();
@@ -550,6 +567,7 @@ namespace PocketWilds.Presentation
             _activityPresenter?.Tick(Time.deltaTime, Time.unscaledDeltaTime);
             _albumPresenter?.Tick(Time.unscaledDeltaTime);
             _profilePresenter?.Tick(Time.unscaledDeltaTime);
+            _journalCaptures?.Tick(Time.unscaledTime);
             _weather?.Tick(Time.unscaledTime);
             _atmosphere?.Tick(Time.unscaledTime);
             var camera = _cameraRig != null ? _cameraRig.Camera : null;

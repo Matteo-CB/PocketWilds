@@ -12,7 +12,7 @@ namespace PocketWilds.Editor.Import
     /// </summary>
     public sealed class TextureImportRules : AssetPostprocessor
     {
-        private const uint Version = 6;
+        private const uint Version = 7;
         public const string UiRoot = "Assets/_Game/Art/UI/";
         private const string ArtRoot = "Assets/_Game/Art/";
 
@@ -58,6 +58,9 @@ namespace PocketWilds.Editor.Import
                 case "UI_Garden_LevelPill": return new Vector4(128f, 40f, 56f, 52f);
                 case "UI_Garden_BedLabel": return new Vector4(48f, 48f, 48f, 48f);
                 case "UI_Garden_SeedPacketCard": return new Vector4(64f, 72f, 64f, 64f);
+                // T44C (pw_ui_sprites_t44c.py): the journal's paper card (its tape in the top left border) and the month label.
+                case "UI_Journal_PageCard": return new Vector4(48f, 48f, 48f, 48f);
+                case "UI_Journal_MonthTab": return new Vector4(28f, 24f, 28f, 24f);
                 default: return Vector4.zero;
             }
         }

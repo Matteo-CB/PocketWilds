@@ -67,6 +67,8 @@ namespace PocketWilds.Editor.Profile
             "ICO_AchCat_ExpeditionsGarden|ICO_Act_Expeditions", "ICO_AchCat_Albums|ICO_Album", "ICO_AchCat_Decoration|ICO_Decoration",
             "ICO_AchCat_Bonds|ICO_Favorite_Heart", "ICO_AchCat_Events|ICO_Event_Calendar", "ICO_AchCat_Renewal|ICO_Swap",
             "ICO_AchCat_Refuge|ICO_RefugeLevel",
+            // T44C: the journal's entry on the card.
+            "ICO_Journal|ICO_WeeklyJournal|ICO_Codex_Book",
         };
 
         /// <summary>The badge shapes by <see cref="AchievementTier"/> (None: the locked shape).</summary>
@@ -501,6 +503,21 @@ namespace PocketWilds.Editor.Profile
                 new Vector2(920f, LineBox(48f, 2)), 2, Names("title.", ".name"), T(ProfileText.NoTitle));
             p.cardFrameName = Label("FrameName", card, TextRole.Label, 36f, TextSoft, TextAlignmentOptions.Center, Center, new Vector2(0f, -192f),
                 new Vector2(920f, LineBox(36f, 1)), 1, Names("frame.", ".name"), T(ProfileText.PlainFrame));
+            BuildJournalEntry(p, card, borrow);
+        }
+
+        /// <summary>T44C: the « Journal » pill in the card's top right corner (clear of the portrait's ring and motifs), its dot while pages are unseen.</summary>
+        private static void BuildJournalEntry(ProfileScreenParts p, Transform card, Borrow borrow)
+        {
+            p.journalBack = borrow.Kit(Img("Journal", card, null, Selected, Image.Type.Sliced, TopRight, new Vector2(-150f, -66f), new Vector2(264f, 92f)), KitPill);
+            p.journalButton = ButtonOn(p.journalBack);
+            p.journalIcon = Img("Icon", p.journalBack.transform, null, Color.white, Image.Type.Simple, LeftMiddle, new Vector2(46f, 0f), new Vector2(52f, 52f));
+            p.journalIcon.preserveAspect = true;
+            p.journalLabel = Label("Label", p.journalBack.transform, TextRole.Label, 36f, Text, TextAlignmentOptions.MidlineLeft, LeftMiddle,
+                new Vector2(166f, 2f), new Vector2(176f, LineBox(36f, 1)), 1, JournalScreenTexts.Of(JournalText.Entry));
+            p.journalDot = borrow.Kit(Img("Dot", p.journalBack.transform, null, Coral, Image.Type.Simple, TopRight, new Vector2(-10f, -8f), new Vector2(30f, 30f)), KitDot);
+            p.journalDot.gameObject.SetActive(false);
+            p.journalBack.gameObject.SetActive(false);
         }
 
         private static void BuildTabs(ProfileScreenParts p, RectTransform safe, Borrow borrow)

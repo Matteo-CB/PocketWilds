@@ -130,6 +130,7 @@ namespace PocketWilds.Simulation
             EconomyReason.Wish => TicketSource.Wish,
             EconomyReason.Event => TicketSource.Event,
             EconomyReason.Expedition => TicketSource.Expedition,
+            EconomyReason.Visitor => TicketSource.Visitor,
             _ => TicketSource.Debug,
         };
 

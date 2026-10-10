@@ -589,11 +589,13 @@ def main():
     from pw_ui_sprites_t44 import RUNTIME_COVERS, T44_SPRITES
     # T44B sprites (Succes and profile: the badges, the 13 category icons, the achievement button, the frame ring and motifs).
     from pw_ui_sprites_t44b import RUNTIME_FRAMES, RUNTIME_PROFILE, T44B_SPRITES
+    # T44C sprites (Journal du refuge: the journal icon, the visitor badge, the page card and the month tab).
+    from pw_ui_sprites_t44c import RUNTIME_JOURNAL, T44C_SPRITES
     for folder in (RUNTIME_KIT, RUNTIME_ICONS, RUNTIME_SHOP, RUNTIME_CODEX, RUNTIME_MEMORY, RUNTIME_EXPEDITIONS, RUNTIME_GARDEN,
-                   RUNTIME_COVERS, RUNTIME_PROFILE, RUNTIME_FRAMES, MASTERS):
+                   RUNTIME_COVERS, RUNTIME_PROFILE, RUNTIME_FRAMES, RUNTIME_JOURNAL, MASTERS):
         os.makedirs(folder, exist_ok=True)
     for build in (SPRITES + T34A_SPRITES + T35A_SPRITES + T35B_SPRITES + T36_SPRITES + T37_SPRITES + T38_SPRITES +
-                  T39_SPRITES + T40_SPRITES + T41_SPRITES + T42_SPRITES + T43_SPRITES + T44_SPRITES + T44B_SPRITES):
+                  T39_SPRITES + T40_SPRITES + T41_SPRITES + T42_SPRITES + T43_SPRITES + T44_SPRITES + T44B_SPRITES + T44C_SPRITES):
         name, canvas, folder = build()
         canvas.image(True).save(os.path.join(folder, name + ".png"), optimize=True)
         canvas.image(False).save(os.path.join(MASTERS, name + "@4x.png"), optimize=True)

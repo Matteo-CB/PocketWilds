@@ -21,6 +21,7 @@ namespace PocketWilds.Services.Save
             new Migration0012AddGarden(),
             new Migration0013AddAlbums(),
             new Migration0014AddAchievements(),
+            new Migration0015AddJournal(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -221,6 +222,21 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 14;
         public int ToVersion => 15;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 15 to 16 (T44C): the Journal section (the refuge journal and the rare visitors). Nothing to convert: without it
+    /// the journal hooks mark the account's past moments done without pages (first hatch, rarities, traits, names, bonds,
+    /// species, first expedition, Renewal, harvests), so pages begin with what happens next; no visitor has been met yet.
+    /// </summary>
+    public sealed class Migration0015AddJournal : ISaveMigration
+    {
+        public int FromVersion => 15;
+        public int ToVersion => 16;
 
         public void Apply(SaveDocument document)
         {
