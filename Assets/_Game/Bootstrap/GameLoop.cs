@@ -68,6 +68,8 @@ namespace PocketWilds.Bootstrap
                 _context.Activities?.Tick(delta);
                 // T42: a team whose return time has passed comes back (SlotChanged once); reads the clock, no allocation.
                 _context.Expeditions?.Tick();
+                // T43: sprouts passing a stage or ripening (StageChanged, PlotChanged); reads the clock, no allocation.
+                _context.Garden?.Tick();
 
                 _context.Save.Tick();
             }

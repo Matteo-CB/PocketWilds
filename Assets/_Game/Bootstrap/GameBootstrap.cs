@@ -77,6 +77,8 @@ namespace PocketWilds.Bootstrap
         private MemoryHooks _memoryHooks;
         private ExpeditionService _expeditions;
         private ExpeditionHooks _expeditionHooks;
+        private GardenService _garden;
+        private GardenHooks _gardenHooks;
         private GrantService _grants;
         private OfferService _offers;
         private StoreService _store;
@@ -247,6 +249,10 @@ namespace PocketWilds.Bootstrap
                 // (WISH-041 to 046) and journal goals (JRN-024 to 026, the stars of JRN-009).
                 _expeditions = new ExpeditionService(_activities);
                 _expeditionHooks = new ExpeditionHooks(_expeditions, _daily);
+                // T43: the garden (beds, sprouts, harvests, dyes; growth times in the save) and its wishes (WISH-031 to 036)
+                // and journal goals (JRN-027 to 030); both GardenAvailable flags are set by the service and its hooks.
+                _garden = new GardenService(_activities);
+                _gardenHooks = new GardenHooks(_garden, _daily);
                 if (_activities.AnyShipped)
                 {
                     _daily.Config.ActivitiesAvailable = true;
@@ -284,6 +290,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.AttachDaily(_daily);
                 _analytics.AttachActivities(_activities);
                 _analytics.AttachExpeditions(_expeditions);
+                _analytics.AttachGarden(_garden);
                 _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
             });
 
@@ -354,6 +361,7 @@ namespace PocketWilds.Bootstrap
                 Context = new GameContext(_clock, _content, _save, _economy, _hatch, _quality, _frameRate, _palettes, visuals, catalog,
                     _audio, _haptics, _offline, _localization, _codex, _store, _analytics, _progression, _daily, _activities);
                 Context.Expeditions = _expeditions;
+                Context.Garden = _garden;
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);
@@ -497,6 +505,9 @@ namespace PocketWilds.Bootstrap
             _expeditionHooks?.Dispose();
             _expeditionHooks = null;
             _expeditions = null;
+            _gardenHooks?.Dispose();
+            _gardenHooks = null;
+            _garden = null;
             _activities?.Dispose();
             _activities = null;
             _daily?.Dispose();

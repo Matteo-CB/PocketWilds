@@ -83,6 +83,8 @@ namespace PocketWilds.Simulation
         private bool _treatStandOpen;
         private int _expansionsLeft;
         private int _openDestinations;
+        /// <summary>T43: the dyes are open (garden level 4), for JRN-030.</summary>
+        private bool _dyesOpen;
 
         public WeeklyJournalService(DailyContext ctx)
         {
@@ -504,6 +506,9 @@ namespace PocketWilds.Simulation
             // T42: Expeditions (refuge level 5 and 8 animals) the same way; JRN-026 counts the destinations open.
             _systemOpen[(int)WishSystem.Expeditions] = welcomeOver && Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.Expeditions);
             _openDestinations = ExpeditionCatalog.OpenCount(_ctx.Progression);
+            // T43: the Garden (refuge level 8 and day 3) once the build has it; JRN-030 waits for the dyes (garden level 4).
+            _systemOpen[(int)WishSystem.Garden] = welcomeOver && Config.GardenAvailable && _ctx.Feature(RefugeFeature.Garden);
+            _dyesOpen = GardenRules.LevelOf(_state.Garden.Points) >= GardenRules.DyesLevel;
         }
 
         private bool IsEligible(JournalGoalId id, int target)
@@ -521,7 +526,14 @@ namespace PocketWilds.Simulation
                 case JournalGoalId.MemoryPairs:
                 case JournalGoalId.Expeditions:
                 case JournalGoalId.LongExpeditions:
+                case JournalGoalId.Harvests:
+                case JournalGoalId.SproutsWatered:
+                case JournalGoalId.ThreeStarHarvests:
+                case JournalGoalId.GardenPoints:
                     return true;
+                case JournalGoalId.Dyes:
+                    // « Teintures » (garden level 4).
+                    return _dyesOpen;
                 case JournalGoalId.PostcardPlaces:
                     // « au moins n destinations ouvertes ».
                     return _openDestinations >= target;
@@ -818,6 +830,25 @@ namespace PocketWilds.Simulation
                 AddProgress(JournalGoalId.LongExpeditions, 1);
             if (welcome.NewPlaceThisWeek)
                 AddProgress(JournalGoalId.PostcardPlaces, 1);
+        }
+
+        /// <summary>T43: a sprout watered: JRN-028 « Arrose {n} pousses ».</summary>
+        public void OnGardenWatered(int plot) => AddProgress(JournalGoalId.SproutsWatered, 1);
+
+        /// <summary>
+        /// T43: a plant harvested: JRN-027 « Récolte {n} plantes », JRN-029 « … à 3 étoiles » (the harvest stars, S-ACT-006),
+        /// JRN-030 « Récolte {n} teintures », JRN-041 « Gagne {n} points de Jardin »; a garden challenge passed (its first star)
+        /// counts for JRN-012 « Réussis {n} défis d'activité ». The Garden never uses a ticket.
+        /// </summary>
+        public void OnGardenHarvested(in GardenHarvestInfo info)
+        {
+            AddProgress(JournalGoalId.Harvests, 1);
+            if (info.Harvest.Stars >= 3)
+                AddProgress(JournalGoalId.ThreeStarHarvests, 1);
+            AddProgress(JournalGoalId.Dyes, info.Harvest.Dyes);
+            AddProgress(JournalGoalId.GardenPoints, info.Harvest.Points);
+            if (info.ChallengeFinished && info.ChallengeStarsBefore == 0 && info.ChallengeStars >= 1)
+                AddProgress(JournalGoalId.ActivityChallenges, 1);
         }
 
         /// <summary>Adds to every goal of this kind while its week runs, up to its target.</summary>

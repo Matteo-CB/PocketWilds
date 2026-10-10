@@ -33,6 +33,9 @@ namespace PocketWilds.Services.Save
 
         /// <summary>T42: the expeditions: slots, teams, timers, loot drawn at departure, the guarantee, postcards (schema 12).</summary>
         Expeditions = 18,
+
+        /// <summary>T43: the garden: plots, sprouts, timers, draws made at planting, points, challenge, dyes, palettes (schema 13).</summary>
+        Garden = 19,
     }
 
     public sealed class SaveSection

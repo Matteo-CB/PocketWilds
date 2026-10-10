@@ -216,6 +216,26 @@ namespace PocketWilds.Simulation
             Journal.OnExpeditionWelcomed(in welcome);
         }
 
+        /// <summary>T43: a seed planted (<see cref="GardenHooks"/> calls it): WISH-031 « Plante {n} graines ». Allocation-free.</summary>
+        public void OnGardenPlanted(in GardenPlantInfo planted) => Wishes.OnGardenPlanted(in planted);
+
+        /// <summary>T43: a sprout watered: WISH-033 and the journal's JRN-028. Allocation-free.</summary>
+        public void OnGardenWatered(int plot)
+        {
+            Wishes.OnGardenWatered(plot);
+            Journal.OnGardenWatered(plot);
+        }
+
+        /// <summary>
+        /// T43: a plant harvested: WISH-032, 034, 035 (the crops held are given) and 036; the journal's JRN-027, 029, 030, 041
+        /// and a garden challenge passed for JRN-012. Allocation-free.
+        /// </summary>
+        public void OnGardenHarvested(in GardenHarvestInfo info)
+        {
+            Wishes.OnGardenHarvested(in info);
+            Journal.OnGardenHarvested(in info);
+        }
+
         /// <summary>
         /// At boot (after the offline resolution) and when the app comes back: the day check first, then the return gift of
         /// this absence (doc 01, section 6).

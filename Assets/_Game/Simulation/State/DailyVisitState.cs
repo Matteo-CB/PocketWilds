@@ -214,5 +214,20 @@ namespace PocketWilds.Simulation
                 return;
             Items[item] = Count(item) + count;
         }
+
+        /// <summary>T43: takes <paramref name="count"/> items (a seed planted, crops given); false and nothing taken when short.</summary>
+        public bool TryRemove(ContentId item, int count)
+        {
+            if (count <= 0)
+                return true;
+            int owned = Count(item);
+            if (owned < count)
+                return false;
+            if (owned == count)
+                Items.Remove(item);
+            else
+                Items[item] = owned - count;
+            return true;
+        }
     }
 }

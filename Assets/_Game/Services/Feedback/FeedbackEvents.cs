@@ -131,7 +131,14 @@ namespace PocketWilds.Services.Feedback
         /// </summary>
         ExpeditionReturn = 45,
 
-        // 46 to 48 are reserved by doc 05 section 6.4 (Harvest, VisitorArrive, BondUp).
+        /// <summary>
+        /// T43 J-SFX-FEEL-017 and J-SFX-ACT-006-04: a ripe plant is harvested (doc 05 sheet 24: a plop of earth and a rustle
+        /// of leaves, then a warm pop on F), 3 variants. Its slot in doc 05 section 6.4's order (Harvest). Played at a pitch
+        /// rising up the F major pentatonic for chained beds: GardenAudio.HarvestPitch.
+        /// </summary>
+        GardenHarvest = 46,
+
+        // 47 and 48 are reserved by doc 05 section 6.4 (VisitorArrive, BondUp).
 
         /// <summary>
         /// T38 J-SFX-FEEL-020: a soft puff of bubbles (a breath of air, a small cluster of round bubbles popping around F).
@@ -278,6 +285,21 @@ namespace PocketWilds.Services.Feedback
         /// variant 0 (F) to 7 (the A an octave and a third up), ExpeditionAudio.LootVariant.
         /// </summary>
         ExpeditionLoot = 95,
+
+        // T43: the garden (doc 01 Contenu, S-ACT-006 « Sons et effets »; J-SFX-FEEL-017 is GardenHarvest, 46). See
+        // GardenAudio.
+
+        /// <summary>T43 J-SFX-ACT-006-01: a seed is planted (soft soil: a press, the crumbs closing, two pats), 2 variants.</summary>
+        GardenPlant = 96,
+
+        /// <summary>T43 J-SFX-ACT-006-02: the watering can pours on a sprout (a thin trickle with small round drops), 1 s.</summary>
+        GardenWater = 97,
+
+        /// <summary>T43 J-SFX-ACT-006-03: a sprout reaches its next stage (leaves unfold, a small vegetal pop on A).</summary>
+        GardenStage = 98,
+
+        /// <summary>T43 J-SFX-REWARD-002 (doc 01 S-ACT-006): the garden levels up, the species mastery motif played again.</summary>
+        GardenLevelUp = 99,
     }
 
     /// <summary>T37: the three activity musics (doc 01 Contenu, section 12.0, J-MUS-ACT-01 to 03). Stable values.</summary>
@@ -709,6 +731,72 @@ namespace PocketWilds.Services.Feedback
 
         /// <summary>The pop of one loot item (see <see cref="LootVariant"/>).</summary>
         public static void PlayLoot(IAudioService audio, int item) => audio.PlayVariant(AudioEventId.ExpeditionLoot, LootVariant(item));
+    }
+
+    /// <summary>
+    /// T43: how the garden sounds (doc 01 Contenu, S-ACT-006 « Sons et effets »; doc 05 Sensations, sheet 24). The garden
+    /// set is the overlay's close-up: everything plays from the centre (<see cref="Vector3.zero"/>). Where to play them:
+    /// - a seed picked on the seed sheet and planted (the soil puff): <see cref="Plant"/>, in place of the confirm;
+    /// - the can tapped then a sprout (the 6 drops of H-VFX-ACT-006-01): <see cref="Water"/>, once per watering (1 s);
+    /// - a plant reaching stage 2 or ripe while the garden shows (the green ring of H-VFX-ACT-006-02): <see cref="Stage"/>;
+    ///   beds catching up together when the garden opens make one pop (0.15 s cooldown, 2 voices);
+    /// - a ripe plant tapped (it hops and flies into the basket, H-VFX-077): <see cref="Harvest"/> with the bed's place in
+    ///   the chain: 0 for a single harvest, then 1, 2, ... for each next bed of a « Tout récolter » / "Harvest all" (120 ms
+    ///   apart) or a bed harvested within <see cref="ChainSeconds"/> of the one before. Its pop climbs F, G, A, C, D and
+    ///   stays on D past the fifth bed (doc 05 section 6.4: a bounded rising run);
+    /// - the garden level rises: <see cref="LevelUp"/> (J-SFX-REWARD-002, the mastery motif).
+    /// No allocation.
+    /// </summary>
+    public static class GardenAudio
+    {
+        /// <summary>GardenPlant's clips: two variants of pats and crumbs.</summary>
+        public const int PlantVariants = 2;
+
+        /// <summary>GardenHarvest's clips: three variants of plop and rustle, all with their pop on F.</summary>
+        public const int HarvestVariants = 3;
+
+        /// <summary>The harvest's steps up the F major pentatonic (F, G, A, C, D); past the fifth bed the pitch stays on the top.</summary>
+        public const int HarvestSteps = 5;
+
+        /// <summary>A bed harvested this soon after the one before continues the chain (our default: the doc gives the rule, not the window).</summary>
+        public const float ChainSeconds = 1.5f;
+
+        /// <summary>The step of the chain-th bed in a run (0 for the first): 0 to 4.</summary>
+        public static int HarvestStep(int chain) => chain <= 0 ? 0 : chain >= HarvestSteps ? HarvestSteps - 1 : chain;
+
+        /// <summary>The harvest's pitch for the chain-th bed in a run: 0, 2, 4, 7, 9 semitones (F, G, A, C, D).</summary>
+        public static float HarvestPitch(int chain)
+        {
+            switch (HarvestStep(chain))
+            {
+                case 1:
+                    return 1.122462f;
+                case 2:
+                    return 1.259921f;
+                case 3:
+                    return 1.498307f;
+                case 4:
+                    return 1.681793f;
+                default:
+                    return 1f;
+            }
+        }
+
+        /// <summary>J-SFX-ACT-006-01: a seed planted (soft soil).</summary>
+        public static void Plant(IAudioService audio) => audio.Play(AudioEventId.GardenPlant, Vector3.zero, ContentId.None);
+
+        /// <summary>J-SFX-ACT-006-02: a sprout watered (a thin trickle, 1 s).</summary>
+        public static void Water(IAudioService audio) => audio.Play(AudioEventId.GardenWater, Vector3.zero, ContentId.None);
+
+        /// <summary>J-SFX-ACT-006-03: a plant reaches its next stage (a small vegetal pop).</summary>
+        public static void Stage(IAudioService audio) => audio.Play(AudioEventId.GardenStage, Vector3.zero, ContentId.None);
+
+        /// <summary>J-SFX-FEEL-017: a harvest, its pop one step higher per chained bed (see <see cref="HarvestPitch"/>).</summary>
+        public static void Harvest(IAudioService audio, int chain) =>
+            audio.PlayPitched(AudioEventId.GardenHarvest, Vector3.zero, ContentId.None, HarvestPitch(chain));
+
+        /// <summary>J-SFX-REWARD-002: the garden levels up.</summary>
+        public static void LevelUp(IAudioService audio) => audio.Play(AudioEventId.GardenLevelUp, Vector3.zero, ContentId.None);
     }
 
     /// <summary>Haptic profiles (J-HAPTIC-*). Stable values.</summary>

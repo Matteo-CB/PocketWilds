@@ -72,6 +72,13 @@ namespace PocketWilds.Editor.Vfx
                 Effect(VfxId.WishDone, Build("VFX_WishDone", material, ConfigureWishDone), 3, 3, 3),
                 // T42: up to three animals back from an expedition arrive together (doc 05 sheet 23).
                 Effect(VfxId.ArrivalDust, Build("VFX_ArrivalDust", material, ConfigureArrivalDust), 3, 3, 3),
+                // T43: the garden (doc 01 S-ACT-006, doc 05 sheet 24). One watering at a time; up to five beds reach a stage
+                // together when the garden opens after a while; « Tout récolter » harvests the five beds 120 ms apart (each
+                // effect lasts 0.6 s, so all five play at once, all warmed); neighbours help on up to four pairs.
+                Effect(VfxId.GardenDrops, Build("VFX_GardenDrops", material, ConfigureGardenDrops), 1, 2, 1),
+                Effect(VfxId.GardenGrow, Build("VFX_GardenGrow", material, ConfigureGardenGrow), 2, 5, 2),
+                Effect(VfxId.GardenHarvest, Build("VFX_GardenHarvest", material, ConfigureGardenHarvest), 5, 5, 5),
+                Effect(VfxId.GardenHelp, Build("VFX_GardenHelp", material, ConfigureGardenHelp), 2, 4, 2),
             };
             catalog.effects = effects.ToArray();
             catalog.lowCountScale = 0.5f;
@@ -826,6 +833,76 @@ namespace PocketWilds.Editor.Vfx
             Bursts(puff, (0f, 8));
             Tile(puff, TileDot);
             Fade(puff, Color.white, 0.8f, 1.5f);
+        }
+
+        /// <summary>
+        /// H-VFX-ACT-006-01 (T43): the watering can pours on a sprout: 6 round drops of pale water blue fall from the can's
+        /// rose (0.45 m above the effect's origin, the sprout's foot) in three pairs 0.1 s apart, and fade as they reach the
+        /// soil. 6 particles on every tier but Low (3): two per burst.
+        /// </summary>
+        private static void ConfigureGardenDrops(GameObject root, Material material)
+        {
+            var drops = AddSystem(root, "Drops", material, true);
+            Life(drops, 0.3f, 0.36f, 0.02f, 0.12f, 0.045f, 0.06f);
+            Colors(drops, new Color(0.72f, 0.88f, 1f, 0.95f), new Color(0.86f, 0.95f, 1f, 0.95f));
+            Gravity(drops, 0.85f);
+            var shape = Shape(drops, ParticleSystemShapeType.Circle, 0.06f, up: true);
+            shape.position = new Vector3(0f, 0.45f, 0f);
+            Bursts(drops, (0f, 2), (0.1f, 2), (0.2f, 2));
+            Tile(drops, TileDot);
+            Fade(drops, Color.white, 1f, 0.8f, 0.7f);
+        }
+
+        /// <summary>
+        /// H-VFX-ACT-006-02 (T43): a sprout reaches its next stage: one soft green ring opening on the soil around it (1
+        /// particle, 0.5 s).
+        /// </summary>
+        private static void ConfigureGardenGrow(GameObject root, Material material)
+        {
+            Ring(root, material, "Ring", true, WithAlpha(new Color(0.7f, 0.94f, 0.58f), 0.85f), 0.42f, 0.5f, 0.35f, 1.4f, flat: true);
+        }
+
+        /// <summary>
+        /// H-VFX-077 and H-VFX-ACT-006-03 (T43, doc 05 sheet 24, VFX table « feuille, pétale, anneau », the plant's colour):
+        /// a ripe plant is harvested. Eight round petals pop up and out from the plant as it hops, turn and drift down (the
+        /// root system, WHITE here: tinted at play time with the plant's colour), and a soft warm ring opens around it (9
+        /// particles: 5 on Low, 11 on High; 0.6 s). Round petals and a ring only, no four-point star.
+        /// </summary>
+        private static void ConfigureGardenHarvest(GameObject root, Material material)
+        {
+            var petals = AddSystem(root, "Petals", material, true);
+            Life(petals, 0.5f, 0.6f, 0.5f, 0.85f, 0.07f, 0.1f);
+            Colors(petals, Color.white, new Color(0.94f, 0.94f, 0.94f, 1f));
+            Spin(petals, 200f);
+            Gravity(petals, 0.35f);
+            var shape = Shape(petals, ParticleSystemShapeType.Hemisphere, 0.08f, up: true);
+            shape.position = new Vector3(0f, 0.2f, 0f);
+            Bursts(petals, (0f, 8));
+            Tile(petals, TilePetal);
+            Fade(petals, Color.white, 1f, 0.75f, 0.6f);
+
+            var ring = Ring(root, material, "Ring", false, WithAlpha(new Color(1f, 0.96f, 0.88f), 0.8f), 0.5f, 0.45f, 0.4f, 1.45f, flat: false,
+                lift: 0.22f);
+            Delay(ring, 0.02f);
+        }
+
+        /// <summary>
+        /// H-VFX-ACT-006-04 (T43): two neighbouring beds help each other: 2 small soft green hearts pop up between them, one
+        /// after the other, and rise a little (2 particles on every tier, 0.7 s). Played at the middle of the two beds.
+        /// </summary>
+        private static void ConfigureGardenHelp(GameObject root, Material material)
+        {
+            var hearts = AddSystem(root, "Hearts", material, true);
+            Life(hearts, 0.6f, 0.7f, 0.22f, 0.32f, 0.09f, 0.11f);
+            Colors(hearts, new Color(0.56f, 0.86f, 0.46f, 1f), new Color(0.7f, 0.93f, 0.58f, 1f));
+            var main = hearts.main;
+            main.startRotation = new ParticleSystem.MinMaxCurve(-0.2f, 0.2f);
+            Gravity(hearts, -0.05f);
+            var shape = Shape(hearts, ParticleSystemShapeType.Cone, 0.08f, up: true, angle: 20f);
+            shape.position = new Vector3(0f, 0.3f, 0f);
+            Bursts(hearts, (0f, 1), (0.14f, 1));
+            Tile(hearts, TileHeart);
+            Pop(hearts, new Color(0.9f, 1f, 0.86f));
         }
 
         // ---------------- Helpers ----------------

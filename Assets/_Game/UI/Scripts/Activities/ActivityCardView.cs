@@ -172,9 +172,9 @@ namespace PocketWilds.UI
             {
                 _hintText.SetString(card.UnlockHint);
             }
-            else if (card.Activity == ActivityId.Expeditions)
+            else if (card.Activity == ActivityId.Expeditions || card.Activity == ActivityId.Garden)
             {
-                // T42: a timer activity's line in the hint's place (« De retour dans 3 h 12 », « 2 de retour »).
+                // T42 (T43 the Garden): a timer activity's line in the hint's place (« De retour dans 3 h 12 », « 2 de retour »).
                 bool status = !string.IsNullOrEmpty(card.Status);
                 SetActive(_hint.gameObject, status);
                 if (status)
@@ -209,7 +209,7 @@ namespace PocketWilds.UI
                 }
             }
             // T42: a timer activity is always free: its card shows « Nouveau » (A18), never the « Gratuit » tag.
-            bool timer = card.Activity == ActivityId.Expeditions;
+            bool timer = card.Activity == ActivityId.Expeditions || card.Activity == ActivityId.Garden;
             SetActive(_newTag, !locked && card.State == ActivityCardState.New && (!card.FreeGame || timer));
             SetActive(_freeTag, !locked && card.FreeGame && !timer);
             SetActive(_featuredMark, card.Featured);

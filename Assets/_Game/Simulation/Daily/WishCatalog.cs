@@ -113,6 +113,12 @@ namespace PocketWilds.Simulation
 
         /// <summary>T42: an expedition destination ({destination}, WISH-046): its id in <see cref="WishRecord.Param"/>.</summary>
         Destination = 5,
+
+        /// <summary>
+        /// T43: a garden product ({crop}, WISH-034): its id (crop.* or ingredient.*) in <see cref="WishRecord.Param"/>. WISH-035
+        /// « Apporte {n} {crop} à {animal} » keeps <see cref="Animal"/> for its {animal} and holds its crop in Param too.
+        /// </summary>
+        Crop = 6,
     }
 
     /// <summary>
@@ -147,7 +153,7 @@ namespace PocketWilds.Simulation
         /// <summary>A score wish (one game): its amount follows the score rule (<see cref="WishCatalog.ScoreTarget"/>).</summary>
         public readonly bool Score;
 
-        /// <summary>Its system exists in this build (T36: SYS-01, 02, 03, 04, 06; T38: SYS-09; T39: SYS-10; T40: SYS-11; T41: SYS-12; T42: SYS-13). Other templates are never drawn.</summary>
+        /// <summary>Its system exists in this build (T36: SYS-01, 02, 03, 04, 06; T38: SYS-09; T39: SYS-10; T40: SYS-11; T41: SYS-12; T42: SYS-13; T43: SYS-07). Other templates are never drawn.</summary>
         public readonly bool ShippedInThisBuild;
 
         public WishTemplate(WishTemplateId id, WishSystem system, int weight, int typicalSeconds, bool timer, int p1, int p2, int p3, int p4,
@@ -284,9 +290,11 @@ namespace PocketWilds.Simulation
             T(WishTemplateId.HarvestPlants, WishSystem.Garden, 6, 0, 2, 3, 4, 5, timer: true),
             // WISH-033 "Water {n} sprouts": 1 sprout growing.
             T(WishTemplateId.WaterSprouts, WishSystem.Garden, 4, 30, 2, 3, 3, 4),
-            // WISH-034 "Harvest {n} {crop}": a seed of that crop's plant owned (timer: the plant's growth).
-            T(WishTemplateId.HarvestCrop, WishSystem.Garden, 4, 0, 2, 3, 4, 5, timer: true),
-            // WISH-035 "Bring {animal} {n} {crop}": the crop or its seed owned; the crops are given (timer: growth).
+            // WISH-034 "Harvest {n} {crop}": a seed of that crop's plant owned (timer: the plant's growth). T43: {crop} is the
+            // main product of an open plant whose seed the player holds, in WishRecord.Param.
+            T(WishTemplateId.HarvestCrop, WishSystem.Garden, 4, 0, 2, 3, 4, 5, WishParamKind.Crop, timer: true),
+            // WISH-035 "Bring {animal} {n} {crop}": the crop or its seed owned; the crops are given (timer: growth). T43: the
+            // crop in WishRecord.Param; held crops are given (taken from the inventory) at each garden harvest.
             T(WishTemplateId.BringCrop, WishSystem.Garden, 4, 0, 1, 2, 3, 3, WishParamKind.Animal, timer: true),
             // WISH-036 "Harvest a dye": Garden level 4 and a dye plant seed (timer: 2 h).
             T(WishTemplateId.HarvestDye, WishSystem.Garden, 3, 0, 1, 1, 1, 1, timer: true),
@@ -426,8 +434,8 @@ namespace PocketWilds.Simulation
         private static readonly string[] Keys = BuildKeys();
 
         /// <summary>The systems whose wishes exist in this build (T36: Hatching, Discoveries and mastery, Cuddles and treats,
-        /// Upgrades, Expansions; T38: Grooming, T39: Hide and Seek, T40: Nut Drop, T41: Pawprint Memory and T42: Expeditions,
-        /// each with its activity).</summary>
+        /// Upgrades, Expansions; T38: Grooming, T39: Hide and Seek, T40: Nut Drop, T41: Pawprint Memory, T42: Expeditions and
+        /// T43: the Garden, each with its activity).</summary>
         public static bool IsShipped(WishSystem system) =>
             system == WishSystem.Hatching || system == WishSystem.DiscoveriesAndMastery || system == WishSystem.CuddlesAndTreats
             || system == WishSystem.Upgrades || system == WishSystem.Expansions
@@ -435,7 +443,8 @@ namespace PocketWilds.Simulation
             || (system == WishSystem.HideAndSeek && ActivityCatalog.Get(ActivityId.HideAndSeek).ShippedInThisBuild)
             || (system == WishSystem.NutRain && ActivityCatalog.Get(ActivityId.NutRain).ShippedInThisBuild)
             || (system == WishSystem.PawMemory && ActivityCatalog.Get(ActivityId.PawMemory).ShippedInThisBuild)
-            || (system == WishSystem.Expeditions && ActivityCatalog.Get(ActivityId.Expeditions).ShippedInThisBuild);
+            || (system == WishSystem.Expeditions && ActivityCatalog.Get(ActivityId.Expeditions).ShippedInThisBuild)
+            || (system == WishSystem.Garden && ActivityCatalog.Get(ActivityId.Garden).ShippedInThisBuild);
 
         /// <summary>Index in <see cref="All"/> (number - 1), or -1 (the tutorial and unknown ids).</summary>
         public static int IndexOf(WishTemplateId id)

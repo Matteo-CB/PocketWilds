@@ -535,6 +535,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_DailyVisit_v10")]
         [TestCase("GoldenSave_Activities_v11")]
         [TestCase("GoldenSave_Expeditions_v12")]
+        [TestCase("GoldenSave_Garden_v13")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -560,6 +561,12 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual(0, state.World.DiscoveryEggs, "Older saves start with no Discovery egg.");
             if (version < 11)
                 Assert.IsFalse(state.Activities.TicketsStarted, "Older saves start the ticket pool on first use.");
+            if (version < 13)
+            {
+                Assert.IsFalse(state.Garden.AnyActive || state.Garden.PlotBought, "Older saves: every plot bare, the Gems plot not bought.");
+                Assert.AreEqual(0, state.Garden.Points + state.Garden.Palettes + state.Garden.Dyes[0]);
+                Assert.AreEqual(-1, state.Garden.Challenge);
+            }
             if (version < 12)
             {
                 Assert.IsFalse(state.Expeditions.AnyActive || state.Expeditions.SlotBought || state.Expeditions.FirstStrollDone,
@@ -710,6 +717,40 @@ namespace PocketWilds.Tests.EditMode
                     Assert.AreEqual(13, e.Postcards[2].Id);
                     Assert.IsFalse(e.Postcards[2].Rendered);
                     Assert.AreEqual(6, state.Activities.ChallengesThreeStars, "Everything of schema 11 still there.");
+                    break;
+
+                case "GoldenSave_Garden_v13":
+                    Assert.AreEqual(340, state.Meta.Revision);
+                    Assert.AreEqual(SaveSchema.CurrentVersion - 13, result.MigrationsApplied);
+                    var g = state.Garden;
+                    long planted = new DateTimeOffset(2026, 10, 13, 10, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+                    Assert.IsTrue(g.PlotBought && g.FirstVisitDone);
+                    Assert.AreEqual(230, g.Points);
+                    Assert.AreEqual(4, GardenRules.LevelOf(g.Points));
+                    Assert.AreEqual(21, g.Planted);
+                    Assert.AreEqual(19, g.Harvested);
+                    Assert.AreEqual(1, g.SpeedUpsToday);
+                    Assert.AreEqual(3, g.Challenge);
+                    Assert.AreEqual(2, g.ChallengeHarvests);
+                    Assert.AreEqual(5, g.ChallengeStars);
+                    Assert.AreEqual(3u, g.ChallengeMask);
+                    var clover = g.Plots[0];
+                    Assert.IsTrue(clover.Active && clover.Watered && clover.FlowerBeside);
+                    Assert.AreEqual(ContentId.FromSource("plant.sweet_clover"), clover.Plant);
+                    Assert.AreEqual(planted, clover.PlantedUnixMs);
+                    Assert.AreEqual(planted + 27 * 60_000L, clover.RipeUnixMs);
+                    Assert.AreEqual(30 * 60_000L, clover.GrowMs);
+                    Assert.AreEqual(424242u, clover.Seed);
+                    Assert.AreEqual(1, clover.SeedsBack);
+                    Assert.AreEqual(600_000L, clover.HelpRightMs);
+                    Assert.IsTrue(g.Plots[1].Active && g.Plots[1].Happy && !g.Plots[1].Watered);
+                    Assert.IsFalse(g.Plots[2].Active);
+                    Assert.AreEqual(7, g.Dyes[0]);
+                    Assert.AreEqual(3, g.Dyes[8]);
+                    Assert.AreEqual((1u << 0) | (1u << 25), g.Palettes);
+                    Assert.AreEqual(4, state.Inventory.Count(ContentId.FromSource("plant.sweet_clover")));
+                    Assert.AreEqual(9, state.Inventory.Count(ContentId.FromSource("crop.clover_flower")));
+                    Assert.IsTrue(state.Expeditions.SlotBought, "Everything of schema 12 still there.");
                     break;
 
                 case "GoldenSave_DailyVisit_v10":

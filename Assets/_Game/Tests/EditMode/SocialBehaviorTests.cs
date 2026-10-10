@@ -105,6 +105,43 @@ namespace PocketWilds.Tests.EditMode
         }
 
         [Test]
+        public void Greeting_PartnerWhoseTailTouchesARock_TurnsTheOtherWayRound_AndMeetsNoseToNose()
+        {
+            // B faces +z with a pebble behind its left hip: turning the short way toward A (+x) would sweep its tail into
+            // the pebble, so it turns the long way round (the T41 PlayMode greeting stayed 129.5 degrees off this way).
+            var s = new AnimalScheduler(8, Settings(), new WanderArea(Vector3.zero, 4f));
+            s.SetObstacles(new[] { new Obstacle(new Vector2(-0.2263f, -0.2263f), new Vector2(-0.2263f, -0.2263f), 0.04f, 0f, 0f, 0.6f, ObstacleKind.Solid) });
+            var profile = new BehaviorProfile { idleSeconds = new Vector2(30f, 30f) };
+            int b = s.Register(null, 2, 22, Vector3.zero, 0f, profile, 0f);
+            int a = s.Register(null, 1, 11, new Vector3(1.2f, 0f, 0f), -90f, profile, 0f);
+            float time = 0f;
+            Run(s, 0.1f, ref time);
+            Assert.AreEqual(0f, s.GetYaw(b), 0.01f, "Registered where it stands, nothing in the way.");
+            Assert.IsTrue(s.TryStartSocial(a, time));
+            Assert.AreEqual(b, s.GetPartner(a));
+
+            float startedAt = -1f, best = 180f, bestGap = float.MaxValue;
+            Run(s, 6f, ref time, () =>
+            {
+                Assert.GreaterOrEqual(s.Clearance(b), -AnimalScheduler.ContactTolerance, "Nothing enters anything (Collision_Rule.md).");
+                bool sa = s.GetState(a) == AnimalBehaviorState.Social, sb = s.GetState(b) == AnimalBehaviorState.Social;
+                if ((sa || sb) && startedAt < 0f)
+                {
+                    Assert.IsTrue(sa && sb, "Both start the greeting in the same frame.");
+                    startedAt = time;
+                }
+                if (sa && sb && Mathf.Max(FacingError(s, a, b), FacingError(s, b, a)) < best)
+                {
+                    best = Mathf.Max(FacingError(s, a, b), FacingError(s, b, a));
+                    bestGap = Vector3.Distance(s.GetPosition(a), s.GetPosition(b));
+                }
+            });
+            Assert.Greater(startedAt, 0f, "The greeting happened.");
+            Assert.Less(best, 6f, "Both face each other.");
+            Assert.AreEqual(0.48f, bestGap, 0.03f, "Noses just touch.");
+        }
+
+        [Test]
         public void Greeting_PartnerPoked_BreaksThePairWithoutLeavingAnyoneStuck()
         {
             var (s, a, b, time) = Pair(1.6f);

@@ -75,6 +75,63 @@ namespace PocketWilds.Tests.PlayMode
             return null;
         }
 
+
+        // [SOCDIAG] temporary instrumentation
+        private static readonly System.Text.StringBuilder Diag = new System.Text.StringBuilder();
+        private static readonly System.Reflection.BindingFlags NP = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        private static object AgentOf(AnimalScheduler s, int h) => ((Array)typeof(AnimalScheduler).GetField("_agents", NP).GetValue(s)).GetValue(h);
+        private static T Fld<T>(object o, string n) => (T)o.GetType().GetField(n).GetValue(o);
+        private static string Dump(AnimalScheduler s, int h, string label)
+        {
+            var ag = AgentOf(s, h);
+            var pos = Fld<Vector3>(ag, "Position");
+            var face = Fld<Vector3>(ag, "Facing");
+            var tgt = Fld<Vector3>(ag, "Target");
+            float yaw = Fld<float>(ag, "Yaw");
+            var to = face - pos; to.y = 0f;
+            float desired = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
+            return $"{label}[{h}] st={Fld<AnimalBehaviorState>(ag, "State")} part={Fld<int>(ag, "Partner")} tier={Fld<SimulationTier>(ag, "Tier")} pos=({pos.x:F3},{pos.z:F3}) yaw={yaw:F1} " +
+                   $"tgt=({tgt.x:F3},{tgt.z:F3}) face=({face.x:F3},{face.z:F3}) want={desired:F1} turn={Fld<bool>(ag, "Turn")} arrive={Fld<AnimalBehaviorState>(ag, "Arrive")} " +
+                   $"wp={Fld<bool>(ag, "HasWaypoint")} end={Fld<float>(ag, "StateEnd"):F2} clr={s.Clearance(h):F3}";
+        }
+        private static string Blockers(AnimalScheduler s, int h, float yaw)
+        {
+            var ag = AgentOf(s, h);
+            var body = Fld<BodyShape>(ag, "Body");
+            float scale = Fld<float>(ag, "Scale");
+            float radius = Fld<float>(ag, "Radius") - AnimalScheduler.ContactTolerance;
+            var pos = Fld<Vector3>(ag, "Position");
+            body.Segment(pos, yaw, scale, out var s0, out var s1);
+            var sb = new System.Text.StringBuilder();
+            sb.Append($"   blockers at yaw {yaw:F1}:");
+            for (int i = 0; i < s.Count; i++)
+            {
+                int o = s.GetActiveHandle(i);
+                if (o == h) continue;
+                s.GetBody(o, out var a0, out var a1, out float r, out _, out _);
+                float d = Mathf.Sqrt(CollisionMath.SegmentSegmentDistanceSq(s0, s1, a0, a1)) - radius - r;
+                if (d < 0.05f) sb.Append($" animal[{o}] gap={d:F3} st={s.GetState(o)} pos=({s.GetPosition(o).x:F3},{s.GetPosition(o).z:F3}) yaw={s.GetYaw(o):F1};");
+            }
+            var obs = (Obstacle[])typeof(AnimalScheduler).GetField("_obstacles", NP).GetValue(s);
+            int count = (int)typeof(AnimalScheduler).GetField("_obstacleCount", NP).GetValue(s);
+            for (int i = 0; i < count; i++)
+            {
+                if (!obs[i].BlocksWalker(pos.y, Fld<float>(ag, "Height"))) continue;
+                float d = Mathf.Sqrt(CollisionMath.SegmentSegmentDistanceSq(s0, s1, obs[i].a, obs[i].b)) - radius - obs[i].radius;
+                if (d < 0.05f) sb.Append($" obstacle[{i}] gap={d:F3} kind={obs[i].kind} a={obs[i].a} b={obs[i].b} r={obs[i].radius:F3};");
+            }
+            bool hasEgg = (bool)typeof(AnimalScheduler).GetField("_hasEggSpot", NP).GetValue(s);
+            if (hasEgg)
+            {
+                var egg = (Vector2)typeof(AnimalScheduler).GetField("_eggSpot", NP).GetValue(s);
+                float er = (float)typeof(AnimalScheduler).GetField("_eggRadius", NP).GetValue(s);
+                float d = Mathf.Sqrt(CollisionMath.PointSegmentDistanceSq(egg, s0, s1)) - radius - er;
+                sb.Append($" egg gap={d:F3};");
+            }
+            return sb.ToString();
+        }
+        private static void Log(string line) => Diag.AppendLine($"{Time.frameCount} t={Time.time:F3} {line}");
+
         private static bool PlaysSocial(AnimalView view)
         {
             var animator = view.Animator;
@@ -117,6 +174,8 @@ namespace PocketWilds.Tests.PlayMode
             int a = -1, b = -1, pairs = 0;
             float until = Time.realtimeSinceStartup + 40f;
             string lastPair = "";
+            Diag.Clear();
+            AnimalBehaviorState lastStA = AnimalBehaviorState.Idle, lastStB = AnimalBehaviorState.Idle;
             while (a < 0 || scheduler.GetState(a) != AnimalBehaviorState.Social)
             {
                 if (a >= 0 && scheduler.GetPartner(a) < 0)
@@ -133,12 +192,34 @@ namespace PocketWilds.Tests.PlayMode
                     {
                         b = scheduler.GetPartner(a);
                         pairs++;
+                        Log($"PAIR {pairs} formed a={a} b={b} dist={Vector3.Distance(scheduler.GetPosition(a), scheduler.GetPosition(b)):F3}");
+                        Log(Dump(scheduler, a, "A"));
+                        Log(Dump(scheduler, b, "B"));
+                        Log("A" + Blockers(scheduler, a, scheduler.GetYaw(a)));
+                        Log("B" + Blockers(scheduler, b, scheduler.GetYaw(b)));
+                        Log("B+6" + Blockers(scheduler, b, scheduler.GetYaw(b) + 6f));
+                        Log("B-6" + Blockers(scheduler, b, scheduler.GetYaw(b) - 6f));
                     }
+                }
+                if (a >= 0)
+                {
+                    if (Time.frameCount % 10 == 0 || scheduler.GetState(a) != lastStA || (b >= 0 && scheduler.GetState(b) != lastStB))
+                    {
+                        Log(Dump(scheduler, a, "A"));
+                        if (b >= 0) Log(Dump(scheduler, b, "B"));
+                        if (scheduler.GetPartner(a) >= 0 && scheduler.GetPartner(a) != b) Log(Dump(scheduler, scheduler.GetPartner(a), "A's partner"));
+                    }
+                    lastStA = scheduler.GetState(a);
+                    if (b >= 0) lastStB = scheduler.GetState(b);
                 }
                 if (Time.realtimeSinceStartup >= until)
                     Assert.Fail($"No pair met in 40 s ({pairs} pairs formed; {lastPair}).");
                 yield return null;
             }
+            Log("A SOCIAL NOW");
+            Log(Dump(scheduler, a, "A"));
+            if (scheduler.GetPartner(a) >= 0) Log(Dump(scheduler, scheduler.GetPartner(a), "A's partner"));
+            Log(Dump(scheduler, b, "B(orig)"));
             Assert.Less(pairs, 6, "Most pairs meet: " + lastPair);
             // The meadow may have paired A anew on its own meanwhile: the partner is the one it greets now.
             b = scheduler.GetPartner(a);
@@ -169,10 +250,23 @@ namespace PocketWilds.Tests.PlayMode
                     bestB = angleB;
                     bestGap = gap.magnitude;
                 }
+                {
+                    Log(Dump(scheduler, a, "A") + $" viewAngle={angleA:F1} viewYaw={viewA.transform.eulerAngles.y:F1} socialAnim={PlaysSocial(viewA)}");
+                    Log(Dump(scheduler, b, "B") + $" viewAngle={angleB:F1} viewYaw={viewB.transform.eulerAngles.y:F1} socialAnim={PlaysSocial(viewB)}");
+                    float ya = scheduler.GetYaw(a);
+                    Log(Blockers(scheduler, a, ya));
+                    Log(Blockers(scheduler, a, ya + 6f));
+                    Log(Blockers(scheduler, a, ya - 6f));
+                    float yb = scheduler.GetYaw(b);
+                    Log("B" + Blockers(scheduler, b, yb));
+                    Log("B" + Blockers(scheduler, b, yb + 6f));
+                    Log("B" + Blockers(scheduler, b, yb - 6f));
+                }
                 if (socialA && socialB && bestA < 10f && bestB < 10f)
                     break;
                 yield return null;
             }
+            File.WriteAllText(@"C:\Users\matte\AppData\Local\Temp\claude\C--Users-matte-Desktop-PocketWilds--claude-worktrees-great-leavitt-eeabe9\5b0986b2-9b5d-4643-a577-1966cea33c03\scratchpad\socdiag.txt", Diag.ToString());
             Assert.IsTrue(socialA && socialB, "Both Animators play the family Social clip.");
             Assert.Less(bestA, 10f, "Facing the partner.");
             Assert.Less(bestB, 10f, "Facing the partner.");

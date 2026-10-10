@@ -45,6 +45,9 @@ namespace PocketWilds.Simulation
         /// <summary>T42: what a team brings back from an expedition (doc 08 section 9.5, « 18 Expédition »).</summary>
         Expedition = 18,
 
+        /// <summary>T43: what the garden gives besides its products (the garden level decorations; doc 08 section 9.5, « 19 Jardin »).</summary>
+        Garden = 19,
+
         WelcomeGift = 32,
 
         /// <summary>T37: ticket packs bought with Gems (« Achat de billets »).</summary>

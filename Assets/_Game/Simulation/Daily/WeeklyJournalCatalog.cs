@@ -127,8 +127,8 @@ namespace PocketWilds.Simulation
     /// are « journal.001 » to « journal.052 » (section 0, localization keys).
     /// <para>T36 ships the goals whose systems exist (plan 1.7): JRN-001 to 005, 021 to 023, 031, 032, 034, 036 and 038;
     /// T38 adds JRN-033 with Grooming, T39 JRN-016 with Hide and Seek, T40 JRN-017 with Nut Drop, T41 JRN-052 with Pawprint
-    /// Memory, T42 JRN-024 to 026 with Expeditions. The others wait for their tasks (activities and garden T43, albums T44,
-    /// decoration T56...).</para>
+    /// Memory, T42 JRN-024 to 026 with Expeditions, T43 JRN-027 to 030 and 041 with the Garden. The others wait for their
+    /// tasks (albums T44, decoration T56...).</para>
     /// <para>Systems of the goals the doc marks « toujours » (plan, gap 18): hatching goals to SYS-01, discoveries and
     /// mastery to SYS-02, wishes, gifts and calendar to the rendez-vous, care to SYS-03, upgrades to SYS-04, expansions to
     /// SYS-06.</para>
@@ -205,13 +205,17 @@ namespace PocketWilds.Simulation
             G(JournalGoalId.PostcardPlaces, JournalSlot.Timers, WishSystem.Expeditions, 2, 3, 4, 4,
                 shipped: ActivityCatalog.Get(ActivityId.Expeditions).ShippedInThisBuild),
             // JRN-027 « Récolte {n} plantes »: the Garden.
-            G(JournalGoalId.Harvests, JournalSlot.Timers, WishSystem.Garden, 10, 15, 20, 25),
+            G(JournalGoalId.Harvests, JournalSlot.Timers, WishSystem.Garden, 10, 15, 20, 25,
+                shipped: ActivityCatalog.Get(ActivityId.Garden).ShippedInThisBuild),
             // JRN-028 « Arrose {n} pousses »: the Garden.
-            G(JournalGoalId.SproutsWatered, JournalSlot.Timers, WishSystem.Garden, 6, 10, 12, 15),
+            G(JournalGoalId.SproutsWatered, JournalSlot.Timers, WishSystem.Garden, 6, 10, 12, 15,
+                shipped: ActivityCatalog.Get(ActivityId.Garden).ShippedInThisBuild),
             // JRN-029 « Récolte {n} plantes à 3 étoiles »: the Garden.
-            G(JournalGoalId.ThreeStarHarvests, JournalSlot.Timers, WishSystem.Garden, 3, 5, 6, 8),
+            G(JournalGoalId.ThreeStarHarvests, JournalSlot.Timers, WishSystem.Garden, 3, 5, 6, 8,
+                shipped: ActivityCatalog.Get(ActivityId.Garden).ShippedInThisBuild),
             // JRN-030 « Récolte {n} teintures »: dyes open (Garden level 4).
-            G(JournalGoalId.Dyes, JournalSlot.Timers, WishSystem.Garden, 3, 5, 6, 8),
+            G(JournalGoalId.Dyes, JournalSlot.Timers, WishSystem.Garden, 3, 5, 6, 8,
+                shipped: ActivityCatalog.Get(ActivityId.Garden).ShippedInThisBuild),
 
             // ---------------- Care ----------------
             // JRN-031 « Gagne {n} points de lien »: always.
@@ -238,7 +242,8 @@ namespace PocketWilds.Simulation
             // JRN-040 « Offre {n} gâteaux »: the Pâtisserie.
             G(JournalGoalId.CakesGiven, JournalSlot.Refuge, WishSystem.Bakery, 2, 3, 4, 5),
             // JRN-041 « Gagne {n} points de Jardin »: the Garden.
-            G(JournalGoalId.GardenPoints, JournalSlot.Refuge, WishSystem.Garden, 60, 100, 150, 200),
+            G(JournalGoalId.GardenPoints, JournalSlot.Refuge, WishSystem.Garden, 60, 100, 150, 200,
+                shipped: ActivityCatalog.Get(ActivityId.Garden).ShippedInThisBuild),
 
             // ---------------- Later lines of the table ----------------
             // JRN-042 « Prends {n} photos »: photo mode (Free slot).

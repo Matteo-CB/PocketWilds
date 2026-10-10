@@ -76,4 +76,4 @@ cartes postales générées, rien de perdu en cas de retour tardif.
 
 - 0 allocation par frame écran ouvert ; minuteurs relus de l'horloge, textes changés seulement quand ils changent.
 - L'écran et son atlas (24 sprites) se chargent à l'ouverture et se libèrent à la fermeture ; le décor de carte postale
-  (10 331 triangles) se charge au premier retour.
+  (10 458 triangles) se charge au premier retour.

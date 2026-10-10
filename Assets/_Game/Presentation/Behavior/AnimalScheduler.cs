@@ -96,6 +96,9 @@ namespace PocketWilds.Presentation
             public Temperament Temperament;
             public SimulationTier Tier;
             public sbyte Side;
+
+            /// <summary>The way an in-place turn goes round (+1 clockwise, -1 counterclockwise), kept until it ends; 0: the short way.</summary>
+            public sbyte TurnWay;
             public bool Turn;
             public bool HasWaypoint;
             public bool Emerging;
@@ -1084,6 +1087,7 @@ namespace PocketWilds.Presentation
             // One-shots return to Idle inside the Animator by exit time: replaying Idle would restart the loop.
             bool animatorAlreadyIdle = animatorState == AnimalStateHashes.Idle && ReturnsToIdle(agent.State);
             agent.State = state;
+            agent.TurnWay = 0;
             agent.StateEnd = time + duration;
             if (!induced)
                 StateChangesLastTick++;
@@ -1478,23 +1482,21 @@ namespace PocketWilds.Presentation
             var dir = Steer(slot, ref agent, new Vector2(toGoal.x, toGoal.z) / Mathf.Max(distance, 1e-5f));
 
             float desiredYaw = Mathf.Atan2(dir.x, dir.y) * Mathf.Rad2Deg;
-            float nextYaw = Mathf.MoveTowardsAngle(agent.Yaw, desiredYaw, profile.turnDegreesPerSecond * deltaTime);
+            float turnStep = profile.turnDegreesPerSecond * deltaTime;
             bool blocked = false;
             bool turned = false;
-            if (!Mathf.Approximately(nextYaw, agent.Yaw))
+            if (!Mathf.Approximately(Mathf.MoveTowardsAngle(agent.Yaw, desiredYaw, turnStep), agent.Yaw))
             {
-                // Turning swings the nose and the tail: only when they stay clear.
-                if (Fits(slot, ref agent, agent.Position, nextYaw, true))
-                {
-                    agent.Yaw = nextYaw;
+                // Turning swings the nose and the tail: only when they stay clear (the long way round if need be).
+                if (TryTurn(slot, ref agent, desiredYaw, turnStep))
                     turned = true;
-                }
                 else
-                {
                     blocked = true;
-                }
             }
             bool facing = Mathf.Abs(Mathf.DeltaAngle(agent.Yaw, desiredYaw)) < MaxFacingErrorToWalk;
+            // Walking now: the small corrections along the way take the short way again.
+            if (facing)
+                agent.TurnWay = 0;
 
             // Ease in from rest and brake over the last 20 cm so the hop does not stop dead.
             float brake = agent.HasWaypoint ? 1f : Mathf.Clamp(finalDistance / 0.2f, 0.35f, 1f);
@@ -1603,17 +1605,50 @@ namespace PocketWilds.Presentation
                 return;
             }
             float desired = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
-            float next = Mathf.MoveTowardsAngle(agent.Yaw, desired, _profiles[slot].turnDegreesPerSecond * deltaTime);
-            if (!Fits(slot, ref agent, agent.Position, next, true))
+            if (!TryTurn(slot, ref agent, desired, _profiles[slot].turnDegreesPerSecond * deltaTime))
             {
-                // The tail would sweep into a neighbour or a rock: it keeps its current heading.
+                // The body would sweep into a neighbour or a rock either way round: it keeps its current heading.
                 agent.Turn = false;
+                agent.TurnWay = 0;
                 return;
             }
-            agent.Yaw = next;
             if (Mathf.Abs(Mathf.DeltaAngle(agent.Yaw, desired)) < FacedDegrees)
+            {
                 agent.Turn = false;
+                agent.TurnWay = 0;
+            }
             ApplyPose(slot, ref agent);
+        }
+
+        /// <summary>
+        /// One step of a turn toward <paramref name="desired"/>: the short way, else, for a real about-turn, the long way
+        /// round when the short way would swing the body into something (its tail against a rock or a neighbour's flank).
+        /// An animal that turned until its tail touched something still turns back the other way: it is never stuck in
+        /// that heading. The way round is kept until the turn ends, so the animal never swings back and forth; a small
+        /// correction never sends it round. False: it cannot turn.
+        /// </summary>
+        private bool TryTurn(int slot, ref Agent agent, float desired, float maxStep)
+        {
+            float delta = Mathf.DeltaAngle(agent.Yaw, desired);
+            int way = agent.TurnWay != 0 ? agent.TurnWay : delta >= 0f ? 1 : -1;
+            float left = Mathf.Repeat(delta * way, 360f);
+            float next = left <= maxStep ? desired : agent.Yaw + way * maxStep;
+            if (Fits(slot, ref agent, agent.Position, next, true))
+            {
+                agent.Yaw = next;
+                return true;
+            }
+            if (agent.TurnWay != 0 || Mathf.Abs(delta) < MaxFacingErrorToWalk)
+                return false;
+            // The short way is blocked: the other way round, when the body swings clear there.
+            way = -way;
+            left = 360f - Mathf.Abs(delta);
+            next = left <= maxStep ? desired : agent.Yaw + way * maxStep;
+            if (!Fits(slot, ref agent, agent.Position, next, true))
+                return false;
+            agent.TurnWay = (sbyte)way;
+            agent.Yaw = next;
+            return true;
         }
 
         // ---------------- Collision checks ----------------

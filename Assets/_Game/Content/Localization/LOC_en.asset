@@ -704,17 +704,17 @@ MonoBehaviour:
   - key: wish.033.other
     value: Water {n} sprouts
   - key: wish.034
-    value: Harvest {n} {crop}
+    value: Harvest {crop}
   - key: wish.034.one
-    value: Harvest {n} {crop}
+    value: Harvest {crop}
   - key: wish.034.other
-    value: Harvest {n} {crop}
+    value: Harvest {crop}
   - key: wish.035
-    value: Bring {animal} {n} {crop}
+    value: Bring {animal} {crop}
   - key: wish.035.one
-    value: Bring {animal} {n} {crop}
+    value: Bring {animal} {crop}
   - key: wish.035.other
-    value: Bring {animal} {n} {crop}
+    value: Bring {animal} {crop}
   - key: wish.036
     value: Harvest a dye
   - key: wish.037
@@ -1720,7 +1720,7 @@ MonoBehaviour:
   - key: challenge.expeditions.02.name
     value: Woodland Team
   - key: challenge.expeditions.02.goal
-    value: Stump Wood, 4 h, 2 Forest animals
+    value: Stump Wood, 4 h, 2 from the Forest
   - key: challenge.expeditions.03.name
     value: By the Water
   - key: challenge.expeditions.03.goal
@@ -1732,7 +1732,7 @@ MonoBehaviour:
   - key: challenge.expeditions.05.name
     value: Little Ones
   - key: challenge.expeditions.05.goal
-    value: Anywhere, 4 h, 3 small animals
+    value: Anywhere, 4 h, 3 small ones
   - key: challenge.expeditions.06.name
     value: Wings in the Wind
   - key: challenge.expeditions.06.goal
@@ -1740,7 +1740,7 @@ MonoBehaviour:
   - key: challenge.expeditions.07.name
     value: Mixed Trio
   - key: challenge.expeditions.07.goal
-    value: Anywhere, 8 h, 3 different families
+    value: Anywhere, 8 h, 3 families
   - key: challenge.expeditions.08.name
     value: Long Road
   - key: challenge.expeditions.08.goal
@@ -1748,8 +1748,510 @@ MonoBehaviour:
   - key: challenge.expeditions.09.name
     value: Back to the Roots
   - key: challenge.expeditions.09.goal
-    value: A biome, 8 h, 3 animals from it
+    value: A biome, 8 h, 3 from it
   - key: challenge.expeditions.10.name
     value: The Grand Journey
   - key: challenge.expeditions.10.goal
-    value: Newest biome, 12 h, 3 biomes in the team
+    value: Newest biome, 12 h, 3 biomes
+  - key: garden.title
+    value: Garden
+  - key: garden.plant
+    value: Plant
+  - key: garden.water
+    value: Water
+  - key: garden.harvest
+    value: Harvest
+  - key: garden.ready_in
+    value: Ready in {time}
+  - key: garden.ready
+    value: Ready to harvest
+  - key: garden.watered
+    value: Watered
+  - key: garden.helped
+    value: Good neighbors
+  - key: garden.level_up
+    value: Garden level {n}
+  - key: garden.speed_up
+    value: Finish now
+  - key: garden.new_plot
+    value: New plot
+  - key: garden.harvest_all
+    value: Harvest all
+  - key: garden.seeds
+    value: Seeds
+  - key: garden.no_seeds
+    value: No seeds of this one yet
+  - key: garden.plot_club
+    value: With the Wild Club
+  - key: garden.plot_confirm
+    value: Tap again to open it
+  - key: garden.need_gems
+    value: Not enough Gems yet
+  - key: garden.club_soon
+    value: The Wild Club is coming soon
+  - key: garden.speedups_left
+    value: '{n} left today'
+  - key: garden.speedups_left.one
+    value: '{n} left today'
+  - key: garden.speedups_left.other
+    value: '{n} left today'
+  - key: garden.speedups_none
+    value: More tomorrow
+  - key: garden.challenges
+    value: Challenges
+  - key: garden.challenge_progress
+    value: '{n} of {total}'
+  - key: garden.can_hint
+    value: Tap a sprout
+  - key: garden.already_watered
+    value: Every sprout is watered
+  - key: garden.ready_count
+    value: '{n} ready'
+  - key: garden.ready_count.one
+    value: '{n} ready'
+  - key: garden.ready_count.other
+    value: '{n} ready'
+  - key: garden.opened
+    value: 'New: {list}'
+  - key: garden.opened_dyes
+    value: Dyes
+  - key: garden.plant_biome
+    value: Opens with its biome
+  - key: garden.happy
+    value: 'Happy sprout: double harvest'
+  - key: garden.challenge_locked
+    value: Not open yet
+  - key: garden.challenge_started
+    value: 'Challenge on: your next harvests count'
+  - key: garden.challenge_stopped
+    value: Challenge stopped
+  - key: plant.wild_strawberry.name
+    value: Wild Strawberry
+  - key: plant.daisy.name
+    value: Daisy
+  - key: plant.round_carrot.name
+    value: Round Carrot
+  - key: plant.poppy.name
+    value: Poppy
+  - key: plant.blueberry.name
+    value: Blueberry Bush
+  - key: plant.lavender.name
+    value: Lavender
+  - key: plant.golden_wheat.name
+    value: Golden Wheat
+  - key: plant.meadow_indigo.name
+    value: Meadow Indigo
+  - key: plant.sunflower.name
+    value: Sunflower
+  - key: plant.dwarf_apple.name
+    value: Dwarf Apple Tree
+  - key: plant.round_melon.name
+    value: Round Melon
+  - key: plant.sweet_pea.name
+    value: Sweet Pea
+  - key: plant.hazel.name
+    value: Hazel Bush
+  - key: plant.water_bloom.name
+    value: Water Bloom
+  - key: plant.blue_gentian.name
+    value: Blue Gentian
+  - key: plant.snow_lingonberry.name
+    value: Snow Lingonberry
+  - key: plant.dwarf_banana.name
+    value: Dwarf Banana
+  - key: plant.flowering_cactus.name
+    value: Flowering Cactus
+  - key: plant.dwarf_cherry.name
+    value: Dwarf Cherry
+  - key: plant.glow_moss.name
+    value: Glow Moss
+  - key: plant.cloud_puff.name
+    value: Cloud Puff
+  - key: plant.moonflower.name
+    value: Moonflower
+  - key: plant.giant_fern.name
+    value: Giant Fern
+  - key: plant.star_bloom.name
+    value: Star Bloom
+  - key: crop.clover_flower.name
+    value: Clover Flower
+  - key: crop.clover_flower.count
+    value: '{n} clover flowers'
+  - key: crop.clover_flower.count.one
+    value: '{n} clover flower'
+  - key: crop.clover_flower.count.other
+    value: '{n} clover flowers'
+  - key: ingredient.flower_sugar.count
+    value: '{n} Flower Sugar'
+  - key: ingredient.flower_sugar.count.one
+    value: '{n} Flower Sugar'
+  - key: ingredient.flower_sugar.count.other
+    value: '{n} Flower Sugar'
+  - key: ingredient.strawberry.name
+    value: Strawberry
+  - key: ingredient.strawberry.count
+    value: '{n} strawberries'
+  - key: ingredient.strawberry.count.one
+    value: '{n} strawberry'
+  - key: ingredient.strawberry.count.other
+    value: '{n} strawberries'
+  - key: crop.daisy.name
+    value: Daisy
+  - key: crop.daisy.count
+    value: '{n} daisies'
+  - key: crop.daisy.count.one
+    value: '{n} daisy'
+  - key: crop.daisy.count.other
+    value: '{n} daisies'
+  - key: crop.round_carrot.name
+    value: Round Carrot
+  - key: crop.round_carrot.count
+    value: '{n} round carrots'
+  - key: crop.round_carrot.count.one
+    value: '{n} round carrot'
+  - key: crop.round_carrot.count.other
+    value: '{n} round carrots'
+  - key: crop.poppy.name
+    value: Poppy
+  - key: crop.poppy.count
+    value: '{n} poppies'
+  - key: crop.poppy.count.one
+    value: '{n} poppy'
+  - key: crop.poppy.count.other
+    value: '{n} poppies'
+  - key: ingredient.blueberry.name
+    value: Blueberry
+  - key: ingredient.blueberry.count
+    value: '{n} blueberries'
+  - key: ingredient.blueberry.count.one
+    value: '{n} blueberry'
+  - key: ingredient.blueberry.count.other
+    value: '{n} blueberries'
+  - key: crop.lavender.name
+    value: Lavender Sprig
+  - key: crop.lavender.count
+    value: '{n} lavender sprigs'
+  - key: crop.lavender.count.one
+    value: '{n} lavender sprig'
+  - key: crop.lavender.count.other
+    value: '{n} lavender sprigs'
+  - key: ingredient.wheat_flour.name
+    value: Wheat Flour
+  - key: ingredient.wheat_flour.count
+    value: '{n} Wheat Flour'
+  - key: ingredient.wheat_flour.count.one
+    value: '{n} Wheat Flour'
+  - key: ingredient.wheat_flour.count.other
+    value: '{n} Wheat Flour'
+  - key: crop.indigo_flower.name
+    value: Indigo Flower
+  - key: crop.indigo_flower.count
+    value: '{n} indigo flowers'
+  - key: crop.indigo_flower.count.one
+    value: '{n} indigo flower'
+  - key: crop.indigo_flower.count.other
+    value: '{n} indigo flowers'
+  - key: crop.sunflower.name
+    value: Sunflower
+  - key: crop.sunflower.count
+    value: '{n} sunflowers'
+  - key: crop.sunflower.count.one
+    value: '{n} sunflower'
+  - key: crop.sunflower.count.other
+    value: '{n} sunflowers'
+  - key: ingredient.apple.name
+    value: Apple
+  - key: ingredient.apple.count
+    value: '{n} apples'
+  - key: ingredient.apple.count.one
+    value: '{n} apple'
+  - key: ingredient.apple.count.other
+    value: '{n} apples'
+  - key: crop.melon.name
+    value: Melon
+  - key: crop.melon.count
+    value: '{n} melons'
+  - key: crop.melon.count.one
+    value: '{n} melon'
+  - key: crop.melon.count.other
+    value: '{n} melons'
+  - key: crop.sweet_pea_flower.name
+    value: Sweet Pea Flower
+  - key: crop.sweet_pea_flower.count
+    value: '{n} sweet pea flowers'
+  - key: crop.sweet_pea_flower.count.one
+    value: '{n} sweet pea flower'
+  - key: crop.sweet_pea_flower.count.other
+    value: '{n} sweet pea flowers'
+  - key: ingredient.hazelnut.name
+    value: Hazelnut
+  - key: ingredient.hazelnut.count
+    value: '{n} hazelnuts'
+  - key: ingredient.hazelnut.count.one
+    value: '{n} hazelnut'
+  - key: ingredient.hazelnut.count.other
+    value: '{n} hazelnuts'
+  - key: crop.water_bloom.name
+    value: Water Bloom
+  - key: crop.water_bloom.count
+    value: '{n} water blooms'
+  - key: crop.water_bloom.count.one
+    value: '{n} water bloom'
+  - key: crop.water_bloom.count.other
+    value: '{n} water blooms'
+  - key: crop.gentian.name
+    value: Gentian
+  - key: crop.gentian.count
+    value: '{n} gentians'
+  - key: crop.gentian.count.one
+    value: '{n} gentian'
+  - key: crop.gentian.count.other
+    value: '{n} gentians'
+  - key: crop.lingonberry.name
+    value: Lingonberry
+  - key: crop.lingonberry.count
+    value: '{n} lingonberries'
+  - key: crop.lingonberry.count.one
+    value: '{n} lingonberry'
+  - key: crop.lingonberry.count.other
+    value: '{n} lingonberries'
+  - key: crop.banana.name
+    value: Banana
+  - key: crop.banana.count
+    value: '{n} bananas'
+  - key: crop.banana.count.one
+    value: '{n} banana'
+  - key: crop.banana.count.other
+    value: '{n} bananas'
+  - key: crop.cactus_flower.name
+    value: Cactus Flower
+  - key: crop.cactus_flower.count
+    value: '{n} cactus flowers'
+  - key: crop.cactus_flower.count.one
+    value: '{n} cactus flower'
+  - key: crop.cactus_flower.count.other
+    value: '{n} cactus flowers'
+  - key: crop.cactus_fruit.name
+    value: Cactus Fruit
+  - key: crop.cactus_fruit.count
+    value: '{n} cactus fruits'
+  - key: crop.cactus_fruit.count.one
+    value: '{n} cactus fruit'
+  - key: crop.cactus_fruit.count.other
+    value: '{n} cactus fruits'
+  - key: crop.cherry.name
+    value: Cherry
+  - key: crop.cherry.count
+    value: '{n} cherries'
+  - key: crop.cherry.count.one
+    value: '{n} cherry'
+  - key: crop.cherry.count.other
+    value: '{n} cherries'
+  - key: crop.glow_moss.name
+    value: Glow Moss Tuft
+  - key: crop.glow_moss.count
+    value: '{n} glow moss tufts'
+  - key: crop.glow_moss.count.one
+    value: '{n} glow moss tuft'
+  - key: crop.glow_moss.count.other
+    value: '{n} glow moss tufts'
+  - key: crop.cloud_puff.name
+    value: Cloud Puff
+  - key: crop.cloud_puff.count
+    value: '{n} cloud puffs'
+  - key: crop.cloud_puff.count.one
+    value: '{n} cloud puff'
+  - key: crop.cloud_puff.count.other
+    value: '{n} cloud puffs'
+  - key: crop.moonflower.name
+    value: Moonflower
+  - key: crop.moonflower.count
+    value: '{n} moonflowers'
+  - key: crop.moonflower.count.one
+    value: '{n} moonflower'
+  - key: crop.moonflower.count.other
+    value: '{n} moonflowers'
+  - key: ingredient.gentle_honey.name
+    value: Gentle Honey
+  - key: ingredient.gentle_honey.count
+    value: '{n} Gentle Honey'
+  - key: ingredient.gentle_honey.count.one
+    value: '{n} Gentle Honey'
+  - key: ingredient.gentle_honey.count.other
+    value: '{n} Gentle Honey'
+  - key: crop.fern_fiddlehead.name
+    value: Fern Fiddlehead
+  - key: crop.fern_fiddlehead.count
+    value: '{n} fern fiddleheads'
+  - key: crop.fern_fiddlehead.count.one
+    value: '{n} fern fiddlehead'
+  - key: crop.fern_fiddlehead.count.other
+    value: '{n} fern fiddleheads'
+  - key: crop.star_bloom.name
+    value: Star Bloom
+  - key: crop.star_bloom.count
+    value: '{n} star blooms'
+  - key: crop.star_bloom.count.one
+    value: '{n} star bloom'
+  - key: crop.star_bloom.count.other
+    value: '{n} star blooms'
+  - key: crop.light_pearl.name
+    value: Light Pearl
+  - key: crop.light_pearl.count
+    value: '{n} light pearls'
+  - key: crop.light_pearl.count.one
+    value: '{n} light pearl'
+  - key: crop.light_pearl.count.other
+    value: '{n} light pearls'
+  - key: dye.clover_green.name
+    value: Clover Green
+  - key: dye.strawberry_pink.name
+    value: Strawberry Pink
+  - key: dye.daisy_cream.name
+    value: Daisy Cream
+  - key: dye.carrot_orange.name
+    value: Carrot Orange
+  - key: dye.poppy_red.name
+    value: Poppy Red
+  - key: dye.blueberry_blue.name
+    value: Blueberry Blue
+  - key: dye.lavender_lilac.name
+    value: Lavender Lilac
+  - key: dye.wheat_gold.name
+    value: Wheat Gold
+  - key: dye.meadow_indigo.name
+    value: Meadow Indigo
+  - key: dye.sun_yellow.name
+    value: Sun Yellow
+  - key: dye.apple_green.name
+    value: Apple Green
+  - key: dye.melon_peach.name
+    value: Melon Peach
+  - key: dye.powder_pink.name
+    value: Powder Pink
+  - key: dye.hazel_brown.name
+    value: Hazel Brown
+  - key: dye.water_bloom_pink.name
+    value: Water Bloom Pink
+  - key: dye.gentian_blue.name
+    value: Gentian Blue
+  - key: dye.lingonberry_garnet.name
+    value: Lingonberry Garnet
+  - key: dye.tropical_green.name
+    value: Tropical Green
+  - key: dye.cactus_coral.name
+    value: Cactus Coral
+  - key: dye.cherry_red.name
+    value: Cherry Red
+  - key: dye.glow_turquoise.name
+    value: Glow Turquoise
+  - key: dye.cloud_white.name
+    value: Cloud White
+  - key: dye.moon_silver.name
+    value: Moon Silver
+  - key: dye.fern_green.name
+    value: Fern Green
+  - key: dye.nebula_blue.name
+    value: Nebula Blue
+  - key: palette.dye.clover.name
+    value: Clover Palette
+  - key: palette.dye.strawberry.name
+    value: Strawberry Palette
+  - key: palette.dye.daisy.name
+    value: Daisy Palette
+  - key: palette.dye.carrot.name
+    value: Carrot Palette
+  - key: palette.dye.poppy.name
+    value: Poppy Palette
+  - key: palette.dye.blueberry.name
+    value: Blueberry Palette
+  - key: palette.dye.lavender.name
+    value: Lavender Palette
+  - key: palette.dye.wheat.name
+    value: Wheat Palette
+  - key: palette.dye.indigo.name
+    value: Indigo Palette
+  - key: palette.dye.sunflower.name
+    value: Sunflower Palette
+  - key: palette.dye.apple.name
+    value: Apple Palette
+  - key: palette.dye.melon.name
+    value: Melon Palette
+  - key: palette.dye.sweet_pea.name
+    value: Sweet Pea Palette
+  - key: palette.dye.hazel.name
+    value: Hazel Palette
+  - key: palette.dye.water_bloom.name
+    value: Water Bloom Palette
+  - key: palette.dye.gentian.name
+    value: Gentian Palette
+  - key: palette.dye.lingonberry.name
+    value: Lingonberry Palette
+  - key: palette.dye.tropical.name
+    value: Jungle Palette
+  - key: palette.dye.cactus.name
+    value: Oasis Palette
+  - key: palette.dye.cherry.name
+    value: Cherry Palette
+  - key: palette.dye.glow.name
+    value: Glow Palette
+  - key: palette.dye.cloud.name
+    value: Cloud Palette
+  - key: palette.dye.moon.name
+    value: Moon Palette
+  - key: palette.dye.fern.name
+    value: Fern Palette
+  - key: palette.dye.nebula.name
+    value: Nebula Palette
+  - key: palette.dye.duo_meadow.name
+    value: Meadow in Bloom
+  - key: palette.dye.duo_sunset.name
+    value: Sunset
+  - key: palette.dye.duo_lagoon.name
+    value: Lagoon
+  - key: palette.dye.duo_orchard.name
+    value: Orchard
+  - key: palette.dye.duo_soft_night.name
+    value: Soft Night
+  - key: palette.dye.duo_harvest.name
+    value: Harvest
+  - key: challenge.garden.01.name
+    value: First Basket
+  - key: challenge.garden.01.goal
+    value: 2 harvests
+  - key: challenge.garden.02.name
+    value: Flower Friends
+  - key: challenge.garden.02.goal
+    value: 3 fruits, each next to a flower
+  - key: challenge.garden.03.name
+    value: Perfect Watering
+  - key: challenge.garden.03.goal
+    value: 3 harvests, well watered
+  - key: challenge.garden.04.name
+    value: Rainbow
+  - key: challenge.garden.04.goal
+    value: 3 harvests of 3 different plants
+  - key: challenge.garden.05.name
+    value: Long Harvest
+  - key: challenge.garden.05.goal
+    value: 2 plants of 5 h or more
+  - key: challenge.garden.06.name
+    value: Full Garden
+  - key: challenge.garden.06.goal
+    value: Every plot within one minute
+  - key: challenge.garden.07.name
+    value: World Flowers
+  - key: challenge.garden.07.goal
+    value: 2 plants from different biomes
+  - key: challenge.garden.08.name
+    value: Cake Basket
+  - key: challenge.garden.08.goal
+    value: Wheat, strawberry and blueberry
+  - key: challenge.garden.09.name
+    value: Five Colours
+  - key: challenge.garden.09.goal
+    value: 5 plants in 3 days
+  - key: challenge.garden.10.name
+    value: Golden Garden
+  - key: challenge.garden.10.goal
+    value: 6 harvests in 2 days

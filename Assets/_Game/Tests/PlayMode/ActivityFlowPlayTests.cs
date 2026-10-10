@@ -80,7 +80,7 @@ namespace PocketWilds.Tests.PlayMode
             presenter.OpenActivities();
             yield return null;
             Assert.IsTrue(presenter.HubOpen, "Play opens the hub.");
-            Assert.AreEqual(6, presenter.CardCount, "The hub lists the activities of this build: the test one, Grooming, Hide and Seek, Nut Drop, Memory and Expeditions still closed.");
+            Assert.AreEqual(7, presenter.CardCount, "The hub lists the activities of this build: the test one, Grooming, Hide and Seek, Nut Drop, Memory, Expeditions and the Garden still closed.");
             Assert.AreEqual(ActivityId.Test, presenter.Card(0).Activity, "The open ones first.");
             Assert.AreEqual(ActivityId.Grooming, presenter.Card(1).Activity);
             Assert.AreEqual(ActivityCardState.Locked, presenter.Card(1).State);
@@ -92,6 +92,8 @@ namespace PocketWilds.Tests.PlayMode
             Assert.AreEqual(ActivityCardState.Locked, presenter.Card(4).State);
             Assert.AreEqual(ActivityId.Expeditions, presenter.Card(5).Activity, "T42: Expeditions ships, closed until level 5 and 8 animals.");
             Assert.AreEqual(ActivityCardState.Locked, presenter.Card(5).State);
+            Assert.AreEqual(ActivityId.Garden, presenter.Card(6).Activity, "T43: the Garden ships, closed until level 8 and day 3.");
+            Assert.AreEqual(ActivityCardState.Locked, presenter.Card(6).State);
             Assert.IsFalse(string.IsNullOrEmpty(presenter.Card(1).UnlockHint), "A closed card says what opens it.");
             Assert.AreEqual(ActivityCardState.New, presenter.Card(0).State, "Never played: « Nouveau ».");
             Assert.AreEqual(5, presenter.Tickets.Count, "The first use fills the reserve (doc 01 A15).");
@@ -302,12 +304,20 @@ namespace PocketWilds.Tests.PlayMode
             };
 #endif
             var bootstrap = new GameObject("GameBootstrap").AddComponent<GameBootstrap>();
-            // The first test of a run boots cold (assets, shaders): more time than the warm boots after it.
-            float timeout = Time.realtimeSinceStartup + 60f;
+            // The first test of a run boots cold (assets, shaders, atlases packed again in the editor after new sprites): more
+            // time than the warm boots after it (T43: the editor's cold CommonContent step took 28 s).
+            float timeout = Time.realtimeSinceStartup + 120f;
             while (bootstrap.State == BootState.NotStarted || bootstrap.State == BootState.Running)
             {
                 if (Time.realtimeSinceStartup > timeout)
-                    Assert.Fail("Boot timed out.");
+                {
+                    // Which steps finished and how long they took: a slow boot is found at once.
+                    var done = new System.Text.StringBuilder();
+                    if (bootstrap.Sequence != null)
+                        foreach (var report in bootstrap.Sequence.Reports)
+                            done.Append(report.Name).Append(' ').Append(report.Milliseconds.ToString("0")).Append(" ms, ");
+                    Assert.Fail("Boot timed out. Steps done: " + done);
+                }
                 yield return null;
             }
             Assert.AreEqual(BootState.Ready, bootstrap.State);

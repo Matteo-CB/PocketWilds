@@ -334,6 +334,17 @@ namespace PocketWilds.Editor.Audio
                 Def(AudioEventId.ExpeditionPostcard, "SFX_Expedition_Postcard", AudioGroup.UI, 1, 0.25f, 2, volumeJitter: 0.04f, pitchJitter: 0.02f),
                 Def(AudioEventId.ExpeditionLoot, "SFX_Expedition_Loot", AudioGroup.Rewards, 2, 0.1f, 2, volumeJitter: 0.03f, pitchJitter: 0f),
                 Def(AudioEventId.ExpeditionReturn, "SFX_Reward_ExpeditionReturn", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
+                // T43: the garden (doc 01 Contenu, S-ACT-006 « Sons et effets »; GardenAudio), from the centre (the set's
+                // close-up), in the World group. The planting: 0.2 s, one voice (one bed planted at a time). The trickle
+                // once a second (it lasts 1 s). The bud's pop: 0.15 s and 2 voices, beds catching up together make one or
+                // two pops. J-SFX-FEEL-017, the harvest: doc 05 section 6.1, World, 2 voices, 0.1 s (a « Tout récolter »
+                // runs 120 ms apart); its pitch is chosen by the chain (PlayPitched) and kept: no pitch jitter. The
+                // garden's level is J-SFX-REWARD-002, the mastery motif (SFX_Reward_MasteryUp), once.
+                Def(AudioEventId.GardenHarvest, "SFX_World_Harvest", AudioGroup.World, 2, 0.1f, 2, volumeJitter: 0.04f, pitchJitter: 0f),
+                Def(AudioEventId.GardenPlant, "SFX_Garden_Plant", AudioGroup.World, 2, 0.2f, 1, volumeJitter: 0.05f, pitchJitter: 0.03f),
+                Def(AudioEventId.GardenWater, "SFX_Garden_Water", AudioGroup.World, 2, 1f, 1, volumeJitter: 0.03f, pitchJitter: 0.02f),
+                Def(AudioEventId.GardenStage, "SFX_Garden_Stage", AudioGroup.World, 2, 0.15f, 2, volumeJitter: 0.04f, pitchJitter: 0.02f),
+                Def(AudioEventId.GardenLevelUp, "SFX_Reward_MasteryUp", AudioGroup.Rewards, 2, 1f, 1, volumeJitter: 0f, pitchJitter: 0f),
             };
             foreach (var (id, prefix) in new[]
                      {

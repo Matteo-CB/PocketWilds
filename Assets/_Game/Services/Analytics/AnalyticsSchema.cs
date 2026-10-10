@@ -83,6 +83,11 @@ namespace PocketWilds.Services.Analytics
         ExpeditionStart = 140,
         ExpeditionReturn = 141,
         ExpeditionSpeedup = 142,
+
+        // The garden (block 150, doc 08; T43).
+        GardenPlant = 150,
+        GardenHarvest = 151,
+        GardenSpeedup = 152,
     }
 
     /// <summary>Screens worth counting: the values of doc 08 section 9.5 (realigned in T37, before any data was sent).</summary>
@@ -211,6 +216,12 @@ namespace PocketWilds.Services.Analytics
             AnalyticsEventId.ExpeditionReturn => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2), Field.I(3) },
             // method (1 Gems, 2 ad, 3 Club), Gems, seconds that were left
             AnalyticsEventId.ExpeditionSpeedup => new[] { Field.I(0), Field.I(1), Field.D(0, 0) },
+            // T43 (doc 08, block 150). seed (the plant), plot, grow_s
+            AnalyticsEventId.GardenPlant => new[] { Field.U(0), Field.I(0), Field.D(0, 0) },
+            // seed (the plant), yield_kind (1 flower, 2 fruit, 3 dye), count, watered
+            AnalyticsEventId.GardenHarvest => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2) },
+            // method (1 Gems, 2 ad, 3 Club), Gems, seconds that were left
+            AnalyticsEventId.GardenSpeedup => new[] { Field.I(0), Field.I(1), Field.D(0, 0) },
             // index (1 to 3)
             AnalyticsEventId.WelcomeGift => new[] { Field.I(0) },
             // seconds from Today opened to the last claim, taps, items claimed

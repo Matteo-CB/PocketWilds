@@ -35,9 +35,9 @@ namespace PocketWilds.Services.Save
         /// 2: Offline section (rate at save, time high-water mark). 3: Codex section (seen ids). 4: Pity counters.
         /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
         /// 8: Discovery egg stock (World 3). 9: Renewal memory and Essence tree. 10: daily rendez-vous and inventory (T36).
-        /// 11: activities (T37). 12: expeditions (T42).
+        /// 11: activities (T37). 12: expeditions (T42). 13: garden (T43).
         /// </summary>
-        public const int CurrentVersion = 12;
+        public const int CurrentVersion = 13;
     }
 
     /// <summary>
@@ -65,6 +65,7 @@ namespace PocketWilds.Services.Save
         private const ushort InventoryVersion = 1;
         private const ushort ActivitiesVersion = 1;
         private const ushort ExpeditionsVersion = 1;
+        private const ushort GardenVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -185,6 +186,10 @@ namespace PocketWilds.Services.Save
 
             mark = BeginSection(output, SaveSectionId.Expeditions, ExpeditionsVersion);
             WriteExpeditions(output, state.Expeditions);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Garden, GardenVersion);
+            WriteGarden(output, state.Garden);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -365,6 +370,9 @@ namespace PocketWilds.Services.Save
                 // Saves older than schema 12 have no expeditions: no team away, the first stroll still to come (T42).
                 if (document.TryGetSection(SaveSectionId.Expeditions, out var expeditions))
                     ReadExpeditions(expeditions, state.Expeditions);
+                // Saves older than schema 13 have no garden: every plot bare, level 1, no dye (T43).
+                if (document.TryGetSection(SaveSectionId.Garden, out var garden))
+                    ReadGarden(garden, state.Garden);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -943,6 +951,101 @@ namespace PocketWilds.Services.Save
             loot.MasteryXp = Math.Max(0, r.ReadInt32());
             loot.EventCurrency = Math.Max(0, r.ReadInt32());
             return loot;
+        }
+
+        /// <summary>
+        /// T43: the garden. The counters, the challenge run, the plots with their count (each one's active flag, then its plant,
+        /// times, growth, watering, seed, the draws made at planting and the neighbours' help), the dyes with their count and
+        /// the palettes bought.
+        /// </summary>
+        private static void WriteGarden(ByteBufferWriter output, GardenState g)
+        {
+            output.WriteBool(g.PlotBought);
+            output.WriteBool(g.FirstVisitDone);
+            output.WriteInt32(g.Points);
+            output.WriteInt32(g.Planted);
+            output.WriteInt32(g.Harvested);
+            output.WriteInt32(g.SpeedUpDayKey);
+            output.WriteInt32(g.SpeedUpsToday);
+            output.WriteByte(unchecked((byte)g.Challenge));
+            output.WriteInt32(g.ChallengeHarvests);
+            output.WriteInt32(g.ChallengeStars);
+            output.WriteInt64(g.ChallengeRunStartUnixMs);
+            output.WriteUInt32(g.ChallengeMask);
+            output.WriteInt32(g.Plots.Length);
+            for (int p = 0; p < g.Plots.Length; p++)
+            {
+                ref readonly var plot = ref g.Plots[p];
+                output.WriteBool(plot.Active);
+                if (!plot.Active)
+                    continue;
+                output.WriteContentId(plot.Plant);
+                output.WriteInt64(plot.PlantedUnixMs);
+                output.WriteInt64(plot.RipeUnixMs);
+                output.WriteInt64(plot.GrowMs);
+                output.WriteBool(plot.Watered);
+                output.WriteUInt32(plot.Seed);
+                output.WriteByte(plot.SeedsBack);
+                output.WriteBool(plot.Happy);
+                output.WriteInt64(plot.HelpLeftMs);
+                output.WriteInt64(plot.HelpRightMs);
+                output.WriteBool(plot.FlowerBeside);
+            }
+            output.WriteInt32(g.Dyes.Length);
+            for (int i = 0; i < g.Dyes.Length; i++)
+                output.WriteInt32(g.Dyes[i]);
+            output.WriteUInt32(g.Palettes);
+        }
+
+        private static void ReadGarden(SaveSection section, GardenState g)
+        {
+            RequireVersion(section, GardenVersion);
+            var r = section.CreateReader();
+            g.PlotBought = r.ReadBool();
+            g.FirstVisitDone = r.ReadBool();
+            g.Points = Math.Max(0, r.ReadInt32());
+            g.Planted = Math.Max(0, r.ReadInt32());
+            g.Harvested = Math.Max(0, r.ReadInt32());
+            g.SpeedUpDayKey = r.ReadInt32();
+            g.SpeedUpsToday = Math.Max(0, r.ReadInt32());
+            int challenge = unchecked((sbyte)r.ReadByte());
+            g.Challenge = (sbyte)(challenge >= 0 && challenge < GardenCatalog.ChallengeCount ? challenge : -1);
+            g.ChallengeHarvests = Math.Max(0, r.ReadInt32());
+            g.ChallengeStars = Math.Max(0, r.ReadInt32());
+            g.ChallengeRunStartUnixMs = Math.Max(0L, r.ReadInt64());
+            g.ChallengeMask = r.ReadUInt32();
+            if (g.Challenge < 0)
+                g.ResetChallengeRun();
+            int plots = ReadCount(ref r);
+            for (int p = 0; p < plots; p++)
+            {
+                var plot = new GardenPlotRecord { Active = r.ReadBool() };
+                if (plot.Active)
+                {
+                    plot.Plant = r.ReadContentId();
+                    plot.PlantedUnixMs = r.ReadInt64();
+                    plot.RipeUnixMs = Math.Max(plot.PlantedUnixMs, r.ReadInt64());
+                    plot.GrowMs = Math.Max(0L, r.ReadInt64());
+                    plot.Watered = r.ReadBool();
+                    plot.Seed = r.ReadUInt32();
+                    plot.SeedsBack = (byte)Math.Min(1, (int)r.ReadByte());
+                    plot.Happy = r.ReadBool();
+                    plot.HelpLeftMs = Math.Max(0L, r.ReadInt64());
+                    plot.HelpRightMs = Math.Max(0L, r.ReadInt64());
+                    plot.FlowerBeside = r.ReadBool();
+                }
+                // A newer build may show more plots: their sprouts are read and dropped.
+                if (p < g.Plots.Length)
+                    g.Plots[p] = plot;
+            }
+            int dyes = ReadCount(ref r);
+            for (int i = 0; i < dyes; i++)
+            {
+                int owned = Math.Max(0, r.ReadInt32());
+                if (i < g.Dyes.Length)
+                    g.Dyes[i] = owned;
+            }
+            g.Palettes = r.ReadUInt32() & ((1u << GardenCatalog.PaletteCount) - 1u);
         }
 
         private static void ReadCounters(ref ByteBufferReader r, System.Collections.Generic.Dictionary<ContentId, int> counters)

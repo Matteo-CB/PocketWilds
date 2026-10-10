@@ -233,7 +233,8 @@ namespace PocketWilds.Simulation
 
         /// <summary>
         /// By slot: Grooming (slot 0) to Grand Contest (slot 17), then Test. T38 ships Grooming, T39 Hide and Seek, T40 Nut Drop,
-        /// T41 Pawprint Memory, T42 Expeditions (the first meta activity: its own screen and service, no runner rules).
+        /// T41 Pawprint Memory, T42 Expeditions (the first meta activity: its own screen and service, no runner rules), T43 the
+        /// Garden (the second meta activity).
         /// </summary>
         private static readonly ActivityDefinition[] Definitions =
         {
@@ -249,7 +250,7 @@ namespace PocketWilds.Simulation
             new ActivityDefinition(ActivityId.Expeditions, "expeditions", RefugeFeature.Expeditions, 5, 8, 0, 0, ActivitySpecialUnlock.None,
                 0, 0, 0, M, ActivityMusic.Calm, false, true, false, 1, true),
             new ActivityDefinition(ActivityId.Garden, "garden", RefugeFeature.Garden, 8, 0, 3, 0, ActivitySpecialUnlock.None,
-                0, 0, 0, M, ActivityMusic.Calm, false, true, false, 1, false),
+                0, 0, 0, M, ActivityMusic.Calm, false, true, false, 1, true),
             new ActivityDefinition(ActivityId.TreasureFishing, "treasure_fishing", null, 0, 0, 0, 0, ActivitySpecialUnlock.Lake,
                 60, 60, 60, "biome.lake", ActivityMusic.Lively, true, false, false, 2, false),
             new ActivityDefinition(ActivityId.LilyHop, "lily_hop", null, 0, 0, 0, 0, ActivitySpecialUnlock.Lake,

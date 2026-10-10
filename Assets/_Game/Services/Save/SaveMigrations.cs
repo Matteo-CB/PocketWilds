@@ -18,6 +18,7 @@ namespace PocketWilds.Services.Save
             new Migration0009AddDailyVisit(),
             new Migration0010AddActivities(),
             new Migration0011AddExpeditions(),
+            new Migration0012AddGarden(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -173,6 +174,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 11;
         public int ToVersion => 12;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 12 to 13 (T43): the Garden section. Nothing to convert: without it every plot is bare, the Gems plot is not
+    /// bought, the garden is at level 1 with no dye nor palette. Seeds and crops already sit in the inventory.
+    /// </summary>
+    public sealed class Migration0012AddGarden : ISaveMigration
+    {
+        public int FromVersion => 12;
+        public int ToVersion => 13;
 
         public void Apply(SaveDocument document)
         {

@@ -250,8 +250,9 @@ namespace PocketWilds.Editor.UI
             WishN(31, "Plant a seed", "Plant {n} seeds", "Plante une graine", "Plante {n} graines");
             WishN(32, "Harvest a plant", "Harvest {n} plants", "Récolte une plante", "Récolte {n} plantes");
             WishN(33, "Water a sprout", "Water {n} sprouts", "Arrose une pousse", "Arrose {n} pousses");
-            WishN(34, "Harvest {n} {crop}", "Harvest {n} {crop}", "Récolte {n} {crop}", "Récolte {n} {crop}");
-            WishN(35, "Bring {animal} {n} {crop}", "Bring {animal} {n} {crop}", "Apporte {n} {crop} à {animal}", "Apporte {n} {crop} à {animal}");
+            // T43: {crop} carries its number (« 3 fraises », the product's counted « .count » text), so {n} is not repeated.
+            WishN(34, "Harvest {crop}", "Harvest {crop}", "Récolte {crop}", "Récolte {crop}");
+            WishN(35, "Bring {animal} {crop}", "Bring {animal} {crop}", "Apporte {crop} à {animal}", "Apporte {crop} à {animal}");
             Wish(36, "Harvest a dye", "Récolte une teinture");
             // SYS-08 Bakery
             Wish(37, "Bake a cake", "Prépare un gâteau");

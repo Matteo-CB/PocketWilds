@@ -151,6 +151,9 @@ namespace PocketWilds.Presentation
             _playAppeared = _services.Activities.GamesStarted > 0;
             // T42: the expeditions screen, when the context has the expeditions (it registers itself as Expeditions).
             ExpeditionScreenPresenter.Create(context, this);
+            // T43: the garden, when the context has it (setting the service builds its presenter).
+            if (context.Garden != null)
+                GardenService = context.Garden;
         }
 
         /// <summary>Where the activities' stages come from (each shipped activity registers its own; tests add theirs).</summary>
@@ -168,6 +171,30 @@ namespace PocketWilds.Presentation
         /// </summary>
         public ExpeditionScreenPresenter Expeditions { get; set; }
 
+        /// <summary>
+        /// T43: the garden (a meta activity with its own set and overlay). Set by the garden's presenter itself when
+        /// <see cref="GardenService"/> is given; ticked and disposed with this presenter.
+        /// </summary>
+        public GardenPresenter Garden { get; set; }
+
+        /// <summary>
+        /// T43: the garden's simulation (the context's garden service, wired by the scene once it exists): setting it makes the
+        /// garden's presenter (null: none).
+        /// </summary>
+        public IGarden GardenService
+        {
+            get => Garden?.Service;
+            set
+            {
+                if (Garden != null && ReferenceEquals(Garden.Service, value))
+                    return;
+                Garden?.Dispose();
+                Garden = null;
+                if (value != null)
+                    GardenPresenter.Create(_context, this, value);
+            }
+        }
+
         /// <summary>T42: the stage host (the scene root, the refuge, the world's rendering switch) for the meta screens.</summary>
         internal ActivityStageHost Host => _host;
 
@@ -178,7 +205,7 @@ namespace PocketWilds.Presentation
         internal IRefugeHud RefugeHud => _refugeHud;
 
         /// <summary>Something of the activities covers the refuge: world touches and hatching wait.</summary>
-        public bool IsOpen => HubOpen || EmptyOpen || _phase != Phase.None || Expeditions != null && Expeditions.IsOpen;
+        public bool IsOpen => HubOpen || EmptyOpen || _phase != Phase.None || Expeditions != null && Expeditions.IsOpen || Garden != null && Garden.IsOpen;
 
         public bool HubOpen => _hub != null && _hub.IsOpen;
 
@@ -304,12 +331,12 @@ namespace PocketWilds.Presentation
                 _hub.Close();
         }
 
-        /// <summary>T42: a meta screen closed (Expeditions): the hub opens again on its card.</summary>
-        public void ReturnFromMeta()
+        /// <summary>T42: a meta screen closed (Expeditions, T43 the Garden): the hub opens again on its card.</summary>
+        public void ReturnFromMeta(ActivityId from = ActivityId.Expeditions)
         {
             if (InGame)
                 return;
-            _lastPlayed = ActivityId.Expeditions;
+            _lastPlayed = from;
             OpenHub();
         }
 
@@ -356,6 +383,13 @@ namespace PocketWilds.Presentation
             {
                 HideCardHint();
                 Expeditions.OpenFromHub();
+                return;
+            }
+            // T43: the Garden opens its own set and overlay.
+            if (activity == ActivityId.Garden && Garden != null)
+            {
+                HideCardHint();
+                Garden.OpenFromHub();
                 return;
             }
             var request = _practice ? ActivityRequest.Practice(activity) : ActivityRequest.Free(activity);
@@ -773,6 +807,7 @@ namespace PocketWilds.Presentation
         {
             _time += unscaledDeltaTime;
             Expeditions?.Tick(unscaledDeltaTime);
+            Garden?.Tick(unscaledDeltaTime);
             _hub?.Tick(unscaledDeltaTime);
             _empty?.Tick(unscaledDeltaTime);
             _hud?.Tick(unscaledDeltaTime);
@@ -809,7 +844,7 @@ namespace PocketWilds.Presentation
             _nextCheck = _time + CheckInterval;
             UpdatePlayButton();
             // T42: the Expeditions card's line (« De retour dans 3 h 12 », « 2 de retour ») changes at most once a minute.
-            if (HubOpen && Expeditions != null && Expeditions.StatusChanged)
+            if (HubOpen && (Expeditions != null && Expeditions.StatusChanged || Garden != null && Garden.StatusChanged))
             {
                 RebuildCards();
                 _hub.Refresh();
@@ -886,6 +921,13 @@ namespace PocketWilds.Presentation
                 if (id == ActivityId.Expeditions && Expeditions != null)
                 {
                     if (Expeditions.WantsDot)
+                        dot = true;
+                    continue;
+                }
+                // T43: the Garden dots the button when a plant is ripe, or before its first sprout.
+                if (id == ActivityId.Garden && Garden != null)
+                {
+                    if (Garden.WantsDot)
                         dot = true;
                     continue;
                 }
@@ -978,6 +1020,13 @@ namespace PocketWilds.Presentation
                     {
                         ref var card = ref _cards[_cardCount - 1];
                         card.State = Expeditions.CardStatus(out string status);
+                        card.Status = status;
+                    }
+                    // T43: the Garden card says « Nouveau » before the first sprout, then « {n} prêts » or the soonest ripening.
+                    if (id == ActivityId.Garden && unlocked && Garden != null)
+                    {
+                        ref var card = ref _cards[_cardCount - 1];
+                        card.State = Garden.CardStatus(out string status);
                         card.Status = status;
                     }
                 }
@@ -1210,6 +1259,8 @@ namespace PocketWilds.Presentation
             ReleaseMusic();
             Expeditions?.Dispose();
             Expeditions = null;
+            Garden?.Dispose();
+            Garden = null;
         }
 
         /// <summary>Headless scenes without localization: keys stand for texts.</summary>

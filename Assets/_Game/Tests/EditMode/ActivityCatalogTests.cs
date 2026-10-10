@@ -39,10 +39,11 @@ namespace PocketWilds.Tests.EditMode
                 Assert.AreEqual("activity." + keys[slot] + ".name", definition.NameKey);
                 Assert.AreEqual("challenge." + keys[slot] + ".01", definition.ChallengeId(0));
                 Assert.AreEqual("challenge." + keys[slot] + ".10", definition.ChallengeId(9));
-                // T37 shipped the framework alone; T38 ships Grooming, T39 Hide and Seek, T40 Nut Drop, T41 Pawprint Memory and
-                // T42 Expeditions, the others wait for their tasks.
+                // T37 shipped the framework alone; T38 ships Grooming, T39 Hide and Seek, T40 Nut Drop, T41 Pawprint Memory,
+                // T42 Expeditions and T43 the Garden, the others wait for their tasks.
                 bool shipped = definition.Id == ActivityId.Grooming || definition.Id == ActivityId.HideAndSeek
-                    || definition.Id == ActivityId.NutRain || definition.Id == ActivityId.PawMemory || definition.Id == ActivityId.Expeditions;
+                    || definition.Id == ActivityId.NutRain || definition.Id == ActivityId.PawMemory || definition.Id == ActivityId.Expeditions
+                    || definition.Id == ActivityId.Garden;
                 Assert.AreEqual(shipped, definition.ShippedInThisBuild, definition.Id + " shipped.");
             }
             Assert.AreEqual(ActivityCatalog.TestSlot, ActivityCatalog.SlotOf(ActivityId.Test));
@@ -240,7 +241,7 @@ namespace PocketWilds.Tests.EditMode
             // T42: Expeditions, a meta activity, needs no runner rules: shipped, it alone makes the Play button exist.
             Assert.IsTrue(bare.AnyShipped, "No rules registered, but the meta Expeditions ship: the Play button exists.");
             Assert.IsTrue(bare.HasRulesOrMeta(ActivityId.Expeditions));
-            Assert.IsFalse(bare.HasRulesOrMeta(ActivityId.Garden), "The Garden (meta) is not shipped yet.");
+            Assert.IsTrue(bare.HasRulesOrMeta(ActivityId.Garden), "T43: the Garden, the second meta activity, needs no runner rules either.");
             Assert.IsFalse(bare.IsAvailable(ActivityId.Expeditions), "Level 3: Expeditions open at refuge level 5 and 8 animals.");
             Assert.IsFalse(bare.HasRulesOrMeta(ActivityId.Grooming), "A runner activity still needs its rules.");
             ActivityRegistry.RegisterShipped(bare);

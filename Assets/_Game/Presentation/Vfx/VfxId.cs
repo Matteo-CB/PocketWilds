@@ -27,7 +27,19 @@ namespace PocketWilds.Presentation
 
         /// <summary>T42 (H-VFX-076): a small puff of dust in the biome's soil colour where an animal back from an expedition arrives (8 dots).</summary>
         ArrivalDust = 14,
-        Count = 15,
+
+        /// <summary>T43 (H-VFX-ACT-006-01): watering, 6 round drops falling on a sprout.</summary>
+        GardenDrops = 15,
+
+        /// <summary>T43 (H-VFX-ACT-006-02): a sprout reaches its next stage, a soft green ring.</summary>
+        GardenGrow = 16,
+
+        /// <summary>T43 (H-VFX-ACT-006-03, H-VFX-077): a harvest, 8 leaves or petals and a ring (tinted with the plant).</summary>
+        GardenHarvest = 17,
+
+        /// <summary>T43 (H-VFX-ACT-006-04): neighbours help, 2 small green hearts between two beds.</summary>
+        GardenHelp = 18,
+        Count = 19,
     }
 
     /// <summary>What a hatch brings that the player did not have: shown by its own effect and the reveal banner.</summary>

@@ -134,7 +134,7 @@ namespace PocketWilds.Tests.EditMode
             Assert.IsTrue(services.Rewards.CountRewardGates(ActivityId.NutRain, 1, out garden, out seedStars));
             Assert.IsFalse(garden, "Nut Drop's Strawberries wait for the Pâtisserie, not the Garden.");
             Assert.AreEqual(1, seedStars, "Nut Drop's counted items come at any star.");
-            Assert.IsFalse(services.Context.GardenOpen, "No Garden before T43.");
+            Assert.IsFalse(services.Context.GardenOpen, "The Garden not built in this rig (GardenAvailable false): no seed.");
 
             Assert.IsFalse(MemoryRig.Create(level: 10).A.S.IsAvailable(ActivityId.PawMemory), "Level 10: not open yet.");
             Assert.IsFalse(MemoryRig.Create(day: 4).A.S.IsAvailable(ActivityId.PawMemory), "Day 4: not open yet.");

@@ -38,6 +38,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_DailyVisit_v10", BuildDailyVisit());
             created += WriteIfMissing("GoldenSave_Activities_v11", BuildActivities());
             created += WriteIfMissing("GoldenSave_Expeditions_v12", BuildExpeditions());
+            created += WriteIfMissing("GoldenSave_Garden_v13", BuildGarden());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -262,6 +263,64 @@ namespace PocketWilds.Editor.Saves
             e.Postcards[1] = new PostcardRecord { Id = 12, Destination = meadows, UnixDay = 20372, Rendered = true };
             e.Postcards[2] = new PostcardRecord { Id = 13, Destination = meadows, UnixDay = 20373 };
             e.PostcardCount = 3;
+            return state;
+        }
+
+        /// <summary>
+        /// Schema 13 (T43): the garden: the Gems plot bought, the tutorial seen, 230 points (level 4), speed-ups of the day, a
+        /// challenge half played; a watered Sweet Clover growing in plot 0 with a seed back drawn and help from its left
+        /// neighbour, a ripe Wild Strawberry in plot 1 (« Pousse heureuse »), plot 2 bare; 7 Clover Green and 3 Meadow Indigo
+        /// dyes, the Clover palette and the Meadow duo bought; seeds and crops in the inventory.
+        /// </summary>
+        private static PlayerState BuildGarden()
+        {
+            var state = BuildExpeditions();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-0000000000b3");
+            state.Meta.Revision = 340;
+            var g = state.Garden;
+            g.PlotBought = true;
+            g.FirstVisitDone = true;
+            g.Points = 230;
+            g.Planted = 21;
+            g.Harvested = 19;
+            g.SpeedUpDayKey = 20261013;
+            g.SpeedUpsToday = 1;
+            g.Challenge = 3;
+            g.ChallengeHarvests = 2;
+            g.ChallengeStars = 5;
+            g.ChallengeRunStartUnixMs = new DateTimeOffset(2026, 10, 13, 9, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+            g.ChallengeMask = 0b11;
+            long planted = new DateTimeOffset(2026, 10, 13, 10, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
+            g.Plots[0] = new GardenPlotRecord
+            {
+                Active = true,
+                Plant = ContentId.FromSource("plant.sweet_clover"),
+                PlantedUnixMs = planted,
+                RipeUnixMs = planted + 27 * 60_000L,
+                GrowMs = 30 * 60_000L,
+                Watered = true,
+                Seed = 424242u,
+                SeedsBack = 1,
+                HelpLeftMs = 0,
+                HelpRightMs = 600_000L,
+                FlowerBeside = true,
+            };
+            g.Plots[1] = new GardenPlotRecord
+            {
+                Active = true,
+                Plant = ContentId.FromSource("plant.wild_strawberry"),
+                PlantedUnixMs = planted - 3_600_000L,
+                RipeUnixMs = planted,
+                GrowMs = 3_600_000L,
+                Seed = 77u,
+                Happy = true,
+            };
+            g.Dyes[0] = 7;
+            g.Dyes[8] = 3;
+            g.Palettes = (1u << 0) | (1u << 25);
+            state.Inventory.Add(ContentId.FromSource("plant.sweet_clover"), 4);
+            state.Inventory.Add(ContentId.FromSource("crop.clover_flower"), 9);
+            state.Inventory.Add(ContentId.FromSource("ingredient.strawberry"), 4);
             return state;
         }
 

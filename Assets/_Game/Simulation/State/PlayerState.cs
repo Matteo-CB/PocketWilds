@@ -35,6 +35,9 @@ namespace PocketWilds.Simulation
         /// <summary>T42: the expeditions (slots, teams, timers, loot drawn at departure, the guarantee, the postcards).</summary>
         public ExpeditionState Expeditions { get; } = new ExpeditionState();
 
+        /// <summary>T43: the garden (plots, sprouts, timers, draws made at planting, points, challenge, dyes and palettes).</summary>
+        public GardenState Garden { get; } = new GardenState();
+
         /// <summary>The welcome is over: the tutorial wish was done, or the save already holds 5 animals (doc 01, section 1.1).</summary>
         public bool IsOnboardingDone => DailyVisit.OnboardingDone || Collection.Count >= 5;
 

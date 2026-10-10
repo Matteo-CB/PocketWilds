@@ -1087,8 +1087,87 @@ namespace PocketWilds.Services.Analytics
             Record(ref e);
         }
 
+        // ------------------------------------------------------------------ T43: the garden (doc 08, block 150)
+
+        private GardenService? _garden;
+        private GardenPlantedHandler? _onGardenPlanted;
+        private GardenHarvestedHandler? _onGardenHarvested;
+        private Action<int, int, double>? _onGardenSpedUp;
+        private Action<int, int, int>? _onGardenChallenge;
+
+        /// <summary>Seeds planted, harvests, speed-ups (doc 08 events 150 to 152), challenges improved (112).</summary>
+        public void AttachGarden(GardenService? garden)
+        {
+            DetachGarden();
+            _garden = garden;
+            if (garden == null)
+                return;
+            _onGardenPlanted ??= OnGardenPlanted;
+            _onGardenHarvested ??= OnGardenHarvested;
+            _onGardenSpedUp ??= OnGardenSpedUp;
+            _onGardenChallenge ??= OnGardenChallenge;
+            garden.Planted += _onGardenPlanted;
+            garden.Harvested += _onGardenHarvested;
+            garden.SpedUp += _onGardenSpedUp;
+            garden.ChallengeImproved += _onGardenChallenge;
+        }
+
+        private void DetachGarden()
+        {
+            var g = _garden;
+            if (g == null)
+                return;
+            g.Planted -= _onGardenPlanted;
+            g.Harvested -= _onGardenHarvested;
+            g.SpedUp -= _onGardenSpedUp;
+            g.ChallengeImproved -= _onGardenChallenge;
+            _garden = null;
+        }
+
+        private void OnGardenPlanted(in GardenPlantInfo info)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.GardenPlant) { U0 = info.Plant.Value, I0 = info.Plot, D0 = info.GrowSeconds };
+            Record(ref e);
+        }
+
+        /// <summary>One event for the products (yield_kind 1 for a flower, 2 for a fruit, vegetable or grain), one more for the dyes (3).</summary>
+        private void OnGardenHarvested(in GardenHarvestInfo info)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.GardenHarvest)
+            {
+                U0 = info.Harvest.Plant.Value,
+                I0 = info.Kind == GardenPlantKind.Flower ? 1 : 2,
+                I1 = info.Harvest.MainCount,
+                I2 = info.Harvest.Watered ? 1 : 0,
+            };
+            Record(ref e);
+            if (info.Harvest.Dyes <= 0)
+                return;
+            var dye = new AnalyticsEvent(AnalyticsEventId.GardenHarvest)
+            {
+                U0 = info.Harvest.Plant.Value, I0 = 3, I1 = info.Harvest.Dyes, I2 = info.Harvest.Watered ? 1 : 0,
+            };
+            Record(ref dye);
+        }
+
+        private void OnGardenSpedUp(int plot, int gems, double seconds)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.GardenSpeedup) { I0 = 1, I1 = gems, D0 = seconds };
+            Record(ref e);
+        }
+
+        private void OnGardenChallenge(int challenge, int stars, int attempts)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.ActivityChallenge)
+            {
+                U0 = ActivityContentId(ActivityId.Garden), I0 = challenge + 1, I1 = stars, I2 = attempts,
+            };
+            Record(ref e);
+        }
+
         public void Dispose()
         {
+            DetachGarden();
             DetachExpeditions();
             DetachActivities();
             DetachDaily();

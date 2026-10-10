@@ -150,7 +150,8 @@ namespace PocketWilds.Tests.PlayMode
             for (int i = 0; i < (int)VfxId.Count; i++)
                 total += vfx.ParticleCount((VfxId)i);
             // T42 adds the expedition arrival dust (H-VFX-076: 8 dots, 10 on High): 320 became 340.
-            Assert.LessOrEqual(total, 340, "Everything at once on High stays a few hundred small particles.");
+            // T43 adds the four garden effects (drops 6, ring 1, harvest 11, hearts 2 on High: 20, 327 + 20): 340 became 350.
+            Assert.LessOrEqual(total, 350, "Everything at once on High stays a few hundred small particles.");
         }
     }
 }

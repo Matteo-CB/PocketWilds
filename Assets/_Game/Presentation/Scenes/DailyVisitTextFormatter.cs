@@ -22,7 +22,7 @@ namespace PocketWilds.Presentation
     public sealed class DailyVisitTextFormatter
     {
         /// <summary>The placeholders this formatter fills (the text tests check every shipped sentence against it).</summary>
-        public static readonly string[] Placeholders = { "n", "total", "species", "species_the", "biome", "biome_the", "animal", "upgrade", "reward", "destination" };
+        public static readonly string[] Placeholders = { "n", "total", "species", "species_the", "biome", "biome_the", "animal", "upgrade", "reward", "destination", "crop" };
 
         /// <summary>WISH-026 « Upgrade {upgrade} in {biome} »: one sentence per upgrade kind (key « wish.026.&lt;kind&gt; »).</summary>
         public static readonly string[] UpgradeWishKeys =
@@ -325,6 +325,10 @@ namespace PocketWilds.Presentation
                     else
                         args.Upgrade = string.Empty;
                     break;
+                case WishParamKind.Crop:
+                    // T43 (WISH-034 « Récolte {n} {crop} »): the product's name, built once with the wish text.
+                    args.Crop = CropName(wish.Param, wish.Target);
+                    break;
                 case WishParamKind.Destination:
                     // T42 (WISH-046 « Pars vers {destination} »): the destination's name, built once with the wish text.
                     args.Destination = ExpeditionCatalog.TryGet(wish.Param, out var destination)
@@ -332,7 +336,19 @@ namespace PocketWilds.Presentation
                         : string.Empty;
                     break;
             }
+            // T43: WISH-035 « Apporte {n} {crop} à {animal} » names its animal, and its crop is in Param too.
+            if (template.Id == WishTemplateId.BringCrop)
+                args.Crop = CropName(wish.Param, wish.Target);
             return Expand(_text.GetPlural(key, wish.Target), in args);
+        }
+
+        /// <summary>T43: a garden product counted for the sentence (« 3 fraises »: its « {id}.count » plural text).</summary>
+        private string CropName(ContentId product, int count)
+        {
+            if (!GardenCatalog.TryGetProductKey(product, out string productKey))
+                return string.Empty;
+            // « {n} fraises »: the number written once here (the wish text is built once, not per frame).
+            return _text.GetPlural(productKey + ".count", count).Replace("{n}", count.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
         /// <summary>The template with its placeholders filled; the template itself when it has none (no allocation).</summary>
@@ -388,6 +404,8 @@ namespace PocketWilds.Presentation
                 AppendValue(args.Reward);
             else if (Is(template, start, length, "destination"))
                 AppendValue(args.Destination);
+            else if (Is(template, start, length, "crop"))
+                AppendValue(args.Crop);
             else
                 return false;
             return true;
@@ -691,6 +709,9 @@ namespace PocketWilds.Presentation
 
             /// <summary>T42: {destination}.</summary>
             public string Destination;
+
+            /// <summary>T43: {crop}.</summary>
+            public string Crop;
         }
 
         private struct WishEntry

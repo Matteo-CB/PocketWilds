@@ -792,7 +792,7 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual(1, loaded.Postcards[0].Id);
             Assert.IsTrue(loaded.Postcards[0].Rendered && loaded.Postcards[0].FirstOfDestination);
             Assert.AreEqual(e.Postcards[0].UnixDay, loaded.Postcards[0].UnixDay);
-            Assert.AreEqual(12, SaveSchema.CurrentVersion);
+            Assert.GreaterOrEqual(SaveSchema.CurrentVersion, 12, "Schema 12 brought the expeditions (T43's garden made it 13).");
             Assert.AreEqual(18, (int)SaveSectionId.Expeditions);
         }
 

@@ -289,12 +289,13 @@ namespace PocketWilds.Tests.EditMode
 
             // T36's goals, T38's JRN-033 « Brosse {n} animaux » with Grooming, T39's JRN-016 « Trouve {n} animaux à
             // Cache-cache » with Hide and Seek, T40's JRN-017 « Attrape {n} noisettes » with Nut Drop, T41's JRN-052 « Trouve
-            // {n} paires au Memory » with Pawprint Memory and T42's JRN-024 to 026 with Expeditions.
-            var shipped = new HashSet<int> { 1, 2, 3, 4, 5, 16, 17, 21, 22, 23, 24, 25, 26, 31, 32, 33, 34, 36, 38, 52 };
+            // {n} paires au Memory » with Pawprint Memory, T42's JRN-024 to 026 with Expeditions and T43's JRN-027 to 030 and 041
+            // with the Garden.
+            var shipped = new HashSet<int> { 1, 2, 3, 4, 5, 16, 17, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 36, 38, 41, 52 };
             var rewardedOnly = new HashSet<int> { 10, 14 };
             foreach (var goal in all)
             {
-                Assert.AreEqual(shipped.Contains((int)goal.Id), goal.ShippedInThisBuild, "Shipped in T36, T38, T39, T40, T41 or T42: JRN-" + (int)goal.Id);
+                Assert.AreEqual(shipped.Contains((int)goal.Id), goal.ShippedInThisBuild, "Shipped in T36, T38, T39, T40, T41, T42 or T43: JRN-" + (int)goal.Id);
                 Assert.AreEqual(rewardedOnly.Contains((int)goal.Id), goal.RewardedGamesOnly, "Rewarded games only: JRN-" + (int)goal.Id);
             }
 

@@ -269,6 +269,10 @@ namespace PocketWilds.Editor.UI
                 var expeditions = ExpeditionTexts.Texts;
                 for (int i = 0; i < expeditions.GetLength(0); i++)
                     table.Set(expeditions[i, 0], expeditions[i, language + 1]);
+                // T43: the garden's texts (the overlay, the 25 plants, the products, dyes and palettes, the 10 challenges).
+                var garden = GardenTexts.Texts;
+                for (int i = 0; i < garden.GetLength(0); i++)
+                    table.Set(garden[i, 0], garden[i, language + 1]);
                 EditorUtility.SetDirty(table);
                 if (!database.localization.Contains(table))
                     database.localization.Insert(Mathf.Min(language, database.localization.Count), table);

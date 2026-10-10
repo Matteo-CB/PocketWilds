@@ -1464,6 +1464,138 @@ def expedition_return(v):
     return _soft_start(wet(x, ROOM, 0.1), 0.002)
 
 
+# ---------------------------------------------------------------- T43: garden (doc 01 Contenu, S-ACT-006 "Sons et
+# effets"; doc Audio, J-SFX-ACT-006-01 to 04; doc 05 Sensations, sheet 24 and section 6.1, J-SFX-FEEL-017). A small
+# kitchen garden in front of the refuge: soft soil pressed by a paw, a thin trickle from a watering can, a bud that pops
+# open, a plant pulled from the soil with its leaves rustling; F major. The garden's level is J-SFX-REWARD-002
+# (SFX_Reward_MasteryUp), played again: no new sound.
+
+# The pitches of the trickle's drops: the F major pentatonic high up (F, G, A, C, D), so a drip is never out of key.
+DRIP_NOTES = ('F6', 'G6', 'A6', 'C7', 'D7')
+
+
+def _soil(rng, seconds, lo=500.0, hi=2200.0, grains=10, peak_at=0.2):
+    """Soft crumbly soil: a few tiny rounded grains of earth settling (the band of fine crumbs, never a crackle) over a
+    breath of soft noise, gone in `seconds`."""
+    n = samples(seconds)
+    env = _rise_fall(n, peak_at, 1.8)
+    crumbs = _leaf_grains(n, grains, env, rng, lo, hi)
+    breath = band_noise(n, lo * 0.6, hi * 0.7, rng) * env * 0.25
+    return crumbs + breath
+
+
+def _pat(rng, body_hz, weight, seconds=0.12):
+    """A paw patting soft soil: a felted low thump that settles a little lower (no knock), the puff of the pad in the
+    soil and its crumbs. About 70 ms, rounded over 4 ms."""
+    t = t_axis(seconds)
+    ph = phase_of(glide(t, body_hz * 1.2, body_hz, 0.01))
+    thump = (np.sin(ph) + 0.4 * np.sin(2.0 * ph)) * env_ad(t, 0.004, 0.022)
+    pad = band_noise(len(t), 240.0, 1000.0, rng) * env_ad(t, 0.005, 0.016) * 0.5
+    return (thump * 0.5 + pad) * weight
+
+
+def garden_plant(v):
+    """J-SFX-ACT-006-01: a seed is planted: soft soil. The paw pushes the seed into the soil (a soft felted press and the
+    crumbs of earth closing over it), then pats it down twice, the second pat lighter. A warm brown sound, nothing above
+    3 kHz, no note. Two variants of pats and crumbs, so a bed planted after another never repeats one sound. About
+    0.4 s."""
+    rng = np.random.default_rng(2400 + v)
+    press_hz, pats = ((175.0, ((0.15, 190.0, 0.8), (0.26, 205.0, 0.55))), (165.0, ((0.13, 200.0, 0.75), (0.25, 185.0, 0.5))))[v]
+    out = np.zeros(samples(0.55))
+    t = t_axis(0.14)
+    press = np.sin(phase_of(glide(t, press_hz * 1.3, press_hz, 0.02))) * env_ad(t, 0.012, 0.035) * 0.42
+    press += band_noise(len(t), 260.0, 1100.0, rng) * env_ad(t, 0.01, 0.03) * 0.34
+    place(out, press, 0.0, release=0.03)
+    place(out, _soil(rng, 0.13, grains=(12, 10)[v], peak_at=0.25) * 0.3, 0.012, release=0.03)
+    for at, body_hz, weight in pats:
+        place(out, _pat(rng, body_hz, weight), at, release=0.03)
+        place(out, _soil(rng, 0.07, 600.0, 2000.0, grains=5, peak_at=0.15) * 0.18 * weight, at + 0.004, release=0.02)
+    x = fft_filter(out, chain(lowpass(3000.0, 2), highpass(140.0, 2), peak(2600.0, -2.0, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.05), 0.003)
+
+
+def _drip(f, rng, seconds=0.06, level=1.0):
+    """One small drop landing in damp soil and leaves: a tiny round bubble that bends up into its note within 6 ms and is
+    gone in 15 ms, a hint of its film. Rounded: no click."""
+    t = t_axis(seconds)
+    ph = phase_of(glide(t, f * 0.7, f, 0.006))
+    body = np.sin(ph) * env_ad(t, 0.0012, 0.014)
+    film = band_noise(len(t), 1800.0, 4200.0, rng) * env_ad(t, 0.0006, 0.003) * 0.06
+    return (body + film) * level
+
+
+def garden_water(v):
+    """J-SFX-ACT-006-02: the watering can pours on a sprout: a thin trickle of water, about 1 s. A soft stream (a gentle
+    band of water noise, its colour wavering as the thin jet wobbles) and the small drops it makes on the soil and the
+    leaves: tiny round plinks bending up into the notes of the F major pentatonic, a dozen a second at the start of the
+    pour, thinning as the can lifts, then two last drips. Soft and wet, never a hiss: under 4.5 kHz."""
+    rng = np.random.default_rng(2410)
+    seconds = 0.95
+    out = np.zeros(samples(1.3))
+    n = samples(seconds)
+    u = np.arange(n) / n
+    env = env_asr(n, 0.07, 0.3) * (1.0 - 0.25 * u)
+    centre = 1250.0 * 2.0 ** (0.35 * _flutter(n, 6.0, rng))
+    stream = _moving_band(n, centre, rng, width=0.45, low=500.0, high=3600.0) * env
+    stream *= 1.0 + 0.3 * _flutter(n, 30.0, rng)
+    body = band_noise(n, 300.0, 900.0, rng) * env * 0.3
+    place(out, stream * 0.2 + body * 0.2, 0.0, release=0.12)
+    at = 0.03
+    while at < seconds - 0.08:
+        k = at / seconds
+        note = hz(DRIP_NOTES[int(rng.integers(0, len(DRIP_NOTES)))]) * rng.uniform(0.985, 1.015)
+        place(out, _drip(note, rng, level=rng.uniform(0.5, 1.0) * (1.0 - 0.45 * k)) * 0.16, at, release=0.01)
+        at += rng.uniform(0.055, 0.1) * (1.0 + 0.9 * k)
+    for at, note, level in ((seconds + 0.05, 'C7', 0.12), (seconds + 0.21, 'A6', 0.08)):
+        place(out, _drip(hz(note), rng, level=1.0) * level, at, release=0.01)
+    x = fft_filter(out, chain(lowpass(4500.0, 3), highpass(260.0, 2), peak(3200.0, -3.0, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.06), 0.004)
+
+
+def garden_stage(v):
+    """J-SFX-ACT-006-03: a sprout reaches its next stage: a small vegetal pop. Its leaves unfold (a tiny soft swish of
+    leaves rising), then the bud pops open: a round pop that bends up into A, a lighter one a fourth above as it opens
+    out, a quiet tine an octave under the first for the warmth a phone keeps. Green and light, under the harvest. About
+    0.3 s."""
+    rng = np.random.default_rng(2420)
+    out = np.zeros(samples(0.5))
+    n = samples(0.07)
+    u = np.arange(n) / n
+    unfold = _moving_band(n, 700.0 * 2.0 ** (1.2 * u), rng, width=0.45, low=400.0, high=2800.0) * _rise_fall(n, 0.7, 1.6)
+    place(out, unfold * 0.07 + _leaf_grains(n, 5, _rise_fall(n, 0.6), rng, 900.0, 2400.0) * 0.06, 0.0, release=0.01)
+    place(out, _pop(hz('A5'), start=0.6, tau=0.032, bright=0.16) * 0.46, 0.06, release=0.02)
+    place(out, _pop(hz('D6'), start=0.7, tau=0.024, bright=0.1) * 0.24, 0.115, release=0.02)
+    place(out, _tine_under(hz('A4'), 0.35, 0.45, 0.1, rng) * 0.16, 0.062)
+    x = fft_filter(out, chain(lowpass(5500.0, 2), highpass(200.0, 2)))
+    return _soft_start(wet(x, ROOM, 0.07))
+
+
+def world_harvest(v):
+    """J-SFX-FEEL-017 (and J-SFX-ACT-006-04): a ripe plant is harvested (doc 05, sheet 24): a plop of earth and a rustle
+    of leaves. The roots let go of the soil with a soft round plop (a low body that lifts as the soil lets go, the puff
+    of loosened earth), the leaves rustle as the plant hops (tiny rounded grains, a short soft swish, under 3.2 kHz), then a warm
+    round pop on F with a tine an octave under it. The pop stays on F in all three variants: GardenAudio raises the pitch of a
+    chained bed up the F major pentatonic (F, G, A, C, D). Three variants of plop and rustle. About 0.3 s."""
+    rng = np.random.default_rng(2430 + v)
+    plop_hz, grains, swish_at, rustle_hi = ((150.0, 16, 0.3, 2600.0), (165.0, 20, 0.36, 2600.0), (140.0, 13, 0.26, 2400.0))[v]
+    out = np.zeros(samples(0.45))
+    t = t_axis(0.12)
+    ph = phase_of(plop_hz * (0.8 + 0.6 * (1.0 - np.exp(-t / 0.018))))
+    plop = (np.sin(ph) + 0.3 * np.sin(2.0 * ph)) * env_ad(t, 0.004, 0.03) * 0.46
+    plop += band_noise(len(t), 260.0, 1200.0, rng) * env_ad(t, 0.004, 0.02) * 0.3
+    place(out, plop, 0.0, release=0.03)
+    place(out, _soil(rng, 0.08, 600.0, 2000.0, grains=6, peak_at=0.2) * 0.14, 0.01, release=0.02)
+    n = samples(0.12)
+    env = _rise_fall(n, swish_at, 1.6)
+    rustle = band_noise(n, 800.0, rustle_hi, rng) * env * (1.0 + 0.25 * _flutter(n, 35.0, rng)) * 0.12
+    rustle += _leaf_grains(n, grains, env, rng, 900.0, rustle_hi) * 0.32
+    place(out, rustle, 0.03, release=0.02)
+    place(out, _pop(hz('F5'), start=0.62, tau=0.04, bright=0.16) * 0.42, 0.075, release=0.03)
+    place(out, _tine_under(hz('F4'), 0.35, 0.5, 0.1, rng) * 0.18, 0.078)
+    x = fft_filter(out, chain(lowpass(3200.0, 3), highpass(160.0, 2), peak(2800.0, -3.0, 1.2)))
+    return _soft_start(wet(x, ROOM, 0.06), 0.003)
+
+
 # ---------------------------------------------------------------- catalog
 
 # name: (recipe, variants, loudness target (loudest 200 ms, K-weighted, LUFS scale), group)
@@ -1557,4 +1689,12 @@ SFX = {
     'SFX_Expedition_Postcard': (expedition_postcard, 1, -22.0, 'UI'),
     'SFX_Expedition_Loot': (expedition_loot, len(LOOT_STEPS), -21.0, 'Rewards'),
     'SFX_Reward_ExpeditionReturn': (expedition_return, 1, -18.0, 'Rewards'),
+    # T43 garden (doc 01 Contenu, S-ACT-006 "Sons et effets"; doc 05 Sensations, section 6.1 for J-SFX-FEEL-017), all in
+    # the World group of the garden set. The harvest at -20 (doc 05); the planting's soft soil at -22, under it; the bud's
+    # pop at -23 (beds catching up after a visit away may pop one after another); the trickle, 1 s long, the softest at
+    # -24. The garden's level is SFX_Reward_MasteryUp (J-SFX-REWARD-002).
+    'SFX_Garden_Plant': (garden_plant, 2, -22.0, 'World'),
+    'SFX_Garden_Water': (garden_water, 1, -24.0, 'World'),
+    'SFX_Garden_Stage': (garden_stage, 1, -23.0, 'World'),
+    'SFX_World_Harvest': (world_harvest, 3, -20.0, 'World'),
 }

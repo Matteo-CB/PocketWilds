@@ -51,6 +51,11 @@ namespace PocketWilds.Editor.Import
                 case "UI_Exp_Chip":
                 case "UI_Exp_Chip_Selected": return new Vector4(64f, 60f, 64f, 56f);
                 case "UI_Exp_PostcardFrame": return new Vector4(72f, 72f, 72f, 72f);
+                // T43 (pw_ui_sprites_t43.py): the garden's level pill (its badge and sprout in the left border), the label
+                // over a bed and the seed sheet's card (its green foot band in the bottom border), all Sliced.
+                case "UI_Garden_LevelPill": return new Vector4(128f, 40f, 56f, 52f);
+                case "UI_Garden_BedLabel": return new Vector4(48f, 48f, 48f, 48f);
+                case "UI_Garden_SeedPacketCard": return new Vector4(64f, 72f, 64f, 64f);
                 default: return Vector4.zero;
             }
         }

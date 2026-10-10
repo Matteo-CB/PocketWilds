@@ -582,10 +582,14 @@ def main():
     # T42 sprites (Expéditions: the map paper, the locked destination, the slot cards, the timer ring, the duration chips
     # and clocks, the postcard's frame, stamp, postmark and petal, the rating's reasons, the postcard and bell icons).
     from pw_ui_sprites_t42 import RUNTIME_EXPEDITIONS, T42_SPRITES
-    for folder in (RUNTIME_KIT, RUNTIME_ICONS, RUNTIME_SHOP, RUNTIME_CODEX, RUNTIME_MEMORY, RUNTIME_EXPEDITIONS, MASTERS):
+    # T43 sprites (Jardin: the 13 seed packets, the crop and ingredient icons, the 25 dye drops, the watering can, the
+    # level pill, the bed label, the cover sign, the seed sheet's card, the drop and the green heart of the bed labels).
+    from pw_ui_sprites_t43 import RUNTIME_GARDEN, T43_SPRITES
+    for folder in (RUNTIME_KIT, RUNTIME_ICONS, RUNTIME_SHOP, RUNTIME_CODEX, RUNTIME_MEMORY, RUNTIME_EXPEDITIONS, RUNTIME_GARDEN,
+                   MASTERS):
         os.makedirs(folder, exist_ok=True)
     for build in (SPRITES + T34A_SPRITES + T35A_SPRITES + T35B_SPRITES + T36_SPRITES + T37_SPRITES + T38_SPRITES +
-                  T39_SPRITES + T40_SPRITES + T41_SPRITES + T42_SPRITES):
+                  T39_SPRITES + T40_SPRITES + T41_SPRITES + T42_SPRITES + T43_SPRITES):
         name, canvas, folder = build()
         canvas.image(True).save(os.path.join(folder, name + ".png"), optimize=True)
         canvas.image(False).save(os.path.join(MASTERS, name + "@4x.png"), optimize=True)

@@ -786,6 +786,13 @@ namespace PocketWilds.Simulation
                     if (n > 0)
                         record.Param = _paramIds[rng.Next(n)];
                     break;
+                case WishTemplateId.HarvestCrop:
+                case WishTemplateId.BringCrop:
+                    // T43: {crop} is the main product of an open plant whose seed (or, for WISH-035, the product) is held.
+                    n = CollectCrops(template.Id == WishTemplateId.BringCrop);
+                    if (n > 0)
+                        record.Param = _paramIds[rng.Next(n)];
+                    break;
             }
             return record;
         }
@@ -971,7 +978,7 @@ namespace PocketWilds.Simulation
         /// T38: SYS-09 with Grooming (refuge level 3 and 5 animals) once the build has activities; T39: SYS-10 with Hide and
         /// Seek (refuge level 4 and 8 animals) the same way; T40: SYS-11 with Nut Drop (refuge level 10, day 4 or 15 animals);
         /// T41: SYS-12 with Pawprint Memory (refuge level 11 and day 5); T42: SYS-13 with Expeditions (refuge level 5 and 8
-        /// animals).
+        /// animals); T43: SYS-07 with the Garden (refuge level 8 and day 3).
         /// </summary>
         private bool SystemOpensNow(WishSystem system)
         {
@@ -997,6 +1004,8 @@ namespace PocketWilds.Simulation
                     return MemoryOpen;
                 case WishSystem.Expeditions:
                     return ExpeditionsOpen;
+                case WishSystem.Garden:
+                    return GardenOpen;
                 default:
                     return false;
             }
@@ -1016,6 +1025,76 @@ namespace PocketWilds.Simulation
 
         /// <summary>« Expéditions »: the build has its activities and the Expeditions function is open (level 5, 8 animals).</summary>
         private bool ExpeditionsOpen => Config.ActivitiesAvailable && _ctx.Feature(RefugeFeature.Expeditions);
+
+        /// <summary>« Jardin débloqué »: the build has the Garden (the bootstrap sets it) and its function is open (level 8, day 3).</summary>
+        private bool GardenOpen => Config.GardenAvailable && _ctx.Feature(RefugeFeature.Garden);
+
+        /// <summary>The garden level of the saved garden points (table 8.3).</summary>
+        private int GardenLevel => GardenRules.LevelOf(State.Garden.Points);
+
+        /// <summary>A plant of the catalogue the player can plant now (built, its garden level reached or its biome open).</summary>
+        private bool GardenPlantOpen(int index)
+        {
+            if ((uint)index >= (uint)GardenCatalog.PlantCount || !GardenCatalog.Built[index])
+                return false;
+            var plant = GardenCatalog.Plants[index];
+            if (plant.Level > 0)
+                return GardenLevel >= plant.Level;
+            var progression = _ctx.Progression;
+            return progression != null ? progression.Store.IsUnlocked(plant.Biome) : plant.Biome == ActivityCatalog.Meadow;
+        }
+
+        /// <summary>Seeds of the open plants held in the inventory (WISH-031, 036).</summary>
+        private int GardenSeedsOwned()
+        {
+            var inventory = State.Inventory;
+            int seeds = 0;
+            for (int i = 0; i < GardenCatalog.PlantCount; i++)
+                if (GardenPlantOpen(i))
+                    seeds += inventory.Count(GardenCatalog.Plants[i].Id);
+            return seeds;
+        }
+
+        /// <summary>« 1 parcelle libre »: a bare plot among the free ones and the Gems plot once bought (the Club's is not seen here).</summary>
+        private bool GardenPlotFree()
+        {
+            var garden = State.Garden;
+            int owned = Math.Min(garden.Plots.Length, GardenConfig.DefaultPlotsBase + (garden.PlotBought ? 1 : 0));
+            for (int p = 0; p < owned; p++)
+                if (!garden.Plots[p].Active)
+                    return true;
+            return false;
+        }
+
+        /// <summary>« 1 pousse en cours »: a sprout growing and not watered yet.</summary>
+        private bool GardenSproutToWater()
+        {
+            long now = _ctx.Clock.UtcNow.ToUnixTimeMilliseconds();
+            var plots = State.Garden.Plots;
+            for (int p = 0; p < plots.Length; p++)
+                if (plots[p].Active && !plots[p].Watered && now < plots[p].RipeUnixMs)
+                    return true;
+            return false;
+        }
+
+        /// <summary>
+        /// WISH-034's {crop}: the main products of the open plants whose seed the player holds; WISH-035's (<paramref name="orHeld"/>):
+        /// also those whose product is held.
+        /// </summary>
+        private int CollectCrops(bool orHeld)
+        {
+            var inventory = State.Inventory;
+            int n = 0;
+            for (int i = 0; i < GardenCatalog.PlantCount && n < _paramIds.Length; i++)
+            {
+                if (!GardenPlantOpen(i))
+                    continue;
+                var plant = GardenCatalog.Plants[i];
+                if (inventory.Count(plant.Id) > 0 || (orHeld && inventory.Count(plant.Main) > 0))
+                    _paramIds[n++] = plant.Main;
+            }
+            return n;
+        }
 
         /// <summary>« 1 emplacement libre »: a free slot among the free ones and the Gems slot once bought (the Club's is not seen here).</summary>
         private bool ExpeditionSlotFree()
@@ -1116,6 +1195,24 @@ namespace PocketWilds.Simulation
                 case WishTemplateId.HeadToDestination:
                     // « destination débloquée ».
                     return ExpeditionsOpen && ExpeditionSlotFree() && CollectOpenDestinations() > 0;
+                case WishTemplateId.PlantSeeds:
+                    // « n graines et 1 parcelle libre ».
+                    return GardenOpen && GardenPlotFree() && GardenSeedsOwned() >= template.Amount(_tier);
+                case WishTemplateId.HarvestPlants:
+                    // « Jardin débloqué ».
+                    return GardenOpen;
+                case WishTemplateId.WaterSprouts:
+                    // « 1 pousse en cours ».
+                    return GardenOpen && GardenSproutToWater();
+                case WishTemplateId.HarvestCrop:
+                    // « une graine de la plante de {crop} possédée ».
+                    return GardenOpen && CollectCrops(false) > 0;
+                case WishTemplateId.BringCrop:
+                    // « {crop} possédé ou graine possédée ».
+                    return GardenOpen && CollectCrops(true) > 0;
+                case WishTemplateId.HarvestDye:
+                    // « Jardin niveau 4 et une graine de plante à teinture » (every plant has its dye).
+                    return GardenOpen && GardenLevel >= GardenRules.DyesLevel && GardenSeedsOwned() > 0;
                 default:
                     return false;
             }
@@ -1938,6 +2035,93 @@ namespace PocketWilds.Simulation
                 if ((WishTemplateId)wishes[i].Template == WishTemplateId.OpenPostcard)
                     Advance(i, 1);
             }
+        }
+
+        /// <summary>T43 (SYS-07): a seed planted: WISH-031 « Plante {n} graines ». Allocation-free.</summary>
+        public void OnGardenPlanted(in GardenPlantInfo planted)
+        {
+            var wishes = State.DailyVisit.Wishes;
+            for (int i = Pending - 1; i >= 0; i--)
+            {
+                if (i >= Pending || wishes[i].IsDone)
+                    continue;
+                if ((WishTemplateId)wishes[i].Template == WishTemplateId.PlantSeeds)
+                    Advance(i, 1);
+            }
+        }
+
+        /// <summary>T43: a sprout watered: WISH-033 « Arrose {n} pousses ». Allocation-free.</summary>
+        public void OnGardenWatered(int plot)
+        {
+            var wishes = State.DailyVisit.Wishes;
+            for (int i = Pending - 1; i >= 0; i--)
+            {
+                if (i >= Pending || wishes[i].IsDone)
+                    continue;
+                if ((WishTemplateId)wishes[i].Template == WishTemplateId.WaterSprouts)
+                    Advance(i, 1);
+            }
+        }
+
+        /// <summary>
+        /// T43: a plant harvested. WISH-032 « Récolte {n} plantes »; WISH-034 « Récolte {n} {crop} » counts the products of
+        /// its crop (main or side); WISH-036 « Récolte une teinture » a harvest that gave a dye; then WISH-035 « Apporte {n}
+        /// {crop} à {animal} » takes the crops held (<see cref="GiveGardenCrops"/>). Allocation-free.
+        /// </summary>
+        public void OnGardenHarvested(in GardenHarvestInfo info)
+        {
+            var wishes = State.DailyVisit.Wishes;
+            var harvest = info.Harvest;
+            for (int i = Pending - 1; i >= 0; i--)
+            {
+                if (i >= Pending || wishes[i].IsDone)
+                    continue;
+                switch ((WishTemplateId)wishes[i].Template)
+                {
+                    case WishTemplateId.HarvestPlants:
+                        Advance(i, 1);
+                        break;
+                    case WishTemplateId.HarvestCrop:
+                        var crop = wishes[i].Param;
+                        int count = !crop.IsValid ? harvest.MainCount
+                            : crop == harvest.Main ? harvest.MainCount
+                            : crop == harvest.Side ? harvest.SideCount
+                            : 0;
+                        if (count > 0)
+                            Advance(i, count);
+                        break;
+                    case WishTemplateId.HarvestDye:
+                        if (harvest.Dyes > 0)
+                            Advance(i, 1);
+                        break;
+                }
+            }
+            GiveGardenCrops();
+        }
+
+        /// <summary>
+        /// WISH-035 « Apporte {n} {crop} à {animal} » (« les produits sont donnés »): the crops held go to the animal, taken
+        /// from the inventory up to what the wish still needs. Called after each harvest; returns the crops given.
+        /// Allocation-free.
+        /// </summary>
+        public int GiveGardenCrops()
+        {
+            var wishes = State.DailyVisit.Wishes;
+            var inventory = State.Inventory;
+            int given = 0;
+            for (int i = Pending - 1; i >= 0; i--)
+            {
+                if (i >= Pending || wishes[i].IsDone || (WishTemplateId)wishes[i].Template != WishTemplateId.BringCrop)
+                    continue;
+                var crop = wishes[i].Param;
+                int need = Math.Max(1, wishes[i].Target) - Math.Max(0, wishes[i].Progress);
+                int give = Math.Min(need, inventory.Count(crop));
+                if (!crop.IsValid || give <= 0 || !inventory.TryRemove(crop, give))
+                    continue;
+                given += give;
+                Advance(i, give);
+            }
+            return given;
         }
 
         /// <summary>
