@@ -228,6 +228,34 @@ namespace PocketWilds.Simulation
         public JournalService? Journal { get; set; }
         public IEventContentAvailability Availability { get; set; } = BundledEventContent.Instance;
 
+        private EventDefinition? _pendingDownload;
+        private EventCalendarEntry _pendingEntry;
+
+        /// <summary>T49: an event of the calendar (announce or run) whose content group is not on the device yet; null otherwise.</summary>
+        public EventDefinition? PendingDownload { get { Refresh(); return _definition == null ? _pendingDownload : null; } }
+
+        public EventCalendarEntry PendingEntry { get { Refresh(); return _pendingEntry; } }
+
+        /// <summary>Bytes to download for <see cref="PendingDownload"/> (0 when unknown or nothing is missing).</summary>
+        public long PendingDownloadBytes =>
+            PendingDownload is { } def && Availability is IEventContentDownload download ? Math.Max(0L, download.DownloadBytes(def)) : 0L;
+
+        public bool Downloading => PendingDownload is { } def && Availability is IEventContentDownload download && download.IsDownloading(def);
+
+        /// <summary>« Télécharger »: fetches the missing group, then the calendar is read again (the announce or the run shows).</summary>
+        public bool StartDownload(Action<bool>? done = null)
+        {
+            var def = PendingDownload;
+            if (def == null || !(Availability is IEventContentDownload download) || download.IsDownloading(def))
+                return false;
+            download.Download(def, ok =>
+            {
+                Refresh(true);
+                done?.Invoke(ok);
+            });
+            return true;
+        }
+
         /// <summary>The rendez-vous day key (daily quests, swaps); null: the UTC date.</summary>
         public Func<int>? DayKey { get; set; }
 
@@ -440,14 +468,29 @@ namespace PocketWilds.Simulation
             EventDefinition? def = null;
             var entry = default(EventCalendarEntry);
             var phase = EventPhase.None;
+            _pendingDownload = null;
             if (Config.EventsEnabled)
             {
                 var entries = Calendar.Entries;
                 for (int i = 0; i < entries.Count; i++)
                 {
                     var e = entries[i];
-                    if (now < e.AnnounceUnix || now >= e.EndUnix || !TryLive(e, out var d))
+                    if (now < e.AnnounceUnix || now >= e.EndUnix)
                         continue;
+                    if (!TryLive(e, out var d))
+                    {
+                        // T49: in the build but its content group is missing: the hub offers the download.
+                        if (_pendingDownload == null && Config.IsKeyEnabled(e.Key) && _content.Events.TryGet(ContentId.FromSource(e.Key), out var missing))
+                        {
+                            var done = _state.Find(e.InstanceId);
+                            if (done == null || !done.Ended)
+                            {
+                                _pendingDownload = missing;
+                                _pendingEntry = e;
+                            }
+                        }
+                        continue;
+                    }
                     var existing = _definition != null && _entry.Key == e.Key && _entry.Year == e.Year ? _instance : _state.Find(e.InstanceId);
                     if (existing != null && existing.Ended)
                         continue;
@@ -709,11 +752,29 @@ namespace PocketWilds.Simulation
 
         private void HandleActivity(in ActivityGameResult result)
         {
+            // T49: a challenge of the featured activity counts for the event, rewarded or practiced (no ticket needed); its new
+            // event stars feed the quests there, never twice.
+            bool eventChallenge = !result.Abandoned && result.Challenge >= 0 && OnChallengePlayed(result.Activity, result.Challenge, result.Stars);
             if (!result.Rewarded || result.Abandoned || result.Mode == ActivityMode.Practice)
                 return;
             OnActivityEnded(result.Activity, result.Stars);
-            if (result.ChallengeImproved && result.Stars > result.ChallengeStarsBefore)
+            if (!eventChallenge && result.ChallengeImproved && result.Stars > result.ChallengeStarsBefore)
                 Report(EventGoalKind.ChallengeStars, result.Stars - result.ChallengeStarsBefore);
+        }
+
+        /// <summary>
+        /// T49: a challenge game ended (rewarded or practice). When the activity is the running event's featured one, its stars go
+        /// to <see cref="ReportChallenge"/> (the event keeps its own best per challenge). True when the event took it.
+        /// </summary>
+        public bool OnChallengePlayed(ActivityId activity, int challenge, int stars)
+        {
+            Refresh();
+            var def = _definition;
+            if (_phase != EventPhase.Running || def == null || challenge < 0 || challenge >= def.ChallengeLevels.Length
+                || Array.IndexOf(def.FeaturedActivities, (int)activity) < 0)
+                return false;
+            ReportChallenge(challenge, stars);
+            return true;
         }
 
         private void HandleSticker(in AlbumGainInfo info) => Report(EventGoalKind.StickersGained, 1);
@@ -1619,12 +1680,18 @@ namespace PocketWilds.Simulation
             if (product.EventScope != EventProductScope.Box)
                 return Array.Empty<ContentId>();
             var def = DefinitionOf(inst);
-            int extra = def?.BoxItems.Length ?? 0;
-            var items = new ContentId[1 + extra];
-            items[0] = BoxItemOf(inst);
-            for (int i = 0; i < extra; i++)
-                items[i + 1] = def!.BoxItems[i];
-            return items;
+            var items = new List<ContentId> { BoxItemOf(inst) };
+            if (def != null)
+            {
+                foreach (var item in def.BoxItems)
+                {
+                    items.Add(item);
+                    // T49: the Box's outfit comes with its pieces (the store grants items, never outfits by themselves).
+                    if (_content.Shop.Outfits.TryGet(item, out var outfit))
+                        items.AddRange(outfit.Accessories);
+                }
+            }
+            return items.ToArray();
         }
 
         public OfferAvailability CheckEventOffer(ProductDefinition product)
@@ -1713,8 +1780,27 @@ namespace PocketWilds.Simulation
         /// <summary>A permanent item; one already owned (a returning edition) becomes 100 Gems.</summary>
         private void GiveItem(ContentId item)
         {
-            if (!_player.Entitlements.Owned.Add(item))
+            bool added = _player.Entitlements.Owned.Add(item);
+            // T49: an outfit is worn through its accessories: owning it owns every piece.
+            if (_content.Shop.Outfits.TryGet(item, out var outfit))
+                foreach (var piece in outfit.Accessories)
+                    added |= _player.Entitlements.Owned.Add(piece);
+            // T49: a new hatch effect becomes the one hatches play (the newest owned), unless the player turned them off.
+            if (added && HatchEffects.IsHatchEffect(item))
+                HatchEffects.OnGranted(_player.Entitlements, item);
+            if (!added)
                 GrantBundle(new RewardBundle { Gems = ItemOwnedGems });
+        }
+
+        /// <summary>T49: an outfit counts as owned once every piece is (a piece may come from elsewhere first).</summary>
+        private bool OwnsItem(ContentId item)
+        {
+            if (!_content.Shop.Outfits.TryGet(item, out var outfit))
+                return _player.Entitlements.Owned.Contains(item);
+            foreach (var piece in outfit.Accessories)
+                if (!_player.Entitlements.Owned.Contains(piece))
+                    return false;
+            return true;
         }
 
         private void GiveProfileItem(in EventReward r)
@@ -1812,7 +1898,7 @@ namespace PocketWilds.Simulation
                     }
                     return r.Item.IsValid && _player.Entitlements.Owned.Contains(r.Item);
                 default:
-                    return r.IsItem && r.Item.IsValid && _player.Entitlements.Owned.Contains(r.Item);
+                    return r.IsItem && r.Item.IsValid && OwnsItem(r.Item);
             }
         }
 

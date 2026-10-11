@@ -1,0 +1,627 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a72e2e92ed8b9e944b2094fb235c6f89, type: 3}
+  m_Name: DEF_Event_Burrows
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.EventDefinitionAsset
+  sourceId: event.burrows
+  version: 1
+  nameKey: event.burrows.name
+  currencyKey: event.burrows.currency
+  currencyIconKey: ICO_Event_Pousses
+  featuredSpecies: species.mole
+  featuredActivities: 02000000
+  fallbackActivity: 2
+  albumEventNumber: 103
+  tiers:
+  - number: 1
+    free:
+    - kind: 6
+      amount: 1
+      item: 
+      key: 
+    gold:
+    - kind: 1
+      amount: 50
+      item: 
+      key: 
+  - number: 2
+    free:
+    - kind: 1
+      amount: 25
+      item: 
+      key: 
+    gold:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+  - number: 3
+    free:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.flowery_entrance
+      key: 
+    gold:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.flowery_entrance_gold
+      key: 
+  - number: 4
+    free:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+    gold:
+    - kind: 1
+      amount: 50
+      item: 
+      key: 
+  - number: 5
+    free:
+    - kind: 8
+      amount: 1
+      item: outfit.burrows.01
+      key: 
+    - kind: 13
+      amount: 1
+      item: decor.burrows.souvenir
+      key: 
+    gold:
+    - kind: 11
+      amount: 1
+      item: effect.burrows.sprout_burst
+      key: 
+  - number: 6
+    free:
+    - kind: 6
+      amount: 6
+      item: 
+      key: 
+    gold:
+    - kind: 3
+      amount: 5
+      item: 
+      key: 
+  - number: 7
+    free:
+    - kind: 4
+      amount: 1
+      item: 
+      key: 
+    gold:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+  - number: 8
+    free:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.moss_mound
+      key: 
+    gold:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.moss_mound_gold
+      key: 
+  - number: 9
+    free:
+    - kind: 1
+      amount: 25
+      item: 
+      key: 
+    gold:
+    - kind: 3
+      amount: 5
+      item: 
+      key: 
+  - number: 10
+    free:
+    - kind: 9
+      amount: 1
+      item: variant.mole.velvet
+      key: 
+    gold:
+    - kind: 8
+      amount: 1
+      item: outfit.burrows.05
+      key: 
+  - number: 11
+    free:
+    - kind: 6
+      amount: 11
+      item: 
+      key: 
+    gold:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+  - number: 12
+    free:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+    gold:
+    - kind: 1
+      amount: 50
+      item: 
+      key: 
+  - number: 13
+    free:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.dew_mushrooms
+      key: 
+    gold:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.dew_mushrooms_gold
+      key: 
+  - number: 14
+    free:
+    - kind: 1
+      amount: 25
+      item: 
+      key: 
+    gold:
+    - kind: 3
+      amount: 5
+      item: 
+      key: 
+  - number: 15
+    free:
+    - kind: 3
+      amount: 5
+      item: 
+      key: 
+    gold:
+    - kind: 9
+      amount: 1
+      item: variant.mole.goldenmoss
+      key: 
+  - number: 16
+    free:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+    gold:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+  - number: 17
+    free:
+    - kind: 4
+      amount: 1
+      item: 
+      key: 
+    gold:
+    - kind: 1
+      amount: 50
+      item: 
+      key: 
+  - number: 18
+    free:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.watering_can
+      key: 
+    gold:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.watering_can_gold
+      key: 
+  - number: 19
+    free:
+    - kind: 6
+      amount: 19
+      item: 
+      key: 
+    gold:
+    - kind: 3
+      amount: 5
+      item: 
+      key: 
+  - number: 20
+    free:
+    - kind: 8
+      amount: 1
+      item: outfit.burrows.02
+      key: 
+    gold:
+    - kind: 10
+      amount: 1
+      item: frame.event_burrows_gold
+      key: frame.event_burrows_gold
+  - number: 21
+    free:
+    - kind: 1
+      amount: 25
+      item: 
+      key: 
+    gold:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+  - number: 22
+    free:
+    - kind: 5
+      amount: 60
+      item: 
+      key: 
+    gold:
+    - kind: 3
+      amount: 5
+      item: 
+      key: 
+  - number: 23
+    free:
+    - kind: 6
+      amount: 23
+      item: 
+      key: 
+    gold:
+    - kind: 1
+      amount: 50
+      item: 
+      key: 
+  - number: 24
+    free:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+    gold:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+  - number: 25
+    free:
+    - kind: 1
+      amount: 25
+      item: 
+      key: 
+    gold:
+    - kind: 8
+      amount: 1
+      item: outfit.burrows.06
+      key: 
+  - number: 26
+    free:
+    - kind: 6
+      amount: 26
+      item: 
+      key: 
+    gold:
+    - kind: 3
+      amount: 5
+      item: 
+      key: 
+  - number: 27
+    free:
+    - kind: 4
+      amount: 1
+      item: 
+      key: 
+    gold:
+    - kind: 1
+      amount: 50
+      item: 
+      key: 
+  - number: 28
+    free:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+    gold:
+    - kind: 2
+      amount: 3
+      item: 
+      key: 
+  - number: 29
+    free:
+    - kind: 1
+      amount: 25
+      item: 
+      key: 
+    gold:
+    - kind: 3
+      amount: 10
+      item: 
+      key: 
+  - number: 30
+    free:
+    - kind: 10
+      amount: 1
+      item: frame.event_burrows
+      key: frame.event_burrows
+    gold:
+    - kind: 12
+      amount: 1
+      item: decor.burrows.root_burrow
+      key: 
+  bonusTiers:
+  - number: 31
+    free:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.flowery_entrance
+      key: 
+    gold: []
+  - number: 32
+    free:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.moss_mound
+      key: 
+    gold: []
+  - number: 33
+    free:
+    - kind: 8
+      amount: 1
+      item: outfit.burrows.01
+      key: 
+    gold: []
+  - number: 34
+    free:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.dew_mushrooms
+      key: 
+    gold: []
+  - number: 35
+    free:
+    - kind: 8
+      amount: 1
+      item: outfit.burrows.02
+      key: 
+    gold: []
+  - number: 36
+    free:
+    - kind: 7
+      amount: 1
+      item: decor.burrows.watering_can
+      key: 
+    gold: []
+  eggItems:
+  - variant: variant.mole.cocoa
+    featured: 1
+  - variant: variant.mole.sand
+    featured: 1
+  - variant: variant.mole.mocha
+    featured: 1
+  - variant: variant.rabbit.dew
+    featured: 0
+  - variant: variant.fieldmouse.bud
+    featured: 0
+  - variant: variant.hedgehog.clover
+    featured: 0
+  - variant: variant.hedgehog.softmoss
+    featured: 0
+  secretVariant: variant.mole.starnose
+  shop:
+  - key: shop.egg
+    kind: 0
+    price: 0
+    reward:
+      kind: 0
+      amount: 0
+      item: 
+      key: 
+  - key: shop.outfit_4
+    kind: 1
+    price: 1
+    reward:
+      kind: 8
+      amount: 1
+      item: outfit.burrows.04
+      key: 
+  - key: shop.deco_5
+    kind: 1
+    price: 2
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.mini_wheelbarrow
+      key: 
+  - key: shop.deco_6
+    kind: 1
+    price: 2
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.seedling_pots
+      key: 
+  - key: shop.deco_7
+    kind: 1
+    price: 3
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.burrow_sign
+      key: 
+  - key: shop.deco_8
+    kind: 1
+    price: 4
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.earthworm_cushion
+      key: 
+  - key: shop.tickets
+    kind: 2
+    price: 5
+    reward:
+      kind: 2
+      amount: 3
+      item: 
+      key: 
+  - key: shop.sticker
+    kind: 3
+    price: 6
+    reward:
+      kind: 0
+      amount: 0
+      item: 
+      key: 
+  - key: shop.seeds
+    kind: 4
+    price: 7
+    reward:
+      kind: 0
+      amount: 3
+      item: plant.sunflower
+      key: 
+  memory:
+  - key: memory.variant_1
+    price: 8
+    reward:
+      kind: 9
+      amount: 1
+      item: variant.mole.velvet
+      key: 
+  - key: memory.outfit_1
+    price: 1
+    reward:
+      kind: 8
+      amount: 1
+      item: outfit.burrows.01
+      key: 
+  - key: memory.outfit_2
+    price: 1
+    reward:
+      kind: 8
+      amount: 1
+      item: outfit.burrows.02
+      key: 
+  - key: memory.outfit_3
+    price: 1
+    reward:
+      kind: 8
+      amount: 1
+      item: outfit.burrows.03
+      key: 
+  - key: memory.outfit_4
+    price: 1
+    reward:
+      kind: 8
+      amount: 1
+      item: outfit.burrows.04
+      key: 
+  - key: memory.deco_1
+    price: 2
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.flowery_entrance
+      key: 
+  - key: memory.deco_2
+    price: 2
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.moss_mound
+      key: 
+  - key: memory.deco_3
+    price: 2
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.dew_mushrooms
+      key: 
+  - key: memory.deco_4
+    price: 2
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.watering_can
+      key: 
+  - key: memory.deco_5
+    price: 2
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.mini_wheelbarrow
+      key: 
+  - key: memory.deco_6
+    price: 2
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.seedling_pots
+      key: 
+  - key: memory.deco_7
+    price: 3
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.burrow_sign
+      key: 
+  - key: memory.deco_8
+    price: 4
+    reward:
+      kind: 7
+      amount: 1
+      item: decor.burrows.earthworm_cushion
+      key: 
+  - key: memory.frame
+    price: 9
+    reward:
+      kind: 10
+      amount: 1
+      item: frame.event_burrows
+      key: frame.event_burrows
+  - key: memory.pose
+    price: 10
+    reward:
+      kind: 14
+      amount: 1
+      item: pose.peek_out
+      key: pose.peek_out
+  challengeLevels: 0100000003000000030000000300000005000000030000000300000005000000050000000a000000
+  challengeOutfit: outfit.burrows.03
+  souvenir: decor.burrows.souvenir
+  boxItems:
+  - outfit.burrows.07
+  - decor.burrows.garden_shed
+  - decor.burrows.mini_greenhouse
+  - decor.burrows.wooden_bench
+  - decor.burrows.garden_fence
+  headline:
+  - kind: 9
+    amount: 1
+    item: variant.mole.velvet
+    key: 
+  - kind: 8
+    amount: 1
+    item: outfit.burrows.01
+    key: 
+  - kind: 10
+    amount: 1
+    item: frame.event_burrows
+    key: frame.event_burrows
+  themeKeys:
+  - theme.burrows
+  themeColors:
+  - serializedVersion: 2
+    rgba: 4286566824
+  - serializedVersion: 2
+    rgba: 4292670463
+  - serializedVersion: 2
+    rgba: 4282739612

@@ -60,7 +60,8 @@ namespace PocketWilds.Editor.Economy
                     continue;
                 builder.AddSpecies(new SpeciesDefinition(s.Id, s.DisplayKey, s.RigFamily, s.Biome, s.BaseProduction, s.VisualKey, s.IsSecret),
                     s.DisplayKey.Replace(".name", string.Empty));
-                if (!s.IsSecret)
+                // A species whose every color is secret (a companion, an event species like the mole) never comes from an egg.
+                if (!s.IsSecret && HasNormalVariant(shipped, s.Id))
                     speciesByBiome[s.Biome].Add(s.Id);
             }
             for (int i = 0; i < shipped.Variants.Count; i++)
@@ -111,6 +112,17 @@ namespace PocketWilds.Editor.Economy
                     builder.AddEgg(egg, egg.DisplayKey.Replace(".name", string.Empty));
             }
             return builder.Build();
+        }
+
+        private static bool HasNormalVariant(ContentRegistry shipped, ContentId species)
+        {
+            for (int i = 0; i < shipped.Variants.Count; i++)
+            {
+                var v = shipped.Variants[i];
+                if (v.Species == species && !v.IsSecret)
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>

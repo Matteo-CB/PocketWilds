@@ -114,6 +114,8 @@ namespace PocketWilds.Editor.UI
                 Add(UiPipeline.Texts);
                 Add(ActivityTexts.Texts);
                 Add(Texts);
+                // T49: the download page and L'Éveil des Terriers' names.
+                Add(BurrowsTexts.Texts);
                 // The quest lines (agent lane T48 quests), found by reflection so this table builds without them.
                 var quests = typeof(EventTexts).Assembly.GetType("PocketWilds.Editor.UI.EventQuestTexts");
                 if (quests?.GetField("Texts")?.GetValue(null) is string[,] questTexts)

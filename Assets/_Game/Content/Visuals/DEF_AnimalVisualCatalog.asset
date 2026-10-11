@@ -300,4 +300,45 @@ MonoBehaviour:
       fade: 0.2
       moveFade: 0.12
       reactFade: 0.06
+  - visualKey: PF_Animal_Mole
+    prefab: {fileID: 4395563037914600720, guid: 713ca1ca091b13e408d40f4159b81768, type: 3}
+    softCapacity: 24
+    hardCapacity: 48
+    behavior:
+      idleWeight: 0.2
+      idleLookWeight: 0.18
+      wanderWeight: 0.32
+      eatWeight: 0.14
+      inspectWeight: 0.1
+      sleepWeight: 0.06
+      socialWeight: 0.09
+      idleSeconds: {x: 2.5, y: 6}
+      eatSeconds: {x: 4, y: 9}
+      sleepSeconds: {x: 10, y: 24}
+      idleLookSeconds: 3.8
+      inspectSeconds: 1.5
+      reactSeconds: 0.67
+      happySeconds: 1.04
+      wakeSeconds: 0.67
+      socialSeconds: 1.32
+      socialGroup: 0
+      socialRadius: 2.2
+      socialGap: 0.571276
+      socialWaitSeconds: 3
+      interestRadius: 2.6
+      eatAtPointChance: 0.6
+      moveSpeed: 0.22
+      turnDegreesPerSecond: 300
+      wanderDistance: {x: 0.5, y: 1.6}
+      personalSpace: 0.45
+      body:
+        front: 0.280638
+        back: -0.21522312
+        halfWidth: 0.15520251
+        height: 0.21775417
+      tierBDurationScale: 1.5
+      tierBWanderScale: 0.5
+      fade: 0.2
+      moveFade: 0.12
+      reactFade: 0.06
   cosmetics: {fileID: 11400000, guid: 8c44696691b6fc4419ff06346b73cf52, type: 2}

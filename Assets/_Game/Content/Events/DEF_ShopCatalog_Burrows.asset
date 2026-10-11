@@ -1,0 +1,549 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 451e66e96982d38488eaabf5c4132cb2, type: 3}
+  m_Name: DEF_ShopCatalog_Burrows
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.ShopCatalogAsset
+  unlockMinAnimals: 3
+  products: []
+  offers: []
+  entitlements:
+  - sourceId: accessory.burrows.sprout_hat
+    kind: 0
+    displayKey: accessory.burrows.sprout_hat.name
+    iconKey: ICO_Accessory_SproutHat
+  - sourceId: accessory.burrows.seed_sack
+    kind: 0
+    displayKey: accessory.burrows.seed_sack.name
+    iconKey: ICO_Accessory_SeedSack
+  - sourceId: accessory.burrows.burrow_goggles
+    kind: 0
+    displayKey: accessory.burrows.burrow_goggles.name
+    iconKey: ICO_Accessory_BurrowGoggles
+  - sourceId: accessory.burrows.gardener_scarf
+    kind: 0
+    displayKey: accessory.burrows.gardener_scarf.name
+    iconKey: ICO_Accessory_GardenerScarf
+  - sourceId: accessory.burrows.miner_helmet
+    kind: 0
+    displayKey: accessory.burrows.miner_helmet.name
+    iconKey: ICO_Accessory_MinerHelmet
+  - sourceId: accessory.burrows.golden_shovel
+    kind: 0
+    displayKey: accessory.burrows.golden_shovel.name
+    iconKey: ICO_Accessory_GoldenShovel
+  - sourceId: accessory.burrows.overalls_bib
+    kind: 0
+    displayKey: accessory.burrows.overalls_bib.name
+    iconKey: ICO_Accessory_OverallsBib
+  - sourceId: accessory.burrows.overalls_straps
+    kind: 0
+    displayKey: accessory.burrows.overalls_straps.name
+    iconKey: ICO_Accessory_OverallsStraps
+  - sourceId: decor.burrows.flowery_entrance
+    kind: 1
+    displayKey: decor.burrows.flowery_entrance.name
+    iconKey: ICO_Decor_Burrows_FlowerEntrance
+  - sourceId: decor.burrows.moss_mound
+    kind: 1
+    displayKey: decor.burrows.moss_mound.name
+    iconKey: ICO_Decor_Burrows_MossMound
+  - sourceId: decor.burrows.dew_mushrooms
+    kind: 1
+    displayKey: decor.burrows.dew_mushrooms.name
+    iconKey: ICO_Decor_Burrows_DewMushrooms
+  - sourceId: decor.burrows.watering_can
+    kind: 1
+    displayKey: decor.burrows.watering_can.name
+    iconKey: ICO_Decor_Burrows_WateringCan
+  - sourceId: decor.burrows.mini_wheelbarrow
+    kind: 1
+    displayKey: decor.burrows.mini_wheelbarrow.name
+    iconKey: ICO_Decor_Burrows_Wheelbarrow
+  - sourceId: decor.burrows.seedling_pots
+    kind: 1
+    displayKey: decor.burrows.seedling_pots.name
+    iconKey: ICO_Decor_Burrows_SeedlingPots
+  - sourceId: decor.burrows.burrow_sign
+    kind: 1
+    displayKey: decor.burrows.burrow_sign.name
+    iconKey: ICO_Decor_Burrows_BurrowSign
+  - sourceId: decor.burrows.earthworm_cushion
+    kind: 1
+    displayKey: decor.burrows.earthworm_cushion.name
+    iconKey: ICO_Decor_Burrows_WormCushion
+  - sourceId: decor.burrows.garden_shed
+    kind: 1
+    displayKey: decor.burrows.garden_shed.name
+    iconKey: ICO_Decor_Burrows_GardenShed
+  - sourceId: decor.burrows.mini_greenhouse
+    kind: 1
+    displayKey: decor.burrows.mini_greenhouse.name
+    iconKey: ICO_Decor_Burrows_Greenhouse
+  - sourceId: decor.burrows.wooden_bench
+    kind: 1
+    displayKey: decor.burrows.wooden_bench.name
+    iconKey: ICO_Decor_Burrows_WoodenBench
+  - sourceId: decor.burrows.garden_fence
+    kind: 1
+    displayKey: decor.burrows.garden_fence.name
+    iconKey: ICO_Decor_Burrows_GardenFence
+  - sourceId: decor.burrows.souvenir
+    kind: 1
+    displayKey: decor.burrows.souvenir.name
+    iconKey: ICO_Decor_Burrows_Souvenir
+  - sourceId: decor.burrows.flowery_entrance_gold
+    kind: 1
+    displayKey: decor.burrows.flowery_entrance_gold.name
+    iconKey: ICO_Decor_Burrows_FlowerEntranceGold
+  - sourceId: decor.burrows.moss_mound_gold
+    kind: 1
+    displayKey: decor.burrows.moss_mound_gold.name
+    iconKey: ICO_Decor_Burrows_MossMoundGold
+  - sourceId: decor.burrows.dew_mushrooms_gold
+    kind: 1
+    displayKey: decor.burrows.dew_mushrooms_gold.name
+    iconKey: ICO_Decor_Burrows_DewMushroomsGold
+  - sourceId: decor.burrows.watering_can_gold
+    kind: 1
+    displayKey: decor.burrows.watering_can_gold.name
+    iconKey: ICO_Decor_Burrows_WateringCanGold
+  - sourceId: decor.burrows.root_burrow
+    kind: 1
+    displayKey: decor.burrows.root_burrow.name
+    iconKey: ICO_Decor_Burrows_RootBurrow
+  - sourceId: effect.burrows.sprout_burst
+    kind: 0
+    displayKey: effect.burrows.sprout_burst.name
+    iconKey: ICO_Effect_SproutBurst
+  - sourceId: frame.event_burrows_gold
+    kind: 0
+    displayKey: frame.event_burrows_gold.name
+    iconKey: ICO_Frame_EventBurrowsGold
+  accessories:
+  - sourceId: accessory.burrows.sprout_hat
+    displayKey: accessory.burrows.sprout_hat.name
+    socket: 0
+    families:
+    - family: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - family: 1
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1.3, y: 1.3, z: 1.3}
+    speciesFits:
+    - speciesId: species.rabbit
+      localPosition: {x: 0, y: 0.00869988, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.7, y: 0.7, z: 0.7}
+    - speciesId: species.squirrel
+      localPosition: {x: 0, y: 0.007899599, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    - speciesId: species.hedgehog
+      localPosition: {x: 0, y: 0.003488281, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    - speciesId: species.fieldmouse
+      localPosition: {x: 0, y: -0.00427936, z: 0.02}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.6, y: 0.6, z: 0.6}
+    - speciesId: species.guineapig
+      localPosition: {x: 0, y: 0.0040211543, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.7, y: 0.7, z: 0.7}
+    - speciesId: species.fawn
+      localPosition: {x: 0, y: 0.007612287, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.6, y: 0.6, z: 0.6}
+    - speciesId: species.mole
+      localPosition: {x: 0, y: 0.026323797, z: -0.01}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.6, y: 0.6, z: 0.6}
+    excludedSpecies:
+    - species.fieldhamster
+    palettes:
+    - default
+    trisBudget: 250
+    iconKey: ICO_Accessory_SproutHat
+    visualKey: ACC_SproutHat
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: accessory.burrows.seed_sack
+    displayKey: accessory.burrows.seed_sack.name
+    socket: 2
+    families:
+    - family: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - family: 1
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1.3, y: 1.3, z: 1.3}
+    speciesFits:
+    - speciesId: species.fieldmouse
+      localPosition: {x: 0, y: -0.0018738591, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.75, y: 0.75, z: 0.75}
+    - speciesId: species.guineapig
+      localPosition: {x: 0, y: 0.0031585481, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.95, y: 0.95, z: 0.95}
+    - speciesId: species.fawn
+      localPosition: {x: 0, y: 0.003159459, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.6, y: 0.6, z: 0.6}
+    - speciesId: species.fieldhamster
+      localPosition: {x: 0, y: 0.00034479288, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - speciesId: species.mole
+      localPosition: {x: 0, y: 0.0027105946, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.75, y: 0.75, z: 0.75}
+    excludedSpecies:
+    - species.rabbit
+    - species.squirrel
+    - species.hedgehog
+    palettes:
+    - default
+    trisBudget: 500
+    iconKey: ICO_Accessory_SeedSack
+    visualKey: ACC_SeedSack
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: accessory.burrows.burrow_goggles
+    displayKey: accessory.burrows.burrow_goggles.name
+    socket: 0
+    families:
+    - family: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - family: 1
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1.3, y: 1.3, z: 1.3}
+    speciesFits:
+    - speciesId: species.rabbit
+      localPosition: {x: 0, y: 0.019814055, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.7, y: 0.7, z: 0.7}
+    - speciesId: species.squirrel
+      localPosition: {x: 0, y: 0.013717621, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    - speciesId: species.hedgehog
+      localPosition: {x: 0, y: 0.012183223, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.7, y: 0.7, z: 0.7}
+    - speciesId: species.fieldmouse
+      localPosition: {x: 0, y: 0.008319658, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.8, y: 0.8, z: 0.8}
+    - speciesId: species.guineapig
+      localPosition: {x: 0, y: 0.010387296, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.7, y: 0.7, z: 0.7}
+    - speciesId: species.fawn
+      localPosition: {x: 0, y: 0.012676486, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.6, y: 0.6, z: 0.6}
+    - speciesId: species.fieldhamster
+      localPosition: {x: 0, y: 0.0040133665, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - speciesId: species.mole
+      localPosition: {x: 0, y: 0.03353564, z: -0.01}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    excludedSpecies: []
+    palettes:
+    - default
+    trisBudget: 500
+    iconKey: ICO_Accessory_BurrowGoggles
+    visualKey: ACC_BurrowGoggles
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: accessory.burrows.gardener_scarf
+    displayKey: accessory.burrows.gardener_scarf.name
+    socket: 1
+    families:
+    - family: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - family: 1
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1.3, y: 1.3, z: 1.3}
+    speciesFits:
+    - speciesId: species.hedgehog
+      localPosition: {x: 0, y: -0.011927614, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.9, y: 0.9, z: 0.9}
+    - speciesId: species.fieldmouse
+      localPosition: {x: 0, y: 0.04018754, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    - speciesId: species.guineapig
+      localPosition: {x: 0, y: -0.024374843, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    - speciesId: species.fieldhamster
+      localPosition: {x: 0, y: -0.0004985302, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - speciesId: species.mole
+      localPosition: {x: 0, y: -0.019262573, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.85, y: 0.85, z: 0.85}
+    excludedSpecies:
+    - species.rabbit
+    - species.squirrel
+    - species.fawn
+    palettes:
+    - default
+    trisBudget: 500
+    iconKey: ICO_Accessory_GardenerScarf
+    visualKey: ACC_GardenerScarf
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: accessory.burrows.miner_helmet
+    displayKey: accessory.burrows.miner_helmet.name
+    socket: 0
+    families:
+    - family: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - family: 1
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1.3, y: 1.3, z: 1.3}
+    speciesFits:
+    - speciesId: species.rabbit
+      localPosition: {x: 0, y: 0.0121517815, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.7, y: 0.7, z: 0.7}
+    - speciesId: species.squirrel
+      localPosition: {x: 0, y: 0.0112519665, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    - speciesId: species.hedgehog
+      localPosition: {x: 0, y: 0.0050245174, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    - speciesId: species.fieldmouse
+      localPosition: {x: 0, y: 0.0014415925, z: 0.01}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.8, y: 0.8, z: 0.8}
+    - speciesId: species.guineapig
+      localPosition: {x: 0, y: 0.005077056, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.7, y: 0.7, z: 0.7}
+    - speciesId: species.fawn
+      localPosition: {x: 0, y: 0.010228313, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.6, y: 0.6, z: 0.6}
+    - speciesId: species.fieldhamster
+      localPosition: {x: 0, y: -0.00048019353, z: 0.01}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.85, y: 0.85, z: 0.85}
+    - speciesId: species.mole
+      localPosition: {x: 0, y: 0.027068699, z: -0.01}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    excludedSpecies: []
+    palettes:
+    - gold
+    - default
+    trisBudget: 500
+    iconKey: ICO_Accessory_MinerHelmet
+    visualKey: ACC_MinerHelmet
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: accessory.burrows.golden_shovel
+    displayKey: accessory.burrows.golden_shovel.name
+    socket: 2
+    families:
+    - family: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - family: 1
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1.3, y: 1.3, z: 1.3}
+    speciesFits:
+    - speciesId: species.guineapig
+      localPosition: {x: 0, y: 0.0027459126, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.95, y: 0.95, z: 0.95}
+    - speciesId: species.fawn
+      localPosition: {x: 0, y: 0.007860513, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.6, y: 0.6, z: 0.6}
+    - speciesId: species.fieldhamster
+      localPosition: {x: 0, y: -0.0001457583, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - speciesId: species.mole
+      localPosition: {x: 0, y: 0.0023868126, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.75, y: 0.75, z: 0.75}
+    excludedSpecies:
+    - species.rabbit
+    - species.squirrel
+    - species.hedgehog
+    - species.fieldmouse
+    palettes:
+    - gold
+    - default
+    trisBudget: 700
+    iconKey: ICO_Accessory_GoldenShovel
+    visualKey: ACC_GoldenShovel
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: accessory.burrows.overalls_bib
+    displayKey: accessory.burrows.overalls_bib.name
+    socket: 1
+    families:
+    - family: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - family: 1
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1.3, y: 1.3, z: 1.3}
+    speciesFits:
+    - speciesId: species.hedgehog
+      localPosition: {x: 0, y: -0.018069057, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.95, y: 0.95, z: 0.95}
+    - speciesId: species.fieldmouse
+      localPosition: {x: 0, y: 0.04008877, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    - speciesId: species.guineapig
+      localPosition: {x: 0, y: -0.029778136, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.7, y: 0.7, z: 0.7}
+    - speciesId: species.fieldhamster
+      localPosition: {x: 0, y: 0.00074629823, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - speciesId: species.mole
+      localPosition: {x: 0, y: -0.019222949, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.85, y: 0.85, z: 0.85}
+    excludedSpecies:
+    - species.rabbit
+    - species.squirrel
+    - species.fawn
+    palettes:
+    - default
+    trisBudget: 500
+    iconKey: ICO_Accessory_OverallsBib
+    visualKey: ACC_OverallsBib
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: accessory.burrows.overalls_straps
+    displayKey: accessory.burrows.overalls_straps.name
+    socket: 2
+    families:
+    - family: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - family: 1
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1.3, y: 1.3, z: 1.3}
+    speciesFits:
+    - speciesId: species.fieldmouse
+      localPosition: {x: 0, y: 0.004881171, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.75, y: 0.75, z: 0.75}
+    - speciesId: species.guineapig
+      localPosition: {x: 0, y: 0.0058192895, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.95, y: 0.95, z: 0.95}
+    - speciesId: species.fawn
+      localPosition: {x: 0, y: 0.005970463, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.6, y: 0.6, z: 0.6}
+    - speciesId: species.fieldhamster
+      localPosition: {x: 0, y: 0.0017421634, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - speciesId: species.mole
+      localPosition: {x: 0, y: 0.005753554, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.75, y: 0.75, z: 0.75}
+    excludedSpecies:
+    - species.rabbit
+    - species.squirrel
+    - species.hedgehog
+    palettes:
+    - default
+    trisBudget: 500
+    iconKey: ICO_Accessory_OverallsStraps
+    visualKey: ACC_OverallsStraps
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  outfits:
+  - sourceId: outfit.burrows.01
+    displayKey: outfit.burrows.01.name
+    accessories:
+    - accessory.burrows.sprout_hat
+    palette: default
+    iconKey: ICO_Outfit_Burrows_01
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: outfit.burrows.02
+    displayKey: outfit.burrows.02.name
+    accessories:
+    - accessory.burrows.seed_sack
+    palette: default
+    iconKey: ICO_Outfit_Burrows_02
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: outfit.burrows.03
+    displayKey: outfit.burrows.03.name
+    accessories:
+    - accessory.burrows.burrow_goggles
+    palette: default
+    iconKey: ICO_Outfit_Burrows_03
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: outfit.burrows.04
+    displayKey: outfit.burrows.04.name
+    accessories:
+    - accessory.burrows.gardener_scarf
+    palette: default
+    iconKey: ICO_Outfit_Burrows_04
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: outfit.burrows.05
+    displayKey: outfit.burrows.05.name
+    accessories:
+    - accessory.burrows.miner_helmet
+    palette: gold
+    iconKey: ICO_Outfit_Burrows_05
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: outfit.burrows.06
+    displayKey: outfit.burrows.06.name
+    accessories:
+    - accessory.burrows.golden_shovel
+    palette: gold
+    iconKey: ICO_Outfit_Burrows_06
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: outfit.burrows.07
+    displayKey: outfit.burrows.07.name
+    accessories:
+    - accessory.burrows.overalls_bib
+    - accessory.burrows.overalls_straps
+    palette: default
+    iconKey: ICO_Outfit_Burrows_07
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend

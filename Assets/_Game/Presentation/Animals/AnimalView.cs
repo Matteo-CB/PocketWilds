@@ -23,6 +23,10 @@ namespace PocketWilds.Presentation
         [SerializeField] private Transform _socketTailBase;
         [Tooltip("Soft disc under the animal, shown only when the quality tier has no shadow map.")]
         [SerializeField] private Renderer _blobShadow;
+        [Tooltip("T49 variant modules: renderers shown only when the visual data asks for their slot (all LODs of a module).")]
+        [SerializeField] private Renderer[] _moduleRenderers = System.Array.Empty<Renderer>();
+        [SerializeField] private byte[] _moduleSlots = System.Array.Empty<byte>();
+        private int _shownModule = -1;
 
         private SkinnedMeshRenderer[] _skinned;
         private AccessoryView _accessories;
@@ -68,6 +72,16 @@ namespace PocketWilds.Presentation
             _socketTailBase = tailBase;
             _initialized = false;
         }
+
+        /// <summary>T49 editor/prefab builder hook: the variant module renderers and their slots (1-3), same length.</summary>
+        public void SetModules(Renderer[] renderers, byte[] slots)
+        {
+            _moduleRenderers = renderers ?? System.Array.Empty<Renderer>();
+            _moduleSlots = slots ?? System.Array.Empty<byte>();
+            _shownModule = -1;
+        }
+
+        public int ModuleCount => _moduleRenderers.Length;
 
         public void Configure(in AnimalVisualSnapshot snapshot)
         {
@@ -154,6 +168,18 @@ namespace PocketWilds.Presentation
                 _skinned[i].SetShaderUserValue(data);
             for (int i = 0; i < _meshes.Length; i++)
                 _meshes[i].SetShaderUserValue(data);
+            // T49: a variant module shows only on its variant; toggled when the slot changes (Configure, pool reset).
+            int module = AnimalVisualPacking.ModuleSlot(data);
+            if (module != _shownModule)
+            {
+                _shownModule = module;
+                int count = Mathf.Min(_moduleRenderers.Length, _moduleSlots.Length);
+                for (int i = 0; i < count; i++)
+                {
+                    if (_moduleRenderers[i] != null)
+                        _moduleRenderers[i].enabled = module != 0 && _moduleSlots[i] == module;
+                }
+            }
         }
 
         void IPoolable.OnAcquire()

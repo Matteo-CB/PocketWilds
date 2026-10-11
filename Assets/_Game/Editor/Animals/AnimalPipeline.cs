@@ -58,6 +58,22 @@ namespace PocketWilds.Editor.Animals
             ("Inspect", "Inspect", true, null),
         };
 
+        /// <summary>
+        /// T49 profile poses (Presentation PoseClips): one-shot states returning to Idle, added to a family controller only when
+        /// its library has the clip (AN_&lt;Family&gt;_PeekOut in the small and medium libraries; floaters have none).
+        /// </summary>
+        public static readonly (string State, string Clip)[] PoseStates = { ("PeekOut", "PeekOut") };
+
+        /// <summary>The family table plus the pose states this family's library can play.</summary>
+        private static List<(string State, string Clip, bool ReturnsToIdle, string Next)> StatesFor(string family, Dictionary<string, AnimationClip> clips)
+        {
+            var states = new List<(string State, string Clip, bool ReturnsToIdle, string Next)>(FamilyStates);
+            foreach (var (state, clip) in PoseStates)
+                if (clips.ContainsKey($"AN_{family}_{clip}"))
+                    states.Add((state, clip, true, null));
+            return states;
+        }
+
         /// <summary>Clip suffix of the Move state: the small family hops, the medium family walks (T46).</summary>
         public static string MoveClip(string family) => family == "MediumQuadruped" ? "Locomotion_Walk" : "Locomotion_Hop";
 
@@ -190,8 +206,9 @@ namespace PocketWilds.Editor.Animals
                 controller.RemoveParameter(p);
 
             var states = new Dictionary<string, AnimatorState>();
+            var table = StatesFor(family, clips);
             int i = 0;
-            foreach (var (stateName, clipSuffix, _, _) in FamilyStates)
+            foreach (var (stateName, clipSuffix, _, _) in table)
             {
                 string clipName = $"AN_{family}_{ClipFor(family, stateName, clipSuffix)}";
                 if (!clips.TryGetValue(clipName, out var clip))
@@ -203,7 +220,7 @@ namespace PocketWilds.Editor.Animals
             }
             machine.defaultState = states["Idle"];
 
-            foreach (var (stateName, _, returnsToIdle, next) in FamilyStates)
+            foreach (var (stateName, _, returnsToIdle, next) in table)
             {
                 string target = next ?? (returnsToIdle ? "Idle" : null);
                 if (target == null)
@@ -259,9 +276,10 @@ namespace PocketWilds.Editor.Animals
                 return false;
             var machine = controller.layers[0].stateMachine;
             var states = machine.states.ToDictionary(s => s.state.name, s => s.state);
-            if (states.Count != FamilyStates.Length || machine.defaultState == null || machine.defaultState.name != "Idle")
+            var table = StatesFor(family, clips);
+            if (states.Count != table.Count || machine.defaultState == null || machine.defaultState.name != "Idle")
                 return false;
-            foreach (var (stateName, clipSuffix, returnsToIdle, next) in FamilyStates)
+            foreach (var (stateName, clipSuffix, returnsToIdle, next) in table)
             {
                 if (!states.TryGetValue(stateName, out var state))
                     return false;
@@ -297,8 +315,12 @@ namespace PocketWilds.Editor.Animals
                 animator.updateMode = AnimatorUpdateMode.Normal;
                 animator.keepAnimatorStateOnDisable = true;
 
-                var renderers = visual.GetComponentsInChildren<SkinnedMeshRenderer>(true)
+                var skins = visual.GetComponentsInChildren<SkinnedMeshRenderer>(true)
                     .OrderBy(r => r.name, StringComparer.Ordinal).ToArray();
+                // T49 variant modules (SKM_<Species>_MOD_<Name>_LOD<n>, e.g. the Star Nose rosette): extra skinned meshes kept
+                // out of the body LOD list, shown only on the variant whose moduleSlot asks for them.
+                var renderers = skins.Where(r => !IsModule(r.name)).ToArray();
+                var modules = skins.Where(r => IsModule(r.name)).ToArray();
                 if (renderers.Length != 3)
                     throw new InvalidOperationException($"{species}: expected 3 LOD renderers, found {renderers.Length}.");
                 for (int lod = 0; lod < renderers.Length; lod++)
@@ -314,11 +336,28 @@ namespace PocketWilds.Editor.Animals
                     r.updateWhenOffscreen = false;
                     r.quality = SkinQuality.Auto;
                 }
+                var moduleNames = modules.Select(m => ModuleName(m.name)).Distinct().OrderBy(n => n, StringComparer.Ordinal).ToList();
+                if (moduleNames.Count > 3)
+                    throw new InvalidOperationException($"{species}: at most 3 variant modules, found {moduleNames.Count}.");
+                foreach (var m in modules)
+                {
+                    m.sharedMaterials = new[] { material };
+                    m.shadowCastingMode = ShadowCastingMode.Off;
+                    m.receiveShadows = true;
+                    m.lightProbeUsage = LightProbeUsage.Off;
+                    m.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                    m.skinnedMotionVectors = false;
+                    m.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
+                    m.updateWhenOffscreen = false;
+                    m.quality = SkinQuality.Auto;
+                    m.enabled = false; // AnimalView turns it on for its variant only
+                }
 
                 var lodGroup = visual.GetComponent<LODGroup>() ?? visual.AddComponent<LODGroup>();
                 var lods = new LOD[renderers.Length];
                 for (int lod = 0; lod < renderers.Length; lod++)
-                    lods[lod] = new LOD(LodTransitions[lod], new Renderer[] { renderers[lod] });
+                    lods[lod] = new LOD(LodTransitions[lod], new Renderer[] { renderers[lod] }
+                        .Concat(modules.Where(m => ModuleLod(m.name) == lod)).ToArray());
                 lodGroup.SetLODs(lods);
                 lodGroup.fadeMode = LODFadeMode.None;
                 lodGroup.animateCrossFading = false;
@@ -329,9 +368,11 @@ namespace PocketWilds.Editor.Animals
                 var blob = PocketWilds.Editor.Lighting.LightingPipeline.AddBlobShadow(root.transform, new Vector2(footprint.x * 1.35f, footprint.z * 1.2f));
 
                 var view = root.AddComponent<AnimalView>();
-                view.SetReferences(renderers.Cast<Renderer>().ToArray(), animator, lodGroup,
+                view.SetReferences(renderers.Concat(modules).Cast<Renderer>().ToArray(), animator, lodGroup,
                     FindDeep(visual.transform, "SOCK_HeadTop"), FindDeep(visual.transform, "SOCK_Neck"),
                     FindDeep(visual.transform, "SOCK_Back"), FindDeep(visual.transform, "SOCK_TailBase"), blob);
+                view.SetModules(modules.Cast<Renderer>().ToArray(),
+                    modules.Select(m => (byte)(moduleNames.IndexOf(ModuleName(m.name)) + 1)).ToArray());
 
                 Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath(species)));
                 var saved = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath(species), out bool success);
@@ -343,6 +384,22 @@ namespace PocketWilds.Editor.Animals
             {
                 UnityEngine.Object.DestroyImmediate(root);
             }
+        }
+
+        /// <summary>T49: a variant module mesh (SKM_Species_MOD_Name_LODn). Slots follow the module names in ordinal order.</summary>
+        public static bool IsModule(string rendererName) => rendererName.Contains("_MOD_");
+
+        public static string ModuleName(string rendererName)
+        {
+            int start = rendererName.IndexOf("_MOD_", StringComparison.Ordinal) + 5;
+            int end = rendererName.LastIndexOf("_LOD", StringComparison.Ordinal);
+            return end > start ? rendererName.Substring(start, end - start) : rendererName.Substring(start);
+        }
+
+        public static int ModuleLod(string rendererName)
+        {
+            int at = rendererName.LastIndexOf("_LOD", StringComparison.Ordinal);
+            return at >= 0 && int.TryParse(rendererName.Substring(at + 4), out int lod) ? lod : 0;
         }
 
         public static Transform FindDeep(Transform parent, string name)
@@ -389,6 +446,9 @@ namespace PocketWilds.Editor.Animals
                 Variant("variant.rabbit.peach", RarityTier.Legendary, Hex("F6C3A0"), Hex("F7CDB8"), Hex("FBEFDF"), Hex("E8A49A"), Hex("2A1E1C"),
                     pattern: Hex("EE9E6E"), channel: PatternChannel.MaskA, strength: 14, secret: true, mastery: 30),
                 Variant("variant.rabbit.snow_visitor", RarityTier.Rare, Hex("F8FBFF"), Hex("CFE3F5"), Hex("E3EFFA"), Hex("F2B6C2"), Hex("22303F"), secret: true, visitor: true),
+                // T49 event variant (L'Éveil des Terriers, event egg only): pale dew blue-green coat, round glassy dew spots (mask A).
+                Variant("variant.rabbit.dew", RarityTier.Rare, Hex("D6EBE6"), Hex("F4CDD3"), Hex("F7FCFA"), Hex("E3A0AA"), Hex("1E2024"),
+                    pattern: Hex("EEF9FB"), channel: PatternChannel.MaskA, strength: 13, secret: true),
             };
             EditorUtility.SetDirty(asset);
             return asset;
@@ -461,6 +521,14 @@ namespace PocketWilds.Editor.Animals
                 // T44C visitor variant: warm cream spines tipped with soft blossom pink (light lobe tips, mask B). Secret: never in eggs.
                 Variant("variant.hedgehog.flower_visitor", RarityTier.Rare, Hex("F2E3CE"), Hex("EBD9BC"), Hex("FFF6EA"), Hex("4A3532"), Hex("1C1414"),
                     pattern: Hex("F6BFD2"), channel: PatternChannel.MaskB, strength: 14, secret: true, visitor: true),
+                // T49 event variants (event egg only, palette and pattern): clover green spines with round clover spots
+                // (mask A), and soft moss spines with light tips (mask B). variant.hedgehog.moss is already the mastery 30
+                // color, so the event's « Hérisson Mousse » is softmoss « Mousse tendre ».
+                // Told apart at a glance: bright clover green with cream spots, against a muted olive moss with pale tips.
+                Variant("variant.hedgehog.clover", RarityTier.Rare, Hex("F1E8D2"), Hex("58AE47"), Hex("FAF4E6"), Hex("3A2A28"), Hex("1A1212"),
+                    pattern: Hex("FBFBEF"), channel: PatternChannel.MaskA, strength: 16, secret: true),
+                Variant("variant.hedgehog.softmoss", RarityTier.Rare, Hex("E6D7BA"), Hex("7C8B55"), Hex("F3E9D6"), Hex("2E2A20"), Hex("140E0D"),
+                    pattern: Hex("D3DCA6"), channel: PatternChannel.MaskB, strength: 15, secret: true),
             };
             EditorUtility.SetDirty(asset);
             return asset;
@@ -494,6 +562,9 @@ namespace PocketWilds.Editor.Animals
                 Variant("variant.fieldmouse.goldenwheat", RarityTier.Legendary, Hex("DDB46A"), Hex("F4CFB0"), Hex("F6E7C4"), Hex("E8A49A"), Hex("1E1414"),
                     pattern: Hex("8A6236"), channel: PatternChannel.MaskB, strength: 14, secret: true, mastery: 30),
                 Variant("variant.fieldmouse.buttercup", RarityTier.Epic, Hex("F2D46B"), Hex("F6C6B4"), Hex("FBF1D6"), Hex("EBA39C"), Hex("1E1414"), secret: true),
+                // T49 event variant (event egg only): fresh bud green coat, cream belly and cream patches (mask A).
+                Variant("variant.fieldmouse.bud", RarityTier.Rare, Hex("B8D28E"), Hex("F3C8C2"), Hex("F8F1DC"), Hex("E8A0A6"), Hex("1E1414"),
+                    pattern: Hex("F6EFD2"), channel: PatternChannel.MaskA, strength: 12, secret: true),
             };
             EditorUtility.SetDirty(asset);
             return asset;
@@ -549,6 +620,76 @@ namespace PocketWilds.Editor.Animals
         public static void BuildFieldHamster()
         {
             BuildSpecies("FieldHamster", "SmallQuadruped", EnsureFieldHamsterDefinition, FieldHamsterClips, b => b.moveSpeed = 0.27f);
+        }
+
+        /// <summary>
+        /// T49 Mole (A-SP-203, « corps bas »): its own low shuffle, low nibble, dig, sleep, startle and happy wiggle. The
+        /// family Hop, Walk, Eat, Inspect, Sleep, ReactTouch, Happy and Happy_Bounce swing the big mitten hands or the low
+        /// snout below the ground; the Mole clips are family clips checked frame by frame on the Mole (pw_anim_library).
+        /// </summary>
+        public static readonly (string Family, string Species)[] MoleClips =
+        {
+            ("Locomotion_Hop", "MoleWalk"),
+            ("Happy", "MoleHappy"),
+            ("ReactTouch", "MoleReact"),
+            ("Sleep_Enter", "MoleSleep_Enter"),
+            ("Sleep_Loop", "MoleSleep_Loop"),
+            ("Sleep_Exit", "MoleSleep_Exit"),
+            ("Eat_Loop", "MoleEat"),
+            ("Inspect", "MoleDig"),
+        };
+
+        [MenuItem("Pocket Wilds/Animals/Build Mole (T49)", priority = 158)]
+        public static void BuildMole()
+        {
+            BuildSpecies("Mole", "SmallQuadruped", EnsureMoleDefinition, MoleClips, b => b.moveSpeed = 0.22f);
+        }
+
+        /// <summary>
+        /// T49 Mole, the featured species of L'Éveil des Terriers (event.burrows). Every color is secret: never in normal eggs,
+        /// wishes or genetics; the event egg and track give the six event colors by id, mastery gives the last three.
+        /// Regions (pw_masks mole_masks): primary = velvet coat, secondary = pink mitten hands, snout tip, hind feet and tail,
+        /// belly = underside and chin, detail = nose bead and the Star Nose rosette; mask A = hands and nose, mask B = paler
+        /// muzzle, mask C = round moss patches over the back. Star Nose shows module slot 1 (SKM_Mole_MOD_StarNose).
+        /// </summary>
+        internal static SpeciesDefinitionAsset EnsureMoleDefinition()
+        {
+            var asset = LoadOrCreate<SpeciesDefinitionAsset>(DefinitionPath("Mole"));
+            asset.sourceId = "species.mole";
+            asset.displayKey = "species.mole.name";
+            asset.rigFamily = RigFamily.SmallQuadruped;
+            asset.biomeId = "biome.grassland";
+            asset.baseProduction = 1.0;
+            asset.visualKey = "PF_Animal_Mole";
+            asset.hiddenSockets = new List<AccessorySocket> { AccessorySocket.TailBase };
+            asset.variants = new List<SpeciesDefinitionAsset.VariantEntry>
+            {
+                Variant("variant.mole.velvet", RarityTier.Rare, Hex("6F6B75"), Hex("F2B6C0"), Hex("8B8792"), Hex("EE9CAB"), Hex("141012"),
+                    pattern: Hex("9A95A3"), channel: PatternChannel.MaskC, strength: 8, secret: true),
+                Variant("variant.mole.cocoa", RarityTier.Rare, Hex("5E4336"), Hex("F0B4B6"), Hex("735649"), Hex("E996A4"), Hex("120C0C"),
+                    pattern: Hex("9A7A64"), channel: PatternChannel.MaskB, strength: 10, secret: true),
+                Variant("variant.mole.sand", RarityTier.Rare, Hex("CDB590"), Hex("F4C2C0"), Hex("E3D2B4"), Hex("EBA2AA"), Hex("1E1414"),
+                    pattern: Hex("F1E6CF"), channel: PatternChannel.MaskB, strength: 12, secret: true),
+                // Vivid pink hands and nose.
+                Variant("variant.mole.mocha", RarityTier.Epic, Hex("7D5C4C"), Hex("FF93B2"), Hex("957462"), Hex("FF82A6"), Hex("140E0D"),
+                    pattern: Hex("FF7AA6"), channel: PatternChannel.MaskA, strength: 15, secret: true),
+                // Golden moss green, the back glowing like sunlit moss: a pale gold pattern at full strength on the back patches
+                // (mask C), plus the Legendary rim glow. Soft, never a real light.
+                Variant("variant.mole.goldenmoss", RarityTier.Legendary, Hex("7F8C4B"), Hex("F3C2A8"), Hex("9DA766"), Hex("EFA2A0"), Hex("141010"),
+                    pattern: Hex("F7E59E"), channel: PatternChannel.MaskC, strength: 15, secret: true),
+                // Deep velvet grey, the round pink lobed rosette (module slot 1) and a soft pink glow on hands, nose and rosette.
+                Variant("variant.mole.starnose", RarityTier.Epic, Hex("4B4752"), Hex("FFB6CA"), Hex("5E5A64"), Hex("FFA0C0"), Hex("0E0C10"),
+                    pattern: Hex("FFC4D8"), channel: PatternChannel.MaskA, strength: 15, secret: true, module: 1),
+                Variant("variant.mole.gardensoil", RarityTier.Rare, Hex("4F3B2F"), Hex("EDB2AF"), Hex("645246"), Hex("E6969F"), Hex("120C0C"),
+                    pattern: Hex("7C604A"), channel: PatternChannel.MaskC, strength: 10, secret: true, mastery: 10),
+                Variant("variant.mole.tendersprout", RarityTier.Epic, Hex("A8C27C"), Hex("F6C8C0"), Hex("DAE6BC"), Hex("EDA4AA"), Hex("1E1414"),
+                    pattern: Hex("EDF5CF"), channel: PatternChannel.MaskB, strength: 12, secret: true, mastery: 20),
+                // Golden glow on hands and nose (mask A).
+                Variant("variant.mole.goldenpaws", RarityTier.Legendary, Hex("5F5967"), Hex("F3D68C"), Hex("736D79"), Hex("F2C874"), Hex("120E14"),
+                    pattern: Hex("FFE38E"), channel: PatternChannel.MaskA, strength: 15, secret: true, mastery: 30),
+            };
+            EditorUtility.SetDirty(asset);
+            return asset;
         }
 
         private static SpeciesDefinitionAsset EnsureFawnDefinition()
@@ -620,7 +761,8 @@ namespace PocketWilds.Editor.Animals
         }
 
         private static SpeciesDefinitionAsset.VariantEntry Variant(string id, RarityTier rarity, Color primary, Color secondary,
-            Color belly, Color detail, Color eye, Color? pattern = null, PatternChannel channel = PatternChannel.None, int strength = 0, bool secret = false, bool visitor = false, int mastery = 0)
+            Color belly, Color detail, Color eye, Color? pattern = null, PatternChannel channel = PatternChannel.None, int strength = 0, bool secret = false, bool visitor = false, int mastery = 0,
+            int module = 0)
         {
             return new SpeciesDefinitionAsset.VariantEntry
             {
@@ -639,6 +781,7 @@ namespace PocketWilds.Editor.Animals
                 secret = secret,
                 visitor = visitor,
                 masteryLevel = mastery,
+                moduleSlot = module,
             };
         }
 
@@ -649,7 +792,7 @@ namespace PocketWilds.Editor.Animals
         public static void UpdateSpeciesDefinitions()
         {
             foreach (var ensure in new Func<SpeciesDefinitionAsset>[] { EnsureRabbitDefinition, EnsureSquirrelDefinition, EnsureHedgehogDefinition,
-                EnsureFieldMouseDefinition, EnsureGuineaPigDefinition, EnsureFawnDefinition, EnsureFieldHamsterDefinition })
+                EnsureFieldMouseDefinition, EnsureGuineaPigDefinition, EnsureFawnDefinition, EnsureFieldHamsterDefinition, EnsureMoleDefinition })
                 EnsureContentDatabase(ensure());
             AssetDatabase.SaveAssets();
         }

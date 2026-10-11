@@ -38,13 +38,20 @@ namespace PocketWilds.Editor.Albums
         private const string Clover = "palette.grassland.clover";
         private const string Poppy = "palette.grassland.flower_red";
 
-        private static readonly List<StickerCaptureDefinition> _all = Build();
+        // T49: page.event.103 joins the captured set.
+        private static readonly List<StickerCaptureDefinition> _all = WithPage(Build(), BuildBurrows());
+
+        private static List<StickerCaptureDefinition> WithPage(List<StickerCaptureDefinition> list, List<StickerCaptureDefinition> page)
+        {
+            list.AddRange(page);
+            return list;
+        }
 
         /// <summary>Every capturable sticker, in page order.</summary>
         public static IReadOnlyList<StickerCaptureDefinition> All => _all;
 
         /// <summary>The page keys with at least one capturable sticker, in order.</summary>
-        public static readonly string[] Pages = { PageGrassland1, PageGrassland2, PageGrooming, PageHideSeek, PageNutDrop, PageExpeditions, PageGarden };
+        public static readonly string[] Pages = { PageGrassland1, PageGrassland2, PageGrooming, PageHideSeek, PageNutDrop, PageExpeditions, PageGarden, PageBurrows };
 
         /// <summary>The stickers of the same pages that cannot be captured today, and why.</summary>
         public static readonly (string id, string reason)[] Unavailable =
@@ -95,6 +102,78 @@ namespace PocketWilds.Editor.Albums
             ("STK-ACT-006-09", "loose fruits, flowers and round vegetables props missing"),
             ("STK-ACT-006-10", "herbarium prop missing"),
             ("STK-ACT-006-11", "dye pots prop missing"),
+        };
+
+        /// <summary>T49: « L'Éveil des Terriers » (page.event.103).</summary>
+        public const string PageBurrows = "page.event.103";
+
+        /// <summary>
+        /// T49: the 12 scenes of page.event.103 (doc « L'Éveil des Terriers », album), captured with the rest (<see cref="All"/>):
+        /// the mole, the event variants, the Prairie kit, and the Burrows decorations and accessories by prefab name (made by
+        /// their own pipelines: while one is missing, the sticker is captured without it and the report names it).
+        /// </summary>
+        public static IReadOnlyList<StickerCaptureDefinition> PendingBurrows => _pendingBurrows ??= BuildBurrows();
+
+        private static List<StickerCaptureDefinition> _pendingBurrows;
+
+        private const string BurrowsDecor = "PF_Decor_Burrows_";
+        private const string Accessory = "PF_Acc_";
+
+        private static S Decor(string name, float x, float z, float yaw = 0f) => S.Prefab(BurrowsDecor + name, x, z, yaw).Optional();
+
+        private static List<StickerCaptureDefinition> BuildBurrows() => new List<StickerCaptureDefinition>
+        {
+            D("STK-EVT-103-01", PageBurrows, StickerFraming.Scene, StickerLight.Morning,
+                "Premières pousses: a spring meadow at dawn, tender grass, little moss mounds and dew mushrooms, round dew beads",
+                GlProp("GrassTuft_L", 0f, 0f, 0f).Palette(Grass),
+                GlProp("GrassTuft_S", -0.42f, 0.3f, 60f).Palette(Grass),
+                GlProp("TallGrass_A", 0.5f, 0.5f, 30f).Palette(Grass),
+                Decor("MossMound", -0.9f, 0.6f, 20f),
+                Decor("DewMushrooms", 0.95f, 0.2f, 200f)).View(0f, 10f),
+            D("STK-EVT-103-02", PageBurrows, StickerFraming.Detail, StickerLight.Day,
+                "Entrée de terrier fleurie: the Flowery Burrow Entrance decoration among grass tufts",
+                GlProp("GrassTuft_S", -0.5f, -0.1f, 40f).Palette(Grass),
+                Decor("FlowerEntrance", 0f, 0.15f, 180f).Focus()).View(0f, 18f),
+            D("STK-EVT-103-03", PageBurrows, StickerFraming.Full, StickerLight.Day,
+                "Taupe Velours: the Velvet Mole peeking by a tuft, muzzle low (the hole decal belongs to the dig clip, the mole never sinks)",
+                S.Animal("mole.velvet", 0f, 0f, 160f, "PeekOut", 0.2f),
+                GlProp("GrassTuft_S", 0.42f, 0.2f, 80f).Palette(Grass)),
+            D("STK-EVT-103-04", PageBurrows, StickerFraming.Portrait, StickerLight.Day,
+                "Chapeau pousse: portrait of the Velvet Mole wearing the Sprout Hat",
+                S.Animal("mole.velvet", 0f, 0f, 170f, "Happy", 0.4f),
+                S.Prefab(Accessory + "SproutHat", 0f, 0f).At(0, AnimalSocket.HeadTop).Optional()),
+            D("STK-EVT-103-05", PageBurrows, StickerFraming.Full, StickerLight.Day,
+                "Lapin Rosée: the Dew Rabbit beside the Seedling Pots",
+                S.Animal("rabbit.dew", -0.25f, 0f, 150f, "Idle", 0.2f),
+                Decor("SeedlingPots", 0.42f, 0.12f, 200f)),
+            D("STK-EVT-103-06", PageBurrows, StickerFraming.Full, StickerLight.Morning,
+                "Sortir du terrier: the Velvet Mole doing the Peek Out pose at sunrise",
+                S.Animal("mole.velvet", 0f, 0f, 165f, "PeekOut", 0.55f)).View(0f, 8f),
+            D("STK-EVT-103-07", PageBurrows, StickerFraming.Detail, StickerLight.Day,
+                "Coucou du terrier: two bead eyes and a pink nose peeking low behind a grass tuft",
+                S.Animal("mole.velvet", 0f, 0.1f, 180f, "PeekOut", 0.3f).Focus(),
+                GlProp("GrassTuft_L", 0f, -0.48f, 0f).Palette(Grass)).View(0f, 20f),
+            D("STK-EVT-103-08", PageBurrows, StickerFraming.Portrait, StickerLight.Day,
+                "Lunettes de terrier: portrait of the Clover Hedgehog wearing the Burrow Goggles",
+                S.Animal("hedgehog.clover", 0f, 0f, 170f, "Happy", 0.4f),
+                S.Prefab(Accessory + "BurrowGoggles", 0f, 0f).At(0, AnimalSocket.HeadTop).Optional()),
+            D("STK-EVT-103-09", PageBurrows, StickerFraming.Scene, StickerLight.Evening,
+                "Grand tunnel: the Velvet Mole walking by old rounded roots (the stump) and a moss mound, warm evening light",
+                S.Animal("mole.velvet", 0f, 0f, 120f, "Move", 0.5f),
+                GlProp("Stump", -0.6f, 0.5f, 30f),
+                Decor("MossMound", 0.7f, 0.55f, 0f)),
+            D("STK-EVT-103-10", PageBurrows, StickerFraming.Full, StickerLight.Day,
+                "Cachette du trèfle: the Clover Hedgehog half hidden behind the Moss Mound",
+                S.Animal("hedgehog.clover", 0.3f, 0.2f, 200f, "Idle", 0.3f),
+                Decor("MossMound", -0.22f, -0.28f, 0f)),
+            D("STK-EVT-103-11", PageBurrows, StickerFraming.Full, StickerLight.Day,
+                "Tour de brouette: the Bud Field Mouse by the Mini Wheelbarrow",
+                S.Animal("fieldmouse.bud", 0.3f, 0f, 160f, "Happy", 0.5f),
+                Decor("Wheelbarrow", -0.48f, 0.1f, 150f)),
+            D("STK-EVT-103-12", PageBurrows, StickerFraming.Full, StickerLight.Morning,
+                "Arrosage du matin: the Moss Hedgehog by the Watering Can, round dew beads",
+                S.Animal("hedgehog.softmoss", -0.2f, 0f, 150f, "Idle", 0.2f),
+                Decor("WateringCan", 0.36f, 0.06f, 210f)),
         };
 
         private static StickerCaptureDefinition D(string id, string page, StickerFraming framing, StickerLight light, string note, params S[] subjects)

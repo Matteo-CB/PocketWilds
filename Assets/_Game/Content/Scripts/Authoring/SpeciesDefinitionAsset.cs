@@ -33,6 +33,8 @@ namespace PocketWilds.Content
             public bool visitor;
             [Tooltip("T45: A-SP mastery color, given at that species mastery level (T46); 0 = not a mastery color.")]
             public int masteryLevel;
+            [Tooltip("T49: variant module slot (0 none, 1-3): shows the prefab's module mesh of that slot on this variant only.")]
+            [Range(0, 3)] public int moduleSlot;
         }
 
         [Tooltip("Stable source ID, e.g. species.rabbit. Never change it once shipped.")]
@@ -73,7 +75,8 @@ namespace PocketWilds.Content
             palette[6] = entry.primary;
             palette[7] = entry.primary;
             return new VariantDefinition(ContentId.FromSource(entry.sourceId), ContentId.FromSource(sourceId), entry.displayKey,
-                entry.rarity, palette, entry.patternChannel, (byte)Mathf.Clamp(entry.patternStrength, 0, 15), entry.secret, entry.visitor, entry.masteryLevel);
+                entry.rarity, palette, entry.patternChannel, (byte)Mathf.Clamp(entry.patternStrength, 0, 15), entry.secret, entry.visitor, entry.masteryLevel,
+                (byte)Mathf.Clamp(entry.moduleSlot, 0, 3));
         }
     }
 }

@@ -63,7 +63,9 @@ namespace PocketWilds.Presentation
             var phase = events.Phase;
             long signature = (long)phase | ((long)events.Points << 3) ^ ((long)events.Currency << 31) ^ ((long)events.Tier << 52)
                              ^ (events.Instance != null ? (long)events.Instance.ClaimedCount(false) << 20 ^ (long)events.Instance.ClaimedCount(true) << 40 : 0L)
-                             ^ (events.GoldOwned ? 1L << 62 : 0L);
+                             ^ (events.GoldOwned ? 1L << 62 : 0L)
+                             // T49: the download page appears, starts and ends (the HUD button and the open hub follow).
+                             ^ (model.NeedsDownload ? 1L << 61 : 0L) ^ (model.Downloading ? 1L << 60 : 0L) ^ ((long)model.DownloadMegabytes << 9);
             if (signature != _eventSignature)
             {
                 _eventSignature = signature;
@@ -80,7 +82,7 @@ namespace PocketWilds.Presentation
             if (!(_hud is IEventHud hud))
                 return;
             var phase = model.Phase;
-            bool visible = _eventView != null && (phase == EventPhase.Announce || phase == EventPhase.Running);
+            bool visible = _eventView != null && (phase == EventPhase.Announce || phase == EventPhase.Running || model.NeedsDownload);
             bool running = phase == EventPhase.Running;
             hud.SetEvent(visible, running ? model.TierProgress : 0f, running && model.ClaimableCount > 0);
         }
@@ -110,7 +112,7 @@ namespace PocketWilds.Presentation
                 return;
             var events = model.Service;
             var phase = events.Phase;
-            if (phase != EventPhase.Announce && phase != EventPhase.Running)
+            if (phase != EventPhase.Announce && phase != EventPhase.Running && !model.NeedsDownload)
                 return;
             events.MarkSeen();
             if (phase == EventPhase.Running && !events.IsJoined)
@@ -123,6 +125,24 @@ namespace PocketWilds.Presentation
         }
 
         // ---------------- IEventHubActions ----------------
+
+        /// <summary>T49: fetches the event's content group; the hub then shows the announce page or the run.</summary>
+        public void DownloadEvent()
+        {
+            var events = _context.Events;
+            if (events == null || !events.StartDownload(ok =>
+                {
+                    if (EventOpen && !_eventView.SummaryOpen)
+                        _eventView.Refresh();
+                    var model = EventsModel();
+                    if (model != null)
+                        RefreshEventHud(model);
+                }))
+                return;
+            if (EventOpen)
+                _eventView.Refresh();
+            _context.Haptics.Play(HapticEventId.TapLight);
+        }
 
         public void ClaimTier(int tier, bool gold)
         {

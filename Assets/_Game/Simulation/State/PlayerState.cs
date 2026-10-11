@@ -309,5 +309,11 @@ namespace PocketWilds.Simulation
 
         /// <summary>Store transaction ids already granted. Makes purchase callbacks idempotent.</summary>
         public HashSet<string> ProcessedTransactions { get; } = new HashSet<string>();
+
+        /// <summary>T49: the hatch effect chosen (an owned effect.* item, see <see cref="HatchEffects"/>); invalid: the newest owned one.</summary>
+        public ContentId HatchEffect { get; set; }
+
+        /// <summary>T49: the player turned hatch effects off (stored now, shown in the profile's hatch area later).</summary>
+        public bool HatchEffectOff { get; set; }
     }
 }

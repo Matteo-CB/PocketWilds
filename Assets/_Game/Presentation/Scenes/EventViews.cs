@@ -14,6 +14,12 @@ namespace PocketWilds.Presentation
         public const string Headline = "event.announce.headline";
         public const string AnnounceNote = "event.announce.note";
 
+        /// <summary>T49: the download page of an event whose content group is missing (texts in Editor/UI/BurrowsTexts.cs).</summary>
+        public const string DownloadSize = "event.download.size";
+        public const string Download = "event.download.button";
+        public const string Downloading = "event.download.progress";
+        public const string DownloadFailed = "event.download.failed";
+
         public const string TabTrack = "event.tab.track";
         public const string TabEgg = "event.tab.egg";
         public const string TabShop = "event.tab.shop";
@@ -183,6 +189,17 @@ namespace PocketWilds.Presentation
         public bool Announce => _events.Phase == EventPhase.Announce;
         public bool Running => _events.Phase == EventPhase.Running;
         public EventDefinition Definition => _events.Definition;
+
+        /// <summary>T49: an event is scheduled but its content group is not on the device: the hub shows the download page.</summary>
+        public bool NeedsDownload => _events.Definition == null && _events.PendingDownload != null;
+
+        public EventDefinition PendingDefinition => _events.PendingDownload;
+        public DateTimeOffset PendingStartUtc => _events.PendingEntry.StartUtc;
+
+        /// <summary>« Téléchargement de l'événement : {0} Mo »: whole megabytes, rounded up.</summary>
+        public int DownloadMegabytes => EventContentGroups.Megabytes(_events.PendingDownloadBytes);
+
+        public bool Downloading => _events.Downloading;
 
         /// <summary>Rows of the track: 30, or 36 with a returning year's bonus tiers.</summary>
         public int TierRows => Math.Min(MaxTierRows, Math.Max(0, _events.Definition != null ? _events.TierCount : 0));
@@ -363,6 +380,9 @@ namespace PocketWilds.Presentation
 
         void SummarySeen(string instanceId);
         void EventHubClosed();
+
+        /// <summary>T49: « Télécharger » on the download page (the event's content group).</summary>
+        void DownloadEvent();
     }
 
     /// <summary>T48: the event button on the HUD's right rail (Play, Today, Event), its tier progress ring and its dot.</summary>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using PocketWilds.Content;
 using PocketWilds.Presentation;
@@ -132,6 +133,10 @@ namespace PocketWilds.Editor.UI
                 BuildHub(ui, kit);
                 BuildSummary(ui, kit);
                 FillArt(ui);
+                // T49: every currency image follows the event's own icon (bound with the event, the generic token otherwise).
+                ui.currencyDefault = kit.Currency;
+                ui.currencyImages = kit.Currency == null ? new Image[0]
+                    : root.GetComponentsInChildren<Image>(true).Where(i => i.sprite == kit.Currency).ToArray();
                 ui.trackTop = TrackTop;
                 ui.tierPitch = TierPitch;
                 ui.shopTop = ShopTop;
@@ -166,6 +171,12 @@ namespace PocketWilds.Editor.UI
             // Banner: the event's name, the real date, the currency, the featured species, the close button.
             var banner = UiPipeline.AddImage("Banner", hub, kit.Panel, new Color(1f, 0.93f, 0.84f, 1f), Image.Type.Sliced);
             UiPipeline.Place(banner.rectTransform, Top, Top, new Vector2(0f, -24f), new Vector2(1032f, 380f));
+            // T49: the event's own art (SourceArt/UI/Tools/pw_ui_sprites_t49.py), behind everything on the banner; its edges fade
+            // inside the panel's rounded corners. Hidden until an event with art binds.
+            ui.themeArt = UiPipeline.AddImage("ThemeArt", banner.rectTransform, null, Color.white, Image.Type.Simple);
+            UiPipeline.Stretch(ui.themeArt.rectTransform);
+            ui.themeArt.raycastTarget = false;
+            ui.themeArt.enabled = false;
             ui.featured = UiPipeline.AddImage("Featured", banner.rectTransform, Icon("ICO_Paw"), new Color(0.47f, 0.4f, 0.33f, 0.55f), Image.Type.Simple);
             ui.featured.preserveAspect = true;
             UiPipeline.Place(ui.featured.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-170f, -50f), new Vector2(280f, 280f));
@@ -641,7 +652,17 @@ namespace PocketWilds.Editor.UI
             ui.announceNote = Text("Note", page, TextRole.Body, 38f, 30f, tokens.textSecondary, new Vector2(44f, -540f), new Vector2(992f, 120f));
             ui.announceNote.textWrappingMode = TextWrappingModes.Normal;
             ui.announceNote.alignment = TextAlignmentOptions.Top;
-            Fit(ui.announceNote, EventText.AnnounceNote);
+            Fit(ui.announceNote, EventText.AnnounceNote, EventText.Downloading);
+            Fit(ui.announceTitle, EventText.DownloadSize);
+            // T49: « Télécharger », under the note, shown only while the event's content group is missing (saved hidden).
+            var row = UiPipeline.Rect("Download", page);
+            UiPipeline.Place(row, TopLeft, TopLeft, new Vector2(0f, -680f), new Vector2(1080f, 160f));
+            ui.download = ProgressionUiPipeline.PrimaryButton(row, tokens, "Download", Vector2.zero, new Vector2(560f, 150f), out _, out var downloadLabel);
+            Floor(downloadLabel, 40f);
+            Fit(downloadLabel, EventText.Download);
+            ui.downloadLabel = downloadLabel;
+            ui.download.gameObject.SetActive(false);
+            page.sizeDelta = new Vector2(0f, 860f);
         }
 
         private static void BuildSummary(EventHubRefs ui, Kitset kit)
@@ -720,9 +741,65 @@ namespace PocketWilds.Editor.UI
             }
             ui.featuredKeys = keys.ToArray();
             ui.featuredSprites = sprites.ToArray();
+
+            // T49: each event's banner art (UI_EventBanner_<Name> for theme.<name>) and currency icon (ICO_Event_<Name>).
+            CompressBanners();
+            var themeKeys = new List<string>();
+            var themeSprites = new List<Sprite>();
+            var currencyKeys = new List<string>();
+            var currencySprites = new List<Sprite>();
+            foreach (var guid in AssetDatabase.FindAssets("t:Sprite", new[] { "Assets/_Game/Art/UI/Events", "Assets/_Game/Art/UI/Icons" }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                string file = Path.GetFileNameWithoutExtension(path);
+                const string banner = "UI_EventBanner_", currency = "ICO_Event_";
+                if (file.StartsWith(banner, StringComparison.Ordinal) && !themeKeys.Contains("theme." + file.Substring(banner.Length).ToLowerInvariant()))
+                {
+                    themeKeys.Add("theme." + file.Substring(banner.Length).ToLowerInvariant());
+                    themeSprites.Add(AssetDatabase.LoadAssetAtPath<Sprite>(path));
+                }
+                else if (file.StartsWith(currency, StringComparison.Ordinal) && !currencyKeys.Contains(file))
+                {
+                    currencyKeys.Add(file);
+                    currencySprites.Add(AssetDatabase.LoadAssetAtPath<Sprite>(path));
+                }
+            }
+            ui.themeKeys = themeKeys.ToArray();
+            ui.themeSprites = themeSprites.ToArray();
+            ui.currencyKeys = currencyKeys.ToArray();
+            ui.currencySprites = currencySprites.ToArray();
         }
 
         // ---------------- Helpers ----------------
+
+        /// <summary>
+        /// Event banners are wider than 512 px (listed in Handmade_Sources largeTextures): ASTC 6x6 on the phones, no mips, like the
+        /// zone captures; only the running event's banner is shown.
+        /// </summary>
+        private static void CompressBanners()
+        {
+            foreach (var guid in AssetDatabase.FindAssets("UI_EventBanner_ t:Texture2D", new[] { "Assets/_Game/Art/UI/Events" }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (!(AssetImporter.GetAtPath(path) is TextureImporter importer))
+                    continue;
+                bool changed = importer.mipmapEnabled;
+                importer.mipmapEnabled = false;
+                foreach (var platform in new[] { "Android", "iPhone" })
+                {
+                    var settings = importer.GetPlatformTextureSettings(platform);
+                    if (settings.overridden && settings.format == TextureImporterFormat.ASTC_6x6)
+                        continue;
+                    settings.overridden = true;
+                    settings.maxTextureSize = 1024;
+                    settings.format = TextureImporterFormat.ASTC_6x6;
+                    importer.SetPlatformTextureSettings(settings);
+                    changed = true;
+                }
+                if (changed)
+                    importer.SaveAndReimport();
+            }
+        }
 
         private static TextMeshProUGUI Text(string name, RectTransform parent, TextRole role, float size, float min, Color color, Vector2 position, Vector2 box)
         {

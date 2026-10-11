@@ -254,4 +254,75 @@ namespace PocketWilds.Simulation
 
         public bool IsPresent(EventDefinition definition) => true;
     }
+
+    /// <summary>
+    /// T49: an availability hook that can also fetch a missing content group (« Téléchargement de l'événement : {n} Mo »). The
+    /// event stays out of the calendar's phases until its content is present; the hub shows the download page meanwhile.
+    /// </summary>
+    public interface IEventContentDownload : IEventContentAvailability
+    {
+        /// <summary>Bytes still to download for this event's group (0 once present or unknown).</summary>
+        long DownloadBytes(EventDefinition definition);
+
+        bool IsDownloading(EventDefinition definition);
+
+        /// <summary>Starts the download; <paramref name="done"/> gets true once the group is present.</summary>
+        void Download(EventDefinition definition, Action<bool>? done);
+    }
+
+    /// <summary>T49: each event's own assets live in one Addressables group « LiveOps_&lt;Name&gt; » with the label « liveops.&lt;name&gt; ».</summary>
+    public static class EventContentGroups
+    {
+        public const string GroupPrefix = "LiveOps_";
+        public const string LabelPrefix = "liveops.";
+
+        /// <summary>The short name of « event.burrows »: « burrows ».</summary>
+        public static string ShortName(string eventKey) =>
+            eventKey != null && eventKey.StartsWith("event.", StringComparison.Ordinal) ? eventKey.Substring(6) : eventKey ?? string.Empty;
+
+        /// <summary>« LiveOps_Burrows ».</summary>
+        public static string GroupOf(string eventKey)
+        {
+            var name = ShortName(eventKey);
+            var builder = new System.Text.StringBuilder(GroupPrefix);
+            bool upper = true;
+            foreach (char c in name)
+            {
+                if (c == '_' || c == '.')
+                {
+                    upper = true;
+                    continue;
+                }
+                builder.Append(upper ? char.ToUpperInvariant(c) : c);
+                upper = false;
+            }
+            return builder.ToString();
+        }
+
+        /// <summary>« liveops.burrows ».</summary>
+        public static string LabelOf(string eventKey) => LabelPrefix + ShortName(eventKey);
+
+        /// <summary>Whole megabytes shown on the download page, rounded up (never 0 while something is missing).</summary>
+        public static int Megabytes(long bytes) => bytes <= 0 ? 0 : (int)Math.Max(1L, (bytes + 1024L * 1024L - 1L) / (1024L * 1024L));
+    }
+
+    /// <summary>
+    /// T49: the calendar shipped in the build (a fetched « events.calendar » replaces it). L'Éveil des Terriers 2027: announce
+    /// 10 March 10:00 UTC, run 12 to 26 March 10:00 UTC (the 2nd Friday of March, 14 days).
+    /// </summary>
+    public static class DefaultEventCalendar
+    {
+        public const string Burrows = "event.burrows";
+        public const int BurrowsYear = 2027;
+        public const int BurrowsMonth = 3;
+
+        public static EventCalendarEntry[] Entries() => new[] { EventSchedule.Entry(Burrows, BurrowsYear, BurrowsMonth, 1) };
+
+        public static EventCalendar Create()
+        {
+            var calendar = new EventCalendar();
+            calendar.TrySet(Entries());
+            return calendar;
+        }
+    }
 }

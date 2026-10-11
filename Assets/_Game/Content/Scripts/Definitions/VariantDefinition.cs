@@ -27,8 +27,9 @@ namespace PocketWilds.Content
 
         public VariantDefinition(ContentId id, ContentId species, string displayKey, RarityTier rarity,
             Color32[] palette, PatternChannel patternChannel, byte patternStrength, bool isSecret = false, bool isVisitor = false,
-            int masteryLevel = 0)
+            int masteryLevel = 0, byte moduleSlot = 0)
         {
+            ModuleSlot = moduleSlot;
             IsSecret = isSecret;
             IsVisitor = isVisitor;
             MasteryLevel = masteryLevel;
@@ -57,6 +58,12 @@ namespace PocketWilds.Content
 
         /// <summary>A-SP mastery color, given at that species mastery level (T46); 0 = not a mastery color.</summary>
         public int MasteryLevel { get; }
+
+        /// <summary>
+        /// T49 variant module: 0 = none, 1 to 3 = the view prefab's module child of that slot (a separate mesh rigid on a bone,
+        /// e.g. the Star Nose mole's rosette), shown only on this variant. Set once at Configure, no per-frame cost.
+        /// </summary>
+        public byte ModuleSlot { get; }
 
         /// <summary>Exactly <see cref="PaletteSize"/> colors.</summary>
         public Color32[] Palette { get; }

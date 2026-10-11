@@ -9,7 +9,7 @@ Usage inside Blender, with BL_Rig_MediumQuadruped.blend open:
     import pw_anim_medium; pw_anim_medium.build_all()
     import pw_export; pw_export.export_animation_library("MediumQuadruped")
 Clips (doc RIGS, RIG-002): Idle_A/B, Locomotion_Walk, Locomotion_Trot, Happy, ReactTouch, Sleep_Enter/Loop/Exit,
-Eat_Loop, Social_Nose, Inspect. In place, 30 fps, no bone the family lacks.
+Eat_Loop, Social_Nose, Inspect; T49 PeekOut (photo pose « Sortir du terrier »). In place, 30 fps, no bone the family lacks.
 """
 import math
 import bpy
@@ -201,6 +201,18 @@ def clips():
          ("Head", "rz"): [(0, 0), (16, 6), (26, -4), (45, 0)]}
     t.update(both("Ear_{}_01", "rx", [(0, 0), (10, -14), (30, -14), (45, 0)]))
     c[f"AN_{n}_Inspect"] = (45, False, t)
+    # ---------------- PeekOut (T49 photo pose « Sortir du terrier »): lowers the muzzle towards the ground (less than
+    # Eat, which stops at about 19 cm), sniffs, pops back up a little higher, a quick shake (head turns and tilts, ears
+    # flap), settles. 1.8 s one-shot. Chest and legs stay at rest, so no hoof moves; Root only rises.
+    t = {("Neck", "rx"): [(0, 0), (14, 55), (24, 55), (32, -6), (38, -6), (48, 0), (54, 0)],
+         ("Head", "rx"): [(0, 0), (14, 22), (17, 26), (20, 21), (23, 25), (26, 22), (32, -10), (36, -8), (46, -2), (50, 0), (54, 0)],
+         ("Head", "ry"): [(0, 0), (34, 0), (37, 14), (40, -14), (43, 10), (46, -7), (49, 3), (52, 0), (54, 0)],
+         ("Head", "rz"): [(0, 0), (34, 0), (37, -6), (40, 6), (43, -4), (46, 3), (50, 0), (54, 0)],
+         ("Root", "lz"): [(0, 0), (28, 0), (32, 0.008), (38, 0.005), (46, 0), (54, 0)],
+         ("Tail_01", "rx"): [(0, 0), (30, -14), (36, 4), (44, 0), (54, 0)]}
+    t.update(both("Ear_{}_01", "rx", [(0, 0), (14, -10), (26, -10), (32, 8), (37, -6), (40, 8), (43, -6), (47, 0), (54, 0)]))
+    t.update(both("Ear_{}_01", "rz", [(0, 0), (34, 0), (37, -8), (40, 8), (43, -5), (46, 0), (54, 0)], -1))
+    c[f"AN_{n}_PeekOut"] = (54, False, t)
     return c
 
 

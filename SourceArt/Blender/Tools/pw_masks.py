@@ -291,6 +291,48 @@ def fieldhamster_masks(co, n, ctx):
     return secondary, belly, mask_a, mask_b, None, mask_c
 
 
+MOLE_HANDS = (((0.108, -0.130, 0.038), (0.128, -0.166, 0.034)), ((-0.108, -0.130, 0.038), (-0.128, -0.166, 0.034)))
+
+
+def mole_masks(co, n, ctx):
+    """T49 Mole. Secondary = mitten hands, pointed snout tip, hind feet and tail tip (pink), belly = soft underside and chin.
+    Mask A = hands and nose (every variant: vivid pink on Mocha, gold on Golden Paws, pink glow on Star Nose; the nose bead
+    joins through the rule's nose_mask_a). Mask B = paler muzzle and cheeks. Mask C (second UV map, uv1.x) = the back,
+    soft round patches like sunlit moss (Golden Moss)."""
+    hand = 0.0
+    for paddle, tip in MOLE_HANDS:
+        if co.x * paddle[0] <= 0:
+            continue
+        side = smoothstep(0.070, 0.086, abs(co.x))
+        for c, r in ((paddle, (0.040, 0.070, 0.052)), (tip, (0.030, 0.036, 0.040))):
+            d = co - Vector(c)
+            s = math.sqrt((d.x / r[0]) ** 2 + (d.y / r[1]) ** 2 + (d.z / r[2]) ** 2)
+            hand = max(hand, smoothstep(1.15, 0.90, s) * side)
+    nose = ctx["nose"]
+    tip = smoothstep(0.036, 0.020, (co - nose).length)
+    feet = smoothstep(0.022, 0.010, co.z) * smoothstep(0.050, 0.070, co.y)
+    tail = smoothstep(0.178, 0.196, co.y) * smoothstep(0.050, 0.060, co.z)
+    secondary = max(hand, tip, feet, tail)
+
+    facing = n.dot(Vector((0, -1, 0)))
+    under = smoothstep(-0.25, -0.65, n.z)
+    chin = smoothstep(0.20, 0.60, max(facing, 0.8 * n.dot(Vector((0, 0, -1))))) * smoothstep(nose.z + 0.004, nose.z - 0.022, co.z)         * smoothstep(-0.10, -0.15, co.y)
+    belly = max(under, chin) * (1.0 - secondary)
+
+    mask_a = max(hand, smoothstep(0.030, 0.016, (co - nose).length))
+    muzzle = smoothstep(0.080, 0.042, (co - Vector((0.0, -0.188, 0.078))).length)
+    mask_b = muzzle * (1.0 - tip) * (1.0 - hand)
+
+    mask_c = 0.0
+    top = smoothstep(0.30, 0.75, n.z) * smoothstep(-0.125, -0.065, co.y) * (1.0 - smoothstep(0.150, 0.190, co.y))
+    if top > 0.0:
+        moss = 0.0
+        for center, radius in ctx["spots"]:
+            moss = max(moss, smoothstep(radius * 1.15, radius * 0.35, (co - Vector(center)).length))
+        mask_c = top * (0.55 + 0.45 * moss) * (1.0 - hand)
+    return secondary, belly, mask_a, mask_b, None, mask_c
+
+
 def _fawn_spots():
     """Fawn spots: two rows each side of the spine and one lower row on the flanks, rump to shoulder."""
     spots = []
@@ -385,6 +427,16 @@ RULES = {
                ((0.075, 0.010, 0.222), 0.034), ((-0.075, 0.010, 0.222), 0.034), ((0.065, 0.120, 0.203), 0.030),
                ((-0.065, 0.120, 0.203), 0.030)],
     ),
+    "Mole": dict(
+        fn=mole_masks,
+        head_center=(0.0, -0.135, 0.088),
+        head_radii=(0.072, 0.082, 0.068),
+        # The nose bead joins mask A with the hands (detail region kept for its color).
+        nose_mask_a=1.0,
+        # Back patches (mask C): six soft round moss cushions over the back.
+        spots=[((0.0, -0.040, 0.180), 0.046), ((0.050, 0.025, 0.185), 0.040), ((-0.052, 0.060, 0.180), 0.042),
+               ((0.0, 0.110, 0.176), 0.046), ((0.046, 0.130, 0.160), 0.036), ((-0.040, -0.015, 0.178), 0.036)],
+    ),
     "Fawn": dict(
         fn=fawn_masks,
         head_center=(0.0, -0.175, 0.468),
@@ -455,8 +507,8 @@ def apply(species, armature_name=None, nose_object="WORK_Nose"):
             ctx["part"] = part_attr.data[v.index].value if part_attr is not None else 0
             r, g, b, a = regions.data[v.index].color
             if a > 0.5 or b > 0.5:
-                # Eyes and nose keep their own tags and no pattern.
-                per_vertex.append((0.0, 0.0))
+                # Eyes and nose keep their own tags and no pattern (T49: a rule may put the nose bead on mask A).
+                per_vertex.append((rule.get("nose_mask_a", 0.0) if a <= 0.5 else 0.0, 0.0))
                 per_vertex_c.append((0.0, 0.0))
                 continue
             out = rule["fn"](v.co, v.normal, ctx)

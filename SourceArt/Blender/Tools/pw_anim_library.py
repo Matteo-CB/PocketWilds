@@ -14,7 +14,12 @@ T34E (charte « fait main », section 8):
 - Ear twitches at rest stay within 8 degrees.
 
 T47: scale channels ("sx", "sy", "sz", bone-local) for a subtle squash; only the Field Hamster Stash uses them, on the
-Head bone (cheeks puff, no shape key, no new bone). Every clip keys the Head scale at 1 so none inherits a squash."""
+Head bone (cheeks puff, no shape key, no new bone). Every clip keys the Head scale at 1 so none inherits a squash.
+
+T49: MoleDig (the Mole's dig, safe for the whole family), MoleEat (its low nibble) and PeekOut (the photo pose
+« Sortir du terrier »). MoleSleep_Enter/_Loop/_Exit, MoleReact and MoleHappy replace the family Sleep, ReactTouch and
+Happy on the Mole, whose low snout and big mitten hands went below the ground. Every Mole clip is measured frame by
+frame on SKM_Mole_LOD0 and its star nose module: the lowest vertex stays at or above the ground."""
 import bpy, math
 
 ARM = bpy.data.objects["SK_SmallQuadruped"]
@@ -101,6 +106,15 @@ SLEEP = {("Root", "lz"): -0.030, ("Chest", "rx"): -6, ("Neck", "rx"): 18, ("Head
          ("FrontLeg_L_Upper", "rx"): -28, ("FrontLeg_R_Upper", "rx"): -28, ("FrontLeg_L_Lower", "rx"): 20, ("FrontLeg_R_Lower", "rx"): 20,
          ("HindLeg_L_Upper", "rx"): 28, ("HindLeg_R_Upper", "rx"): 28, ("HindLeg_L_Lower", "rx"): -10, ("HindLeg_R_Lower", "rx"): -10,
          ("Tail_01", "rx"): -15}
+
+# The Mole's sleep pose (T49): mittens forward and in beside the chin (L and R mirrored on Z), head lowered and turned
+# onto them, hind legs splayed so the belly rests on the ground. Measured on SKM_Mole_LOD0 and its star nose module.
+MOLE_SLEEP = {("Root", "lz"): -0.001, ("Neck", "rx"): 6, ("Head", "rx"): 5, ("Head", "ry"): 8, ("Head", "rz"): 5,
+              ("FrontLeg_L_Upper", "rx"): 12, ("FrontLeg_R_Upper", "rx"): 12,
+              ("FrontLeg_L_Lower", "rx"): -8, ("FrontLeg_R_Lower", "rx"): -8,
+              ("FrontLeg_L_Upper", "rz"): -9, ("FrontLeg_R_Upper", "rz"): 9,
+              ("HindLeg_L_Upper", "rz"): 6, ("HindLeg_R_Upper", "rz"): -6,
+              ("Tail_01", "rx"): -12, ("Ear_L_01", "rx"): -20, ("Ear_R_01", "rx"): -20}
 
 def hold(pose, frames):
     return {k: [(0, v), (frames, v)] for k, v in pose.items()}
@@ -290,6 +304,139 @@ def clips():
     t.update(both("FrontPaw_{}", "rx", [(0, 0), (24, 14), (32, 18), (40, 12), (48, 0), (72, 0)]))
     t.update(both("Ear_{}_01", "rx", [(0, 0), (8, 8), (20, 8), (30, -4), (40, -6), (52, -2), (62, 0), (72, 0)]))
     c["AN_SmallQuadruped_FieldHamsterStash"] = (72, False, t)
+
+    # ---------------- MoleDig (T49, L'Éveil des Terriers): scratches the ground with both front paws in turn (two
+    # strokes each), the head low over the spot, then sniffs. 2 s one-shot (a pooled hole decal plays under it).
+    # Safe on every SmallQuadruped: the upper legs only swing forward (a backward swing would sink the paws), each stroke
+    # ends on the rest pose (the paw meets the ground, never below), Chest only lifts, and Neck + Head stay within 12
+    # degrees so the Mole's low snout keeps above the ground.
+    def strokes(starts, peak):
+        keys = [(0, 0)]
+        for s in starts:
+            keys += [(s, 0), (s + 4, peak[0]), (s + 9, peak[1]), (s + 10, 0)]
+        return keys + [(60, 0)]
+    t = {("Neck", "rx"): [(0, 0), (6, 5), (44, 5), (48, 6), (56, 2), (60, 0)],
+         ("Head", "rx"): [(0, 0), (6, 3), (44, 3), (47, 6), (49, 3), (51, 6), (53, 3), (56, 1), (60, 0)],
+         ("Head", "rz"): [(0, 0), (10, 4), (20, -4), (30, 4), (40, -4), (46, 0), (60, 0)],
+         ("Chest", "rx"): [(0, 0), (6, 2), (46, 2), (56, 0), (60, 0)],
+         ("Pelvis", "rz"): [(0, 0), (11, 1.5), (21, -1.5), (31, 1.5), (41, -1.5), (48, 0), (60, 0)],
+         ("Tail_01", "rz"): [(0, 0), (20, 6), (40, -6), (60, 0)]}
+    for side, starts in (("L", (6, 26)), ("R", (16, 36))):
+        t[(f"FrontLeg_{side}_Upper", "rx")] = strokes(starts, (22, 2))
+        t[(f"FrontLeg_{side}_Lower", "rx")] = strokes(starts, (-14, -2))
+        t[(f"FrontPaw_{side}", "rx")] = strokes(starts, (14, 4))
+    t.update(both("Ear_{}_01", "rx", [(0, 0), (6, 8), (44, 8), (50, 4), (60, 0)]))
+    c["AN_SmallQuadruped_MoleDig"] = (60, False, t)
+
+    # ---------------- PeekOut (T49 photo pose pose.peek_out « Sortir du terrier »): lowers the muzzle towards the ground,
+    # sniffs, pops back up looking a little higher, then a quick little shake (head turns and tilts, ears flap) and
+    # settles. 1.8 s one-shot. No body point below the ground on any species: only Neck and Head lower (9 and 8
+    # degrees at most, checked on the Mole's snout), Chest only lifts, Root only rises, the legs stay at rest.
+    t = {("Neck", "rx"): [(0, 0), (12, 9), (22, 9), (30, -4), (36, -4), (46, 0), (54, 0)],
+         ("Head", "rx"): [(0, 0), (12, 7), (15, 8), (18, 6), (21, 7.5), (24, 7), (30, -10), (34, -8), (44, -2), (50, 0), (54, 0)],
+         ("Head", "ry"): [(0, 0), (32, 0), (35, 12), (38, -12), (41, 9), (44, -7), (47, 3), (50, 0), (54, 0)],
+         ("Head", "rz"): [(0, 0), (32, 0), (35, -5), (38, 5), (41, -4), (44, 3), (48, 0), (54, 0)],
+         ("Chest", "rx"): [(0, 0), (12, 2), (24, 2), (30, 5), (40, 3), (50, 0), (54, 0)],
+         ("Root", "lz"): [(0, 0), (26, 0), (30, 0.006), (36, 0.004), (44, 0), (54, 0)],
+         ("Tail_01", "rx"): [(0, 0), (30, 10), (36, -4), (44, 0), (54, 0)]}
+    t.update(both("Ear_{}_01", "rx", [(0, 0), (12, 10), (24, 10), (30, -8), (36, -4), (40, 6), (44, -4), (48, 0), (54, 0)]))
+    t.update(both("Ear_{}_01", "rz", [(0, 0), (32, 0), (35, -6), (38, 6), (41, -4), (44, 0), (54, 0)], -1))
+    c["AN_SmallQuadruped_PeekOut"] = (54, False, t)
+
+    # ---------------- MoleEat (T49): the Mole's Eat_Loop. The family Eat (Neck 22, Head 24, Root down 6 mm) swings a
+    # low pointed snout back under the chin and below the ground; here the head only dips a little and nibbles, the
+    # chest lifts 2 degrees. 2 s loop, same length as Eat_Loop.
+    nib = [(0, 4), (4, 7), (8, 4), (12, 7), (16, 4), (26, 4), (30, 7), (34, 4), (38, 7), (42, 4), (60, 4)]
+    t = {("Neck", "rx"): [(0, 4), (60, 4)], ("Head", "rx"): nib, ("Head", "rz"): [(0, 0), (30, 3), (60, 0)],
+         ("Chest", "rx"): [(0, 2), (30, 3), (60, 2)]}
+    t.update(both("Ear_{}_01", "rx", [(0, 8), (30, 11), (60, 8)]))
+    t.update(both("FrontLeg_{}_Upper", "rx", [(0, 6), (60, 6)]))
+    c["AN_SmallQuadruped_MoleEat"] = (60, True, t)
+
+    # ---------------- MoleWalk (T49): the Mole's low shuffle (its Move clip). The family Walk swings each leg 16 degrees
+    # back, which sinks the big mitten hands 2 cm into the ground; here every paw only steps forward and plants back on
+    # its rest pose, in diagonal pairs, with a 5 mm bob and a soft sway. 0.8 s loop, same length as Locomotion_Walk.
+    def step(at, amp):
+        return [(0, 0), (at, 0), (at + 6, amp), (at + 12, 0), (24, 0)] if at else [(0, 0), (6, amp), (12, 0), (24, 0)]
+    t = {("FrontLeg_L_Upper", "rx"): step(0, 14), ("FrontLeg_R_Upper", "rx"): step(12, 14),
+         ("FrontLeg_L_Lower", "rx"): step(0, -10), ("FrontLeg_R_Lower", "rx"): step(12, -10),
+         ("FrontPaw_L", "rx"): step(0, 8), ("FrontPaw_R", "rx"): step(12, 8),
+         ("HindLeg_R_Upper", "rx"): step(0, 8), ("HindLeg_L_Upper", "rx"): step(12, 8),
+         ("HindLeg_R_Lower", "rx"): step(0, 6), ("HindLeg_L_Lower", "rx"): step(12, 6),
+         ("Root", "lz"): [(0, 0), (6, 0.005), (12, 0), (18, 0.005), (24, 0)],
+         ("Chest", "rz"): [(0, 0), (6, 2.5), (12, 0), (18, -2.5), (24, 0)],
+         ("Pelvis", "rz"): [(0, 0), (6, -2), (12, 0), (18, 2), (24, 0)],
+         ("Head", "rz"): [(0, 0), (6, -1.5), (12, 0), (18, 1.5), (24, 0)],
+         ("Tail_01", "rz"): [(0, 0), (6, 4), (12, 0), (18, -4), (24, 0)]}
+    c["AN_SmallQuadruped_MoleWalk"] = (24, True, t)
+
+    # ---------------- MoleSleep_Enter / _Loop / _Exit (T49): the Mole's sleep. The family SLEEP lowers the Root 3 cm and
+    # drops the head, which sinks the low snout 6.7 cm into the ground. Here the Mole curls a little: the big mitten hands
+    # come forward and in beside the chin, the head lowers and turns to rest on them, the hind legs splay so the belly
+    # settles on the ground (Root down 1 mm only). Same lengths as the family Sleep clips.
+    t = {}
+    for k, v in MOLE_SLEEP.items():
+        if k[0].startswith("FrontLeg"):  # the hands come in first...
+            t[k] = [(0, 0), (8, v * 0.6), (16, v), (24, v)]
+        elif k[0] in ("Neck", "Head") and k[1] == "rx":  # ...then the head lowers onto them
+            t[k] = [(0, 0), (8, v * 0.2), (18, v * 0.85), (24, v)]
+        else:
+            t[k] = [(0, 0), (10, v * 0.7), (24, v)]
+    c["AN_SmallQuadruped_MoleSleep_Enter"] = (24, False, t)
+
+    t = hold(MOLE_SLEEP, 120)
+    t[("Root", "lz")] = [(0, -0.001), (60, -0.0004), (120, -0.001)]
+    t[("Chest", "rx")] = [(0, 0), (60, 0.8), (120, 0)]
+    t[("Head", "rx")] = [(0, 5), (60, 5.6), (120, 5)]
+    t[("Ear_L_01", "rx")] = [(0, -20), (80, -20), (83, -15), (88, -20), (120, -20)]
+    t[("FrontPaw_R", "rx")] = [(0, 0), (92, 0), (95, 6), (99, 0), (120, 0)]  # a little dream twitch, the hand only rises
+    c["AN_SmallQuadruped_MoleSleep_Loop"] = (120, True, t)
+
+    t = {k: [(0, v), (10, 0), (18, 0)] for k, v in MOLE_SLEEP.items()}
+    t[("Root", "lz")] = [(0, -0.001), (8, 0.003), (18, 0)]
+    t[("Chest", "rx")] = [(0, 0), (8, 6), (13, 2), (18, 0)]
+    t[("Neck", "rx")] = [(0, 6), (7, -4), (12, -1), (18, 0)]
+    t[("Head", "rx")] = [(0, 5), (7, -8), (12, -2), (18, 0)]
+    for side in ("L", "R"):
+        t[(f"FrontLeg_{side}_Upper", "rx")] = [(0, 12), (6, 18), (14, 0), (18, 0)]
+        t[(f"FrontLeg_{side}_Lower", "rx")] = [(0, -8), (6, -14), (14, 0), (18, 0)]
+        t[(f"Ear_{side}_01", "rx")] = [(0, -20), (6, -4), (10, 4), (14, -1), (18, 0)]
+    c["AN_SmallQuadruped_MoleSleep_Exit"] = (18, False, t)
+
+    # ---------------- MoleReact (T49): the Mole's ReactTouch. The family clip compacts (Root down 1 cm, chest down) and
+    # sinks the mittens 2 cm; here a small startled lean back: the front lifts, the head rises with a curious tilt and
+    # both mitten hands come up. Nothing dips: Root only rises, every rotation lifts. 0.6 s, same length as ReactTouch.
+    t = {("Root", "lz"): [(0, 0), (3, 0.003), (9, 0.002), (18, 0)],
+         ("Pelvis", "rx"): [(0, 0), (3, 3), (10, 2), (18, 0)],
+         ("Chest", "rx"): [(0, 0), (3, 5), (9, 4), (18, 0)],
+         ("Neck", "rx"): [(0, 0), (3, -6), (10, -3), (18, 0)],
+         ("Head", "rx"): [(0, 0), (3, -8), (7, -10), (12, -6), (18, 0)],
+         ("Head", "rz"): [(0, 0), (5, 0), (8, 8), (13, 6), (18, 0)],
+         ("Tail_01", "rx"): [(0, 0), (4, 10), (10, 0), (18, 0)]}
+    t.update(both("FrontLeg_{}_Upper", "rx", [(0, 0), (3, 22), (10, 18), (18, 0)]))
+    t.update(both("FrontLeg_{}_Lower", "rx", [(0, 0), (3, -10), (10, -8), (18, 0)]))
+    t.update(both("FrontPaw_{}", "rx", [(0, 0), (3, 12), (6, 16), (10, 10), (18, 0)]))
+    t.update(both("Ear_{}_01", "rx", [(0, 0), (3, 8), (7, -14), (12, -6), (18, 0)]))
+    c["AN_SmallQuadruped_MoleReact"] = (18, False, t)
+
+    # ---------------- MoleHappy (T49): the Mole's Happy. A happy wiggle: the front lifts a little, the mitten hands wave
+    # in turn, the chest sways and the head bobs and tilts. The hind feet stay planted (Root and Pelvis keep still, the
+    # sway rides the Spine and Chest). 1 s, same length as Happy.
+    wave_hi = [(0, 0), (6, 20), (12, 4), (18, 20), (24, 4), (28, 0), (30, 0)]
+    wave_lo = [(0, 0), (6, 4), (12, 20), (18, 4), (24, 20), (28, 0), (30, 0)]
+    t = {("Chest", "rx"): [(0, 0), (4, 3), (26, 3), (30, 0)],
+         ("Chest", "rz"): [(0, 0), (6, 3), (12, -3), (18, 3), (24, -3), (28, 0), (30, 0)],
+         ("Spine", "rz"): [(0, 0), (6, -1.5), (12, 1.5), (18, -1.5), (24, 1.5), (28, 0), (30, 0)],
+         ("Head", "rx"): [(0, 0), (4, -5), (9, -2), (15, -5), (21, -2), (26, -4), (30, 0)],
+         ("Head", "rz"): [(0, 0), (6, 6), (12, -6), (18, 6), (24, -6), (28, 0), (30, 0)],
+         ("Tail_01", "rz"): [(0, 0), (5, 8), (10, -8), (15, 8), (20, -8), (25, 4), (30, 0)],
+         ("FrontLeg_L_Upper", "rx"): wave_hi, ("FrontLeg_R_Upper", "rx"): wave_lo,
+         ("FrontLeg_L_Lower", "rx"): [(f, -v * 0.6) for f, v in wave_hi],
+         ("FrontLeg_R_Lower", "rx"): [(f, -v * 0.6) for f, v in wave_lo],
+         ("FrontPaw_L", "rx"): [(f, v * 0.7) for f, v in wave_hi],
+         ("FrontPaw_R", "rx"): [(f, v * 0.7) for f, v in wave_lo]}
+    t.update(both("Ear_{}_01", "rx", [(0, 0), (6, -8), (12, -4), (18, -8), (24, -4), (30, 0)]))
+    c["AN_SmallQuadruped_MoleHappy"] = (30, False, t)
     return c
 
 def build_all():

@@ -116,6 +116,8 @@ namespace PocketWilds.Editor.Albums
         public int count = 1;
         public Vector3 spread;
         public string label;
+        [Tooltip("T49: a prop another pipeline makes (Burrows decorations, accessories): when missing, the sticker is captured without it and the report says so.")]
+        public bool optional;
 
         public string Name => !string.IsNullOrEmpty(label) ? label
             : kind == SubjectKind.Animal ? source
@@ -130,6 +132,13 @@ namespace PocketWilds.Editor.Albums
 
         public static StickerSubject Mesh(string model, string mesh, string material, string palette, float x, float z, float yaw = 0f) =>
             new StickerSubject { kind = SubjectKind.Mesh, source = model, meshName = mesh, material = material, palette = palette, position = new Vector3(x, 0f, z), yaw = yaw };
+
+        /// <summary>T49: captured without this prop (a clear warning in the report) while its pipeline has not made it yet.</summary>
+        public StickerSubject Optional()
+        {
+            optional = true;
+            return this;
+        }
 
         public StickerSubject Focus()
         {

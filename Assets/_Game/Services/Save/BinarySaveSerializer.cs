@@ -55,7 +55,8 @@ namespace PocketWilds.Services.Save
         private const ushort NamesVersion = 1;
         private const ushort MasteryVersion = 1;
         private const ushort SettingsVersion = 1;
-        private const ushort EntitlementsVersion = 1;
+        // 2 (T49): the hatch effect choice (id, off) after the transactions.
+        private const ushort EntitlementsVersion = 2;
         private const ushort OfflineVersion = 1;
         private const ushort CodexVersion = 1;
         private const ushort PityVersion = 1;
@@ -135,6 +136,8 @@ namespace PocketWilds.Services.Save
             output.WriteInt32(state.Entitlements.ProcessedTransactions.Count);
             foreach (var transaction in state.Entitlements.ProcessedTransactions)
                 output.WriteString(transaction);
+            output.WriteContentId(state.Entitlements.HatchEffect);
+            output.WriteBool(state.Entitlements.HatchEffectOff);
             EndSection(output, mark);
 
             mark = BeginSection(output, SaveSectionId.Offline, OfflineVersion);
@@ -1899,6 +1902,11 @@ namespace PocketWilds.Services.Save
                 var transaction = r.ReadString();
                 if (!string.IsNullOrEmpty(transaction))
                     entitlements.ProcessedTransactions.Add(transaction!);
+            }
+            if (section.Version >= 2)
+            {
+                entitlements.HatchEffect = r.ReadContentId();
+                entitlements.HatchEffectOff = r.ReadBool();
             }
         }
 

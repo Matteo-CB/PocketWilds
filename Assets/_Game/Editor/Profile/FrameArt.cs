@@ -123,6 +123,7 @@ namespace PocketWilds.Editor.Profile
             new FrameArt("frame.golden_case", 0xFFE9A0, 0xD9A93A, FrameRingStyle.Pearls, 12, new uint[] { 0xF2B93A, 0xA8E088, 0x8FD0F0, 0xF69A92, 0xC2BEEC, 0xFBC47C }, new FrameMotif[] {  }),
             new FrameArt("frame.open_horizon", 0xFBC47C, 0xD98A5A, FrameRingStyle.Gradient, 0, new uint[] { 0x8FD0F0 }, new FrameMotif[] { new FrameMotif("Hill", FrameSlot.BottomLeft, 0x6DB55A), new FrameMotif("Hill", FrameSlot.Bottom, 0x8CCB62), new FrameMotif("Hill", FrameSlot.BottomRight, 0x5E9E4A) }),
             new FrameArt("frame.little_moments", 0xFFF1D6, 0xD9B98A, FrameRingStyle.Plain, 0, new uint[] {  }, new FrameMotif[] { new FrameMotif("Moment", FrameSlot.TopLeft, 0xFFFFFF), new FrameMotif("Moment", FrameSlot.Top, 0xFFFFFF), new FrameMotif("Moment", FrameSlot.TopRight, 0xFFFFFF), new FrameMotif("Moment", FrameSlot.BottomLeft, 0xFFFFFF), new FrameMotif("Moment", FrameSlot.Bottom, 0xFFFFFF), new FrameMotif("Moment", FrameSlot.BottomRight, 0xFFFFFF) }),
+            new FrameArt("frame.event_burrows_gold", 0xF5C451, 0xB8801E, FrameRingStyle.Double, 0, new uint[] { 0xFFE9A0 }, new FrameMotif[] { new FrameMotif("Roots", FrameSlot.BottomLeft, 0xFFFFFF), new FrameMotif("Roots", FrameSlot.BottomRight, 0xFFFFFF), new FrameMotif("Sprout", FrameSlot.TopLeft, 0xFFFFFF), new FrameMotif("Sprout", FrameSlot.TopRight, 0xFFFFFF) }),
         };
     }
 }

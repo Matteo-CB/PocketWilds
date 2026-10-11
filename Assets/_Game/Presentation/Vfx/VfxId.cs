@@ -45,7 +45,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>T44C (doc 05 sheet 25, H-VFX-078): a visitor arrives, a soft warm ring on the grass where it stops.</summary>
         VisitorArrive = 20,
-        Count = 21,
+        /// <summary>T49 O-HATCH-103 « Éclosion de pousses »: tender sprouts rise in a circle around the egg spot, round dew beads roll on the ground.</summary>
+        SproutBurst = 21,
+        Count = 22,
     }
 
     /// <summary>What a hatch brings that the player did not have: shown by its own effect and the reveal banner.</summary>

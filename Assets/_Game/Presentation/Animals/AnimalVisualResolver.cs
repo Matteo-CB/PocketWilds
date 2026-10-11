@@ -29,7 +29,7 @@ namespace PocketWilds.Presentation
                 var variant = variants[i];
                 if (!palettes.TryGetRow(variant.Id, out int row))
                     continue;
-                uint packed = AnimalVisualPacking.Pack(row, variant.PatternChannel, variant.PatternStrength, 0);
+                uint packed = AnimalVisualPacking.Pack(row, variant.PatternChannel, variant.PatternStrength, 0, variant.ModuleSlot);
                 _visualByVariant.Add(variant.Id, packed);
                 if (!_defaultBySpecies.ContainsKey(variant.Species))
                     _defaultBySpecies.Add(variant.Species, packed);
@@ -51,12 +51,13 @@ namespace PocketWilds.Presentation
             var carried = AnimalGenome.CarriedPattern(animal.TraitBits);
             if (carried != PatternChannel.None && AnimalVisualPacking.Pattern(visualData) == PatternChannel.None)
                 visualData = AnimalVisualPacking.Pack(AnimalVisualPacking.PaletteRow(visualData), carried,
-                    AnimalGenome.CarriedStrength(animal.TraitBits), AnimalVisualPacking.RareIntensity(visualData));
+                    AnimalGenome.CarriedStrength(animal.TraitBits), AnimalVisualPacking.RareIntensity(visualData),
+                    AnimalVisualPacking.ModuleSlot(visualData));
             // T34A SH_RareGlow: Legendary, Golden and Fabulous animals carry their rim glow level.
             int rare = RareGlow.ShaderLevel(animal.Rarity, animal.TraitBits);
             if (rare != AnimalVisualPacking.RareIntensity(visualData))
                 visualData = AnimalVisualPacking.Pack(AnimalVisualPacking.PaletteRow(visualData), AnimalVisualPacking.Pattern(visualData),
-                    AnimalVisualPacking.PatternStrength(visualData), rare);
+                    AnimalVisualPacking.PatternStrength(visualData), rare, AnimalVisualPacking.ModuleSlot(visualData));
             snapshot = new AnimalVisualSnapshot
             {
                 InstanceId = animal.InstanceId,

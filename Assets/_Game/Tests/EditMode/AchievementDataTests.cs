@@ -72,7 +72,7 @@ namespace PocketWilds.Tests.EditMode
         public void ProfileItems_322Titles_42Frames_47Poses_BySource()
         {
             Assert.AreEqual(322, ProfileData.Count(ProfileItemKind.Title));
-            Assert.AreEqual(42, ProfileData.Count(ProfileItemKind.Frame));
+            Assert.AreEqual(43, ProfileData.Count(ProfileItemKind.Frame), "42 from the doc and the T49 gold « Racines ».");
             Assert.AreEqual(47, ProfileData.Count(ProfileItemKind.Pose));
             AssertSources(ProfileItemKind.Title, "title.", new Dictionary<ProfileSource, int>
             {
@@ -85,6 +85,7 @@ namespace PocketWilds.Tests.EditMode
             {
                 { ProfileSource.Start, 1 }, { ProfileSource.BiomeMastery, 13 }, { ProfileSource.EventTrack, 12 },
                 { ProfileSource.RefugeLevel, 3 }, { ProfileSource.Achievement, 12 }, { ProfileSource.JournalMoments, 1 },
+                { ProfileSource.EventGold, 1 },
             });
             AssertSources(ProfileItemKind.Pose, "pose.", new Dictionary<ProfileSource, int>
             {
@@ -128,6 +129,9 @@ namespace PocketWilds.Tests.EditMode
                 foreach (int code in new[] { 0x2728, 0x2726, 0x2727 })
                     Assert.IsFalse(texts[i, 1].Contains(char.ConvertFromUtf32(code)) || texts[i, 2].Contains(char.ConvertFromUtf32(code)), texts[i, 0]);
             }
+            // T49: the gold Roots frame is written by hand with its event's texts (BurrowsTexts), not generated from the doc.
+            for (int i = 0; i < BurrowsTexts.Texts.GetLength(0); i++)
+                rows.TryAdd(BurrowsTexts.Texts[i, 0], (BurrowsTexts.Texts[i, 1], BurrowsTexts.Texts[i, 2]));
             for (int i = 0; i < AchievementData.Count; i++)
             {
                 string key = AchievementData.Row(i).Key;

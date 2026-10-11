@@ -119,6 +119,9 @@ namespace PocketWilds.Tests.EditMode
             var table = new Dictionary<string, (string En, string Fr)>();
             for (int i = 0; i < EventTexts.Texts.GetLength(0); i++)
                 table[EventTexts.Texts[i, 0]] = (EventTexts.Texts[i, 1], EventTexts.Texts[i, 2]);
+            // T49: the download page's words live with the first event that needs them (BurrowsTexts).
+            for (int i = 0; i < BurrowsTexts.Texts.GetLength(0); i++)
+                table.TryAdd(BurrowsTexts.Texts[i, 0], (BurrowsTexts.Texts[i, 1], BurrowsTexts.Texts[i, 2]));
             var keys = new List<string>(EventText.RewardKeys);
             foreach (var field in typeof(EventText).GetFields(BindingFlags.Public | BindingFlags.Static))
                 if (field.IsLiteral && field.FieldType == typeof(string) && field.Name != nameof(EventText.RewardPrefix))

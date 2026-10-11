@@ -607,8 +607,9 @@ namespace PocketWilds.Tests.EditMode
             {
                 Activity = ActivityId.Grooming, Mode = ActivityMode.Free, Stars = 3, Rewarded = true, ChallengeImproved = true, ChallengeStarsBefore = 1,
             });
-            Raise(world.A.Runner, "Ended", events, new ActivityGameResult { Activity = ActivityId.HideAndSeek, Mode = ActivityMode.Free, Stars = 2, Rewarded = true });
-            Raise(world.A.Runner, "Ended", events, new ActivityGameResult { Activity = ActivityId.HideAndSeek, Mode = ActivityMode.Practice, Stars = 3 });
+            // Free games, not challenges (the runner writes -1; 0 would be the featured activity's first challenge).
+            Raise(world.A.Runner, "Ended", events, new ActivityGameResult { Activity = ActivityId.HideAndSeek, Mode = ActivityMode.Free, Stars = 2, Rewarded = true, Challenge = -1 });
+            Raise(world.A.Runner, "Ended", events, new ActivityGameResult { Activity = ActivityId.HideAndSeek, Mode = ActivityMode.Practice, Stars = 3, Challenge = -1 });
             Assert.AreEqual(2, P(EventGoalKind.ActivityRounds), "Practice never counts.");
             Assert.AreEqual(5, P(EventGoalKind.ActivityStars));
             Assert.AreEqual(1, P(EventGoalKind.ThreeStarRounds));

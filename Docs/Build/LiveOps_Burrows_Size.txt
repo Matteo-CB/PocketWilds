@@ -1,0 +1,34 @@
+LiveOps_Burrows size report (T49, BurrowsContentGroup)
+0,75 MB of 25 MB (estimate from asset sizes)
+Method: the built LZ4 bundle when Library/com.unity.addressables holds one, otherwise an upper estimate: runtime size of
+textures, meshes, clips and sounds (Profiler.GetRuntimeMemorySizeLong) plus the file size of prefabs and materials, for the
+group's assets and their dependencies that no other group holds (what the bundle would carry).
+
+      96,0 KB  Assets/_Game/Art/Events/Burrows/Models/Landmark_Burrows_RootBurrow.fbx
+      73,1 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_Greenhouse.fbx
+      64,7 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_GardenShed.fbx
+      61,1 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_WoodenBench.fbx
+      56,3 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_DewMushrooms.fbx
+      54,4 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_GardenFence.fbx
+      49,9 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_SeedlingPots.fbx
+      49,9 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_FlowerEntrance.fbx
+      42,4 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_Wheelbarrow.fbx
+      40,4 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_WateringCan.fbx
+      35,9 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_BurrowSign.fbx
+      35,8 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_Souvenir.fbx
+      33,6 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_MossMound.fbx
+      29,2 KB  Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_WormCushion.fbx
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_FlowerEntrance.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_Wheelbarrow.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_WormCushion.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_WoodenBench.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_DewMushrooms.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_GardenFence.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_WateringCan.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_Greenhouse.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Landmark_Burrows_RootBurrow.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_MossMound.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_SeedlingPots.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_BurrowSign.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_GardenShed.prefab
+       3,5 KB  Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_Souvenir.prefab

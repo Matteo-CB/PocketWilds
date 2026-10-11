@@ -18,6 +18,9 @@ namespace PocketWilds.Content
         [Tooltip("Store products, offers and grantable items (T28).")]
         public List<ShopCatalogAsset> shopCatalogs = new List<ShopCatalogAsset>();
 
+        [Tooltip("T49: the shipped events (their dates come from the calendar, their content from the shop catalogs and species).")]
+        public List<EventDefinitionAsset> events = new List<EventDefinitionAsset>();
+
         [Tooltip("Player-facing text, one table per language (LOC_en first: it is the fallback).")]
         public List<LocalizationTableAsset> localization = new List<LocalizationTableAsset>();
 
@@ -58,6 +61,11 @@ namespace PocketWilds.Content
             {
                 if (catalog != null)
                     catalog.AddTo(builder);
+            }
+            foreach (var e in events)
+            {
+                if (e != null)
+                    builder.AddEvent(e.ToRuntime(), e.sourceId);
             }
             return builder;
         }

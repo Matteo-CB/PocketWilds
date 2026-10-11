@@ -222,6 +222,9 @@ namespace PocketWilds.Simulation
 
         /// <summary>Photo mode opening (the 8 base poses).</summary>
         PhotoMode = 12,
+
+        /// <summary>T49: a big event's Carnet d'or tier, given only by that event's reward (Value: the tier; Subject: the event number).</summary>
+        EventGold = 13,
     }
 
     /// <summary>One title, frame or pose row of the generated tables.</summary>
@@ -261,12 +264,30 @@ namespace PocketWilds.Simulation
         private static readonly Dictionary<ContentId, int> SpeciesIndexes;
         private static readonly Dictionary<string, int>[] KeyIndexes;
 
+        /// <summary>
+        /// T49: frames the doc's tables do not list yet, appended after the generated rows (their indexes follow, the 64-bit
+        /// owned mask has room): the gold version of « Racines », given by L'Éveil des Terriers' Carnet d'or tier 20.
+        /// </summary>
+        private static readonly ProfileRow[] ExtraFrameRows =
+        {
+            new ProfileRow("frame.event_burrows_gold", ProfileSource.EventGold, 20, 103, 43),
+        };
+
         // After the generated rows (see AchievementData's static constructor).
         static ProfileData()
         {
+            FrameRows = Append(FrameRows, ExtraFrameRows);
             SpeciesIds = BuildSpecies();
             SpeciesIndexes = BuildSpeciesIndexes();
             KeyIndexes = BuildKeyIndexes();
+        }
+
+        private static ProfileRow[] Append(ProfileRow[] rows, ProfileRow[] extra)
+        {
+            var all = new ProfileRow[rows.Length + extra.Length];
+            System.Array.Copy(rows, all, rows.Length);
+            System.Array.Copy(extra, 0, all, rows.Length, extra.Length);
+            return all;
         }
 
         public static int Count(ProfileItemKind kind) =>

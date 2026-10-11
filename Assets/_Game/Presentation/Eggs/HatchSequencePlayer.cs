@@ -66,6 +66,9 @@ namespace PocketWilds.Presentation
         }
 
         public HatchPhase Phase { get; private set; }
+
+        /// <summary>T49: the owned hatch effect played on top of the burst (<see cref="VfxId.Count"/>: none). Set before each hatch.</summary>
+        public VfxId Effect { get; set; } = VfxId.Count;
         public EggView Egg => _egg;
         public AnimalView Animal => _animal;
         public bool IsPlaying => Phase >= HatchPhase.Anticipation && Phase < HatchPhase.Done;
@@ -280,6 +283,9 @@ namespace PocketWilds.Presentation
                 // A discovery rings around the newborn's feet (its delay lets the burst land first).
                 if (_news != HatchNews.None)
                     _vfx.Play(_news == HatchNews.NewSpecies ? VfxId.NewSpecies : VfxId.NewVariant, _egg.RevealPoint.position, _now);
+                // T49: the hatch effect grows on the ground around the egg spot (its circle stays outside the egg spot radius).
+                if (Effect != VfxId.Count)
+                    _vfx.Play(Effect, _egg.RevealPoint.position, _now);
             }
 
             _audio.Play(AudioEventId.HatchPop, position, default);
@@ -346,6 +352,13 @@ namespace PocketWilds.Presentation
         }
 
         /// <summary>The accent effect a rarity adds on top of the common burst; Count when none (Common, Uncommon).</summary>
+        /// <summary>T49: the pooled effect of a hatch effect slot (Simulation HatchEffects.Keys), <see cref="VfxId.Count"/> for none.</summary>
+        public static VfxId EffectVfx(int hatchEffect) => hatchEffect switch
+        {
+            0 => VfxId.SproutBurst,
+            _ => VfxId.Count,
+        };
+
         public static VfxId RarityVfx(RarityTier rarity)
         {
             switch (rarity)

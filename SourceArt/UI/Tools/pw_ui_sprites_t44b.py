@@ -798,7 +798,7 @@ MOTIFS = (m_daisy, m_grass, m_oak_leaf, m_acorn, m_water_lily, m_crest, m_alpine
 T44B_SPRITES = (badge_bronze, badge_silver, badge_gold, badge_star, badge_locked) + CATEGORY_GLYPHS + (icon_achievement,
                 frame_ring) + MOTIFS
 
-# ---------------------------------------------------------------- the 42 frames (source of FrameArt.cs)
+# ---------------------------------------------------------------- the 43 frames (source of FrameArt.cs)
 
 W = "FFFFFF"
 # key: (ring, rim, style, count, style colours, motifs [(sprite, slot, tint)])
@@ -849,6 +849,8 @@ FRAMES = (
     ("frame.golden_case", "FFE9A0", "D9A93A", "pearls", 12, ("F2B93A", "A8E088", "8FD0F0", "F69A92", "C2BEEC", "FBC47C"), []),
     ("frame.open_horizon", "FBC47C", "D98A5A", "gradient", 0, ("8FD0F0",), [("Hill", BL, "6DB55A"), ("Hill", BOT, "8CCB62"), ("Hill", BR, "5E9E4A")]),
     ("frame.little_moments", "FFF1D6", "D9B98A", "plain", 0, (), [("Moment", TL, W), ("Moment", TOP, W), ("Moment", TR, W), ("Moment", BL, W), ("Moment", BOT, W), ("Moment", BR, W)]),
+    # T49: the gold version of « Racines » (Carnet d'or tier 20 of L'Éveil des Terriers): a gold ring, the same roots and sprouts.
+    ("frame.event_burrows_gold", "F5C451", "B8801E", "double", 0, ("FFE9A0",), [("Roots", BL, W), ("Roots", BR, W), ("Sprout", TL, W), ("Sprout", TR, W)]),
 )
 
 CS_HEADER = """using System;

@@ -83,17 +83,24 @@ namespace PocketWilds.Presentation
         }
     }
 
-    /// <summary>Packs the per-renderer Shader User Value read by SH_AnimalMaster.</summary>
+    /// <summary>
+    /// Packs the per-renderer Shader User Value read by SH_AnimalMaster. Bits 21-22 (T49) carry the variant module slot:
+    /// the shader never reads them, AnimalView shows the matching module mesh when it applies the value.
+    /// </summary>
     public static class AnimalVisualPacking
     {
-        public static uint Pack(int paletteRow, PatternChannel pattern, int patternStrength, int rareIntensity)
+        public static uint Pack(int paletteRow, PatternChannel pattern, int patternStrength, int rareIntensity, int moduleSlot = 0)
         {
             uint row = (uint)Mathf.Clamp(paletteRow, 0, PaletteTable.MaxRows - 1);
             uint channel = (uint)pattern & 7u;
             uint strength = (uint)Mathf.Clamp(patternStrength, 0, 15);
             uint rare = (uint)Mathf.Clamp(rareIntensity, 0, 15);
-            return row | (channel << 10) | (strength << 13) | (rare << 17);
+            uint module = (uint)Mathf.Clamp(moduleSlot, 0, 3);
+            return row | (channel << 10) | (strength << 13) | (rare << 17) | (module << 21);
         }
+
+        /// <summary>T49: variant module slot (0 none, 1-3).</summary>
+        public static int ModuleSlot(uint packed) => (int)((packed >> 21) & 3u);
 
         public static int PaletteRow(uint packed) => (int)(packed & 1023u);
         public static PatternChannel Pattern(uint packed) => (PatternChannel)((packed >> 10) & 7u);

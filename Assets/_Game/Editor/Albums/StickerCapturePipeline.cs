@@ -574,6 +574,12 @@ namespace PocketWilds.Editor.Albums
                 {
                     string why;
                     var p = Create(context, definition, subject, s, report, out why);
+                    if (p == null && subject.optional)
+                    {
+                        // T49: a prop another pipeline makes (the Burrows decorations, an accessory): the sticker goes on without it.
+                        report.Warn($"{definition.id}: optional {subject.Name} skipped ({why}); capture the page again once it exists");
+                        break;
+                    }
                     if (p == null)
                         return Refuse(placed, definition, report, why);
                     p.Holder = holder;
@@ -642,6 +648,22 @@ namespace PocketWilds.Editor.Albums
             if (dropped > droppedInside)
                 report.Notes.Add($"{definition.id}: {dropped - droppedInside} of {droppable - droppedInside} cloud pieces left out (they would touch something)");
             return placed;
+        }
+
+        /// <summary>T49: a prefab by asset path, or by name (« PF_Decor_Burrows_MossMound ») anywhere under Assets/_Game.</summary>
+        private static GameObject LoadPrefab(string source)
+        {
+            if (string.IsNullOrEmpty(source))
+                return null;
+            if (source.StartsWith("Assets/", StringComparison.Ordinal))
+                return AssetDatabase.LoadAssetAtPath<GameObject>(source);
+            foreach (var guid in AssetDatabase.FindAssets(source + " t:Prefab", new[] { "Assets/_Game" }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (System.IO.Path.GetFileNameWithoutExtension(path) == source)
+                    return AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            }
+            return null;
         }
 
         private static List<Placed> Refuse(List<Placed> placed, StickerCaptureDefinition definition, Report report, string why)
@@ -722,7 +744,7 @@ namespace PocketWilds.Editor.Albums
                 }
                 case SubjectKind.Prefab:
                 {
-                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(subject.source);
+                    var prefab = LoadPrefab(subject.source);
                     if (prefab == null)
                     {
                         why = "prefab missing: " + subject.source;
@@ -819,6 +841,35 @@ namespace PocketWilds.Editor.Albums
                 return missing;
             string palette = !string.IsNullOrEmpty(subject.palette) ? subject.palette : GrasslandPalette(prefabName);
             var renderers = go.GetComponentsInChildren<MeshRenderer>(true);
+            // T49: event decorations and accessories keep their palette in the cosmetic catalog (accessories pack it their own way).
+            if (string.IsNullOrEmpty(palette))
+            {
+                var cosmetics = AssetDatabase.LoadAssetAtPath<CosmeticVisualCatalog>(PocketWilds.Editor.Cosmetics.AccessoryVisualPipeline.CatalogPath);
+                if (cosmetics != null)
+                {
+                    foreach (var accessory in cosmetics.accessories)
+                    {
+                        if (accessory == null || accessory.prefab == null || accessory.prefab.name != prefabName || accessory.paletteRows.Count == 0)
+                            continue;
+                        uint value = AccessoryWardrobe.Packed(context.Palettes, accessory.paletteRows[0]);
+                        foreach (var renderer in renderers)
+                            renderer.SetShaderUserValue(value);
+                        return 0;
+                    }
+                    foreach (var decor in cosmetics.decorations)
+                    {
+                        if (decor != null && !decor.itemId.EndsWith("_gold", StringComparison.Ordinal)
+                            && Path.GetFileNameWithoutExtension(decor.prefabAddress) == prefabName)
+                        {
+                            // Packed like their icons (BurrowsDecorPipeline.RenderIcons through the icon studio's Tint).
+                            uint value = AccessoryWardrobe.Packed(context.Palettes, decor.paletteRow);
+                            foreach (var renderer in renderers)
+                                renderer.SetShaderUserValue(value);
+                            return 0;
+                        }
+                    }
+                }
+            }
             if (string.IsNullOrEmpty(palette) || !context.Palettes.TryGetRow(ContentId.FromSource(palette), out int row))
                 return renderers.Length;
             uint packed = EnvironmentVisualPacking.Pack(row, WorldChunk.NeutralBrightness);

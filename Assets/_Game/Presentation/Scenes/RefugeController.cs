@@ -1119,6 +1119,7 @@ namespace PocketWilds.Presentation
             var news = result.NewSpecies ? HatchNews.NewSpecies : result.NewVariant ? HatchNews.NewVariant : HatchNews.None;
             PrepareReveal(result.Animal, news);
 
+            _hatch.Effect = HatchSequencePlayer.EffectVfx(HatchEffects.Active(_context.State.Entitlements));
             if (_hatchingAnimal != null && _hatch.Hatch(_hatchingAnimal, result.Animal.Species, result.Animal.Rarity, HatchSpeed(), this, news))
             {
                 _rig?.FocusOn(_waitingEgg.VfxPoint.position, RefugeCameraState.HatchReveal);

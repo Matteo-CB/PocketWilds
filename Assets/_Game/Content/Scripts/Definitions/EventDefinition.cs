@@ -419,7 +419,8 @@ namespace PocketWilds.Content
         public EventDefinition(string key, int version, string nameKey, string currencyKey, ContentId featuredSpecies, int[] featuredActivities,
             int fallbackActivity, int albumEventNumber, EventTier[] tiers, EventTier[] bonusTiers, EventEggItem[] eggItems, ContentId secretVariant,
             EventShopItem[] shop, EventMemoryItem[] memory, EventQuestTemplate[] dailyQuests, EventQuestTemplate[] longQuests, int[] challengeLevels,
-            ContentId challengeOutfit, ContentId souvenir, ContentId[] boxItems, EventReward[] headline, string[] themeKeys)
+            ContentId challengeOutfit, ContentId souvenir, ContentId[] boxItems, EventReward[] headline, string[] themeKeys, string currencyIconKey = "",
+            uint[]? themeColors = null)
         {
             Key = key;
             Id = ContentId.FromSource(key);
@@ -444,6 +445,8 @@ namespace PocketWilds.Content
             BoxItems = boxItems ?? Array.Empty<ContentId>();
             Headline = headline ?? Array.Empty<EventReward>();
             ThemeKeys = themeKeys ?? Array.Empty<string>();
+            CurrencyIconKey = currencyIconKey ?? string.Empty;
+            ThemeColors = themeColors ?? Array.Empty<uint>();
         }
 
         public ContentId Id { get; }
@@ -499,6 +502,12 @@ namespace PocketWilds.Content
         public EventReward[] Headline { get; }
 
         public string[] ThemeKeys { get; }
+
+        /// <summary>T49: the currency's icon key (« ICO_Event_Pousses »); empty: the generic event currency icon.</summary>
+        public string CurrencyIconKey { get; }
+
+        /// <summary>T49: the theme colors as 0xRRGGBB (primary, background, accent); empty: the hub's tokens.</summary>
+        public uint[] ThemeColors { get; }
 
         /// <summary>The instance of a year: « event.burrows.2027 ».</summary>
         public string InstanceId(int year) => Key + "." + year;

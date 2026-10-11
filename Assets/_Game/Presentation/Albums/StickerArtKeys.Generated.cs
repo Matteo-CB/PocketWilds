@@ -49,6 +49,18 @@ namespace PocketWilds.Presentation
             "sticker.act.006.05",
             "sticker.act.006.06",
             "sticker.act.006.12",
+            "sticker.evt.103.01",
+            "sticker.evt.103.02",
+            "sticker.evt.103.03",
+            "sticker.evt.103.04",
+            "sticker.evt.103.05",
+            "sticker.evt.103.06",
+            "sticker.evt.103.07",
+            "sticker.evt.103.08",
+            "sticker.evt.103.09",
+            "sticker.evt.103.10",
+            "sticker.evt.103.11",
+            "sticker.evt.103.12",
         };
     }
 }

@@ -79,6 +79,10 @@ namespace PocketWilds.UI
         public EventCellRefs[] headline = Array.Empty<EventCellRefs>();
         public TMP_Text announceNote;
 
+        /// <summary>T49: « Télécharger » on the announce page, shown while the event's content group is missing.</summary>
+        public Button download;
+        public TMP_Text downloadLabel;
+
         public TMP_Text trackPoints;
         public RectTransform trackFill;
         public Button claimAll;
@@ -150,6 +154,18 @@ namespace PocketWilds.UI
         public string[] featuredKeys = Array.Empty<string>();
         public Sprite[] featuredSprites = Array.Empty<Sprite>();
 
+        /// <summary>T49: the banner's art behind its texts (shown when the event's theme key has art, on the hub and its announce page).</summary>
+        public Image themeArt;
+        /// <summary>T49: banner art by theme key (« theme.burrows » for UI_EventBanner_Burrows).</summary>
+        public string[] themeKeys = Array.Empty<string>();
+        public Sprite[] themeSprites = Array.Empty<Sprite>();
+        /// <summary>T49: each event's own currency icon by its icon key (« ICO_Event_Pousses »); the generic token otherwise.</summary>
+        public string[] currencyKeys = Array.Empty<string>();
+        public Sprite[] currencySprites = Array.Empty<Sprite>();
+        public Sprite currencyDefault;
+        /// <summary>T49: every image of the screen showing the currency (banner chip, egg cost, prices, summary).</summary>
+        public Image[] currencyImages = Array.Empty<Image>();
+
         /// <summary>Layout of the scrolled pages (canvas units), written by the builder.</summary>
         public float trackTop;
         public float tierPitch;
@@ -218,7 +234,7 @@ namespace PocketWilds.UI
             _text = text;
             _actions = actions;
             Listen();
-            _announce = model != null && model.Announce;
+            _announce = model != null && (model.Announce || model.NeedsDownload);
             _tab = model != null && !_announce && !model.TabVisible(tab) ? EventHubTab.Track : tab;
             _stickerPick = false;
             SummaryOpen = false;
@@ -396,6 +412,8 @@ namespace PocketWilds.UI
             }
             _ui.claimAll.onClick.AddListener(PressClaimAll);
             _ui.goldGet.onClick.AddListener(() => _actions?.OpenGoldBook());
+            if (_ui.download != null)
+                _ui.download.onClick.AddListener(() => _actions?.DownloadEvent());
             for (int i = 0; i < _ui.tiers.Length; i++)
             {
                 int tier = i + 1;
@@ -464,16 +482,18 @@ namespace PocketWilds.UI
             if (_model == null)
                 return;
             var events = _model.Service;
-            var def = _model.Definition;
-            _announce = _model.Announce;
+            bool download = _model.NeedsDownload;
+            var def = download ? _model.PendingDefinition : _model.Definition;
+            _announce = _model.Announce || download;
             _ui.name.text = def != null ? T(def.NameKey) : string.Empty;
             string language = _text != null ? _text.Language : "en";
             _ui.date.text = _announce
-                ? F(EventText.Starts, EventHubModel.FormatDate(events.StartUtc, language))
+                ? F(EventText.Starts, EventHubModel.FormatDate(download ? _model.PendingStartUtc : events.StartUtc, language))
                 : F(EventText.Ends, EventHubModel.FormatDate(events.EndUtc, language));
             _ui.currency.text = Grouped(events.Currency);
             _ui.currency.transform.parent.gameObject.SetActive(!_announce);
             BindFeatured(def);
+            BindTheme(def);
             for (int i = 0; i < _ui.tabs.Length; i++)
             {
                 bool visible = !_announce && _model.TabVisible((EventHubTab)i);
@@ -492,7 +512,10 @@ namespace PocketWilds.UI
             _ui.scroll.content = _ui.pages[page];
             float height;
             if (_announce)
+            {
                 height = BindAnnounce(def);
+                BindDownload(download);
+            }
             else
             {
                 switch (_tab)
@@ -520,6 +543,55 @@ namespace PocketWilds.UI
                         sprite = _ui.featuredSprites[i];
             }
             _ui.featured.sprite = sprite != null ? sprite : _ui.paw;
+        }
+
+        /// <summary>T49: the event's banner art (its first theme key with art) and its own currency icon; the generic ones otherwise.</summary>
+        private void BindTheme(EventDefinition def)
+        {
+            Sprite art = null;
+            if (def != null)
+                for (int k = 0; k < def.ThemeKeys.Length && art == null; k++)
+                    art = Keyed(_ui.themeKeys, _ui.themeSprites, def.ThemeKeys[k]);
+            if (_ui.themeArt != null)
+            {
+                _ui.themeArt.sprite = art;
+                if (_ui.themeArt.enabled != (art != null))
+                    _ui.themeArt.enabled = art != null;
+            }
+            var currency = def != null ? Keyed(_ui.currencyKeys, _ui.currencySprites, def.CurrencyIconKey) : null;
+            if (currency == null)
+                currency = _ui.currencyDefault;
+            if (currency == null)
+                return;
+            for (int i = 0; i < _ui.currencyImages.Length; i++)
+                if (_ui.currencyImages[i] != null && _ui.currencyImages[i].sprite != currency)
+                    _ui.currencyImages[i].sprite = currency;
+        }
+
+        private static Sprite Keyed(string[] keys, Sprite[] sprites, string key)
+        {
+            if (string.IsNullOrEmpty(key))
+                return null;
+            for (int i = 0; i < keys.Length && i < sprites.Length; i++)
+                if (keys[i] == key)
+                    return sprites[i];
+            return null;
+        }
+
+        /// <summary>T49: the announce page doubles as the download page (« Téléchargement de l'événement : {0} Mo », « Télécharger »).</summary>
+        private void BindDownload(bool download)
+        {
+            _ui.announceTitle.text = download
+                ? F(EventText.DownloadSize, _model.DownloadMegabytes.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                : T(EventText.Headline);
+            _ui.announceNote.text = T(download && _model.Downloading ? EventText.Downloading : EventText.AnnounceNote);
+            if (_ui.download == null)
+                return;
+            bool show = download && !_model.Downloading;
+            if (_ui.download.gameObject.activeSelf != show)
+                _ui.download.gameObject.SetActive(show);
+            if (_ui.downloadLabel != null)
+                _ui.downloadLabel.text = T(EventText.Download);
         }
 
         private float BindAnnounce(EventDefinition def)

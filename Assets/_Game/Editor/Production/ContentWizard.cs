@@ -94,11 +94,13 @@ namespace PocketWilds.Editor.Production
                 bool inCatalog = visuals != null && visuals.TryGet(species.visualKey, out var entry) && entry.prefab != null;
                 row.Checks.Add(new Check("Catalogue visuel", inCatalog, inCatalog ? species.visualKey : $"{species.visualKey} absent de DEF_AnimalVisualCatalog"));
 
-                // A companion (T47) has its own looks (three, given by its bond) and never comes from an egg.
+                // A companion (T47) has its own looks (three, given by its bond) and never comes from an egg; an event species (T49, the
+                // mole: every color secret, given by its event) neither.
                 int baseVariants = species.variants.Count(v => !v.secret);
-                if (species.companion)
+                bool eggless = species.companion || (species.variants.Count > 0 && baseVariants == 0);
+                if (eggless)
                     row.Checks.Add(new Check("Variantes", species.variants.Count >= CompanionLooksTarget,
-                        $"compagnon : {species.variants.Count} apparences (cible {CompanionLooksTarget})"));
+                        $"compagnon ou espèce d'événement : {species.variants.Count} apparences (cible {CompanionLooksTarget})"));
                 else
                     row.Checks.Add(new Check("Variantes", baseVariants >= BaseVariantsTarget,
                         $"{baseVariants} de base (cible {BaseVariantsTarget}), {species.variants.Count(v => v.secret)} secrètes"));
@@ -114,8 +116,8 @@ namespace PocketWilds.Editor.Production
                     $"{portraits}/{species.variants.Count} vignettes, silhouette {(silhouette ? "oui" : "non")} (Vignettes)"));
 
                 var eggs = database.eggs.Where(e => e != null && e.pool.Any(p => p.speciesId == species.sourceId && p.weight > 0f)).Select(e => e.name).ToList();
-                if (species.companion)
-                    row.Checks.Add(new Check("Œufs", eggs.Count == 0, eggs.Count == 0 ? "compagnon : jamais dans un œuf" : "un compagnon ne doit être dans aucun œuf : " + string.Join(", ", eggs)));
+                if (eggless)
+                    row.Checks.Add(new Check("Œufs", eggs.Count == 0, eggs.Count == 0 ? "compagnon ou espèce d'événement : jamais dans un œuf" : "ni un compagnon ni une espèce d'événement ne vont dans un œuf : " + string.Join(", ", eggs)));
                 else
                     row.Checks.Add(new Check("Œufs", eggs.Count > 0, eggs.Count > 0 ? string.Join(", ", eggs) : "aucun œuf ne la donne (pool des DEF_Egg_*)"));
                 rows.Add(row);

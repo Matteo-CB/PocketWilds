@@ -90,10 +90,18 @@ namespace PocketWilds.Editor.Import
             settings.spriteBorder = UiSpriteBorder(name);
             settings.spriteAlignment = (int)SpriteAlignment.Center;
             importer.SetTextureSettings(settings);
+            // T49: an event's banner is no atlas sprite (one banner at a time, 688 px wide): it compresses itself (ASTC 6x6), listed in
+            // Handmade_Sources largeTextures.
+            bool banner = name.StartsWith("UI_EventBanner_", StringComparison.Ordinal);
             foreach (var platform in new[] { "Android", "iPhone" })
             {
                 var platformSettings = importer.GetPlatformTextureSettings(platform);
-                platformSettings.overridden = false;
+                platformSettings.overridden = banner;
+                if (banner)
+                {
+                    platformSettings.maxTextureSize = 1024;
+                    platformSettings.format = TextureImporterFormat.ASTC_6x6;
+                }
                 importer.SetPlatformTextureSettings(platformSettings);
             }
         }

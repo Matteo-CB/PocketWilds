@@ -83,12 +83,15 @@ namespace PocketWilds.Editor.Vfx
                 // particle each. The arrival ring once at a time. Together at most 9 particles (the PlayMode cap is 350).
                 Effect(VfxId.VisitorTrail, Build("VFX_VisitorTrail", material, ConfigureVisitorTrail), 8, 8, 8),
                 Effect(VfxId.VisitorArrive, Build("VFX_VisitorArrive", material, ConfigureVisitorArrive), 1, 1, 1),
+                // T49 (O-HATCH-103): the hatch effect « Éclosion de pousses », one hatch at a time: a single instance keeps the
+                // worst case (every effect at once) under the 350 particles of the PlayMode cap.
+                Effect(VfxId.SproutBurst, Build("VFX_SproutBurst", material, ConfigureSproutBurst), 1, 1, 1),
             };
             catalog.effects = effects.ToArray();
             catalog.lowCountScale = 0.5f;
             catalog.highCountScale = 1.25f;
-            // Every effect at once still plays (21 since T44C's visitor effects), one slot to spare.
-            catalog.maxPlaying = 22;
+            // Every effect at once still plays (22 since T49's Sprout Burst), one slot to spare.
+            catalog.maxPlaying = 23;
             EditorUtility.SetDirty(catalog);
 
             var config = AssetDatabase.LoadAssetAtPath<HatchPresentationConfig>(HatchConfigPath);
@@ -935,6 +938,55 @@ namespace PocketWilds.Editor.Vfx
         private static void ConfigureVisitorArrive(GameObject root, Material material)
         {
             Ring(root, material, "Ring", true, WithAlpha(new Color(1f, 0.93f, 0.8f), 0.8f), 0.55f, 0.7f, 0.35f, 1.5f, flat: true);
+        }
+
+        /// <summary>
+        /// T49 O-HATCH-103 « Éclosion de pousses » (L'Éveil des Terriers), on top of the normal hatch: tender green sprouts grow
+        /// out of the ground in a circle around the egg spot and round dew beads roll outward on the grass. Played at the reveal
+        /// point (the newborn's feet, on the ground). The circle (0.66 m) stays outside the egg spot (0.55 m, where the egg and
+        /// the newborn stand and no body enters) and the beads stop inside its apron (1.3 m, where nothing settles): never
+        /// inside the egg, the animal or a decor. Leaves: rounded petal tiles whose foot sits on the ground (pivot), tilted left
+        /// and right like the two leaves of a sprout, growing then settling; beads: round bubble tiles a bead's radius above the
+        /// ground, slowed by drag as they roll; one soft green ring opens flat on the grass. 25 particles on Medium (13 on Low,
+        /// 31 on High through the catalog's count scale), 1.6 s. Round beads only, never a four-point star.
+        /// </summary>
+        private static void ConfigureSproutBurst(GameObject root, Material material)
+        {
+            Ring(root, material, "Ring", true, WithAlpha(new Color(0.72f, 0.92f, 0.52f), 0.7f), 1.5f, 0.9f, 0.6f, 1f, flat: true);
+
+            var leaves = AddSystem(root, "Sprouts", material, false);
+            Life(leaves, 1.25f, 1.55f, 0f, 0.01f, 0.1f, 0.14f);
+            Colors(leaves, new Color(0.64f, 0.88f, 0.4f, 1f), new Color(0.8f, 0.96f, 0.56f, 1f));
+            var main = leaves.main;
+            main.startRotation = new ParticleSystem.MinMaxCurve(-0.55f, 0.55f);
+            Gravity(leaves, -0.012f);
+            var shape = Shape(leaves, ParticleSystemShapeType.Circle, 0.66f, up: true);
+            shape.radiusThickness = 0f;
+            shape.position = new Vector3(0f, 0.01f, 0f);
+            Bursts(leaves, (0f, 5), (0.07f, 5), (0.14f, 4));
+            Tile(leaves, TilePetal);
+            Fade(leaves, new Color(0.92f, 1f, 0.84f), 1f, 1f, 0.72f);
+            var size = leaves.sizeOverLifetime;
+            size.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.15f), new Keyframe(0.32f, 1.06f),
+                new Keyframe(0.5f, 1f), new Keyframe(1f, 0.9f)));
+            // The quad's foot on the particle: a sprout grows up from the ground, never sinks into it.
+            leaves.GetComponent<ParticleSystemRenderer>().pivot = new Vector3(0f, 0.5f, 0f);
+
+            var beads = AddSystem(root, "DewBeads", material, false);
+            Life(beads, 0.9f, 1.2f, 0.22f, 0.38f, 0.05f, 0.07f);
+            Colors(beads, new Color(0.86f, 0.95f, 1f, 0.95f), new Color(1f, 1f, 1f, 0.95f));
+            var beadShape = Shape(beads, ParticleSystemShapeType.Circle, 0.62f, up: true);
+            beadShape.radiusThickness = 0f;
+            beadShape.position = new Vector3(0f, 0.055f, 0f);
+            var drag = beads.limitVelocityOverLifetime;
+            drag.enabled = true;
+            drag.limit = new ParticleSystem.MinMaxCurve(10f);
+            drag.drag = new ParticleSystem.MinMaxCurve(1.6f);
+            drag.multiplyDragByParticleSize = false;
+            drag.multiplyDragByParticleVelocity = false;
+            Bursts(beads, (0.1f, 5), (0.22f, 5));
+            Tile(beads, TileBubble);
+            Fade(beads, Color.white, 0.6f, 1f, 0.7f);
         }
 
         // ---------------- Helpers ----------------

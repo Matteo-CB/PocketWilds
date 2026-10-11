@@ -322,8 +322,11 @@ namespace PocketWilds.Bootstrap
                 _cosmetics.Prune();
                 // T48: the events framework (no live event in this build: the calendar is empty). Activities, expeditions, wishes,
                 // hatches and album stickers feed it; the Carnet d'or and the Box resolve their per-instance items through it.
-                _events = new EventService(_save.State, _content, _clock, _save, null, _options.EventCalendarOverride)
+                // T49: the shipped calendar (L'Éveil des Terriers 2027) unless a test overrides it; each event's content group is
+                // checked by the Addressables hook (its « Télécharger » page when missing).
+                _events = new EventService(_save.State, _content, _clock, _save, null, _options.EventCalendarOverride ?? DefaultEventCalendar.Create())
                 {
+                    Availability = new AddressablesEventContent(),
                     Economy = _economy, Granter = _daily.Context.Granter, Mastery = _mastery, Albums = _albums, ProfileItems = _profileItems,
                     Achievements = _achievements, AchievementHooks = _achievementHooks, Refuge = _progression.Refuge, Journal = _journal,
                     DayKey = () => daily.Context.TodayKey, ActivityShipped = activities.IsShipped,

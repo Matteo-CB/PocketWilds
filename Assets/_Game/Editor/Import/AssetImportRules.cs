@@ -19,6 +19,8 @@ namespace PocketWilds.Editor.Import
         public const string EnvironmentRoot = "Assets/_Game/Art/Environment/";
         public const string PropsRoot = "Assets/_Game/Art/Props/";
         public const string EggsRoot = "Assets/_Game/Art/Eggs/";
+        /// <summary>T49: an event's own props (decorations, monument): static props like the environment's.</summary>
+        public const string EventsRoot = "Assets/_Game/Art/Events/";
 
         /// <summary>Sockets exposed when GameObjects are optimized, per rig family. Paths are below the model root.</summary>
         public static readonly Dictionary<string, string[]> FamilySockets = new Dictionary<string, string[]>
@@ -38,7 +40,8 @@ namespace PocketWilds.Editor.Import
             root + "/Root/Pelvis/Spine/Chest/Neck/Head/Ear_R_01/SOCK_Ear_R",
         };
 
-        public static readonly string[] LoopingClipMarkers = { "_Loop", "_Idle_A", "Locomotion_" };
+        // T49: the Mole's own Move and Eat clips loop like the family Locomotion and Eat_Loop they replace.
+        public static readonly string[] LoopingClipMarkers = { "_Loop", "_Idle_A", "Locomotion_", "_MoleWalk", "_MoleEat" };
 
         public override uint GetVersion() => Version;
 
@@ -49,7 +52,8 @@ namespace PocketWilds.Editor.Import
                 ApplyAnimalRigged(importer);
             else if (assetPath.StartsWith(AnimationsRoot, StringComparison.Ordinal))
                 ApplyAnimationLibrary(importer);
-            else if (assetPath.StartsWith(EnvironmentRoot, StringComparison.Ordinal) || assetPath.StartsWith(PropsRoot, StringComparison.Ordinal) || assetPath.StartsWith(EggsRoot, StringComparison.Ordinal))
+            else if (assetPath.StartsWith(EnvironmentRoot, StringComparison.Ordinal) || assetPath.StartsWith(PropsRoot, StringComparison.Ordinal) || assetPath.StartsWith(EggsRoot, StringComparison.Ordinal)
+                || assetPath.StartsWith(EventsRoot, StringComparison.Ordinal))
                 ApplyStatic(importer);
         }
 

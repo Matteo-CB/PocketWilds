@@ -28,11 +28,12 @@
     {
       "blend": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "builders": ["SourceArt/Blender/Tools/pw_anim_library.py", "SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_export.py"],
-      "produces": ["Assets/_Game/Art/Animations/SmallQuadruped/AN_SmallQuadruped.fbx (15 clips, T47 FieldHamsterGreet and FieldHamsterStash)"]
+      "produces": ["Assets/_Game/Art/Animations/SmallQuadruped/AN_SmallQuadruped.fbx (24 clips, T47 FieldHamsterGreet and FieldHamsterStash, T49 MoleDig, MoleEat, MoleWalk, PeekOut, MoleSleep_Enter, MoleSleep_Loop, MoleSleep_Exit, MoleReact and MoleHappy)"]
     },
     {
       "blend": "SourceArt/Blender/Rigs/BL_Rig_MediumQuadruped.blend",
-      "builders": ["SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_anim_medium.py", "SourceArt/Blender/Tools/pw_export.py"]
+      "builders": ["SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_anim_medium.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animations/MediumQuadruped/AN_MediumQuadruped.fbx (13 clips, T49 PeekOut)"]
     },
     {
       "blend": "SourceArt/Blender/Eggs/BL_Egg_Family.blend",
@@ -72,14 +73,24 @@
       "produces": ["Assets/_Game/Art/Animals/FieldHamster/Models/SKM_FieldHamster.fbx (LOD0-2, sockets)", "PF_Animal_FieldHamster and its definition (Editor/Animals/AnimalPipeline.cs)"]
     },
     {
+      "blend": "SourceArt/Blender/Animals/Mole/BL_Animal_Mole.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animals/Mole/Models/SKM_Mole.fbx (LOD0-2, sockets, variant module SKM_Mole_MOD_StarNose LOD0-1 built by pw_species.build_star_nose)", "PF_Animal_Mole and its definition (Editor/Animals/AnimalPipeline.cs)"]
+    },
+    {
       "blend": "SourceArt/Blender/Accessories/BL_Accessories.blend",
       "builders": ["SourceArt/Blender/Tools/pw_accessories.py", "SourceArt/Blender/Tools/pw_export.py"],
-      "produces": ["Assets/_Game/Art/Props/Accessories/ACC_FlowerCrown.fbx", "Assets/_Game/Art/Props/Accessories/ACC_SeedBasket.fbx", "the accessory prefabs and definitions (Unity accessory pipeline)"]
+      "produces": ["Assets/_Game/Art/Props/Accessories/ACC_FlowerCrown.fbx", "Assets/_Game/Art/Props/Accessories/ACC_SeedBasket.fbx", "Assets/_Game/Art/Props/Accessories/ACC_SproutHat.fbx", "Assets/_Game/Art/Props/Accessories/ACC_SeedSack.fbx", "Assets/_Game/Art/Props/Accessories/ACC_BurrowGoggles.fbx", "Assets/_Game/Art/Props/Accessories/ACC_GardenerScarf.fbx", "Assets/_Game/Art/Props/Accessories/ACC_MinerHelmet.fbx", "Assets/_Game/Art/Props/Accessories/ACC_GoldenShovel.fbx", "Assets/_Game/Art/Props/Accessories/ACC_OverallsBib.fbx", "Assets/_Game/Art/Props/Accessories/ACC_OverallsStraps.fbx", "the accessory prefabs and definitions (Unity accessory pipeline)"]
     },
     {
       "blend": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_T47.blend",
       "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_grassland_t39_props.py", "SourceArt/Blender/Tools/pw_grassland_t47_props.py", "SourceArt/Blender/Tools/pw_export.py"],
       "produces": ["Assets/_Game/Art/Environment/Grassland/Models/GL_Props_T47.fbx (Decor_CozyBurrow)", "the decor.cozy_burrow decoration prefab (Unity decoration pipeline)"]
+    },
+    {
+      "blend": "SourceArt/Blender/Events/BL_Event_Burrows.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_event_burrows_props.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_FlowerEntrance.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_MossMound.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_DewMushrooms.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_WateringCan.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_Wheelbarrow.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_SeedlingPots.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_BurrowSign.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_WormCushion.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_GardenShed.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_Greenhouse.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_WoodenBench.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_GardenFence.fbx", "Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_Souvenir.fbx", "Assets/_Game/Art/Events/Burrows/Models/Landmark_Burrows_RootBurrow.fbx", "the event.burrows decoration, Souvenir and monument prefabs (Unity decoration pipeline)"]
     }
   ],
   "generated": [
@@ -102,6 +113,171 @@
       "final": "Assets/_Game/Art/UI/Shop/ICO_Companion_FieldHamster.png",
       "from": "the Field Hamster model (BL_Animal_FieldHamster.blend) in its base look, rendered in Unity",
       "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Accessory_SproutHat.png",
+      "from": "the ACC_SproutHat accessory of BL_Accessories.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Accessory_SeedSack.png",
+      "from": "the ACC_SeedSack accessory of BL_Accessories.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Accessory_BurrowGoggles.png",
+      "from": "the ACC_BurrowGoggles accessory of BL_Accessories.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Accessory_GardenerScarf.png",
+      "from": "the ACC_GardenerScarf accessory of BL_Accessories.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Accessory_MinerHelmet.png",
+      "from": "the ACC_MinerHelmet accessory of BL_Accessories.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Accessory_GoldenShovel.png",
+      "from": "the ACC_GoldenShovel accessory of BL_Accessories.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Accessory_OverallsBib.png",
+      "from": "the ACC_OverallsBib accessory of BL_Accessories.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Accessory_OverallsStraps.png",
+      "from": "the ACC_OverallsStraps accessory of BL_Accessories.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Outfit_Burrows_01.png",
+      "from": "outfit 01 of the burrows event (BL_Accessories.blend pieces) worn on the mole or the field hamster with their measured fits, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs", "Assets/_Game/Editor/Cosmetics/AccessoryFitPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Outfit_Burrows_02.png",
+      "from": "outfit 02 of the burrows event (BL_Accessories.blend pieces) worn on the mole or the field hamster with their measured fits, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs", "Assets/_Game/Editor/Cosmetics/AccessoryFitPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Outfit_Burrows_03.png",
+      "from": "outfit 03 of the burrows event (BL_Accessories.blend pieces) worn on the mole or the field hamster with their measured fits, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs", "Assets/_Game/Editor/Cosmetics/AccessoryFitPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Outfit_Burrows_04.png",
+      "from": "outfit 04 of the burrows event (BL_Accessories.blend pieces) worn on the mole or the field hamster with their measured fits, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs", "Assets/_Game/Editor/Cosmetics/AccessoryFitPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Outfit_Burrows_05.png",
+      "from": "outfit 05 of the burrows event (BL_Accessories.blend pieces) worn on the mole or the field hamster with their measured fits, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs", "Assets/_Game/Editor/Cosmetics/AccessoryFitPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Outfit_Burrows_06.png",
+      "from": "outfit 06 of the burrows event (BL_Accessories.blend pieces) worn on the mole or the field hamster with their measured fits, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs", "Assets/_Game/Editor/Cosmetics/AccessoryFitPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Outfit_Burrows_07.png",
+      "from": "outfit 07 of the burrows event (BL_Accessories.blend pieces) worn on the mole or the field hamster with their measured fits, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs", "Assets/_Game/Editor/Cosmetics/AccessoryFitPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_FlowerEntrance.png",
+      "from": "Decor_Burrows_FlowerEntrance of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_MossMound.png",
+      "from": "Decor_Burrows_MossMound of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_DewMushrooms.png",
+      "from": "Decor_Burrows_DewMushrooms of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_WateringCan.png",
+      "from": "Decor_Burrows_WateringCan of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_Wheelbarrow.png",
+      "from": "Decor_Burrows_Wheelbarrow of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_SeedlingPots.png",
+      "from": "Decor_Burrows_SeedlingPots of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_BurrowSign.png",
+      "from": "Decor_Burrows_BurrowSign of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_WormCushion.png",
+      "from": "Decor_Burrows_WormCushion of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_GardenShed.png",
+      "from": "Decor_Burrows_GardenShed of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_Greenhouse.png",
+      "from": "Decor_Burrows_Greenhouse of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_WoodenBench.png",
+      "from": "Decor_Burrows_WoodenBench of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_GardenFence.png",
+      "from": "Decor_Burrows_GardenFence of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_Souvenir.png",
+      "from": "Decor_Burrows_Souvenir of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_FlowerEntranceGold.png",
+      "from": "Decor_Burrows_FlowerEntrance of BL_Event_Burrows.blend in the gold palette row, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_MossMoundGold.png",
+      "from": "Decor_Burrows_MossMound of BL_Event_Burrows.blend in the gold palette row, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_DewMushroomsGold.png",
+      "from": "Decor_Burrows_DewMushrooms of BL_Event_Burrows.blend in the gold palette row, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_WateringCanGold.png",
+      "from": "Decor_Burrows_WateringCan of BL_Event_Burrows.blend in the gold palette row, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_Burrows_RootBurrow.png",
+      "from": "Landmark_Burrows_RootBurrow of BL_Event_Burrows.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Events/BurrowsDecorPipeline.cs"]
     },
     {
       "final": "Assets/_Game/Art/Environment/Grassland/Baked/",
@@ -153,6 +329,10 @@
     {
       "final": "Assets/_Game/Art/UI/Zones/",
       "why": "Zone window captures, 740 x 356, ASTC 6x6; only the next zone's capture is loaded."
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Events/",
+      "why": "Event banner art, 688 x 254, ASTC 6x6, no mips; only the running event's banner is shown."
     }
   ]
 }

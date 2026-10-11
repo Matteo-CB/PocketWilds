@@ -249,6 +249,51 @@ SPECS = {
             "SOCK_Ear_R": (0.062, -0.100, 0.272),
         },
     ),
+    # Mole (T49, A-SP-203, L'Éveil des Terriers): a low velvet body like a soft bean, the head flows into it with no
+    # visible neck, bead eyes almost hidden in the fur, a pointed pink nose, very large rounded pink mitten hands held
+    # out at the front sides (the front paws scaled up, palms turned out), small hind feet, a tiny tail. About 46 x 20 cm.
+    # The hands stay low on the front leg bones (the dig clip scratches with them); the whole snout is rigid on Head.
+    # Optional module (build_star_nose): the Star Nose variant's rosette of round lobes, a separate mesh rigid on Head.
+    "Mole": dict(
+        blockout=[
+            _ell((0, 0.020, 0.110), (0.098, 0.165, 0.090)),                          # soft bean body
+            _ell((0, 0.098, 0.104), (0.094, 0.084, 0.084)),                          # round rump
+            _ell((0, -0.080, 0.104), (0.088, 0.080, 0.082)),                         # chest, no neck
+            _ell((0, -0.135, 0.088), (0.072, 0.082, 0.068), part="head"),
+            _ell((0, -0.205, 0.074), (0.034, 0.050, 0.030), rot=(-6, 0, 0), stiff=1.6, part="head"),  # tapering snout
+            _ell((0, -0.240, 0.068), (0.017, 0.022, 0.016), stiff=1.5, part="head"),  # pointed nose tip
+            _ell((0.076, -0.100, 0.056), (0.028, 0.030, 0.030), mirror=True),       # short arms
+            # Mitten hands: big round flat paddles, palms turned out and a little forward, resting on the ground.
+            _ell((0.108, -0.130, 0.038), (0.022, 0.058, 0.040), rot=(0, -10, -34), stiff=1.8, mirror=True),
+            _ell((0.128, -0.166, 0.034), (0.018, 0.026, 0.030), rot=(0, -10, -34), stiff=1.6, mirror=True),  # round fingertips
+            _ell((0.068, 0.110, 0.060), (0.034, 0.048, 0.044), mirror=True),        # haunches
+            _ell((0.066, 0.118, 0.016), (0.019, 0.030, 0.012), mirror=True),        # small hind feet
+            _ell((0, 0.184, 0.082), (0.011, 0.020, 0.011), rot=(-22, 0, 0), stiff=1.6),  # tiny tail
+        ],
+        eyes=dict(x=0.034, z=0.108, r=0.010, sink=0.55),
+        nose=dict(x=0.0, z=0.068, r=0.013, sink=0.40),
+        head_center=(0, -0.135, 0.088),
+        head_radii=(0.072, 0.082, 0.068),
+        ear_mode="none",
+        hind_leg_band=(0.055, 0.025),
+        # The whole mitten (up to 8 cm) follows the front leg bones; the chest above follows the trunk.
+        front_leg_band=(0.088, 0.062),
+        leg_band_bones=("Upper", "Lower"),
+        lod0_faces=1100,
+        lod1_mode="collapse",
+        lod1_tris=900,
+        lod2_tris=380,
+        back_probe_y=0.030,
+        sockets={
+            "SOCK_Neck": (0.0, -0.085, 0.128),
+            # No tail socket in use (hidden TailBase): it stays on the rump for the family hierarchy.
+            "SOCK_TailBase": (0.0, 0.190, 0.080),
+            "SOCK_Ear_L": (-0.050, -0.125, 0.150),
+            "SOCK_Ear_R": (0.050, -0.125, 0.150),
+        },
+        # Star Nose rosette: 11 round lobes around the nose bead (lobe count, peak and valley radius in nose radii).
+        star_nose=dict(lobes=11, peak=2.30, valley=1.70, inner=0.95),
+    ),
     # Squirrel (A-SP-002): slightly narrower face than Rabbit, compact body, front paws tucked close to
     # the chest, small tufted ears on the Ear_01 bones, very large curled tail as one solid volume.
     "Squirrel": dict(
@@ -1003,6 +1048,97 @@ def build_lods(species):
             _rigid_lobes(o, lod0, frames)
         counts = [len(v.groups) for v in o.data.vertices]
         report[o.name] = dict(check(o), max_influences=max(counts), unweighted=counts.count(0))
+    return report
+
+
+# ---------------------------------------------------------------- variant modules
+
+def _star_nose_mesh(name, nose, rn, cfg, phases):
+    """One LOD of the rosette: a cupped scalloped ring around the nose bead (the bead shows through the hole), round
+    lobes only (each lobe's outline is a half circle, never a point), closed at the back by a fan into the snout.
+    phases: outline points per lobe, from its first valley (-0.5) towards the next one (+0.5). LOD0 draws the whole
+    half circle (5 points) with a low forward crest per lobe; LOD1 keeps two points near the top of each lobe, so its
+    outline is a soft 22-sided ring with no corner sharper than the LOD0 notches."""
+    a = Vector((0.0, -1.0, -0.15)).normalized()          # forward along the snout, a little down
+    u = Vector((1.0, 0.0, 0.0)); v = a.cross(u).normalized()
+    c = nose - a * (rn * 0.25)
+    n = cfg["lobes"]; r_in = rn * cfg["inner"]; rv = rn * cfg["valley"]; rp = rn * cfg["peak"]
+    step = 2 * math.pi / n
+
+    def at(theta, r, depth):
+        return c + (u * math.cos(theta) + v * math.sin(theta)) * r + a * depth
+
+    def cup(r):
+        return -(r - r_in) * 0.30
+
+    bm = bmesh.new()
+    inner, outer, crest = [], [], []
+    for k in range(n):
+        t0 = math.pi / 2 + (k - 0.5) * step                # valley before lobe k
+        inner.append(bm.verts.new(at(t0, r_in, 0.0)))
+        lobe = []
+        for phi in phases:
+            r = rv + (rp - rv) * math.sqrt(max(0.0, 1.0 - (2 * phi) ** 2))
+            lobe.append(bm.verts.new(at(t0 + (phi + 0.5) * step, r, cup(r))))
+        outer.append(lobe)
+        if len(phases) >= 4:
+            rc = (r_in + rp) * 0.5
+            crest.append(bm.verts.new(at(t0 + 0.5 * step, rc, cup(rc) + rn * 0.10)))
+    back = bm.verts.new(c - a * (rn * 1.1))
+    for k in range(n):
+        i0, i1 = inner[k], inner[(k + 1) % n]
+        ring = outer[k] + [outer[(k + 1) % n][0]]
+        if crest:
+            cr = crest[k]
+            bm.faces.new((i0, i1, cr))
+            bm.faces.new((i0, cr, ring[0]))
+            bm.faces.new((cr, i1, ring[-1]))
+            for j in range(len(ring) - 1):
+                bm.faces.new((cr, ring[j + 1], ring[j]))
+        else:
+            bm.faces.new([i0, i1] + list(reversed(ring)))
+        for j in range(len(ring) - 1):
+            bm.faces.new((back, ring[j], ring[j + 1]))
+    bmesh.ops.triangulate(bm, faces=bm.faces)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    # The front must face forward (along a): flip everything if the recalculation chose the inside.
+    front = [f for f in bm.faces if back not in f.verts]
+    if front and sum(f.normal.dot(a) for f in front) < 0:
+        bmesh.ops.reverse_faces(bm, faces=bm.faces)
+    _remove_object(name)
+    me = bpy.data.meshes.new(name); bm.to_mesh(me); bm.free()
+    for p in me.polygons:
+        p.use_smooth = True
+    # Detail region (the nose color) and mask A (hands and nose glow) on every vertex.
+    col = me.color_attributes.new("PW_Regions", 'BYTE_COLOR', 'POINT')
+    for d in col.data:
+        d.color = NOSE
+    uv = me.uv_layers.new(name="PW_Masks")
+    for loop in me.loops:
+        uv.data[loop.index].uv = (1.0, 0.0)
+    return me
+
+
+def build_star_nose(species="Mole"):
+    """Variant module MOD_StarNose (Star Nose only): LOD0 and LOD1 meshes rigid on Head, none at LOD2. Named
+    SKM_<species>_MOD_StarNose_LOD<n> so the body LODs stay first in name order; AnimalPipeline shows the module only on
+    the variant whose moduleSlot asks for it."""
+    spec = SPECS[species]; cfg = spec["star_nose"]
+    arm = armature_of(species)
+    nose = bpy.data.objects["WORK_Nose"]
+    loc = nose.location.copy(); rn = nose.get("pw_radius", spec["nose"]["r"])
+    report = {}
+    for lod, phases in ((0, (-0.5, -0.3, -0.1, 0.1, 0.3)), (1, (-0.25, 0.25))):
+        name = f"SKM_{species}_MOD_StarNose_LOD{lod}"
+        me = _star_nose_mesh(name, loc, rn, cfg, phases)
+        o = bpy.data.objects.new(name, me)
+        bpy.data.collections["GEO" if lod == 0 else "LOD"].objects.link(o)
+        bpy.data.collections["EXPORT"].objects.link(o)
+        o.parent = arm
+        mod = o.modifiers.new("Armature", 'ARMATURE'); mod.object = arm
+        g = o.vertex_groups.new(name="Head")
+        g.add(list(range(len(me.vertices))), 1.0, 'REPLACE')
+        report[name] = tris(o)
     return report
 
 

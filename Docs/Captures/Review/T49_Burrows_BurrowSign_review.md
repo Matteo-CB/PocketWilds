@@ -1,0 +1,16 @@
+# T49 art review: Decor_Burrows_BurrowSign (E-DEC-EVT-burrows-07, « Panneau du terrier », shop 650)
+
+Sheet: `Docs/Captures/Review/T49_props_sheet.png` (Blender preview, gold versions in the last row); to capture in Unity.
+Sources: `SourceArt/Blender/Events/BL_Event_Burrows.blend` built by `pw_event_burrows_props.py`, exported by
+`pw_export.py` to `Assets/_Game/Art/Events/Burrows/Models/Decor_Burrows_BurrowSign.fbx`.
+Proposed palette row `palette.event_burrows.burrow_sign` in `PALETTES` (docstring table).
+
+| Check | Result |
+|---|---|
+| Soft, rounded, handmade: A rounded wooden board on a post planted in an earth mound, a carved burrow (dark round hole under an earth arch) and a sprout in relief, two round nails, two sprouts; no text | yes (Blender) |
+| Size 0.42 x 0.235 x 0.6 m, pivot at the footprint center on the ground, front toward -Y | yes |
+| Budget: 612 tris (under 1,500) | yes |
+| Flat bottom: lowest vertex at z = 0, nothing under the ground, one simple footprint | yes |
+| Regions: base wood, R sprouts, G earth, B hole and nails, A board face; uv occlusion and height | yes |
+| Nothing enters anything (decor footprint, animals walk around it) | AssetValidator and CollisionRuleTests in Unity |
+| No four-point star, nothing religious | yes |

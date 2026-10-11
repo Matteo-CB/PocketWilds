@@ -222,6 +222,23 @@ namespace PocketWilds.Editor.UI
             { "variant.hedgehog.chestnut.name", "Chestnut", "Châtaigne" },
             { "variant.hedgehog.lavender.name", "Lavender", "Lavande" },
             { "variant.hedgehog.moss.name", "Moss", "Mousse" },
+            // T49 L'Éveil des Terriers: the Mole, its colors, the Star Nose Codex hint, the event colors of existing species.
+            { "species.mole.name", "Mole", "Taupe" },
+            { "variant.mole.velvet.name", "Velvet", "Velours" },
+            { "variant.mole.cocoa.name", "Cocoa", "Cacao" },
+            { "variant.mole.sand.name", "Sand", "Sable" },
+            { "variant.mole.mocha.name", "Mocha", "Moka" },
+            { "variant.mole.goldenmoss.name", "Golden Moss", "Mousse dorée" },
+            { "variant.mole.starnose.name", "Star Nose", "Nez étoilé" },
+            { "variant.mole.starnose.hint", "A mole with a flower-shaped nose sometimes pops up in spring.",
+                "Une taupe au nez en fleur sort parfois de terre au printemps." },
+            { "variant.mole.gardensoil.name", "Garden Soil", "Terre de jardin" },
+            { "variant.mole.tendersprout.name", "Tender Sprout", "Pousse tendre" },
+            { "variant.mole.goldenpaws.name", "Golden Paws", "Mains d'or" },
+            { "variant.rabbit.dew.name", "Dew", "Rosée" },
+            { "variant.fieldmouse.bud.name", "Bud", "Bourgeon" },
+            { "variant.hedgehog.clover.name", "Clover", "Trèfle" },
+            { "variant.hedgehog.softmoss.name", "Soft Moss", "Mousse tendre" },
             { "mastery.color.toast", "New mastery color: {variant}!", "Nouvelle couleur de maîtrise : {variant} !" },
             { "companion.arrive.toast", "The Field Hamster joins the refuge!", "Le Hamster des champs arrive au refuge !" },
             // T35A Upgrades screen (doc 02 Améliorations, section 11.7). Gains are what the purchase brings.
@@ -368,6 +385,9 @@ namespace PocketWilds.Editor.UI
                 var eventQuests = EventQuestTexts.Texts;
                 for (int i = 0; i < eventQuests.GetLength(0); i++)
                     table.Set(eventQuests[i, 0], eventQuests[i, language + 1]);
+                // T49: L'Éveil des Terriers (names, outfits, decorations, stickers, the download page).
+                for (int i = 0; i < BurrowsTexts.Texts.GetLength(0); i++)
+                    table.Set(BurrowsTexts.Texts[i, 0], BurrowsTexts.Texts[i, language + 1]);
                 EditorUtility.SetDirty(table);
                 if (!database.localization.Contains(table))
                     database.localization.Insert(Mathf.Min(language, database.localization.Count), table);
