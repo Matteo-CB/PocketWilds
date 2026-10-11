@@ -215,16 +215,18 @@ namespace PocketWilds.Editor.Production
         }
     }
 
-    /// <summary>The wizard window: Espèces, Œufs, Identifiants.</summary>
+    /// <summary>The wizard window: Espèces, Œufs, Identifiants, and since T49B Biomes (ED-004) and Décorations (ED-002).</summary>
     public sealed class ContentWizardWindow : EditorWindow
     {
-        private static readonly string[] Tabs = { "Espèces", "Œufs", "Identifiants" };
+        private static readonly string[] Tabs = { "Espèces", "Œufs", "Identifiants", "Biomes", "Décorations" };
 
         private int _tab;
         private Vector2 _scroll;
         private List<ContentWizard.Row> _species;
         private List<ContentWizard.Row> _eggs;
         private List<AnalyticsIdTable.Row> _ids;
+        private List<ContentWizard.Row> _biomes;
+        private List<ContentWizard.Row> _decorations;
         private string _search = string.Empty;
         private string _retire = string.Empty;
         private string _message = string.Empty;
@@ -239,6 +241,8 @@ namespace PocketWilds.Editor.Production
                 _species = ContentWizard.SpeciesReport();
                 _eggs = ContentWizard.EggReport();
                 _ids = ContentWizard.ContentIds();
+                _biomes = BiomeWizard.BiomeReport();
+                _decorations = DecorationWizard.DecorationReport();
             }
             catch (Exception ex)
             {
@@ -264,6 +268,8 @@ namespace PocketWilds.Editor.Production
             {
                 case 0: SpeciesTab(); break;
                 case 1: EggsTab(); break;
+                case 3: BiomesTab(); break;
+                case 4: DecorationsTab(); break;
                 default: IdsTab(); break;
             }
             EditorGUILayout.EndScrollView();
@@ -317,6 +323,50 @@ namespace PocketWilds.Editor.Production
                     && EditorUtility.DisplayDialog("Retirer un identifiant", $"Retirer {_retire} pour toujours ? Il ne pourra plus jamais servir.", "Retirer", "Annuler"))
                     Run(() => ContentWizard.Retire(_retire));
             }
+        }
+
+        private void BiomesTab()
+        {
+            EditorGUILayout.HelpBox(
+                "Un biome se crée depuis sa fiche (BiomeWizard.BiomeSpec) : définition et zones, palettes, quatre ambiances de lumière tirées " +
+                "de la Prairie, ensemble de chunks, audio, groupes Addressables et label, profil du monde, textes fr et en, base de contenu. " +
+                "Relancer met à jour sans rien dupliquer ni écraser l'art existant ; les zones ne s'ajoutent qu'à la fin (bit de sauvegarde). " +
+                "Un prefab de chunk pas encore construit reste « à faire » sans être une erreur.",
+                MessageType.None);
+            if (GUILayout.Button("Migrer la Prairie (adopter l'existant)"))
+                Run(BiomeWizard.MigrateGrassland);
+            if (GUILayout.Button("Créer ou mettre à jour la Forêt (T50)")
+                && EditorUtility.DisplayDialog("Forêt", "Créer ou mettre à jour la Forêt depuis sa fiche ? Ses assets de données s'ajoutent au projet.", "Créer", "Annuler"))
+                Run(() => BiomeWizard.CreateOrUpdate(BiomeWizard.ForestSpec()));
+            if (GUILayout.Button("Valider les biomes"))
+                Run(() => Summary(AssetValidator.ValidateBiomes()));
+            foreach (var row in _biomes ?? new List<ContentWizard.Row>())
+                DrawRow(row);
+        }
+
+        private void DecorationsTab()
+        {
+            EditorGUILayout.HelpBox(
+                "Une décoration se crée depuis sa fiche (DecorationWizard.DecorationSpec) : prefab depuis le modèle ou adopté, empreinte mesurée " +
+                "une fois sur le LOD0 (bandes de hauteur et contour au sol), classe XS à XL, adresse = nom du prefab dans le groupe de la fiche, " +
+                "définition enregistrée, copie du catalogue visuel synchronisée, puis l'icône depuis le vrai prefab.",
+                MessageType.None);
+            if (GUILayout.Button("Décorations des Terriers et Terrier douillet (mesurer, définitions)"))
+                Run(DecorationWizard.UpdateAll);
+            if (GUILayout.Button("Icônes des décorations"))
+                Run(() => DecorationWizard.RenderIcons(DecorationWizard.AllSpecs()));
+            if (GUILayout.Button("Valider les décorations"))
+                Run(() => Summary(AssetValidator.ValidateDecorations()));
+            foreach (var row in _decorations ?? new List<ContentWizard.Row>())
+                DrawRow(row);
+        }
+
+        private static string Summary(List<ValidationIssue> issues)
+        {
+            var errors = issues.Where(i => i.Severity == IssueSeverity.Error).ToList();
+            return errors.Count == 0
+                ? $"Aucune erreur ({issues.Count} notes « à faire »)."
+                : $"{errors.Count} erreurs : " + string.Join(" ; ", errors.Take(4).Select(e => e.Rule + " " + e.Message));
         }
 
         private static void DrawRow(ContentWizard.Row row)

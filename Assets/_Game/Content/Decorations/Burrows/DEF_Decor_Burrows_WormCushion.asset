@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cc6b75e8da0a584bae92eca7b5ee97c, type: 3}
+  m_Name: DEF_Decor_Burrows_WormCushion
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.DecorationDefinitionAsset
+  sourceId: decor.burrows.earthworm_cushion
+  displayKey: decor.burrows.earthworm_cushion.name
+  category: 3
+  docId: E-DEC-EVT-burrows-08
+  biome: 
+  source: event.burrows.shop
+  maxCopies: 1
+  footprint: 1
+  shape: 0
+  interactions: 1
+  topHeight: 0
+  trisBudget: 1500
+  prefabAddress: PF_Decor_Burrows_WormCushion
+  prefabPath: Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_WormCushion.prefab
+  palette: palette.event_burrows.worm_cushion
+  icon: ICO_Decor_Burrows_WormCushion
+  bands:
+  - a: {x: -0.032608718, y: 0, z: 0.07228568}
+    b: {x: -0.0019957875, y: 0, z: -0.018514324}
+    radius: 0.22623669
+    bottom: 0
+    top: 0.22197257
+  groundHull:
+  - {x: -0.23801938, y: 0.018675946}
+  - {x: -0.2373677, y: 0.0026954096}
+  - {x: -0.23606434, y: -0.029265665}
+  - {x: -0.20782776, y: -0.11234901}
+  - {x: -0.18282342, y: -0.15299205}
+  - {x: -0.11085272, y: -0.20314996}
+  - {x: -0.090410106, y: -0.2141031}
+  - {x: -0.06996749, y: -0.22505622}
+  - {x: -0.047106348, y: -0.22494417}
+  - {x: -0.0242452, y: -0.22483212}
+  - {x: 0.017650953, y: -0.22300823}
+  - {x: 0.038890198, y: -0.21957225}
+  - {x: 0.06012944, y: -0.21613625}
+  - {x: 0.098164275, y: -0.19625537}
+  - {x: 0.16668065, y: -0.14890061}
+  - {x: 0.17863464, y: -0.13058563}
+  - {x: 0.19058864, y: -0.11227063}
+  - {x: 0.21929502, y: -0.03453534}
+  - {x: 0.22252978, y: 0.009258054}
+  - {x: 0.19936793, y: 0.089241795}
+  - {x: 0.18804601, y: 0.1074141}
+  - {x: 0.17672408, y: 0.1255864}
+  - {x: -0.03799269, y: 0.28000936}
+  - {x: -0.04946107, y: 0.28535944}
+  - {x: -0.08107211, y: 0.28883538}
+  - {x: -0.106130205, y: 0.28624275}
+  - {x: -0.11464746, y: 0.27739918}
+  - {x: -0.12316471, y: 0.26855555}
+  - {x: -0.13542345, y: 0.255453}
+  - {x: -0.14768219, y: 0.24235037}
+  - {x: -0.209827, y: 0.12343391}
+  reach: 0.30528435
+  height: 0.22197257
+  measuredTris: 584

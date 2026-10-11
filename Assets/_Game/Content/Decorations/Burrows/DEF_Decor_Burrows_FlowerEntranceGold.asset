@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cc6b75e8da0a584bae92eca7b5ee97c, type: 3}
+  m_Name: DEF_Decor_Burrows_FlowerEntranceGold
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.DecorationDefinitionAsset
+  sourceId: decor.burrows.flowery_entrance_gold
+  displayKey: decor.burrows.flowery_entrance_gold.name
+  category: 3
+  docId: E-DEC-EVT-burrows-01-gold
+  biome: 
+  source: event.burrows.track.gold
+  maxCopies: 1
+  footprint: 2
+  shape: 0
+  interactions: 1
+  topHeight: 0
+  trisBudget: 1500
+  prefabAddress: PF_Decor_Burrows_FlowerEntrance
+  prefabPath: Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_FlowerEntrance.prefab
+  palette: palette.event_burrows.gold
+  icon: ICO_Decor_Burrows_FlowerEntranceGold
+  bands:
+  - a: {x: -0.06569437, y: 0, z: -0.009273756}
+    b: {x: 0.06507082, y: 0, z: 0.018895444}
+    radius: 0.30049947
+    bottom: 0.00000029429793
+    top: 0.3893223
+  groundHull:
+  - {x: -0.35259232, y: 0.0000002958374}
+  - {x: -0.35197553, y: -0.02370036}
+  - {x: -0.3501251, y: -0.09480233}
+  - {x: -0.31463146, y: -0.16119893}
+  - {x: -0.3028002, y: -0.18333113}
+  - {x: -0.23717253, y: -0.23103952}
+  - {x: -0.21529663, y: -0.24694231}
+  - {x: -0.13650808, y: -0.2737974}
+  - {x: -0.11024521, y: -0.2827491}
+  - {x: -0.055122457, y: -0.29143918}
+  - {x: 0.0000002958374, y: -0.30012923}
+  - {x: 0.00000029802322, y: -0.30012923}
+  - {x: 0.05422234, y: -0.2891301}
+  - {x: 0.10844439, y: -0.27813092}
+  - {x: 0.18582353, y: -0.25157356}
+  - {x: 0.21161658, y: -0.2427211}
+  - {x: 0.25062817, y: -0.20904194}
+  - {x: 0.28963974, y: -0.17536277}
+  - {x: 0.30307674, y: -0.15476647}
+  - {x: 0.34338775, y: -0.09297756}
+  - {x: 0.3595787, y: -0.02324417}
+  - {x: 0.36497566, y: 0.0000002958374}
+  - {x: 0.36497566, y: 0.00000029802322}
+  - {x: 0.35303444, y: 0.04617861}
+  - {x: 0.3470638, y: 0.06926777}
+  - {x: 0.34109318, y: 0.09235693}
+  - {x: 0.31560245, y: 0.13400272}
+  - {x: 0.2901117, y: 0.1756485}
+  - {x: 0.27021763, y: 0.19210654}
+  - {x: 0.21053544, y: 0.24148066}
+  - {x: 0.18283361, y: 0.25930655}
+  - {x: 0.17523174, y: 0.2641759}
+  - {x: 0.16472328, y: 0.27069947}
+  - {x: 0.15461104, y: 0.2768268}
+  - {x: 0.1040003, y: 0.28272843}
+  - {x: 0.00000029802322, y: 0.29254493}
+  - {x: 0.0000002958374, y: 0.29254493}
+  - {x: -0.027724525, y: 0.29051536}
+  - {x: -0.11089899, y: 0.28442654}
+  - {x: -0.14238547, y: 0.2805754}
+  - {x: -0.17859907, y: 0.26920867}
+  - {x: -0.21586904, y: 0.2475981}
+  - {x: -0.29156086, y: 0.17652585}
+  - {x: -0.3031347, y: 0.15526447}
+  - {x: -0.33785626, y: 0.091480285}
+  - {x: -0.35259232, y: 0.00000029802322}
+  reach: 0.36497566
+  height: 0.3893223
+  measuredTris: 936

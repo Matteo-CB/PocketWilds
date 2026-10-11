@@ -152,6 +152,43 @@ namespace PocketWilds.Simulation
     {
         public static ProgressionConfig Default { get; } = new ProgressionConfig();
 
+        /// <summary>
+        /// T49B the config of a content registry: the default, or a copy whose zones come from the biomes' data
+        /// (<see cref="ZonesFrom"/>) when at least one biome declares zones. The shared default is never modified.
+        /// </summary>
+        public static ProgressionConfig ForContent(ContentRegistry? content)
+        {
+            if (content == null)
+                return Default;
+            var biomes = new List<BiomeDefinition>(content.Biomes.Count);
+            for (int i = 0; i < content.Biomes.Count; i++)
+                biomes.Add(content.Biomes[i]);
+            var zones = ZonesFrom(biomes);
+            if (zones.Length == 0)
+                return Default;
+            return new ProgressionConfig { Zones = zones };
+        }
+
+        /// <summary>
+        /// T49B the zone table built from biome data: every biome in the given (progression) order, each zone with its position as
+        /// save bit, its expansion index and its chunk (chunk.{key}.{chunk}). Biomes without a key or zones add nothing.
+        /// </summary>
+        public static ZoneDefinition[] ZonesFrom(IEnumerable<BiomeDefinition> biomes)
+        {
+            var zones = new List<ZoneDefinition>();
+            foreach (var biome in biomes)
+            {
+                if (biome.Key.Length == 0)
+                    continue;
+                for (int i = 0; i < biome.Zones.Count; i++)
+                {
+                    var zone = biome.Zones[i];
+                    zones.Add(new ZoneDefinition(biome.Key, zone.Chunk, (ZoneRole)(byte)zone.Role, i, zone.ExpansionIndex));
+                }
+            }
+            return zones.ToArray();
+        }
+
         // ---- Upgrades (section 3) ----
         public double ProductionCostMult = 5.0;
         public double ProductionGrowth = 1.25;

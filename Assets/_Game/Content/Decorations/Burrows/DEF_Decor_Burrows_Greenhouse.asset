@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cc6b75e8da0a584bae92eca7b5ee97c, type: 3}
+  m_Name: DEF_Decor_Burrows_Greenhouse
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.DecorationDefinitionAsset
+  sourceId: decor.burrows.mini_greenhouse
+  displayKey: decor.burrows.mini_greenhouse.name
+  category: 3
+  docId: E-DEC-EVT-burrows-10
+  biome: 
+  source: event.burrows.box
+  maxCopies: 1
+  footprint: 3
+  shape: 0
+  interactions: 1
+  topHeight: 0
+  trisBudget: 2000
+  prefabAddress: PF_Decor_Burrows_Greenhouse
+  prefabPath: Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_Greenhouse.prefab
+  palette: palette.event_burrows.greenhouse
+  icon: ICO_Decor_Burrows_Greenhouse
+  bands:
+  - a: {x: -0.29142803, y: 0, z: 0.12283863}
+    b: {x: 0.1717966, y: 0, z: 0.0031342953}
+    radius: 0.55781716
+    bottom: 0
+    top: 0.69987947
+  - a: {x: -0.053339884, y: 0, z: -0.08454412}
+    b: {x: 0.04410924, y: 0, z: 0.0750575}
+    radius: 0.5783773
+    bottom: 0.7002206
+    top: 0.94996804
+  - a: {x: -0.08067615, y: 0, z: -0.16229105}
+    b: {x: 0.07198307, y: 0, z: 0.15268293}
+    radius: 0.51286423
+    bottom: 0.9504628
+    top: 1.3499999
+  groundHull:
+  - {x: -0.61800003, y: 0.54000014}
+  - {x: -0.48000026, y: -0.38500065}
+  - {x: -0.47755915, y: -0.39089325}
+  - {x: -0.47389746, y: -0.3997322}
+  - {x: -0.47267687, y: -0.40267852}
+  - {x: -0.46383888, y: -0.4063393}
+  - {x: -0.45794687, y: -0.4087798}
+  - {x: -0.4550009, y: -0.41000003}
+  - {x: -0.42502785, y: -0.4146058}
+  - {x: 0.44525388, y: -0.41445938}
+  - {x: 0.47267818, y: -0.40267855}
+  - {x: 0.6150003, y: -0.33000004}
+  - {x: 0.62999994, y: -0.3150004}
+  - {x: 0.62999994, y: 0.27500075}
+  - {x: 0.61500037, y: 0.2900004}
+  - {x: 0.47267818, y: 0.40267795}
+  - {x: 0.1649996, y: 0.5799992}
+  - {x: -0.37584543, y: 0.6298629}
+  - {x: -0.55767673, y: 0.6118904}
+  - {x: -0.60092086, y: 0.5869229}
+  - {x: -0.6094605, y: 0.56346154}
+  reach: 0.8399907
+  height: 1.3499999
+  measuredTris: 1365

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd50b253e94f3dd4f8bedec47c59f669, type: 3}
+  m_Name: DEF_World_Grassland
+  m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.BiomeWorldProfile
+  biomeId: biome.grassland
+  key: grassland
+  chunkSet: {fileID: 11400000, guid: 32611da0d3e9e1340b34b290504f0a44, type: 2}
+  morning: {fileID: 11400000, guid: e396f98deb5596d4fa69234e53314ea0, type: 2}
+  day: {fileID: 11400000, guid: e6b808eddc8554b48a9297bdee490304, type: 2}
+  evening: {fileID: 11400000, guid: d0fd2488d30f3fd44a29bde05bbb1d33, type: 2}
+  night: {fileID: 11400000, guid: 652e43702e40eb8449c3dd4936b7f881, type: 2}
+  weatherKit: {fileID: 11400000, guid: 0f0e8960d9ce10f4d95b908c16bb2a37, type: 2}
+  ambientLife: {fileID: 11400000, guid: aabb896cf548ac345a0adc83125fade0, type: 2}
+  zoneKitKey: zones.grassland
+  audioKey: audio.grassland
+  basicEggId: egg.grassland.basic

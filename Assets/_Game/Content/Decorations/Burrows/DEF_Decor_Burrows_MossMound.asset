@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cc6b75e8da0a584bae92eca7b5ee97c, type: 3}
+  m_Name: DEF_Decor_Burrows_MossMound
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.DecorationDefinitionAsset
+  sourceId: decor.burrows.moss_mound
+  displayKey: decor.burrows.moss_mound.name
+  category: 3
+  docId: E-DEC-EVT-burrows-02
+  biome: 
+  source: event.burrows.track
+  maxCopies: 1
+  footprint: 2
+  shape: 0
+  interactions: 1
+  topHeight: 0
+  trisBudget: 1500
+  prefabAddress: PF_Decor_Burrows_MossMound
+  prefabPath: Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_MossMound.prefab
+  palette: palette.event_burrows.moss_mound
+  icon: ICO_Decor_Burrows_MossMound
+  bands:
+  - a: {x: -0.09505486, y: 0, z: 0.00030307553}
+    b: {x: 0.07185303, y: 0, z: 0.002457059}
+    radius: 0.27267784
+    bottom: 0
+    top: 0.34066424
+  groundHull:
+  - {x: -0.33943823, y: 0.121257536}
+  - {x: -0.32345033, y: -0.00000024586916}
+  - {x: -0.30886662, y: -0.08467586}
+  - {x: -0.2777063, y: -0.13535075}
+  - {x: -0.26212612, y: -0.16068818}
+  - {x: -0.23787336, y: -0.18043104}
+  - {x: -0.18936783, y: -0.21991675}
+  - {x: -0.15940763, y: -0.23272741}
+  - {x: -0.09948722, y: -0.2583487}
+  - {x: -0.0663249, y: -0.26228938}
+  - {x: -0.033162568, y: -0.26623005}
+  - {x: -0.00000024586916, y: -0.2701707}
+  - {x: -0.0000002443755, y: -0.2701707}
+  - {x: 0.06573462, y: -0.26075652}
+  - {x: 0.09860205, y: -0.25604942}
+  - {x: 0.12890233, y: -0.24405774}
+  - {x: 0.1895029, y: -0.22007436}
+  - {x: 0.23766857, y: -0.1803305}
+  - {x: 0.2617514, y: -0.16045856}
+  - {x: 0.2951909, y: -0.11049325}
+  - {x: 0.31191063, y: -0.085510604}
+  - {x: 0.32356268, y: -0.00000024586916}
+  - {x: 0.32356268, y: -0.0000002443755}
+  - {x: 0.32110322, y: 0.11303528}
+  - {x: 0.30303523, y: 0.13110323}
+  - {x: 0.18705314, y: 0.21722847}
+  - {x: 0.15795515, y: 0.23117028}
+  - {x: 0.09975915, y: 0.2590539}
+  - {x: -0.0000002443755, y: 0.27323025}
+  - {x: -0.00000024586916, y: 0.27323025}
+  - {x: -0.06579478, y: 0.26193258}
+  - {x: -0.098692045, y: 0.25628373}
+  - {x: -0.12779373, y: 0.2428567}
+  - {x: -0.18599707, y: 0.21600263}
+  - {x: -0.31855989, y: 0.15218653}
+  reach: 0.36044654
+  height: 0.34066424
+  measuredTris: 615

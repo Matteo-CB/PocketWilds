@@ -121,6 +121,17 @@ namespace PocketWilds.Content
         {
             Events = events ?? ContentTable<EventDefinition>.Empty;
         }
+
+        /// <summary>T49B: the decorations in this build, with their measured volume (empty: none).</summary>
+        public ContentTable<DecorationDefinition> Decorations { get; } = ContentTable<DecorationDefinition>.Empty;
+
+        public ContentRegistry(ContentTable<SpeciesDefinition> species, ContentTable<VariantDefinition> variants, ContentTable<EggDefinition> eggs,
+            ContentTable<PaletteDefinition> palettes, ContentTable<BiomeDefinition> biomes, ShopContent shop, ContentTable<EventDefinition> events,
+            ContentTable<DecorationDefinition> decorations)
+            : this(species, variants, eggs, palettes, biomes, shop, events)
+        {
+            Decorations = decorations ?? ContentTable<DecorationDefinition>.Empty;
+        }
     }
 
     /// <summary>Shop tables of the registry.</summary>
@@ -202,6 +213,7 @@ namespace PocketWilds.Content
         private readonly List<AccessoryDefinition> _accessories = new List<AccessoryDefinition>();
         private readonly List<OutfitDefinition> _outfits = new List<OutfitDefinition>();
         private readonly List<EventDefinition> _events = new List<EventDefinition>();
+        private readonly List<DecorationDefinition> _decorations = new List<DecorationDefinition>();
         private int _shopUnlockMinAnimals = int.MaxValue;
         private readonly Dictionary<uint, string> _seenHashes = new Dictionary<uint, string>();
         private readonly HashSet<uint> _tombstones = new HashSet<uint>();
@@ -320,8 +332,172 @@ namespace PocketWilds.Content
                 _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Biome needs a display key."));
                 return;
             }
+            if (!ValidBiomeZones(definition, sourceId))
+                return;
             if (TryClaim(definition.Id, sourceId))
                 _biomes.Add(definition);
+        }
+
+        /// <summary>Width of BiomeProgress.ZonesOpened (uint).</summary>
+        public const int MaxBiomeZones = 32;
+
+        /// <summary>Tolerance of a decoration outline against its footprint class (m).</summary>
+        public const float OutlineTolerance = 0.002f;
+
+        /// <summary>
+        /// T49B zone rules of a biome that declares a key, a prefix or zones: the key matches « biome.&lt;key&gt; », the prefix is two
+        /// capitals, exactly one Arrival and it is first, at most one Passage and it is last, unique chunk names of [a-z0-9],
+        /// expansions numbered from 1 in order, at most 32 zones (the width of BiomeProgress.ZonesOpened). A legacy biome passes.
+        /// </summary>
+        private bool ValidBiomeZones(BiomeDefinition biome, string sourceId)
+        {
+            if (biome.Key.Length == 0 && biome.Zones.Count == 0 && biome.Prefix.Length == 0)
+                return true;
+            if (biome.Key.Length == 0 || sourceId != "biome." + biome.Key)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Biome key must match its source ID (biome.<key>)."));
+                return false;
+            }
+            if (biome.Prefix.Length != 2 || biome.Prefix[0] < 'A' || biome.Prefix[0] > 'Z' || biome.Prefix[1] < 'A' || biome.Prefix[1] > 'Z')
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Biome prefix is two capital letters."));
+                return false;
+            }
+            var zones = biome.Zones;
+            if (zones.Count == 0)
+                return true;
+            if (zones.Count > MaxBiomeZones)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Biome has more than " + MaxBiomeZones + " zones."));
+                return false;
+            }
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            int expansions = 0;
+            for (int i = 0; i < zones.Count; i++)
+            {
+                var zone = zones[i];
+                if (!ValidChunkName(zone.Chunk) || !seen.Add(zone.Chunk))
+                {
+                    _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Zone chunk names are unique, lower case letters and digits."));
+                    return false;
+                }
+                if ((i == 0) != (zone.Role == BiomeZoneRole.Arrival))
+                {
+                    _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "A biome has exactly one arrival zone, and it is the first."));
+                    return false;
+                }
+                if (zone.Role == BiomeZoneRole.Passage && i != zones.Count - 1)
+                {
+                    _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "A biome has at most one passage zone, and it is the last."));
+                    return false;
+                }
+                int expected = zone.Role == BiomeZoneRole.Expansion ? ++expansions : 0;
+                if (zone.ExpansionIndex != expected)
+                {
+                    _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Expansion zones are numbered from 1 in opening order."));
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool ValidChunkName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return false;
+            for (int i = 0; i < name.Length; i++)
+            {
+                char c = name[i];
+                if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')))
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// T49B: a decoration (unique id matching its source ID, display key, prefab address, MaxCopies of 1 or more, a ground outline,
+        /// measured height bands unless it is flat, and an outline inside its footprint class within 2 mm: a circle by radius, a rectangle
+        /// by its half sizes, allowing the 90 degree turn). Palette and biome are checked against the registry in Build.
+        /// </summary>
+        public void AddDecoration(DecorationDefinition definition, string sourceId)
+        {
+            if (string.IsNullOrEmpty(definition.DisplayKey) || string.IsNullOrEmpty(definition.PrefabAddress))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Decoration needs a display key and a prefab address."));
+                return;
+            }
+            if (definition.MaxCopies < 1)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Decoration MaxCopies is at least 1."));
+                return;
+            }
+            if (definition.SourceId != sourceId)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Decoration source ID does not match its definition."));
+                return;
+            }
+            var hull = definition.GroundHull;
+            if (hull.Length < 6 || (hull.Length & 1) != 0)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Decoration has no measured ground outline (3 points at least)."));
+                return;
+            }
+            if (definition.Bands.Length == 0 && !definition.IsFlat)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Decoration is not measured: no height bands."));
+                return;
+            }
+            if (definition.Reach < 0f || definition.Height < 0f || definition.TopHeight < 0f)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Decoration reach and heights are not negative."));
+                return;
+            }
+            if (!OutlineInsideClass(definition))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Decoration outline is past its footprint class."));
+                return;
+            }
+            // The decoration shares its id with the owned item it shows (decor.burrows.moss_mound is also the shop's entitlement):
+            // like accessories, it is unique among decorations, not claimed against the other content.
+            if (ContentIdHash.Compute(sourceId) != definition.Id.Value)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "ContentId does not match its source ID."));
+                return;
+            }
+            if (_decorations.Exists(d => d.Id == definition.Id))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Duplicate decoration."));
+                return;
+            }
+            _decorations.Add(definition);
+        }
+
+        private static bool OutlineInsideClass(DecorationDefinition d)
+        {
+            var hull = d.GroundHull;
+            if (d.Shape == DecorationFootprintShape.Circle)
+            {
+                float limit = DecorationDefinition.ClassRadius(d.Footprint) + OutlineTolerance;
+                for (int i = 0; i < hull.Length; i += 2)
+                {
+                    if (hull[i] * hull[i] + hull[i + 1] * hull[i + 1] > limit * limit)
+                        return false;
+                }
+                return true;
+            }
+            DecorationDefinition.ClassRectangle(d.Footprint, out float halfLength, out float halfWidth);
+            return InsideRectangle(hull, halfLength + OutlineTolerance, halfWidth + OutlineTolerance)
+                || InsideRectangle(hull, halfWidth + OutlineTolerance, halfLength + OutlineTolerance);
+        }
+
+        private static bool InsideRectangle(float[] hull, float halfX, float halfZ)
+        {
+            for (int i = 0; i < hull.Length; i += 2)
+            {
+                if (Math.Abs(hull[i]) > halfX || Math.Abs(hull[i + 1]) > halfZ)
+                    return false;
+            }
+            return true;
         }
 
         public void SetShopUnlock(int minAnimals)
@@ -543,6 +719,15 @@ namespace PocketWilds.Content
 
             ValidateShop();
 
+            // T49B: a decoration's palette and biome exist when set.
+            foreach (var d in _decorations)
+            {
+                if (d.Palette.IsValid && !_palettes.Exists(p => p.Id == d.Palette))
+                    _issues.Add(new ContentIssue(ContentIssueSeverity.Error, d.SourceId, "Decoration palette is not a known palette."));
+                if (d.Biome.IsValid && !_biomes.Exists(b => b.Id == d.Biome))
+                    _issues.Add(new ContentIssue(ContentIssueSeverity.Error, d.SourceId, "Decoration biome is not a known biome."));
+            }
+
             // T48: the egg's items and secret are variants of this build.
             foreach (var e in _events)
             {
@@ -566,7 +751,7 @@ namespace PocketWilds.Content
                 new ContentTable<OutfitDefinition>(_outfits));
             return new ContentRegistry(new ContentTable<SpeciesDefinition>(_species), new ContentTable<VariantDefinition>(_variants),
                 new ContentTable<EggDefinition>(_eggs), new ContentTable<PaletteDefinition>(_palettes), new ContentTable<BiomeDefinition>(_biomes), shop,
-                new ContentTable<EventDefinition>(_events));
+                new ContentTable<EventDefinition>(_events), new ContentTable<DecorationDefinition>(_decorations));
         }
 
         /// <summary>Cross references: every granted item and sold product exists, SKUs are unique.</summary>

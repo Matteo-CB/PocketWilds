@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cc6b75e8da0a584bae92eca7b5ee97c, type: 3}
+  m_Name: DEF_Decor_Burrows_WateringCan
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.DecorationDefinitionAsset
+  sourceId: decor.burrows.watering_can
+  displayKey: decor.burrows.watering_can.name
+  category: 3
+  docId: E-DEC-EVT-burrows-04
+  biome: 
+  source: event.burrows.track
+  maxCopies: 1
+  footprint: 1
+  shape: 0
+  interactions: 1
+  topHeight: 0
+  trisBudget: 1500
+  prefabAddress: PF_Decor_Burrows_WateringCan
+  prefabPath: Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_WateringCan.prefab
+  palette: palette.event_burrows.watering_can
+  icon: ICO_Decor_Burrows_WateringCan
+  bands:
+  - a: {x: -0.008451317, y: 0, z: -0.06773415}
+    b: {x: -0.0015175533, y: 0, z: 0.15395506}
+    radius: 0.12452326
+    bottom: 0.00000017754903
+    top: 0.34116468
+  groundHull:
+  - {x: -0.13116755, y: -0.040000174}
+  - {x: -0.12836368, y: -0.06373749}
+  - {x: -0.1252223, y: -0.07048588}
+  - {x: -0.07232497, y: -0.13069227}
+  - {x: -0.009797601, y: -0.18796214}
+  - {x: 0.0017101504, y: -0.19184211}
+  - {x: 0.011929831, y: -0.18529856}
+  - {x: 0.07232481, y: -0.13069227}
+  - {x: 0.08841859, y: -0.11051139}
+  - {x: 0.104512356, y: -0.09033051}
+  - {x: 0.11599978, y: -0.040000174}
+  - {x: 0.104512356, y: 0.0103306705}
+  - {x: 0.033999868, y: 0.24910063}
+  - {x: 0.029444853, y: 0.26378486}
+  - {x: 0.016999768, y: 0.2745347}
+  - {x: 0.00000017754903, y: 0.27846906}
+  - {x: -0.01699992, y: 0.2745347}
+  - {x: -0.029445007, y: 0.26378486}
+  - {x: -0.12596494, y: -0.00648796}
+  - {x: -0.1288227, y: -0.024184959}
+  reach: 0.27846906
+  height: 0.34116468
+  measuredTris: 788

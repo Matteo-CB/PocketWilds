@@ -37,7 +37,7 @@ namespace PocketWilds.Simulation
             _economy = economy;
             _hatch = hatch;
             _save = save;
-            Config = config ?? ProgressionConfig.Default;
+            Config = config ?? ProgressionConfig.ForContent(content);
             Store = new BiomeProgressStore(state, Config);
             Mastery = new BiomeMasteryService(Store, Config, economy);
             Upgrades = new UpgradeService(Store, Config, economy, Mastery);

@@ -39,7 +39,7 @@ namespace PocketWilds.Editor.Validation
     /// ED-007 Asset Validator (v2: animal prefabs, egg models). Errors block promotion to production.
     /// Budgets are ceilings from the Master Asset Manifest, not targets.
     /// </summary>
-    public static class AssetValidator
+    public static partial class AssetValidator
     {
         public const string AnimalPrefabFolder = "Assets/_Game/Prefabs/Animals";
         public const int MaxBonesSmallFamily = 32;
@@ -163,6 +163,8 @@ namespace PocketWilds.Editor.Validation
             issues.AddRange(ValidateEggPrefab());
             issues.AddRange(ValidateEnvironment());
             issues.AddRange(ValidateHideSpots());
+            issues.AddRange(ValidateBiomes());
+            issues.AddRange(ValidateDecorations());
             Report(issues);
             EditorApplication.Exit(issues.Any(i => i.Severity == IssueSeverity.Error) ? 1 : 0);
         }

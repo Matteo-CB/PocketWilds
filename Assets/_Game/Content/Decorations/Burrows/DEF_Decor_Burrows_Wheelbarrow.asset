@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cc6b75e8da0a584bae92eca7b5ee97c, type: 3}
+  m_Name: DEF_Decor_Burrows_Wheelbarrow
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.DecorationDefinitionAsset
+  sourceId: decor.burrows.mini_wheelbarrow
+  displayKey: decor.burrows.mini_wheelbarrow.name
+  category: 3
+  docId: E-DEC-EVT-burrows-05
+  biome: 
+  source: event.burrows.shop
+  maxCopies: 1
+  footprint: 2
+  shape: 0
+  interactions: 1
+  topHeight: 0
+  trisBudget: 1500
+  prefabAddress: PF_Decor_Burrows_Wheelbarrow
+  prefabPath: Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_Wheelbarrow.prefab
+  palette: palette.event_burrows.wheelbarrow
+  icon: ICO_Decor_Burrows_Wheelbarrow
+  bands:
+  - a: {x: 0.00009982218, y: 0, z: -0.3970456}
+    b: {x: 0.0034668343, y: 0, z: 0.21003616}
+    radius: 0.1799972
+    bottom: 0.00000022351742
+    top: 0.3280054
+  groundHull:
+  - {x: -0.1789997, y: -0.41499972}
+  - {x: -0.17255594, y: -0.4291863}
+  - {x: -0.16800024, y: -0.43616217}
+  - {x: -0.15699998, y: -0.439052}
+  - {x: 0.15699968, y: -0.439052}
+  - {x: 0.16799994, y: -0.43616217}
+  - {x: 0.17255643, y: -0.4291863}
+  - {x: 0.1790002, y: -0.41499972}
+  - {x: 0.16560033, y: -0.0035473853}
+  - {x: 0.16013381, y: 0.02875131}
+  - {x: 0.15466727, y: 0.061050005}
+  - {x: 0.14920074, y: 0.0933487}
+  - {x: 0.025980882, y: 0.37499985}
+  - {x: 0.012990563, y: 0.38249993}
+  - {x: 0.00000024433723, y: 0.39}
+  - {x: 0.00000024400651, y: 0.39}
+  - {x: -0.012990075, y: 0.38249993}
+  - {x: -0.025980394, y: 0.37499985}
+  - {x: -0.14920025, y: 0.0933487}
+  - {x: -0.15466678, y: 0.061050005}
+  - {x: -0.16559984, y: -0.0035473853}
+  reach: 0.46739867
+  height: 0.3280054
+  measuredTris: 773

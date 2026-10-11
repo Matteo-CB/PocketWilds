@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cc6b75e8da0a584bae92eca7b5ee97c, type: 3}
+  m_Name: DEF_Decor_Burrows_Souvenir
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.DecorationDefinitionAsset
+  sourceId: decor.burrows.souvenir
+  displayKey: decor.burrows.souvenir.name
+  category: 4
+  docId: E-DEC-EVT-burrows-13
+  biome: 
+  source: event.burrows.souvenir
+  maxCopies: 1
+  footprint: 0
+  shape: 0
+  interactions: 1
+  topHeight: 0
+  trisBudget: 1500
+  prefabAddress: PF_Decor_Burrows_Souvenir
+  prefabPath: Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_Souvenir.prefab
+  palette: palette.event_burrows.souvenir
+  icon: ICO_Decor_Burrows_Souvenir
+  bands:
+  - a: {x: -0.019556941, y: 0, z: -0.00092137046}
+    b: {x: 0.028484648, y: 0, z: -0.01011288}
+    radius: 0.12047721
+    bottom: 0.000000079999005
+    top: 0.59954655
+  groundHull:
+  - {x: -0.14003062, y: 0.000000078231096}
+  - {x: -0.124743596, y: -0.051491547}
+  - {x: -0.087967694, y: -0.0945497}
+  - {x: -0.03200295, y: -0.12018443}
+  - {x: 0.031700525, y: -0.119046755}
+  - {x: 0.058401693, y: -0.105258524}
+  - {x: 0.085102856, y: -0.09147029}
+  - {x: 0.12511899, y: -0.05164601}
+  - {x: 0.1404575, y: 0.000000078231096}
+  - {x: 0.1404575, y: 0.000000079999005}
+  - {x: 0.13550618, y: 0.026945284}
+  - {x: 0.13055485, y: 0.053890485}
+  - {x: 0.08561985, y: 0.09202624}
+  - {x: 0.057630077, y: 0.10166827}
+  - {x: 0.029640298, y: 0.111310296}
+  - {x: -0.030882198, y: 0.11597385}
+  - {x: -0.0308822, y: 0.11597385}
+  - {x: -0.05814021, y: 0.10388085}
+  - {x: -0.08539822, y: 0.091787845}
+  - {x: -0.105703935, y: 0.07190074}
+  - {x: -0.12600964, y: 0.05201364}
+  - {x: -0.14003062, y: 0.000000079999005}
+  reach: 0.14124006
+  height: 0.59954655
+  measuredTris: 662

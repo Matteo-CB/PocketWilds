@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cc6b75e8da0a584bae92eca7b5ee97c, type: 3}
+  m_Name: DEF_Decor_Burrows_GardenShed
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.DecorationDefinitionAsset
+  sourceId: decor.burrows.garden_shed
+  displayKey: decor.burrows.garden_shed.name
+  category: 3
+  docId: E-DEC-EVT-burrows-09
+  biome: 
+  source: event.burrows.box
+  maxCopies: 1
+  footprint: 3
+  shape: 0
+  interactions: 1
+  topHeight: 0
+  trisBudget: 2000
+  prefabAddress: PF_Decor_Burrows_GardenShed
+  prefabPath: Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_GardenShed.prefab
+  palette: palette.event_burrows.garden_shed
+  icon: ICO_Decor_Burrows_GardenShed
+  bands:
+  - a: {x: -0.32639104, y: 0, z: 0.08708207}
+    b: {x: 0.42706126, y: 0, z: 0.1058416}
+    radius: 0.52531
+    bottom: 0
+    top: 0.69600046
+  - a: {x: -0.5147502, y: 0, z: -0.0019983766}
+    b: {x: 0.5147505, y: 0, z: 0.0019987195}
+    radius: 0.51312697
+    bottom: 0.7074192
+    top: 0.94978726
+  - a: {x: -0.0000589477, y: 0, z: -0.44999015}
+    b: {x: 0.000057632904, y: 0, z: 0.4499905}
+    radius: 0.5106827
+    bottom: 0.95011216
+    top: 1.2667359
+  groundHull:
+  - {x: -0.5807986, y: 0.453752}
+  - {x: -0.48749995, y: -0.40250006}
+  - {x: -0.47706556, y: -0.4129345}
+  - {x: -0.4725005, y: -0.41749957}
+  - {x: 0.41749993, y: -0.41749957}
+  - {x: 0.47249913, y: -0.41749954}
+  - {x: 0.48032588, y: -0.40967375}
+  - {x: 0.48750034, y: -0.4025001}
+  - {x: 0.5610458, y: -0.16890454}
+  - {x: 0.56630874, y: -0.1017056}
+  - {x: 0.5868548, y: 0.45462063}
+  - {x: 0.5859827, y: 0.46607417}
+  - {x: 0.5851105, y: 0.47752774}
+  - {x: 0.57750154, y: 0.4861331}
+  - {x: 0.5698926, y: 0.49473843}
+  - {x: 0.56029, y: 0.5008894}
+  - {x: 0.5506873, y: 0.5070404}
+  - {x: 0.18800093, y: 0.6150002}
+  - {x: -0.18800053, y: 0.6150002}
+  - {x: -0.5638011, y: 0.48643613}
+  - {x: -0.56920505, y: 0.47882804}
+  - {x: -0.5746089, y: 0.47121996}
+  reach: 0.7577218
+  height: 1.2667359
+  measuredTris: 1198

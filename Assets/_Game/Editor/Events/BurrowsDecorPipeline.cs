@@ -7,6 +7,7 @@ using PocketWilds.Content;
 using PocketWilds.Editor.Animals;
 using PocketWilds.Editor.Cosmetics;
 using PocketWilds.Editor.Environment;
+using PocketWilds.Editor.Production;
 using PocketWilds.Presentation;
 using UnityEditor;
 using UnityEngine;
@@ -124,6 +125,11 @@ namespace PocketWilds.Editor.Events
         [MenuItem("Pocket Wilds/Events/Render Burrows Decoration Icons (T49)", priority = 198)]
         public static void RenderIconsMenu() => Debug.Log("[BurrowsDecorPipeline] " + RenderIcons());
 
+        /// <summary>
+        /// T49B: the palettes, then the Decoration Wizard (ED-002) builds the prefabs from the models, measures them, writes the
+        /// DEF_Decor_Burrows_* definitions (Content/Decorations/Burrows), keeps the prefabs addressed in LiveOps_Burrows and syncs the
+        /// DEF_CosmeticVisualCatalog decoration entries from the definitions.
+        /// </summary>
         public static string BuildAll()
         {
             var material = AssetDatabase.LoadAssetAtPath<Material>(GrasslandPipeline.EnvironmentMaterialPath);
@@ -132,53 +138,7 @@ namespace PocketWilds.Editor.Events
                 return "missing MAT_Environment_Common or DEF_CosmeticVisualCatalog: run GrasslandPipeline and AccessoryVisualPipeline first";
             EnsurePalettes();
             Directory.CreateDirectory(PrefabFolder);
-            CollisionProxies.ClearCache();
-            var report = new List<string>();
-            var measured = new Dictionary<string, CollisionProxies.Proxy>();
-            foreach (var piece in Pieces())
-            {
-                if (measured.ContainsKey(piece.Prefab))
-                    continue;
-                var meshes = AccessoryVisualPipeline.ModelMeshes(ModelPath(piece.Model), null);
-                if (meshes.Count == 0)
-                {
-                    report.Add($"{piece.Model}: model missing");
-                    measured[piece.Prefab] = null;
-                    continue;
-                }
-                var prefab = AccessoryVisualPipeline.SavePrefab(piece.Prefab, PrefabPath(piece.Prefab), meshes, material, ShadowCastingMode.On);
-                var proxy = CollisionProxies.Measure(prefab);
-                measured[piece.Prefab] = proxy;
-                int tris = meshes.Sum(m => (int)m.mesh.GetIndexCount(0) / 3);
-                float bottom = float.MaxValue;
-                foreach (var (mesh, matrix, _) in meshes)
-                    foreach (var v in mesh.vertices)
-                        bottom = Mathf.Min(bottom, matrix.MultiplyPoint3x4(v).y);
-                var ground = proxy.Bands.FirstOrDefault();
-                report.Add($"{piece.Prefab}: {tris} tris{(tris >= piece.Budget ? $" OVER BUDGET {piece.Budget}" : string.Empty)}, base {bottom * 1000f:0.0} mm, " +
-                           $"{proxy.Bands.Count} bands" + (ground != null ? $", ground {CollisionProxies.HullArea(ground.Hull):0.000} m2 r {ground.Radius:0.00} m" : ", NO FOOTPRINT"));
-            }
-
-            catalog.decorations.RemoveAll(e => e == null || Pieces().Any(p => p.ItemId == e.itemId));
-            foreach (var piece in Pieces())
-            {
-                if (!measured.TryGetValue(piece.Prefab, out var proxy) || proxy == null || proxy.Bands.Count == 0)
-                    continue;
-                var ground = proxy.Ground ?? proxy.Bands[0];
-                catalog.decorations.Add(new CosmeticVisualCatalog.DecorEntry
-                {
-                    itemId = piece.ItemId,
-                    prefabAddress = piece.Prefab,
-                    paletteRow = piece.Row,
-                    bands = proxy.Bands.Select(b => new Obstacle(b.A, b.B, b.Radius, 0f, b.Bottom, b.Top, ObstacleKind.Solid)).ToArray(),
-                    groundHull = ground.Hull.ToArray(),
-                    reach = proxy.Bands.SelectMany(b => b.Hull).Max(p => p.magnitude),
-                    height = proxy.Bands.Max(b => b.Top),
-                });
-            }
-            EditorUtility.SetDirty(catalog);
-            AssetDatabase.SaveAssets();
-            return $"{catalog.decorations.Count(e => e.itemId.StartsWith("decor.burrows.", StringComparison.Ordinal))} decoration entries; " + string.Join("; ", report);
+            return DecorationWizard.CreateOrUpdate(DecorationWizard.BurrowsSpecs());
         }
 
         /// <summary>DEF_Palettes_EventBurrows from <see cref="Rows"/>, registered in the content database.</summary>
@@ -204,36 +164,6 @@ namespace PocketWilds.Editor.Events
         }
 
         /// <summary>The 18 decoration icons from the real prefabs (gold versions in the gold row), three-quarter front view.</summary>
-        public static string RenderIcons()
-        {
-            var studio = AccessoryVisualPipeline.IconStudio.Open(out string refusal);
-            if (studio == null)
-                return refusal;
-            var missing = new List<string>();
-            using (studio)
-            {
-                foreach (var piece in Pieces())
-                {
-                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath(piece.Prefab));
-                    if (prefab == null)
-                    {
-                        missing.Add(piece.Icon);
-                        continue;
-                    }
-                    var go = Object.Instantiate(prefab);
-                    try
-                    {
-                        studio.Tint(go, piece.Row);
-                        studio.Shoot(go, piece.Icon, 30f);
-                    }
-                    finally
-                    {
-                        Object.DestroyImmediate(go);
-                    }
-                }
-            }
-            return studio.Written.Count + " icons: " + string.Join(", ", studio.Written.Select(Path.GetFileNameWithoutExtension))
-                   + (missing.Count > 0 ? "; MISSING (run BuildAll): " + string.Join(", ", missing) : string.Empty);
-        }
+        public static string RenderIcons() => DecorationWizard.RenderIcons(DecorationWizard.BurrowsSpecs());
     }
 }

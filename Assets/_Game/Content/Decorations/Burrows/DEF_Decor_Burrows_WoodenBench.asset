@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cc6b75e8da0a584bae92eca7b5ee97c, type: 3}
+  m_Name: DEF_Decor_Burrows_WoodenBench
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.DecorationDefinitionAsset
+  sourceId: decor.burrows.wooden_bench
+  displayKey: decor.burrows.wooden_bench.name
+  category: 3
+  docId: E-DEC-EVT-burrows-11
+  biome: 
+  source: event.burrows.box
+  maxCopies: 1
+  footprint: 2
+  shape: 0
+  interactions: 1
+  topHeight: 0
+  trisBudget: 2000
+  prefabAddress: PF_Decor_Burrows_WoodenBench
+  prefabPath: Assets/_Game/Prefabs/Events/Burrows/PF_Decor_Burrows_WoodenBench.prefab
+  palette: palette.event_burrows.wooden_bench
+  icon: ICO_Decor_Burrows_WoodenBench
+  bands:
+  - a: {x: -0.42871025, y: 0, z: -0.035320397}
+    b: {x: 0.42961973, y: 0, z: -0.03540363}
+    radius: 0.25040627
+    bottom: 0.00000038178368
+    top: 0.67719346
+  groundHull:
+  - {x: -0.486, y: 0.18000016}
+  - {x: -0.4772021, y: -0.1899998}
+  - {x: -0.46, y: -0.27308038}
+  - {x: -0.45648572, y: -0.28131366}
+  - {x: -0.4479995, y: -0.2847248}
+  - {x: 0.44800028, y: -0.2847248}
+  - {x: 0.4564854, y: -0.28131366}
+  - {x: 0.45999968, y: -0.27308038}
+  - {x: 0.47894225, y: -0.1899998}
+  - {x: 0.48599964, y: 0.18000016}
+  - {x: 0.47604138, y: 0.2040422}
+  - {x: 0.45200044, y: 0.21400046}
+  - {x: -0.4519997, y: 0.21400046}
+  - {x: -0.47604173, y: 0.2040422}
+  reach: 0.5362057
+  height: 0.67719346
+  measuredTris: 1182

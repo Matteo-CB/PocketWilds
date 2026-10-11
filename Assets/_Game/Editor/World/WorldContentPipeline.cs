@@ -64,7 +64,9 @@ namespace PocketWilds.Editor.World
             // Shared dependencies get one owner: the kit bundle. Each chunk bundle then only carries what is its own
             // (its ground mesh and merged prop meshes), which is exactly what a release frees.
             var shared = SharedDependencies(GrasslandChunks.Select(c => c.path).ToArray());
-            var stale = kit.entries.Where(e => !shared.Contains(e.AssetPath)).ToList();
+            // T49B: the biome's world profile (world.grassland, Biome Wizard) also lives in the kit group: never stale.
+            var stale = kit.entries.Where(e => !shared.Contains(e.AssetPath)
+                                               && !e.address.StartsWith("world.", StringComparison.Ordinal)).ToList();
             foreach (var entry in stale)
                 settings.RemoveAssetEntry(entry.guid);
             foreach (var path in shared)

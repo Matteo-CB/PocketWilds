@@ -21,6 +21,9 @@ namespace PocketWilds.Content
         [Tooltip("T49: the shipped events (their dates come from the calendar, their content from the shop catalogs and species).")]
         public List<EventDefinitionAsset> events = new List<EventDefinitionAsset>();
 
+        [Tooltip("T49B decorations with their measured volume (Decoration Wizard, ED-002).")]
+        public List<DecorationDefinitionAsset> decorations = new List<DecorationDefinitionAsset>();
+
         [Tooltip("Player-facing text, one table per language (LOC_en first: it is the fallback).")]
         public List<LocalizationTableAsset> localization = new List<LocalizationTableAsset>();
 
@@ -66,6 +69,11 @@ namespace PocketWilds.Content
             {
                 if (e != null)
                     builder.AddEvent(e.ToRuntime(), e.sourceId);
+            }
+            foreach (var d in decorations)
+            {
+                if (d != null)
+                    builder.AddDecoration(d.ToRuntime(), d.sourceId);
             }
             return builder;
         }
