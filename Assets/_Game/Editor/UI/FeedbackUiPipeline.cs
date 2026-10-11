@@ -398,9 +398,10 @@ namespace PocketWilds.Editor.UI
         /// The row under the bond bar (T36 treat, T38 « Brosser »): two buttons of the same look side by side across the card
         /// (48 to 984), or a lone one centered under the bar (270 to 830). Card space, top-left anchor, button centers.
         /// </summary>
-        public const float SheetRowY = -620f;
+        public const float SheetRowY = -644f;
         public const float SheetRowButtonWidth = 458f;
-        public const float SheetRowButtonHeight = 132f;
+        // Two lines (word, then count or tag) with clear margins inside the visible pill (owner, 2026-10-11).
+        public const float SheetRowButtonHeight = 172f;
         public static readonly Vector2 SheetRowSolo = new Vector2(550f, SheetRowY);
         public static readonly Vector2 SheetRowLeft = new Vector2(48f + SheetRowButtonWidth * 0.5f, SheetRowY);
         public static readonly Vector2 SheetRowRight = new Vector2(984f - SheetRowButtonWidth * 0.5f, SheetRowY);
@@ -432,17 +433,17 @@ namespace PocketWilds.Editor.UI
             colors.disabledColor = Color.white;
             button.colors = colors;
             var icon = UiPipeline.AddImage("Icon", back.rectTransform, treatSprite, Color.white, Image.Type.Simple);
-            UiPipeline.Place(icon.rectTransform, left, center, new Vector2(60f, 4f), new Vector2(88f, 88f));
+            UiPipeline.Place(icon.rectTransform, left, center, new Vector2(60f, 11f), new Vector2(88f, 88f));
             var preferred = UiPipeline.AddImage("Preferred", back.rectTransform, heartSprite, Color.white, Image.Type.Simple);
-            UiPipeline.Place(preferred.rectTransform, left, center, new Vector2(98f, 40f), new Vector2(42f, 42f));
+            UiPipeline.Place(preferred.rectTransform, left, center, new Vector2(86f, 52f), new Vector2(42f, 42f));
             preferred.gameObject.SetActive(false);
             // Wide enough for « Friandise » 30 % longer at the Button minimum (Gate 12: 320 needed, box 330).
             var label = UiPipeline.AddText("Label", back.rectTransform, TextRole.Button, 50f, tokens.textPrimary, "Treat", 44f);
             label.alignment = TextAlignmentOptions.MidlineLeft;
-            UiPipeline.Place(label.rectTransform, left, left, new Vector2(114f, 24f), new Vector2(330f, 62f));
+            UiPipeline.Place(label.rectTransform, left, left, new Vector2(114f, 38f), new Vector2(330f, 62f));
             var count = UiPipeline.AddText("Count", back.rectTransform, TextRole.NumberSmall, 40f, tokens.textPrimary, "×0", 36f);
             count.alignment = TextAlignmentOptions.MidlineLeft;
-            UiPipeline.Place(count.rectTransform, left, left, new Vector2(116f, -30f), new Vector2(200f, 46f));
+            UiPipeline.Place(count.rectTransform, left, left, new Vector2(116f, -21f), new Vector2(200f, 46f));
             root.gameObject.SetActive(false);
 
             // Hearts that rise from the treat to the bar's end (same top-left anchor as the bar: one space for both).
@@ -489,16 +490,16 @@ namespace PocketWilds.Editor.UI
             var button = back.gameObject.AddComponent<Button>();
             UiPipeline.ConfigureButton(button, back);
             var icon = UiPipeline.AddImage("Icon", back.rectTransform, groomSprite, Color.white, Image.Type.Simple);
-            UiPipeline.Place(icon.rectTransform, left, center, new Vector2(60f, 4f), new Vector2(88f, 88f));
+            UiPipeline.Place(icon.rectTransform, left, center, new Vector2(60f, 11f), new Vector2(88f, 88f));
             // « Brosser » 30 % longer fits at the Button minimum (290 needed, box 330).
             var label = UiPipeline.AddText("Label", back.rectTransform, TextRole.Button, 50f, tokens.textPrimary, "Groom", 44f);
             label.alignment = TextAlignmentOptions.MidlineLeft;
-            UiPipeline.Place(label.rectTransform, left, left, new Vector2(114f, 24f), new Vector2(330f, 62f));
+            UiPipeline.Place(label.rectTransform, left, left, new Vector2(114f, 38f), new Vector2(330f, 62f));
 
             // « Gratuit »: a soft green tag like the hub card's (218 needed with 30 % more at the Label minimum, box 226).
             var free = UiPipeline.AddImage("Free", back.rectTransform, Load(UiPipeline.PillPath), tokens.success, Image.Type.Sliced);
             free.pixelsPerUnitMultiplier = 2.4f;
-            UiPipeline.Place(free.rectTransform, left, left, new Vector2(110f, -30f), new Vector2(246f, 50f));
+            UiPipeline.Place(free.rectTransform, left, left, new Vector2(110f, -21f), new Vector2(246f, 50f));
             var freeLabel = UiPipeline.AddText("Label", free.rectTransform, TextRole.Label, 36f, tokens.backgroundLight, "Free");
             freeLabel.alignment = TextAlignmentOptions.Center;
             UiPipeline.Place(freeLabel.rectTransform, center, center, new Vector2(0f, 2f), new Vector2(226f, 46f));
@@ -506,7 +507,7 @@ namespace PocketWilds.Editor.UI
 
             // A game's cost: a small ticket and « 1 ».
             var ticket = UiPipeline.Rect("Ticket", back.rectTransform);
-            UiPipeline.Place(ticket, left, left, new Vector2(112f, -30f), new Vector2(160f, 48f));
+            UiPipeline.Place(ticket, left, left, new Vector2(112f, -21f), new Vector2(160f, 48f));
             var ticketIcon = UiPipeline.AddImage("Icon", ticket, ticketSprite, Color.white, Image.Type.Simple);
             UiPipeline.Place(ticketIcon.rectTransform, left, left, Vector2.zero, new Vector2(46f, 46f));
             var cost = UiPipeline.AddText("Count", ticket, TextRole.NumberSmall, 40f, tokens.textPrimary, "1", 36f);

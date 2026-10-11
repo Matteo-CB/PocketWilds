@@ -30,7 +30,8 @@ namespace PocketWilds.Presentation
         /// <summary>The level card waits for a calm moment: this long without a hatch or a screen (never cuts a hatching run).</summary>
         public const float RewardIdleSeconds = 4f;
         private const float EffectSpacing = 0.15f;
-        private const string QtyPreference = "pw.upgrades.qty";
+        /// <summary>The player's last ×1 / ×10 / Max choice (PlayerPrefs: a device preference, not progress).</summary>
+        public const string QtyPreference = "pw.upgrades.qty";
 
         private readonly GameContext _context;
         private readonly ProgressionServices _progression;

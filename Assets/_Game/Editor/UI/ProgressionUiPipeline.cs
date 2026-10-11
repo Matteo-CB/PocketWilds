@@ -328,14 +328,15 @@ namespace PocketWilds.Editor.UI
             var buy = buyImage.gameObject.AddComponent<Button>();
             UiPipeline.ConfigureButton(buy, buyImage);
             var priceRow = UiPipeline.Rect("Price", buyImage.rectTransform);
-            UiPipeline.Place(priceRow, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 26f), new Vector2(250f, 64f));
+            // Price then levels, centered as one block on the visible pill (14.5 above the rect's center).
+            UiPipeline.Place(priceRow, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 36f), new Vector2(250f, 64f));
             var priceIcon = UiPipeline.AddImage("Icon", priceRow, Load(UiPipeline.LightIconPath), Color.white, Image.Type.Simple);
             UiPipeline.Place(priceIcon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0f), new Vector2(56f, 56f));
             var price = UiPipeline.AddText("Value", priceRow, TextRole.NumberSmall, 46f, tokens.textPrimary, "0", 30f);
             UiPipeline.Place(price.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(64f, 2f), new Vector2(186f, 60f));
             var levels = UiPipeline.AddText("Levels", buyImage.rectTransform, TextRole.Label, 32f, tokens.textPrimary, "+1 lv.", 26f);
             levels.alignment = TextAlignmentOptions.Center;
-            UiPipeline.Place(levels.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -36f), new Vector2(250f, 44f));
+            UiPipeline.Place(levels.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -18f), new Vector2(250f, 44f));
 
             var state = UiPipeline.AddText("State", card, TextRole.Label, 36f, tokens.success, "Maxed", 28f);
             state.alignment = TextAlignmentOptions.Center;

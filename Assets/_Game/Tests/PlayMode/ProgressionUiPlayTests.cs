@@ -34,6 +34,8 @@ namespace PocketWilds.Tests.PlayMode
         {
             _saveDir = Path.Combine(Path.GetTempPath(), "PocketWildsPlayTests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_saveDir);
+            // A device preference outlives the test's save: start from ×1 whatever an earlier run chose.
+            PlayerPrefs.DeleteKey(ProgressionPresenter.QtyPreference);
         }
 
         [TearDown]
@@ -311,6 +313,12 @@ namespace PocketWilds.Tests.PlayMode
         {
             for (int i = 0; i < count; i++)
             {
+                // A moment offer can open on its own (the Shop's unlock): the player closes it and hatches on.
+                if (refuge.Shop != null && refuge.Shop.OfferOpen)
+                    refuge.Shop.CloseOffer();
+                if (refuge.ModalOpen)
+                    Assert.Fail($"Hatch {i}: a screen blocks the egg (shop {refuge.ShopOpen}, progression {refuge.ProgressionOpen}, " +
+                                $"daily {refuge.DailyOpen}, dialog {refuge.DialogOpen}, summary {refuge.SummaryOpen}, offline {refuge.OfflineScreenOpen}).");
                 refuge.RequestHatch();
                 refuge.RequestHatch();
                 float wait = Time.realtimeSinceStartup + 8f;

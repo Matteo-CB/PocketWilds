@@ -135,12 +135,15 @@ namespace PocketWilds.Editor.Shop
             UiPipeline.ConfigureButton(button, background);
             price = UiPipeline.AddText("Price", background.rectTransform, TextRole.Button, fontSize, kit.Tokens.textPrimary, "0,99 €");
             price.alignment = TextAlignmentOptions.Center;
-            UiPipeline.Place(price.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 4f), size - new Vector2(40f, 10f));
+            // Centered on the visible pill, not the rect (the sprite's shadow sits under it).
+            float pillY = PocketWilds.Editor.UI.ProgressionUiPipeline.PillCenter(size.y);
+            UiPipeline.Place(price.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, pillY),
+                new Vector2(size.x - 40f, PocketWilds.Editor.UI.ProgressionUiPipeline.PillHalfHeight(size.y) * 2f));
             priceGem = UiPipeline.AddImage("Gem", background.rectTransform, kit.Gem, Color.white, Image.Type.Simple);
-            UiPipeline.Place(priceGem.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(54f, 4f), new Vector2(56f, 56f));
+            UiPipeline.Place(priceGem.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(54f, pillY), new Vector2(56f, 56f));
             priceGem.gameObject.SetActive(false);
             wait = UiPipeline.Rect("Wait", background.rectTransform);
-            UiPipeline.Place(wait, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 4f), new Vector2(120f, 40f));
+            UiPipeline.Place(wait, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, pillY), new Vector2(120f, 40f));
             for (int i = 0; i < 3; i++)
             {
                 var dot = UiPipeline.AddImage("Dot" + i, wait, kit.Dot, kit.Tokens.textPrimary, Image.Type.Simple);

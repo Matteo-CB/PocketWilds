@@ -216,6 +216,11 @@ namespace PocketWilds.Editor.Capture
                             sheet.SetTreat(new SheetTreatData { Available = true, Treat = ContentId.FromSource("treat.clover_crunch"), Owned = 2, Preferred = true });
                             for (int i = 0; i < 20; i++) sheet.Tick(0.05f);
                             Shot($"sheet_treat_{language}");
+                            // Both buttons of the row: the treat on the left, « Brosser » with its free tag on the right.
+                            sheet.SetGroom(true, true);
+                            for (int i = 0; i < 20; i++) sheet.Tick(0.05f);
+                            Shot($"sheet_treat_groom_{language}");
+                            sheet.SetGroom(false, false);
                             sheet.Close();
                             for (int i = 0; i < 20; i++) sheet.Tick(0.05f);
                         }
