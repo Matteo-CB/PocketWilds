@@ -36,9 +36,9 @@ namespace PocketWilds.Services.Save
         /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
         /// 8: Discovery egg stock (World 3). 9: Renewal memory and Essence tree. 10: daily rendez-vous and inventory (T36).
         /// 11: activities (T37). 12: expeditions (T42). 13: garden (T43). 14: albums (T44A). 15: achievements and profile
-        /// items (T44B). 16: the refuge journal and the rare visitors (T44C). 17: accessories worn and companions (T47).
+        /// items (T44B). 16: the refuge journal and the rare visitors (T44C). 17: accessories worn and companions (T47). 18: the event instances (T48).
         /// </summary>
-        public const int CurrentVersion = 17;
+        public const int CurrentVersion = 18;
     }
 
     /// <summary>
@@ -71,6 +71,7 @@ namespace PocketWilds.Services.Save
         private const ushort AchievementsVersion = 1;
         private const ushort JournalVersion = 1;
         private const ushort CosmeticsVersion = 1;
+        private const ushort EventsVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -211,6 +212,10 @@ namespace PocketWilds.Services.Save
 
             mark = BeginSection(output, SaveSectionId.Cosmetics, CosmeticsVersion);
             WriteCosmetics(output, state.Cosmetics, state.Companions);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Events, EventsVersion);
+            WriteEvents(output, state.Events);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -407,6 +412,9 @@ namespace PocketWilds.Services.Save
                 // Saves older than schema 17 have no cosmetics: nothing worn, no companion placed yet (T47).
                 if (document.TryGetSection(SaveSectionId.Cosmetics, out var cosmetics))
                     ReadCosmetics(cosmetics, state.Cosmetics, state.Companions);
+                // Saves older than schema 18 have no events: none was ever entered (T48).
+                if (document.TryGetSection(SaveSectionId.Events, out var events))
+                    ReadEvents(events, state.Events);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -1431,6 +1439,213 @@ namespace PocketWilds.Services.Save
                 if (companions.IndexOf(record.Species) < 0)
                     companions.Companions.Add(record);
             }
+        }
+
+        private static void WriteEvents(ByteBufferWriter output, EventState events)
+        {
+            output.WriteInt64(events.LastSeenUnix);
+            output.WriteInt32(events.Instances.Count);
+            foreach (var e in events.Instances)
+            {
+                output.WriteString(e.InstanceId);
+                output.WriteString(e.Key);
+                output.WriteInt32(e.Version);
+                output.WriteInt32(e.Year);
+                output.WriteInt64(e.StartUnix);
+                output.WriteInt64(e.EndUnix);
+                output.WriteInt64(e.JoinedUnix);
+                output.WriteByte((byte)EventParams.Count);
+                for (int p = 0; p < EventParams.Count; p++)
+                {
+                    output.WriteByte((byte)p);
+                    output.WriteDouble(e.Frozen[(EventParam)p]);
+                }
+                output.WriteInt32(e.Currency);
+                output.WriteInt64(e.CurrencyEarned);
+                output.WriteInt32(e.Points);
+                output.WriteInt32(e.TierReached);
+                output.WriteInt64(unchecked((long)e.FreeClaimed));
+                output.WriteInt64(unchecked((long)e.GoldClaimed));
+                output.WriteInt32(e.EggsOpened);
+                output.WriteInt32(e.EggMisses);
+                output.WriteByte(e.EggItems);
+                output.WriteBool(e.SecretOwned);
+                output.WriteUInt32(e.EggRng);
+                output.WriteInt32(e.Purchases.Count);
+                foreach (var pair in e.Purchases)
+                {
+                    output.WriteUInt32(pair.Key);
+                    output.WriteInt32(pair.Value);
+                }
+                WriteEventQuests(output, e.Daily);
+                WriteEventQuests(output, e.Long);
+                output.WriteInt32(e.QuestDay);
+                output.WriteInt32(e.SwapDay);
+                output.WriteInt32(e.SwapsUsed);
+                output.WriteInt32(e.LongDone);
+                output.WriteByte((byte)e.ChallengeStars.Length);
+                for (int i = 0; i < e.ChallengeStars.Length; i++)
+                    output.WriteByte(e.ChallengeStars[i]);
+                output.WriteByte(e.ChallengeMilestones);
+                output.WriteUInt16(e.StickersOwed);
+                output.WriteInt32(e.SouvenirUnixDay);
+                output.WriteBool(e.GoalReached);
+                output.WriteBool(e.Ended);
+                output.WriteBool(e.Converted);
+                output.WriteInt32(e.ConvertedCurrency);
+                output.WriteDouble(e.ConvertedSeconds);
+                output.WriteBigValue(e.ConvertedLight);
+                output.WriteBool(e.SummarySeen);
+            }
+            // T48 quests' params (the activity of the day, the masks, the variants at the draw), after every instance: a save
+            // written without them reads them as 0.
+            foreach (var e in events.Instances)
+            {
+                WriteEventQuestParams(output, e.Daily);
+                WriteEventQuestParams(output, e.Long);
+            }
+        }
+
+        private static void WriteEventQuestParams(ByteBufferWriter output, System.Collections.Generic.List<EventQuestRecord> quests)
+        {
+            output.WriteInt32(quests.Count);
+            for (int i = 0; i < quests.Count; i++)
+                output.WriteInt32(quests[i].Param);
+        }
+
+        /// <summary>The params of one quest list, kept only when no record of the list was dropped at load (they line up).</summary>
+        private static void ReadEventQuestParams(ref ByteBufferReader r, System.Collections.Generic.List<EventQuestRecord> quests, int saved)
+        {
+            int count = ReadCount(ref r);
+            for (int i = 0; i < count; i++)
+            {
+                int value = r.ReadInt32();
+                if (saved == quests.Count && i < quests.Count)
+                {
+                    var q = quests[i];
+                    q.Param = value;
+                    quests[i] = q;
+                }
+            }
+        }
+
+        private static void WriteEventQuests(ByteBufferWriter output, System.Collections.Generic.List<EventQuestRecord> quests)
+        {
+            output.WriteInt32(quests.Count);
+            for (int i = 0; i < quests.Count; i++)
+            {
+                var q = quests[i];
+                output.WriteByte(q.Template);
+                output.WriteByte(q.Group);
+                output.WriteByte(q.Goal);
+                output.WriteInt32(q.Progress);
+                output.WriteInt32(q.Target);
+                output.WriteInt32(q.Day);
+                output.WriteBool(q.Done);
+            }
+        }
+
+        /// <summary>
+        /// Instances of events this build does not know load as they are (ignored until their content returns; their end still
+        /// converts). A parameter this build does not know, or out of its bounds, keeps its default; a quest goal it does not know is
+        /// dropped.
+        /// </summary>
+        private static void ReadEvents(SaveSection section, EventState events)
+        {
+            RequireVersion(section, EventsVersion);
+            var r = section.CreateReader();
+            events.Instances.Clear();
+            events.LastSeenUnix = r.ReadInt64();
+            int count = ReadCount(ref r);
+            var read = new System.Collections.Generic.List<EventInstanceState>(count);
+            var savedQuests = new System.Collections.Generic.List<int>(count * 2);
+            for (int i = 0; i < count; i++)
+            {
+                var e = new EventInstanceState
+                {
+                    InstanceId = r.ReadString() ?? string.Empty,
+                    Key = r.ReadString() ?? string.Empty,
+                    Version = r.ReadInt32(),
+                    Year = r.ReadInt32(),
+                    StartUnix = r.ReadInt64(),
+                    EndUnix = r.ReadInt64(),
+                    JoinedUnix = r.ReadInt64(),
+                };
+                int parameters = r.ReadByte();
+                for (int p = 0; p < parameters; p++)
+                {
+                    int id = r.ReadByte();
+                    double value = r.ReadDouble();
+                    if (id < EventParams.Count && EventConfig.IsValid(EventConfig.Rows[id].Key, value, out _))
+                        e.Frozen[(EventParam)id] = value;
+                }
+                e.Currency = Math.Max(0, r.ReadInt32());
+                e.CurrencyEarned = Math.Max(0L, r.ReadInt64());
+                e.Points = Math.Max(0, r.ReadInt32());
+                e.TierReached = Math.Max(0, r.ReadInt32());
+                e.FreeClaimed = unchecked((ulong)r.ReadInt64());
+                e.GoldClaimed = unchecked((ulong)r.ReadInt64());
+                e.EggsOpened = Math.Max(0, r.ReadInt32());
+                e.EggMisses = Math.Max(0, r.ReadInt32());
+                e.EggItems = r.ReadByte();
+                e.SecretOwned = r.ReadBool();
+                e.EggRng = r.ReadUInt32();
+                int purchases = ReadCount(ref r);
+                for (int k = 0; k < purchases; k++)
+                {
+                    uint line = r.ReadUInt32();
+                    e.Purchases[line] = Math.Max(0, r.ReadInt32());
+                }
+                savedQuests.Add(ReadEventQuests(ref r, e.Daily));
+                savedQuests.Add(ReadEventQuests(ref r, e.Long));
+                e.QuestDay = r.ReadInt32();
+                e.SwapDay = r.ReadInt32();
+                e.SwapsUsed = Math.Max(0, r.ReadInt32());
+                e.LongDone = Math.Max(0, r.ReadInt32());
+                int stars = r.ReadByte();
+                for (int k = 0; k < stars; k++)
+                {
+                    byte value = r.ReadByte();
+                    if (k < e.ChallengeStars.Length)
+                        e.ChallengeStars[k] = (byte)Math.Min(3, (int)value);
+                }
+                e.ChallengeMilestones = r.ReadByte();
+                e.StickersOwed = r.ReadUInt16();
+                e.SouvenirUnixDay = r.ReadInt32();
+                e.GoalReached = r.ReadBool();
+                e.Ended = r.ReadBool();
+                e.Converted = r.ReadBool();
+                e.ConvertedCurrency = r.ReadInt32();
+                e.ConvertedSeconds = r.ReadDouble();
+                e.ConvertedLight = r.ReadBigValue();
+                e.SummarySeen = r.ReadBool();
+                read.Add(e);
+                if (e.InstanceId.Length > 0 && events.Find(e.InstanceId) == null)
+                    events.Instances.Add(e);
+            }
+            for (int i = 0; i < read.Count && !r.IsAtEnd; i++)
+            {
+                ReadEventQuestParams(ref r, read[i].Daily, savedQuests[2 * i]);
+                ReadEventQuestParams(ref r, read[i].Long, savedQuests[2 * i + 1]);
+            }
+        }
+
+        /// <summary>Reads one quest list; returns the count saved (the records kept can be fewer).</summary>
+        private static int ReadEventQuests(ref ByteBufferReader r, System.Collections.Generic.List<EventQuestRecord> quests)
+        {
+            quests.Clear();
+            int count = ReadCount(ref r);
+            for (int i = 0; i < count; i++)
+            {
+                var q = new EventQuestRecord
+                {
+                    Template = r.ReadByte(), Group = r.ReadByte(), Goal = r.ReadByte(), Progress = r.ReadInt32(), Target = r.ReadInt32(), Day = r.ReadInt32(),
+                    Done = r.ReadBool(),
+                };
+                if (q.Goal <= (byte)EventQuestCatalog.LastGoal && q.Group <= (byte)EventQuestGroup.Refuge && q.Target > 0)
+                    quests.Add(q);
+            }
+            return count;
         }
 
         private static void WriteIds(ByteBufferWriter output, uint[] ids, int count)

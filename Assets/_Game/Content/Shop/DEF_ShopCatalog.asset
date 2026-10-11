@@ -20,36 +20,42 @@ MonoBehaviour:
     referencePriceCents: 99
     gems: 100
     entitlements: []
+    eventScope: 0
   - sourceId: product.gems.tier02
     storeSku: pw_gems_tier02
     kind: 0
     referencePriceCents: 499
     gems: 550
     entitlements: []
+    eventScope: 0
   - sourceId: product.gems.tier03
     storeSku: pw_gems_tier03
     kind: 0
     referencePriceCents: 999
     gems: 1150
     entitlements: []
+    eventScope: 0
   - sourceId: product.gems.tier04
     storeSku: pw_gems_tier04
     kind: 0
     referencePriceCents: 1999
     gems: 2400
     entitlements: []
+    eventScope: 0
   - sourceId: product.gems.tier05
     storeSku: pw_gems_tier05
     kind: 0
     referencePriceCents: 4999
     gems: 6250
     entitlements: []
+    eventScope: 0
   - sourceId: product.gems.tier06
     storeSku: pw_gems_tier06
     kind: 0
     referencePriceCents: 9999
     gems: 13000
     entitlements: []
+    eventScope: 0
   - sourceId: product.starter.001
     storeSku: pw.pack.grassland
     kind: 1
@@ -59,6 +65,21 @@ MonoBehaviour:
     - companion.fieldhamster
     - decor.cozy_burrow
     - cosmetic.flower_crown
+    eventScope: 0
+  - sourceId: product.event.goldbook
+    storeSku: pw.event.goldbook
+    kind: 0
+    referencePriceCents: 499
+    gems: 0
+    entitlements: []
+    eventScope: 1
+  - sourceId: product.event.chest
+    storeSku: pw.event.chest
+    kind: 0
+    referencePriceCents: 999
+    gems: 800
+    entitlements: []
+    eventScope: 2
   offers:
   - sourceId: offer.gems.tier01
     displayKey: 
@@ -195,6 +216,40 @@ MonoBehaviour:
     segment: 1
     badge: 0
     artKey: ICO_Cosmetic_FlowerCrown
+    experimentId: 
+  - sourceId: offer.event.goldbook
+    displayKey: event.gold.title
+    placement: 3
+    priority: 90
+    product: product.event.goldbook
+    gemCost: 0
+    gemCostEntitlements: []
+    purchaseLimit: 0
+    cooldownSeconds: 0
+    startUnixSeconds: 0
+    endUnixSeconds: 0
+    minAnimals: 0
+    minDiscoveredSpecies: 0
+    segment: 0
+    badge: 0
+    artKey: ICO_Event_GoldBook
+    experimentId: 
+  - sourceId: offer.event.chest
+    displayKey: event.box.title
+    placement: 3
+    priority: 80
+    product: product.event.chest
+    gemCost: 0
+    gemCostEntitlements: []
+    purchaseLimit: 0
+    cooldownSeconds: 0
+    startUnixSeconds: 0
+    endUnixSeconds: 0
+    minAnimals: 0
+    minDiscoveredSpecies: 0
+    segment: 0
+    badge: 0
+    artKey: ICO_Event_Box
     experimentId: 
   entitlements:
   - sourceId: cosmetic.flower_crown

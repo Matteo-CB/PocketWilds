@@ -251,8 +251,21 @@ namespace PocketWilds.Simulation
         /// <summary>Light upgrades (Cozy Nests, Curious Eye). Null: none.</summary>
         public void SetModifiers(IHatchModifiers? modifiers) => _modifiers = modifiers;
 
+        /// <summary>The biome the camera is in (invalid until the refuge says).</summary>
+        public ContentId CameraBiome => _cameraBiome;
+
         /// <summary>The biome the camera is in: its undiscovered species weigh double in a Discovery egg.</summary>
-        public void SetCameraBiome(ContentId biome) => _cameraBiome = biome;
+        public void SetCameraBiome(ContentId biome)
+        {
+            if (biome == _cameraBiome)
+                return;
+            _cameraBiome = biome;
+            if (biome.IsValid)
+                CameraBiomeChanged?.Invoke(biome);
+        }
+
+        /// <summary>T48: the camera arrived in another biome (a biome visit: event quest EQ-D-23).</summary>
+        public event Action<ContentId>? CameraBiomeChanged;
 
         /// <summary>Every successful hatch (analytics, achievements). Raised once per animal, never per frame.</summary>
         public event Action<HatchResult>? Hatched;

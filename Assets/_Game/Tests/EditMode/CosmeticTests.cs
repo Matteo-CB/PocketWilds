@@ -250,12 +250,13 @@ namespace PocketWilds.Tests.EditMode
             serializer.Serialize(_state, writer);
             var bytes = writer.WrittenSpan.ToArray();
             var document = serializer.ReadDocument(bytes, bytes.Length);
-            // A schema 16 file: everything but the Cosmetics section.
+            // A schema 16 file: everything but the Cosmetics section (and the later Events section).
             document.RemoveSection(SaveSectionId.Cosmetics);
+            document.RemoveSection(SaveSectionId.Events);
             document.SchemaVersion = 16;
 
             SaveMigrations.CreatePipeline().Migrate(document);
-            Assert.AreEqual(17, SaveSchema.CurrentVersion);
+            Assert.GreaterOrEqual(SaveSchema.CurrentVersion, 17);
             Assert.AreEqual(SaveSchema.CurrentVersion, document.SchemaVersion);
             var loaded = serializer.Deserialize(document);
             Assert.AreEqual(0, loaded.Cosmetics.Animals.Count + loaded.Companions.Companions.Count);

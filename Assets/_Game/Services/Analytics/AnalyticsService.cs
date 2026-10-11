@@ -1342,6 +1342,96 @@ namespace PocketWilds.Services.Analytics
             Record(ref e);
         }
 
+        /// <summary>T48: the events (block 200: seen, join, tier, egg, shop, quest, end).</summary>
+        public void AttachEvents(EventService? events)
+        {
+            if (_eventService != null)
+            {
+                _eventService.Seen -= _onEventSeen;
+                _eventService.Joined -= _onEventJoin;
+                _eventService.TierReached -= _onEventTier;
+                _eventService.EggOpened -= _onEventEgg;
+                _eventService.ShopBought -= _onEventShop;
+                _eventService.QuestDone -= _onEventQuest;
+                _eventService.Ended -= _onEventEnd;
+            }
+            _eventService = events;
+            if (events == null)
+                return;
+            _onEventSeen ??= OnEventSeen;
+            _onEventJoin ??= OnEventJoin;
+            _onEventTier ??= OnEventTier;
+            _onEventEgg ??= OnEventEgg;
+            _onEventShop ??= OnEventShop;
+            _onEventQuest ??= OnEventQuest;
+            _onEventEnd ??= OnEventEnd;
+            events.Seen += _onEventSeen;
+            events.Joined += _onEventJoin;
+            events.TierReached += _onEventTier;
+            events.EggOpened += _onEventEgg;
+            events.ShopBought += _onEventShop;
+            events.QuestDone += _onEventQuest;
+            events.Ended += _onEventEnd;
+        }
+
+        private EventService? _eventService;
+        private Action<EventSeenInfo>? _onEventSeen;
+        private Action<EventJoinInfo>? _onEventJoin;
+        private Action<EventTierInfo>? _onEventTier;
+        private Action<EventEggResult>? _onEventEgg;
+        private Action<EventShopBuy>? _onEventShop;
+        private Action<EventQuestDoneInfo>? _onEventQuest;
+        private Action<EventEndSummary>? _onEventEnd;
+
+        private void OnEventSeen(EventSeenInfo info)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.EventSeen) { U0 = info.Event.Value, I0 = (int)info.Phase };
+            Record(ref e);
+        }
+
+        private void OnEventJoin(EventJoinInfo info)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.EventJoin) { U0 = info.Event.Value, I0 = info.Day };
+            Record(ref e);
+        }
+
+        private void OnEventTier(EventTierInfo info)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.EventTier) { U0 = info.Event.Value, I0 = info.Tier, I1 = info.Gold ? 1 : 0, I2 = info.Points };
+            Record(ref e);
+        }
+
+        private void OnEventEgg(EventEggResult result)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.EventEggOpen)
+            {
+                U0 = result.Event.Value, U1 = result.Item.Value, I0 = result.IsNew ? 1 : 0, I1 = result.Guaranteed ? 1 : 0, I2 = result.Opened,
+            };
+            Record(ref e);
+        }
+
+        private void OnEventShop(EventShopBuy buy)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.EventShopBuy) { U0 = buy.Event.Value, U1 = buy.Line, I0 = buy.Cost };
+            Record(ref e);
+        }
+
+        private void OnEventQuest(EventQuestDoneInfo info)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.EventQuestDone) { U0 = info.Event.Value, I0 = info.Long ? 1 : 0, I1 = info.Template };
+            Record(ref e);
+        }
+
+        private void OnEventEnd(EventEndSummary summary)
+        {
+            AnalyticsSchema.Split(summary.Light, out double mantissa, out int exponent);
+            var e = new AnalyticsEvent(AnalyticsEventId.EventEnd)
+            {
+                U0 = summary.Event.Value, I0 = summary.CurrencyLeft, I1 = exponent, I2 = summary.Tier, D0 = mantissa,
+            };
+            Record(ref e);
+        }
+
         public void AttachJournal(JournalService? journal, VisitorService? visitors)
         {
             DetachJournal();

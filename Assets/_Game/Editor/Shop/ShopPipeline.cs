@@ -22,6 +22,10 @@ namespace PocketWilds.Editor.Shop
 
         /// <summary>T47: the Meadow Pack keeps the Starter Pack's content id; its store SKU and contents changed.</summary>
         public const string MeadowPackProduct = "product.starter.001";
+
+        /// <summary>T48: the Carnet d'or (4.99 €) and the Box (9.99 €, 800 Gems), one purchase per event instance.</summary>
+        public const string EventGoldBookProduct = "product.event.goldbook";
+        public const string EventChestProduct = "product.event.chest";
         public const string MeadowPackSku = "pw.pack.grassland";
         public const string MeadowPackTitle = "shop.pack.grassland.title";
         public const string CompanionFieldHamster = "companion.fieldhamster";
@@ -120,6 +124,31 @@ namespace PocketWilds.Editor.Shop
                 sourceId = StarterMoment, displayKey = MeadowPackTitle, placement = OfferPlacement.Moment, priority = 100,
                 product = MeadowPackProduct, purchaseLimit = 1, cooldownSeconds = 3 * 24 * 3600, minAnimals = 5, minDiscoveredSpecies = 2,
                 segment = OfferSegment.NonPayer, artKey = "ICO_Cosmetic_FlowerCrown",
+            });
+            // T48: the Carnet d'or and the Box, one purchase per event instance (items « <instance>.gold » and « .box » resolved by
+            // the event service; the Box adds outfit 7, 4 luxury decorations and its 800 Gems), sold in the shop's « Événement »
+            // section while an event runs, never as a popup.
+            catalog.products.RemoveAll(p => p.sourceId == EventGoldBookProduct || p.sourceId == EventChestProduct);
+            catalog.offers.RemoveAll(o => o.sourceId == "offer.event.goldbook" || o.sourceId == "offer.event.chest");
+            catalog.products.Add(new ShopCatalogAsset.Product
+            {
+                sourceId = EventGoldBookProduct, storeSku = "pw.event.goldbook", kind = ProductKind.Consumable, referencePriceCents = 499,
+                gems = 0, eventScope = EventProductScope.GoldBook,
+            });
+            catalog.products.Add(new ShopCatalogAsset.Product
+            {
+                sourceId = EventChestProduct, storeSku = "pw.event.chest", kind = ProductKind.Consumable, referencePriceCents = 999,
+                gems = 800, eventScope = EventProductScope.Box,
+            });
+            catalog.offers.Add(new ShopCatalogAsset.Offer
+            {
+                sourceId = "offer.event.goldbook", displayKey = "event.gold.title", placement = OfferPlacement.ShopEvent, priority = 90,
+                product = EventGoldBookProduct, artKey = "ICO_Event_GoldBook",
+            });
+            catalog.offers.Add(new ShopCatalogAsset.Offer
+            {
+                sourceId = "offer.event.chest", displayKey = "event.box.title", placement = OfferPlacement.ShopEvent, priority = 80,
+                product = EventChestProduct, artKey = "ICO_Event_Box",
             });
             EditorUtility.SetDirty(catalog);
 

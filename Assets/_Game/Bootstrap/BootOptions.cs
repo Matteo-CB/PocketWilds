@@ -42,6 +42,9 @@ namespace PocketWilds.Bootstrap
         /// <summary>Backend replacement (tests capture what would be sent).</summary>
         public PocketWilds.Services.Analytics.IAnalyticsTransport AnalyticsTransportOverride;
 
+        /// <summary>T48: the events calendar replacing the default one (empty in this build); tests and captures inject « event.test ».</summary>
+        public PocketWilds.Simulation.EventCalendar EventCalendarOverride;
+
         /// <summary>When false, stays in the bootstrap scene after boot (tests).</summary>
         public bool LoadTargetScene = true;
 

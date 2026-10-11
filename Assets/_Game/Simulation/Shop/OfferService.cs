@@ -50,6 +50,9 @@ namespace PocketWilds.Simulation
         public ShopContent Catalog => _content.Shop;
         public GrantService Grants => _grants;
 
+        /// <summary>T48: decides the per-event products (Carnet d'or, Box); null: never offered.</summary>
+        public IEventOfferGate? Events { get; set; }
+
         /// <summary>The shop opens after onboarding (doc 06 UI): enough animals in the refuge.</summary>
         public bool ShopUnlocked => _content.Shop.Offers.Count > 0 && _state.Collection.Count >= _content.Shop.UnlockMinAnimals;
 
@@ -61,6 +64,8 @@ namespace PocketWilds.Simulation
                 return OfferAvailability.OutOfWindow;
             if (offer.HasEndDate && nowUnix >= offer.EndUnixSeconds)
                 return OfferAvailability.OutOfWindow;
+            if (offer.Product.IsValid && _content.Shop.Products.TryGet(offer.Product, out var scoped) && scoped.EventScope != EventProductScope.None)
+                return Events?.CheckEventOffer(scoped) ?? OfferAvailability.NotEligible;
             var record = _state.Shop.Get(offer.Id);
             if (offer.PurchaseLimit > 0 && record.Purchases >= offer.PurchaseLimit)
                 return OfferAvailability.Owned;

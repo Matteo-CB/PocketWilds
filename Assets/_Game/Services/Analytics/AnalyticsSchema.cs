@@ -112,6 +112,15 @@ namespace PocketWilds.Services.Analytics
         CompanionBondLevel = 85,
         CompanionArrive = 190,
         OutfitEquip = 343,
+
+        // T48 (doc 08 section 9.5, block 200): the events.
+        EventSeen = 200,
+        EventJoin = 201,
+        EventTier = 202,
+        EventEggOpen = 203,
+        EventShopBuy = 204,
+        EventQuestDone = 205,
+        EventEnd = 206,
     }
 
     /// <summary>Screens worth counting: the values of doc 08 section 9.5 (realigned in T37, before any data was sent).</summary>
@@ -276,6 +285,20 @@ namespace PocketWilds.Services.Analytics
             AnalyticsEventId.CompanionArrive => new[] { Field.U(0), Field.I(0) },
             // item, species, socket
             AnalyticsEventId.OutfitEquip => new[] { Field.U(0), Field.U(1), Field.I(0) },
+            // T48. event, phase (1 announce, 2 running)
+            AnalyticsEventId.EventSeen => new[] { Field.U(0), Field.I(0) },
+            // event, day of the event (1 to 14)
+            AnalyticsEventId.EventJoin => new[] { Field.U(0), Field.I(0) },
+            // event, tier, track (1: Carnet d'or owned), points
+            AnalyticsEventId.EventTier => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2) },
+            // event, item, new, guaranteed, eggs opened
+            AnalyticsEventId.EventEggOpen => new[] { Field.U(0), Field.U(1), Field.I(0), Field.I(1), Field.I(2) },
+            // event, shop line, cost
+            AnalyticsEventId.EventShopBuy => new[] { Field.U(0), Field.U(1), Field.I(0) },
+            // event, kind (0 daily, 1 long), template number
+            AnalyticsEventId.EventQuestDone => new[] { Field.U(0), Field.I(0), Field.I(1) },
+            // event, currency left, Light exponent, tier, Light mantissa
+            AnalyticsEventId.EventEnd => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2), Field.D(0, 3) },
             // index (1 to 3)
             AnalyticsEventId.WelcomeGift => new[] { Field.I(0) },
             // seconds from Today opened to the last claim, taps, items claimed

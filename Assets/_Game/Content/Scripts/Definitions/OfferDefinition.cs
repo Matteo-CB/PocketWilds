@@ -15,6 +15,9 @@ namespace PocketWilds.Content
 
         /// <summary>Offered once after a positive moment (a hatch reveal), never after a failure.</summary>
         Moment = 2,
+
+        /// <summary>T48: the shop's « Événement » section (Carnet d'or, Box) while an event runs; never a popup.</summary>
+        ShopEvent = 3,
     }
 
     /// <summary>Doc 09 segments, reduced to what the sandbox can tell from the save.</summary>

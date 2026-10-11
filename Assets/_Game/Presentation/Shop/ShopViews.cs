@@ -112,6 +112,16 @@ namespace PocketWilds.Presentation
         ShopCardModel GetGemPack(int index);
     }
 
+    /// <summary>
+    /// T48: the shop's « Événement » section (the Carnet d'or and the Coffret while an event runs; never a popup). A separate
+    /// interface so screens and fakes written before it keep working.
+    /// </summary>
+    public interface IShopEventModel
+    {
+        int EventCount { get; }
+        ShopCardModel GetEvent(int index);
+    }
+
     /// <summary>Player intents from shop screens. Offer ids only: no product, price or store type crosses this line.</summary>
     public interface IShopActions
     {

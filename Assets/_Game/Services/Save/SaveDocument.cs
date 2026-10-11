@@ -48,6 +48,9 @@ namespace PocketWilds.Services.Save
 
         /// <summary>T47: accessories worn per animal and the companions (animal, bond XP, rewards, arrival owed) (schema 17).</summary>
         Cosmetics = 23,
+
+        /// <summary>T48: the event instances: frozen numbers, currency, track, egg, shop, quests, challenges, end (schema 18).</summary>
+        Events = 24,
     }
 
     public sealed class SaveSection

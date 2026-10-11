@@ -89,6 +89,7 @@ namespace PocketWilds.Bootstrap
         private MasteryColorService _masteryColors;
         private CosmeticService _cosmetics;
         private CompanionService _companions;
+        private EventService _events;
         private JournalHooks _journalHooks;
         private GrantService _grants;
         private OfferService _offers;
@@ -319,7 +320,25 @@ namespace PocketWilds.Bootstrap
                 };
                 _companions.Sync();
                 _cosmetics.Prune();
-                _offers = new OfferService(_content, _save.State, _grants, _save);
+                // T48: the events framework (no live event in this build: the calendar is empty). Activities, expeditions, wishes,
+                // hatches and album stickers feed it; the Carnet d'or and the Box resolve their per-instance items through it.
+                _events = new EventService(_save.State, _content, _clock, _save, null, _options.EventCalendarOverride)
+                {
+                    Economy = _economy, Granter = _daily.Context.Granter, Mastery = _mastery, Albums = _albums, ProfileItems = _profileItems,
+                    Achievements = _achievements, AchievementHooks = _achievementHooks, Refuge = _progression.Refuge, Journal = _journal,
+                    DayKey = () => daily.Context.TodayKey, ActivityShipped = activities.IsShipped,
+                    DefaultTreat = () => daily.Context.Rewards().TreatOfNewestBiome,
+                };
+                _activities.Events = _events;
+                _grants.Events = _events;
+                // Every moment an event quest counts comes from its own service (the quest gates read the same services).
+                _events.AttachSources(new EventQuestSources
+                {
+                    Hatch = _hatch, Wishes = _daily.Wishes, Runner = _activities.Runner, Activities = _activities, Albums = _albums,
+                    Expeditions = _expeditions, Garden = _garden, DailyGift = _daily.Gift, Bond = _daily.Bond, Offline = _offline,
+                    Cosmetics = _cosmetics, Upgrades = _progression.Upgrades, WeeklyJournal = _daily.Journal, Biomes = _progression.Store,
+                });
+                _offers = new OfferService(_content, _save.State, _grants, _save) { Events = _events };
                 _store = new StoreService(_content, _offers, CreateStoreProvider(), _clock, _save);
             });
 
@@ -354,6 +373,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.AttachAchievements(_achievements, _profileItems);
                 _analytics.AttachJournal(_journal, _visitors);
                 _analytics.AttachCosmetics(_cosmetics, _companions);
+                _analytics.AttachEvents(_events);
                 _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
             });
 
@@ -367,6 +387,8 @@ namespace PocketWilds.Bootstrap
                 _analytics.OfflineReturn(OfflineAtBoot);
                 _daily.OnResume(OfflineAtBoot);
                 _activities.OnResume();
+                // T48: an event ended while away converts its leftover currency to Light now (once; the summary waits for the view).
+                _events.Tick();
                 if (OfflineAtBoot.CreditedSeconds > 0.0)
                     GameLog.Info(LogCategory.Save, $"Offline {OfflineAtBoot.CreditedSeconds:F0} s, +{BigValueFormatter.ToDebugString(OfflineAtBoot.Light)} Light");
             });
@@ -433,6 +455,7 @@ namespace PocketWilds.Bootstrap
                 Context.MasteryColors = _masteryColors;
                 Context.Cosmetics = _cosmetics;
                 Context.Companions = _companions;
+                Context.Events = _events;
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);
@@ -520,6 +543,9 @@ namespace PocketWilds.Bootstrap
                 _analytics.OfflineReturn(report);
                 _daily.OnResume(report);
                 _activities.OnResume();
+                // Coming back to the refuge is a visit of the biome on screen (the event quest « visit biomes »).
+                if (_hatch != null && _hatch.CameraBiome.IsValid)
+                    _events?.OnBiomeVisited(_hatch.CameraBiome);
                 _loop.ResetAccumulators();
             }
         }

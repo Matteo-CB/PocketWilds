@@ -146,8 +146,13 @@ namespace PocketWilds.Simulation
             if (!_hasPending)
                 return false;
             _hasPending = false;
+            if (report.HasGain)
+                LightCollected?.Invoke(report);
             return true;
         }
+
+        /// <summary>T48: the return's Light was taken by the return screen (event quest EQ-D-17 « collect Light »).</summary>
+        public event Action<OfflineReport>? LightCollected;
 
         /// <summary>
         /// Integral of the efficiency curve over [0, seconds]: 1 during the full window, then

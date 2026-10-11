@@ -43,6 +43,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Achievements_v15", BuildAchievements());
             created += WriteIfMissing("GoldenSave_Journal_v16", BuildJournal());
             created += WriteIfMissing("GoldenSave_Cosmetics_v17", BuildCosmetics());
+            created += WriteIfMissing("GoldenSave_Events_v18", BuildEvents());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -443,6 +444,45 @@ namespace PocketWilds.Editor.Saves
             state.Companions.Companions.Add(new CompanionRecord
             {
                 Species = ContentId.FromSource("species.fieldhamster"), AnimalId = hamster, BondXp = 1300, RewardedLevel = 9, PhotoDay = 20372,
+            });
+            return state;
+        }
+
+        /// <summary>
+        /// T48: the test event joined on day 1 and played to day 6 (tier 12, 12 free and 5 gold tiers claimed, the Carnet d'or owned, 5
+        /// eggs with 3 items, 2 ticket lines bought, a daily and a long quest, 9 challenge stars, the Souvenir), and last year's instance
+        /// ended and converted to Light, its summary seen.
+        /// </summary>
+        public static PlayerState BuildEvents()
+        {
+            var state = BuildCosmetics();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-0000000000c8");
+            state.Meta.Revision = 480;
+            long start = BaseTime.AddDays(5).AddHours(10).ToUnixTimeSeconds();
+            state.Events.LastSeenUnix = start + 6 * 86_400L;
+            var run = new EventInstanceState
+            {
+                InstanceId = "event.test.2026", Key = "event.test", Version = 1, Year = 2026, StartUnix = start, EndUnix = start + 14 * 86_400L,
+                JoinedUnix = start + 600, Currency = 410, CurrencyEarned = 2210, Points = 1800, TierReached = 12, FreeClaimed = (1UL << 12) - 1,
+                GoldClaimed = (1UL << 5) - 1, EggsOpened = 5, EggMisses = 1, EggItems = 0b0001011, EggRng = 0x5EED0048u, QuestDay = 20261015,
+                SwapDay = 20261015, SwapsUsed = 1, LongDone = 3, ChallengeMilestones = 1, SouvenirUnixDay = (int)((start + 86_400L) / 86_400L),
+                GoalReached = false,
+            };
+            run.Frozen[EventParam.EggCost] = 280;
+            run.Purchases[ContentIdHash.Compute("shop.tickets")] = 2;
+            run.Daily.Add(new EventQuestRecord { Template = 1, Group = 2, Goal = (byte)EventGoalKind.HatchEggs, Progress = 4, Target = 10, Day = 20261015 });
+            run.Long.Add(new EventQuestRecord { Template = 2, Group = 2, Goal = (byte)EventGoalKind.HatchEggs, Progress = 150, Target = 150, Done = true });
+            run.ChallengeStars[0] = 3;
+            run.ChallengeStars[1] = 3;
+            run.ChallengeStars[2] = 3;
+            state.Events.Instances.Add(run);
+            state.Entitlements.Owned.Add(ContentId.FromSource("event.test.2026.gold"));
+            state.Entitlements.ProcessedTransactions.Add("golden-event-goldbook-1");
+            state.Events.Instances.Add(new EventInstanceState
+            {
+                InstanceId = "event.test.2025", Key = "event.test", Version = 1, Year = 2025, StartUnix = start - 365 * 86_400L,
+                EndUnix = start - 351 * 86_400L, JoinedUnix = start - 365 * 86_400L, Points = 9100, TierReached = 30, Ended = true, Converted = true,
+                ConvertedCurrency = 120, ConvertedSeconds = 1200, ConvertedLight = BigValue.FromDouble(52000), SummarySeen = true,
             });
             return state;
         }

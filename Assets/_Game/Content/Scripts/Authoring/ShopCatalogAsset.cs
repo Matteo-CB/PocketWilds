@@ -24,6 +24,8 @@ namespace PocketWilds.Content
             public int referencePriceCents = 99;
             public long gems;
             public List<string> entitlements = new List<string>();
+            [Tooltip("T48: sold once per event instance (Carnet d'or, Box); its items come from the running event.")]
+            public EventProductScope eventScope;
         }
 
         [Serializable]
@@ -142,7 +144,7 @@ namespace PocketWilds.Content
             foreach (var o in outfits)
                 builder.AddOutfit(new OutfitDefinition(ContentId.FromSource(o.sourceId), o.displayKey, Ids(o.accessories), o.palette, o.iconKey, o.sourceKey), o.sourceId);
             foreach (var p in products)
-                builder.AddProduct(new ProductDefinition(ContentId.FromSource(p.sourceId), p.storeSku, p.kind, p.referencePriceCents, p.gems, Ids(p.entitlements)), p.sourceId);
+                builder.AddProduct(new ProductDefinition(ContentId.FromSource(p.sourceId), p.storeSku, p.kind, p.referencePriceCents, p.gems, Ids(p.entitlements), p.eventScope), p.sourceId);
             foreach (var o in offers)
             {
                 var product = string.IsNullOrEmpty(o.product) ? default : ContentId.FromSource(o.product);

@@ -65,6 +65,12 @@ namespace PocketWilds.Simulation
         /// <summary>T47: raised when a refund or revoke took items back (companions leave, worn items come off).</summary>
         public event Action<GrantResult>? Revoked;
 
+        /// <summary>T48: resolves the per-instance items of the Carnet d'or and the Box (null: they grant nothing).</summary>
+        public IEventPurchases? Events { get; set; }
+
+        private ContentId[] ItemsOf(ProductDefinition product) =>
+            product.EventScope == EventProductScope.None ? product.Entitlements : Events?.ItemsFor(product) ?? Array.Empty<ContentId>();
+
         public bool Owns(ContentId item) => _state.Entitlements.Owned.Contains(item);
 
         /// <summary>True when every item a product grants is already owned (one-time products).</summary>
@@ -96,7 +102,7 @@ namespace PocketWilds.Simulation
             _state.Entitlements.ProcessedTransactions.Add(transactionId);
             long gems = restore ? 0 : product.Gems;
             _state.Wallet.Gems += gems;
-            int newItems = AddItems(product.Entitlements);
+            int newItems = AddItems(ItemsOf(product));
             if (!restore)
                 _state.Shop.PaidPurchases++;
             var result = new GrantResult(GrantStatus.Granted, productId, offerId, gems, newItems, transactionId);
@@ -118,7 +124,7 @@ namespace PocketWilds.Simulation
             if (!string.IsNullOrEmpty(transactionId))
                 _state.Entitlements.ProcessedTransactions.Add(transactionId);
             int removed = 0;
-            foreach (var item in product.Entitlements)
+            foreach (var item in ItemsOf(product))
             {
                 if (_state.Entitlements.Owned.Remove(item))
                     removed++;

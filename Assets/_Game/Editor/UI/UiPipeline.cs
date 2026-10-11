@@ -362,6 +362,12 @@ namespace PocketWilds.Editor.UI
                 var outfits = OutfitTexts.Texts;
                 for (int i = 0; i < outfits.GetLength(0); i++)
                     table.Set(outfits[i, 0], outfits[i, language + 1]);
+                // T48: the event hub, the HUD button, the shop's event section, then the quest lines (EQ-D, EQ-L).
+                for (int i = 0; i < EventTexts.Texts.GetLength(0); i++)
+                    table.Set(EventTexts.Texts[i, 0], EventTexts.Texts[i, language + 1]);
+                var eventQuests = EventQuestTexts.Texts;
+                for (int i = 0; i < eventQuests.GetLength(0); i++)
+                    table.Set(eventQuests[i, 0], eventQuests[i, language + 1]);
                 EditorUtility.SetDirty(table);
                 if (!database.localization.Contains(table))
                     database.localization.Insert(Mathf.Min(language, database.localization.Count), table);
@@ -764,7 +770,9 @@ namespace PocketWilds.Editor.UI
             motesRoot.gameObject.SetActive(false);
 
             var card = BuildWishCard(root, tokens);
-            hud.SetDailyReferences(rail, new[] { playRoot, todayRoot }, todayButton, todayRoot, todayGroup, todayIcon.rectTransform,
+            // T48: the Event button, third on the rail (EventUiPipeline.AddHudEvent).
+            var eventRoot = EventUiPipeline.AddHudEvent(rail, hud, tokens);
+            hud.SetDailyReferences(rail, new[] { playRoot, todayRoot, eventRoot }, todayButton, todayRoot, todayGroup, todayIcon.rectTransform,
                 todayDot.rectTransform, gemsCollect, card);
         }
 

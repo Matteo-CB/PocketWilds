@@ -305,6 +305,10 @@ namespace PocketWilds.Presentation
 
             // T47: accessories, the companion and the Cozy Burrow (its volume joins the obstacles before anyone spawns).
             InitCosmetics();
+            // The camera looks at this refuge's biome (one biome so far): Discovery eggs weigh its species, the « visit
+            // biomes » event quest counts it. A camera that crosses biomes will call this again.
+            if (_context.Progression != null)
+                _context.Hatch?.SetCameraBiome(_context.Progression.FirstBiome);
             SpawnSavedAnimals();
             WarmupSpares();
             PresentEgg();
@@ -561,7 +565,7 @@ namespace PocketWilds.Presentation
         /// <summary>A screen covers the refuge: world touches and hatching wait.</summary>
         public bool ModalOpen =>
             OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen || ProgressionOpen || SummaryOpen || DailyOpen
-            || ActivitiesOpen || (AlbumsOpenCheck != null && AlbumsOpenCheck()) || OutfitOpen;
+            || ActivitiesOpen || (AlbumsOpenCheck != null && AlbumsOpenCheck()) || OutfitOpen || EventOpen;
 
         /// <summary>T44A: the albums screen is open (world touches wait), set by the scene entry.</summary>
         public Func<bool> AlbumsOpenCheck { get; set; }
@@ -617,6 +621,8 @@ namespace PocketWilds.Presentation
             _sheetView?.Tick(deltaTime);
             // T47: the outfit picker, and the camera keeping its animal in view.
             TickOutfit(deltaTime);
+            // T48: the event hub, its HUD button and the end summary.
+            TickEvents(time, deltaTime);
             _modalView?.Tick(deltaTime);
             _summaryView?.Tick(deltaTime);
             if (_shop != null)

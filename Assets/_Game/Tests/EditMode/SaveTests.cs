@@ -538,6 +538,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Garden_v13")]
         [TestCase("GoldenSave_Albums_v14")]
         [TestCase("GoldenSave_Achievements_v15")]
+        [TestCase("GoldenSave_Events_v18")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");

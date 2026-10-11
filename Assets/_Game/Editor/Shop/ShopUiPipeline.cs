@@ -133,6 +133,9 @@ namespace PocketWilds.Editor.Shop
             AddIcon(entries, "ICO_Decor_CozyBurrow", PocketWilds.Editor.UI.OutfitUiPipeline.FindSprite("ICO_Decor_CozyBurrow") ?? paw);
             AddIcon(entries, "ICO_Accessory_FlowerCrown", crown);
             AddIcon(entries, "ICO_Cosmetic_FlowerCrown", crown);
+            // T48: the Carnet d'or and the Coffret (pw_ui_sprites_t48.py) and their content row.
+            foreach (var name in new[] { "ICO_Event_GoldBook", "ICO_Event_Box", "ICO_Event_Outfit", "ICO_Event_Points", "ICO_Decoration" })
+                AddIcon(entries, name, PocketWilds.Editor.UI.OutfitUiPipeline.FindSprite(name) ?? paw);
             return entries.ToArray();
         }
 
@@ -276,7 +279,11 @@ namespace PocketWilds.Editor.Shop
                 contents = UiPipeline.AddText("Contents", rect, TextRole.Body, 40f, kit.Tokens.textSecondary, "500 Gems + Flower Crown");
                 contents.textWrappingMode = TextWrappingModes.Normal;
                 contents.alignment = TextAlignmentOptions.TopLeft;
-                UiPipeline.Place(contents.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(392f, -130f), new Vector2(530f, 110f));
+                // Up to three lines (a pack's or an event card's sentence), shrinking to the readable minimum; the badge sits below.
+                contents.enableAutoSizing = true;
+                contents.fontSizeMax = 40f;
+                contents.fontSizeMin = TextStyleSheet.MinimumReadableSize;
+                UiPipeline.Place(contents.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(392f, -130f), new Vector2(530f, 132f));
                 caption = UiPipeline.AddText("Caption", rect, TextRole.Caption, 36f, kit.Tokens.textSecondary, "One-time offer");
                 UiPipeline.Place(caption.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(392f, -246f), new Vector2(530f, 50f));
                 buy = BuyButton(kit, rect, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-34f, 30f), new Vector2(400f, 108f), 46f,
@@ -326,14 +333,16 @@ namespace PocketWilds.Editor.Shop
             var top = new Vector2(0.5f, 1f);
             var bottom = new Vector2(0.5f, 0f);
             var oneTime = compact
-                ? Chip(kit, rect, "OneTime", kit.Tokens.currencyGems, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(392f, -252f), new Vector2(400f, 58f), 36f,
+                ? Chip(kit, rect, "OneTime", kit.Tokens.currencyGems, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(392f, -282f), new Vector2(520f, 58f), 36f,
                     "One-time offer", out var oneTimeLabel)
-                : Chip(kit, rect, "OneTime", kit.Tokens.currencyGems, top, top, new Vector2(0f, -30f), new Vector2(420f, 64f), 38f, "One-time offer",
+                : Chip(kit, rect, "OneTime", kit.Tokens.currencyGems, top, top, new Vector2(0f, -30f), new Vector2(520f, 64f), 38f, "One-time offer",
                     out oneTimeLabel);
             oneTimeLabel.enableAutoSizing = true;
             oneTimeLabel.fontSizeMax = oneTimeLabel.fontSize;
             oneTimeLabel.fontSizeMin = TextStyleSheet.MinimumReadableSize;
+            // The same badge says « Une fois par événement » on the Carnet d'or and the Box cards.
             Problems.Append(PocketWilds.Editor.UI.OutfitTexts.Fit(oneTimeLabel, UiTextKeys.ShopPackOneTime));
+            Problems.Append(PocketWilds.Editor.UI.EventTexts.Fit(oneTimeLabel, EventText.ShopOneTime));
 
             var row = UiPipeline.Rect("PackRow", rect);
             // The modal card is 920 wide: its row keeps 32 on each side; the shop card has the room for 240 cells.
@@ -457,6 +466,15 @@ namespace PocketWilds.Editor.Shop
                 var scroll = viewport.gameObject.AddComponent<ScrollRect>();
                 UiPipeline.ConfigureScroll(scroll, viewport, list);
 
+                // T48: « Événement » (Carnet d'or, Coffret) above Featured, shown only while an event runs.
+                var eventHeader = UiPipeline.AddText("EventHeader", list, TextRole.Subheading, 50f, kit.Tokens.textSecondary, "Event");
+                eventHeader.alignment = TextAlignmentOptions.BottomLeft;
+                var eventCards = new ShopCardView[2];
+                for (int i = 0; i < eventCards.Length; i++)
+                {
+                    eventCards[i] = ((GameObject)PrefabUtility.InstantiatePrefab(widePrefab.gameObject, list)).GetComponent<ShopCardView>();
+                    eventCards[i].name = "Event" + i;
+                }
                 var featuredHeader = UiPipeline.AddText("FeaturedHeader", list, TextRole.Subheading, 50f, kit.Tokens.textSecondary, "Featured");
                 featuredHeader.alignment = TextAlignmentOptions.BottomLeft;
                 var featured = new ShopCardView[FeaturedSlots];
@@ -500,6 +518,7 @@ namespace PocketWilds.Editor.Shop
 
                 screen.SetReferences(kit.Tokens, content.gameObject, safe, backButton, title, gemsLabel, scroll, list, featuredHeader, featured,
                     gemsHeader, gems, restoreButton, restoreLabel, toastGroup, toastLabel, Icons());
+                screen.SetEventReferences(eventHeader, eventCards);
                 content.gameObject.SetActive(false);
                 Directory.CreateDirectory(Path.GetDirectoryName(ShopPrefabPath));
                 UiPipeline.MaskScrollContent(root);

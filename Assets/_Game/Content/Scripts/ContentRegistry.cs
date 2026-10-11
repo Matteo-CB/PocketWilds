@@ -111,6 +111,16 @@ namespace PocketWilds.Content
 
         /// <summary>Store products, offers and grantable items (T28). Empty when no catalog ships.</summary>
         public ShopContent Shop { get; }
+
+        /// <summary>T48: the events in this build (empty: none). Their dates come from the event calendar.</summary>
+        public ContentTable<EventDefinition> Events { get; } = ContentTable<EventDefinition>.Empty;
+
+        public ContentRegistry(ContentTable<SpeciesDefinition> species, ContentTable<VariantDefinition> variants, ContentTable<EggDefinition> eggs,
+            ContentTable<PaletteDefinition> palettes, ContentTable<BiomeDefinition> biomes, ShopContent shop, ContentTable<EventDefinition> events)
+            : this(species, variants, eggs, palettes, biomes, shop)
+        {
+            Events = events ?? ContentTable<EventDefinition>.Empty;
+        }
     }
 
     /// <summary>Shop tables of the registry.</summary>
@@ -191,6 +201,7 @@ namespace PocketWilds.Content
         private readonly List<EntitlementDefinition> _entitlements = new List<EntitlementDefinition>();
         private readonly List<AccessoryDefinition> _accessories = new List<AccessoryDefinition>();
         private readonly List<OutfitDefinition> _outfits = new List<OutfitDefinition>();
+        private readonly List<EventDefinition> _events = new List<EventDefinition>();
         private int _shopUnlockMinAnimals = int.MaxValue;
         private readonly Dictionary<uint, string> _seenHashes = new Dictionary<uint, string>();
         private readonly HashSet<uint> _tombstones = new HashSet<uint>();
@@ -393,7 +404,12 @@ namespace PocketWilds.Content
                 _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Product needs a positive reference price."));
                 return;
             }
-            if (definition.Gems < 0 || (definition.Gems == 0 && definition.Entitlements.Length == 0))
+            if (definition.EventScope != EventProductScope.None && (definition.Kind != ProductKind.Consumable || definition.Entitlements.Length > 0))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "A per-event product is consumable and lists no item (the event resolves them)."));
+                return;
+            }
+            if (definition.Gems < 0 || (definition.Gems == 0 && definition.Entitlements.Length == 0 && definition.EventScope == EventProductScope.None))
             {
                 _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Product must grant Gems or items, never a negative amount."));
                 return;
@@ -436,6 +452,48 @@ namespace PocketWilds.Content
             }
             if (TryClaim(definition.Id, sourceId))
                 _offers.Add(definition);
+        }
+
+        /// <summary>
+        /// T48: an event (key « event.&lt;key&gt; » matching its source ID, 30 tiers, 7 egg items, 10 challenges, a featured activity, an
+        /// album number 101 to 112 or 0). The Carnet d'or line never gives Light, eggs or stickers (nothing paid does).
+        /// </summary>
+        public void AddEvent(EventDefinition definition, string sourceId)
+        {
+            if (sourceId == null || !sourceId.StartsWith("event.", StringComparison.Ordinal) || definition.Key != sourceId)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId ?? "event", "Event key must be event.<key> and match its source ID."));
+                return;
+            }
+            if (definition.Tiers.Length != EventDefinition.TierCount || definition.EggItems.Length != EventDefinition.EggItemCount
+                || definition.ChallengeLevels.Length != EventDefinition.ChallengeCount)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Event needs 30 tiers, 7 egg items and 10 challenges."));
+                return;
+            }
+            if (definition.FeaturedActivities.Length == 0 || string.IsNullOrEmpty(definition.NameKey) || string.IsNullOrEmpty(definition.CurrencyKey))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Event needs a featured activity, a name key and a currency key."));
+                return;
+            }
+            if (definition.AlbumEventNumber != 0 && (definition.AlbumEventNumber < 101 || definition.AlbumEventNumber > 112))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Event album number is 101 to 112 (0: none)."));
+                return;
+            }
+            foreach (var tier in definition.Tiers)
+            {
+                foreach (var reward in tier.Gold)
+                {
+                    if (reward.Kind == EventRewardKind.LightMinutes || reward.Kind == EventRewardKind.DiscoveryEgg || reward.Kind == EventRewardKind.Sticker)
+                    {
+                        _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "The Carnet d'or never gives Light, eggs or stickers."));
+                        return;
+                    }
+                }
+            }
+            if (TryClaim(definition.Id, sourceId))
+                _events.Add(definition);
         }
 
         public ContentRegistry Build()
@@ -485,6 +543,18 @@ namespace PocketWilds.Content
 
             ValidateShop();
 
+            // T48: the egg's items and secret are variants of this build.
+            foreach (var e in _events)
+            {
+                foreach (var item in e.EggItems)
+                {
+                    if (!_variants.Exists(v => v.Id == item.Variant))
+                        _issues.Add(new ContentIssue(ContentIssueSeverity.Error, e.Key, "Event egg item is not a known variant."));
+                }
+                if (e.SecretVariant.IsValid && !_variants.Exists(v => v.Id == e.SecretVariant))
+                    _issues.Add(new ContentIssue(ContentIssueSeverity.Error, e.Key, "Event secret is not a known variant."));
+            }
+
             if (HasErrors)
                 throw new InvalidOperationException("Content has errors: " + string.Join("; ", _issues));
             _biomes.Sort((a, b) => a.Order.CompareTo(b.Order));
@@ -495,7 +565,8 @@ namespace PocketWilds.Content
                 new ContentTable<EntitlementDefinition>(_entitlements), _shopUnlockMinAnimals, new ContentTable<AccessoryDefinition>(_accessories),
                 new ContentTable<OutfitDefinition>(_outfits));
             return new ContentRegistry(new ContentTable<SpeciesDefinition>(_species), new ContentTable<VariantDefinition>(_variants),
-                new ContentTable<EggDefinition>(_eggs), new ContentTable<PaletteDefinition>(_palettes), new ContentTable<BiomeDefinition>(_biomes), shop);
+                new ContentTable<EggDefinition>(_eggs), new ContentTable<PaletteDefinition>(_palettes), new ContentTable<BiomeDefinition>(_biomes), shop,
+                new ContentTable<EventDefinition>(_events));
         }
 
         /// <summary>Cross references: every granted item and sold product exists, SKUs are unique.</summary>

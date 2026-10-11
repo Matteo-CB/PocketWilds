@@ -17,7 +17,7 @@ namespace PocketWilds.UI
     /// owned in a small round badge and its dot; while a game plays the whole HUD fades out and catches no touch.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IDailyHud, IPlayHud, IAlbumHud, IProfileHud, IMotionSettings
+    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IDailyHud, IPlayHud, IAlbumHud, IProfileHud, IEventHud, IMotionSettings
     {
         private const float PulseSeconds = 0.4f;
 
@@ -1416,6 +1416,62 @@ namespace PocketWilds.UI
                 _todayButton.onClick.RemoveListener(OnTodayPressed);
             if (_playButton != null)
                 _playButton.onClick.RemoveListener(OnPlayPressed);
+        }
+
+        // ---------------- T48 events (IEventHud) ----------------
+
+        [Header("T48 events: the Event button on the rail (Play, Today, Event), its tier progress ring and its dot")]
+        [SerializeField] private Button _eventButton;
+        [SerializeField] private RectTransform _eventRoot;
+        [SerializeField] private Image _eventRing;
+        [SerializeField] private GameObject _eventDot;
+
+        private IEventHudActions _eventActions;
+        private float _eventRingShown = -1f;
+
+        public bool EventVisible => _eventRoot != null && _eventRoot.gameObject.activeSelf;
+        public bool EventDotVisible => _eventDot != null && _eventDot.activeSelf;
+        public float EventRing => _eventRing != null ? _eventRing.fillAmount : 0f;
+        public Button EventButton => _eventButton;
+
+        public void BindEvent(IEventHudActions actions)
+        {
+            _eventActions = actions;
+            if (_eventButton == null)
+                return;
+            _eventButton.onClick.RemoveListener(OnEventPressed);
+            _eventButton.onClick.AddListener(OnEventPressed);
+        }
+
+        /// <summary>Shown during an event's announce and run; the ring is the progress to the next tier, the dot a reward to claim.</summary>
+        public void SetEvent(bool visible, float ring, bool dot)
+        {
+            if (_eventRoot == null)
+                return;
+            if (_eventRoot.gameObject.activeSelf != visible)
+            {
+                _eventRoot.gameObject.SetActive(visible);
+                LayoutRail();
+            }
+            if (_eventRing != null && Mathf.Abs(ring - _eventRingShown) > 0.002f)
+            {
+                _eventRingShown = ring;
+                _eventRing.fillAmount = Mathf.Clamp01(ring);
+            }
+            bool showDot = visible && dot;
+            if (_eventDot != null && _eventDot.activeSelf != showDot)
+                _eventDot.SetActive(showDot);
+        }
+
+        private void OnEventPressed() => _eventActions?.OpenEvent();
+
+        /// <summary>Prefab builder hook for the Event rail button (Editor EventUiPipeline.AddHudEvent).</summary>
+        public void SetEventReferences(Button button, RectTransform root, Image ring, GameObject dot)
+        {
+            _eventButton = button;
+            _eventRoot = root;
+            _eventRing = ring;
+            _eventDot = dot;
         }
     }
 }

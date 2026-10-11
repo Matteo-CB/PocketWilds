@@ -56,6 +56,9 @@ namespace PocketWilds.Simulation
         /// <summary>T47: the account's companions (animal in the refuge, bond XP, rewards given, arrival owed to the view).</summary>
         public CompanionState Companions { get; } = new CompanionState();
 
+        /// <summary>T48: the event instances entered (frozen numbers, currency, track, egg, shop, quests, challenges, end).</summary>
+        public EventState Events { get; } = new EventState();
+
         /// <summary>The welcome is over: the tutorial wish was done, or the save already holds 5 animals (doc 01, section 1.1).</summary>
         public bool IsOnboardingDone => DailyVisit.OnboardingDone || Collection.Count >= 5;
 

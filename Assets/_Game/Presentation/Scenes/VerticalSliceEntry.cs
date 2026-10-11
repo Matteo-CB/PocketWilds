@@ -60,6 +60,8 @@ namespace PocketWilds.Presentation
         [SerializeField] private MonoBehaviour _animalSheet;
         [Tooltip("T47: PF_UI_OutfitPicker (IOutfitPickerView).")]
         [SerializeField] private MonoBehaviour _outfitPicker;
+        [Tooltip("T48: PF_UI_EventHub (screen 018), its announce page and the end summary card.")]
+        [SerializeField] private MonoBehaviour _eventHub;
         [Tooltip("T34A modal shell implementing IModalView (UI assembly).")]
         [SerializeField] private MonoBehaviour _modal;
         [Header("T35A progression screens (UI assembly)")]
@@ -265,6 +267,7 @@ namespace PocketWilds.Presentation
                     _animalSheet as IAnimalSheetView, _modal as IModalView, null, allowance);
                 _refuge.SetSummaryView(_rewardSummary as IRewardSummaryView);
                 _refuge.OutfitView = _outfitPicker as IOutfitPickerView;
+                _refuge.EventView = _eventHub as IEventHubView;
                 var input = _cameraRig != null ? _cameraRig.GetComponent<RefugeCameraInput>() : null;
                 if (input != null)
                     input.SetTapHandler(this);
@@ -375,7 +378,7 @@ namespace PocketWilds.Presentation
         {
             if (_bubbles != null)
                 _bubbles.ReduceMotion = reduce;
-            foreach (var screen in new[] { _hud, _offlineReturn, _codex, _shop, _offerModal, _animalSheet, _outfitPicker, _modal, _upgrades, _zoneOpen,
+            foreach (var screen in new[] { _hud, _offlineReturn, _codex, _shop, _offerModal, _animalSheet, _outfitPicker, _eventHub, _modal, _upgrades, _zoneOpen,
                          _refugeLevel, _levelReward, _biomeGate, _rewardSummary, _today, _weeklyJournal, _wishCard, _activityHub, _activityHud,
                          _activityResult, _ticketsEmpty })
                 if (screen is IMotionSettings motion)

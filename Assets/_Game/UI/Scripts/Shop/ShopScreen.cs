@@ -28,6 +28,9 @@ namespace PocketWilds.UI
         [SerializeField] private TMP_Text _gemsLabel;
         [SerializeField] private ScrollRect _scroll;
         [SerializeField] private RectTransform _list;
+        [Tooltip("T48: the « Événement » section (Carnet d'or, Coffret) above Featured while an event runs.")]
+        [SerializeField] private TMP_Text _eventHeader;
+        [SerializeField] private ShopCardView[] _eventCards = Array.Empty<ShopCardView>();
         [SerializeField] private TMP_Text _featuredHeader;
         [SerializeField] private ShopCardView[] _featuredCards = Array.Empty<ShopCardView>();
         [SerializeField] private TMP_Text _gemsHeader;
@@ -55,6 +58,8 @@ namespace PocketWilds.UI
         public string ToastText => _toastLabel != null && _toast != null && _toast.alpha > 0f ? _toastLabel.text : string.Empty;
         public int VisibleGemCards { get; private set; }
         public int VisibleFeaturedCards { get; private set; }
+        public int VisibleEventCards { get; private set; }
+        public ShopCardView GetEventCard(int index) => _eventCards[index];
         public ShopCardView GetGemCard(int index) => _gemCards[index];
         public ShopCardView GetFeaturedCard(int index) => _featuredCards[index];
 
@@ -66,6 +71,8 @@ namespace PocketWilds.UI
             Initialize();
             _title.SetText(ShopText.Get(text, UiTextKeys.ShopTitle));
             _featuredHeader.SetText(ShopText.Get(text, UiTextKeys.ShopFeatured));
+            if (_eventHeader != null)
+                _eventHeader.SetText(ShopText.Get(text, EventText.ShopSection));
             _gemsHeader.SetText(ShopText.Get(text, UiTextKeys.ShopGems));
             _restoreLabel.SetText(ShopText.Get(text, UiTextKeys.ShopRestore));
             _toast.alpha = 0f;
@@ -100,6 +107,27 @@ namespace PocketWilds.UI
             var busyOffer = _model.BusyOffer;
 
             float y = 0f;
+            // T48: « Événement » first while an event runs (the Carnet d'or and the Coffret, never as popups).
+            var events = _model as IShopEventModel;
+            VisibleEventCards = events != null && _eventHeader != null ? Mathf.Min(events.EventCount, _eventCards.Length) : 0;
+            if (_eventHeader != null)
+                _eventHeader.gameObject.SetActive(VisibleEventCards > 0);
+            if (VisibleEventCards > 0)
+            {
+                Place(_eventHeader.rectTransform, ref y, HeaderHeight);
+                for (int i = 0; i < VisibleEventCards; i++)
+                {
+                    var card = events.GetEvent(i);
+                    _eventCards[i].gameObject.SetActive(true);
+                    _eventCards[i].Bind(card, _text, _sprites, busy, busyOffer == card.Offer);
+                    Place((RectTransform)_eventCards[i].transform, ref y, _packHeight);
+                    y += SectionGap * 0.5f;
+                }
+                y += SectionGap;
+            }
+            for (int i = VisibleEventCards; i < _eventCards.Length; i++)
+                _eventCards[i].gameObject.SetActive(false);
+
             VisibleFeaturedCards = Mathf.Min(_model.FeaturedCount, _featuredCards.Length);
             _featuredHeader.gameObject.SetActive(VisibleFeaturedCards > 0);
             if (VisibleFeaturedCards > 0)
@@ -164,6 +192,8 @@ namespace PocketWilds.UI
             _fitter.Fit(_safeArea);
             for (int i = 0; i < VisibleFeaturedCards; i++)
                 _featuredCards[i].Tick(unscaledDeltaTime);
+            for (int i = 0; i < VisibleEventCards; i++)
+                _eventCards[i].Tick(unscaledDeltaTime);
             for (int i = 0; i < VisibleGemCards; i++)
                 _gemCards[i].Tick(unscaledDeltaTime);
             if (_toastTime < 0f)
@@ -187,6 +217,8 @@ namespace PocketWilds.UI
             _back.onClick.AddListener(OnBack);
             _restore.onClick.AddListener(OnRestore);
             foreach (var card in _featuredCards)
+                card.Initialize(OnBuy);
+            foreach (var card in _eventCards)
                 card.Initialize(OnBuy);
             foreach (var card in _gemCards)
                 card.Initialize(OnBuy);
@@ -212,6 +244,13 @@ namespace PocketWilds.UI
                 _back.onClick.RemoveListener(OnBack);
             if (_restore != null)
                 _restore.onClick.RemoveListener(OnRestore);
+        }
+
+        /// <summary>T48 prefab builder hook: the « Événement » header and its two wide cards (Editor ShopUiPipeline).</summary>
+        public void SetEventReferences(TMP_Text header, ShopCardView[] cards)
+        {
+            _eventHeader = header;
+            _eventCards = cards ?? Array.Empty<ShopCardView>();
         }
 
         /// <summary>Prefab builder hook (Editor ShopUiPipeline).</summary>

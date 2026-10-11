@@ -132,6 +132,9 @@ namespace PocketWilds.Presentation
 
         /// <summary>T47: the companions (Arrived and the pending arrival for the 2 s staging, bond and its rewards, looks).</summary>
         public CompanionService Companions { get; set; }
+
+        /// <summary>T48: the events framework (phases, currency, track, egg, shop, quests, challenges, end). Never null after boot.</summary>
+        public EventService Events { get; set; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

@@ -23,6 +23,7 @@ namespace PocketWilds.Services.Save
             new Migration0014AddAchievements(),
             new Migration0015AddJournal(),
             new Migration0016AddCosmetics(),
+            new Migration0017AddEvents(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -252,6 +253,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 16;
         public int ToVersion => 17;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 17 to 18 (T48): the Events section (event instances). Nothing to convert: without it no event was ever entered (no
+    /// event shipped before T48).
+    /// </summary>
+    public sealed class Migration0017AddEvents : ISaveMigration
+    {
+        public int FromVersion => 17;
+        public int ToVersion => 18;
 
         public void Apply(SaveDocument document)
         {

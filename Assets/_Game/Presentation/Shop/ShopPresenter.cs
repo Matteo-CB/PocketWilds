@@ -17,7 +17,7 @@ namespace PocketWilds.Presentation
     /// <see cref="IShopActions"/>: no store provider, product or SKU reaches the UI. Cards are rebuilt on events
     /// (open, price arrival, purchase), never per frame.
     /// </summary>
-    public sealed class ShopPresenter : IShopModel, IShopActions, IDisposable
+    public sealed class ShopPresenter : IShopModel, IShopEventModel, IShopActions, IDisposable
     {
         private const float ModalCloseDelay = 1.4f;
 
@@ -36,6 +36,8 @@ namespace PocketWilds.Presentation
         private readonly OfferDefinition[] _buffer = new OfferDefinition[16];
         private readonly ShopCardModel[] _featured = new ShopCardModel[4];
         private readonly ShopCardModel[] _gemPacks = new ShopCardModel[12];
+        private readonly ShopCardModel[] _eventCards = new ShopCardModel[2];
+        private int _eventCount;
         private readonly double _baseGemsPerEuro;
         private int _featuredCount;
         private int _gemCount;
@@ -77,6 +79,8 @@ namespace PocketWilds.Presentation
         public ShopCardModel GetFeatured(int index) => _featured[index];
         public int GemPackCount => _gemCount;
         public ShopCardModel GetGemPack(int index) => _gemPacks[index];
+        public int EventCount => _eventCount;
+        public ShopCardModel GetEvent(int index) => _eventCards[index];
 
         // ---------------- Entry points ----------------
 
@@ -359,6 +363,11 @@ namespace PocketWilds.Presentation
             _gemCount = Math.Min(count, _gemPacks.Length);
             for (int i = 0; i < _gemCount; i++)
                 _gemPacks[i] = BuildCard(_buffer[i], now);
+            // T48: the Carnet d'or and the Coffret, only while an event runs (OfferService asks the event service).
+            count = _offers.GetOffers(OfferPlacement.ShopEvent, now, _buffer, includeOwned: true);
+            _eventCount = Math.Min(count, _eventCards.Length);
+            for (int i = 0; i < _eventCount; i++)
+                _eventCards[i] = BuildCard(_buffer[i], now);
         }
 
         private ShopCardModel BuildCard(OfferDefinition offer, long now)
@@ -390,8 +399,45 @@ namespace PocketWilds.Presentation
                 card.ItemIconKey = item.IconKey;
             }
             FillPack(ref card, offer, items);
+            FillEvent(ref card, offer);
             return card;
         }
+
+        /// <summary>
+        /// T48 event cards (« Événement »): the Carnet d'or or the Coffret as hero art, the body line, « Une fois par événement »,
+        /// the restore note and what it holds (the gold line, its outfits, the bonus points; the Box's outfit, decorations and
+        /// Gems). No struck-through price, no percentage, no countdown.
+        /// </summary>
+        private void FillEvent(ref ShopCardModel card, OfferDefinition offer)
+        {
+            if (offer.Placement != OfferPlacement.ShopEvent || !offer.Product.IsValid || !_catalog.Products.TryGet(offer.Product, out var product)
+                || product.EventScope == EventProductScope.None)
+                return;
+            bool gold = product.EventScope == EventProductScope.GoldBook;
+            card.BonusPercent = 0;
+            card.BodyKey = gold ? EventText.GoldBody : EventText.BoxBody;
+            card.OneTimeKey = EventText.ShopOneTime;
+            card.RestoreNote = true;
+            card.ContentCount = 0;
+            if (gold)
+            {
+                card.AddContent(new ShopContentItem { IconKey = EventGoldBookIconKey, LabelKey = EventText.GoldContentTrack });
+                card.AddContent(new ShopContentItem { IconKey = EventOutfitIconKey, LabelKey = EventText.GoldContentOutfits });
+                card.AddContent(new ShopContentItem { IconKey = EventPointsIconKey, LabelKey = EventText.GoldContentBonus });
+            }
+            else
+            {
+                card.AddContent(new ShopContentItem { IconKey = EventOutfitIconKey, LabelKey = EventText.BoxContentOutfit });
+                card.AddContent(new ShopContentItem { IconKey = EventDecorIconKey, LabelKey = EventText.BoxContentDecos });
+                if (card.Gems > 0)
+                    card.AddContent(new ShopContentItem { IconKey = GemsIconKey, Amount = card.Gems });
+            }
+        }
+
+        public const string EventGoldBookIconKey = "ICO_Event_GoldBook";
+        public const string EventOutfitIconKey = "ICO_Event_Outfit";
+        public const string EventPointsIconKey = "ICO_Event_Points";
+        public const string EventDecorIconKey = "ICO_Decoration";
 
         /// <summary>
         /// T47 pack card (a store product granting a companion, « Pack de la Prairie »): the companion is the hero art, the frozen
