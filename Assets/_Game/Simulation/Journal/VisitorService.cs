@@ -78,6 +78,9 @@ namespace PocketWilds.Simulation
         /// <summary>The player's time zone (the device's; tests set one).</summary>
         public TimeZoneInfo Zone { get; set; } = TimeZoneInfo.Local;
 
+        /// <summary>T48B the active month map (Remote Config « events.refuge_seasons »): a visitor comes in its season; null: the default map.</summary>
+        public SeasonConfig? Seasons { get; set; }
+
         /// <summary>Gives IsOpen (refuge level 8 and day 3); null: <see cref="ForceOpen"/> decides.</summary>
         public RefugeLevelService? Refuge { get; set; }
 
@@ -215,7 +218,7 @@ namespace PocketWilds.Simulation
         public int Schedule(int day, long[] arrivals, int[] visitors)
         {
             var date = JournalService.DateOf(day);
-            int count = Candidates(AlbumHooks.SeasonOfMonth(date.Month), _candidates);
+            int count = Candidates(SeasonConfig.SeasonNumber(Seasons, date.Month), _candidates);
             if (count == 0)
                 return 0;
             var rng = new DeterministicRandom(SeedHash.Mix(Seed ^ (uint)day, ScheduleSalt));
@@ -309,7 +312,7 @@ namespace PocketWilds.Simulation
             var date = JournalService.DateOf(_day);
             long latest = LocalMs(date, (SleepHour - 2) * 60);
             long earliest = LocalMs(date, WakeHour * 60);
-            int count = Candidates(AlbumHooks.SeasonOfMonth(date.Month), _candidates);
+            int count = Candidates(SeasonConfig.SeasonNumber(Seasons, date.Month), _candidates);
             if (count > 0 && now + FirstVisitDelayMs <= latest && _visitCount < MaxVisits)
             {
                 long at = Math.Max(now + FirstVisitDelayMs, earliest);

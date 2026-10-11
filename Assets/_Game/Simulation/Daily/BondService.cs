@@ -180,8 +180,12 @@ namespace PocketWilds.Simulation
             return false;
         }
 
+        /// <summary>T48B the Week-end des Câlins (events.weekend.bond_multiplier, set by <see cref="WeekendService"/>): every source × this; 1 otherwise.</summary>
+        public double WeekendMultiplier { get; set; } = 1.0;
+
         /// <summary>
-        /// Adds bond points (doc 02 Renouveau, section 4.1): × (1 + Comfort), + Best Friends for a favorite, rounded; capped
+        /// Adds bond points (doc 02 Renouveau, section 4.1): × (1 + Comfort), + Best Friends for a favorite, × the Week-end des
+        /// Câlins, rounded; capped
         /// at <see cref="DailyVisitConfig.BondMax"/>, never lowered. Returns the points really added.
         /// </summary>
         public int AddBond(uint animal, int points, BondSource source)
@@ -202,6 +206,7 @@ namespace PocketWilds.Simulation
                 if (instance.IsFavorite)
                     multiplier += essence.Sum(EssenceEffect.FavoriteBond);
             }
+            multiplier *= Math.Max(1.0, WeekendMultiplier);
             double scaled = Math.Round(points * Math.Max(0.0, multiplier), MidpointRounding.AwayFromZero);
 
             int max = Math.Min(_ctx.Config.BondMax, ushort.MaxValue);

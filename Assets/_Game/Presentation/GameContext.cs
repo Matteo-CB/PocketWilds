@@ -135,6 +135,12 @@ namespace PocketWilds.Presentation
 
         /// <summary>T48: the events framework (phases, currency, track, egg, shop, quests, challenges, end). Never null after boot.</summary>
         public EventService Events { get; set; }
+
+        /// <summary>T48B the refuge's season (palettes, light, ambient effects, the season card). Never null after boot.</summary>
+        public ISeasonView Seasons { get; set; }
+
+        /// <summary>T48B the special weekend running now (the HUD chip). Never null after boot.</summary>
+        public IWeekendView Weekends { get; set; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

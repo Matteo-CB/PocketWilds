@@ -51,6 +51,9 @@ namespace PocketWilds.Services.Save
 
         /// <summary>T48: the event instances: frozen numbers, currency, track, egg, shop, quests, challenges, end (schema 18).</summary>
         Events = 24,
+
+        /// <summary>T48B: the season card already shown and the special weekend already seen (schema 19).</summary>
+        Seasons = 25,
     }
 
     public sealed class SaveSection

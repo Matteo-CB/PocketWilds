@@ -11,6 +11,8 @@ namespace PocketWilds.Presentation
         Bee,
         /// <summary>Hops and pecks on the grass; flies off in an arc when startled, lands back nearby.</summary>
         Bird,
+        /// <summary>T48B slow drifting round glows of Soleil evenings (SeasonLookSet.fireflies), steered around every volume.</summary>
+        Firefly,
     }
 
     /// <summary>

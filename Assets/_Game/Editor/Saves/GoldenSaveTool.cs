@@ -44,6 +44,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Journal_v16", BuildJournal());
             created += WriteIfMissing("GoldenSave_Cosmetics_v17", BuildCosmetics());
             created += WriteIfMissing("GoldenSave_Events_v18", BuildEvents());
+            created += WriteIfMissing("GoldenSave_Seasons_v19", BuildSeasons());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -484,6 +485,17 @@ namespace PocketWilds.Editor.Saves
                 EndUnix = start - 351 * 86_400L, JoinedUnix = start - 365 * 86_400L, Points = 9100, TierReached = 30, Ended = true, Converted = true,
                 ConvertedCurrency = 120, ConvertedSeconds = 1200, ConvertedLight = BigValue.FromDouble(52000), SummarySeen = true,
             });
+            return state;
+        }
+
+        /// <summary>T48B: the schema 18 profile with the Récolte card shown (run of September 2026) and the Activities Weekend of 9 October 2026 seen.</summary>
+        public static PlayerState BuildSeasons()
+        {
+            var state = BuildEvents();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-0000000000c9");
+            state.Meta.Revision = 490;
+            state.Seasons.CardKey = 202609 * 10 + (int)RefugeSeason.Harvest;
+            state.Seasons.WeekendSeenKey = 20261009 * 10 + (int)WeekendKind.Activities;
             return state;
         }
 

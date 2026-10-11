@@ -24,6 +24,7 @@ namespace PocketWilds.Services.Save
             new Migration0015AddJournal(),
             new Migration0016AddCosmetics(),
             new Migration0017AddEvents(),
+            new Migration0018AddSeasons(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -267,6 +268,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 17;
         public int ToVersion => 18;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 18 to 19 (T48B): the Seasons section (season card key, weekend seen key). Nothing to convert: without it the first
+    /// launch stores the current season as seen (no card) and the running weekend counts as not seen yet.
+    /// </summary>
+    public sealed class Migration0018AddSeasons : ISaveMigration
+    {
+        public int FromVersion => 18;
+        public int ToVersion => 19;
 
         public void Apply(SaveDocument document)
         {

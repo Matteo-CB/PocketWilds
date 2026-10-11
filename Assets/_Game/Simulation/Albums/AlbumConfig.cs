@@ -158,6 +158,8 @@ namespace PocketWilds.Simulation
             ["albums.guarantee.shiny"] = new Bound(5, 100, (c, v) => c.ShinyAfter = (int)v, true),
             ["albums.event_shop_price"] = new Bound(50, 1000, (c, v) => c.EventShopPrice = (int)v, true),
             ["events.weekend.albums_multiplier"] = new Bound(1, 3, (c, v) => c.WeekendMultiplier = (int)v, true),
+            // T48B the doc 08 key; the older key above stays as an alias.
+            ["events.weekend.album_star_multiplier"] = new Bound(1, 3, (c, v) => c.WeekendMultiplier = (int)v, true),
         };
 
         public const string EnabledFlag = "flags.albums";

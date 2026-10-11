@@ -539,6 +539,7 @@ namespace PocketWilds.Tests.EditMode
         [TestCase("GoldenSave_Albums_v14")]
         [TestCase("GoldenSave_Achievements_v15")]
         [TestCase("GoldenSave_Events_v18")]
+        [TestCase("GoldenSave_Seasons_v19")]
         public void GoldenSaves_LoadWithCurrentBuild(string name)
         {
             string path = Path.Combine(UnityEngine.Application.dataPath, "_Game/Tests/Fixtures/GoldenSaves", name + ".pwsave");
@@ -598,8 +599,18 @@ namespace PocketWilds.Tests.EditMode
                 Assert.IsTrue(state.Codex.SeenVariants.SetEquals(state.Collection.DiscoveredVariants));
             }
 
+            if (version < 19)
+                Assert.AreEqual(0, state.Seasons.CardKey + state.Seasons.WeekendSeenKey, "Older saves: no season card and no weekend seen yet.");
+
             switch (name)
             {
+                case "GoldenSave_Seasons_v19":
+                    Assert.AreEqual(490, state.Meta.Revision);
+                    Assert.AreEqual(2026093, state.Seasons.CardKey, "Récolte that began in September 2026.");
+                    Assert.AreEqual(202610091, state.Seasons.WeekendSeenKey, "The Activities Weekend of Friday 9 October 2026.");
+                    Assert.AreEqual(2, state.Events.Instances.Count, "Everything of schema 18 is kept.");
+                    break;
+
                 case "GoldenSave_New_v1":
                     Assert.AreEqual(new Guid("6f0c1a2e-0000-4000-8000-000000000001"), state.Meta.ProfileId);
                     Assert.AreEqual(0, state.Collection.Count);

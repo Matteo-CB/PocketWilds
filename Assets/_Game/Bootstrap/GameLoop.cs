@@ -2,6 +2,7 @@ using PocketWilds.Core;
 using PocketWilds.Presentation;
 using PocketWilds.Services.Analytics;
 using PocketWilds.Services.Feedback;
+using PocketWilds.Simulation;
 using UnityEngine;
 
 namespace PocketWilds.Bootstrap
@@ -18,6 +19,8 @@ namespace PocketWilds.Bootstrap
         private AnalyticsService _analytics;
         private AudioService _audio;
         private HapticService _haptics;
+        private SeasonService _seasons;
+        private WeekendService _weekends;
         private double _economyAccumulator;
         private double _economyInterval = 0.1;
 
@@ -36,6 +39,13 @@ namespace PocketWilds.Bootstrap
         {
             _audio = audio;
             _haptics = haptics;
+        }
+
+        /// <summary>T48B the refuge season and the special weekend (clock comparisons until their next edge).</summary>
+        public void SetCalendar(SeasonService seasons, WeekendService weekends)
+        {
+            _seasons = seasons;
+            _weekends = weekends;
         }
 
         private void Update()
@@ -72,6 +82,9 @@ namespace PocketWilds.Bootstrap
                 _context.Garden?.Tick();
                 // T44C: a visitor arrives or leaves at its time (VisitChanged); no allocation.
                 _context.Visitors?.Tick();
+                // T48B: the season at local midnight, the weekend at its edges (once a minute inside one); no allocation.
+                _seasons?.Tick();
+                _weekends?.Tick();
 
                 _context.Save.Tick();
             }

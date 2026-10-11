@@ -90,6 +90,8 @@ namespace PocketWilds.Bootstrap
         private CosmeticService _cosmetics;
         private CompanionService _companions;
         private EventService _events;
+        private SeasonService _seasons;
+        private WeekendService _weekends;
         private JournalHooks _journalHooks;
         private GrantService _grants;
         private OfferService _offers;
@@ -341,6 +343,38 @@ namespace PocketWilds.Bootstrap
                     Expeditions = _expeditions, Garden = _garden, DailyGift = _daily.Gift, Bond = _daily.Bond, Offline = _offline,
                     Cosmetics = _cosmetics, Upgrades = _progression.Upgrades, WeeklyJournal = _daily.Journal, Biomes = _progression.Store,
                 });
+                // T48B: the refuge seasons (local month, Remote Config month map, the card once per season run) and the special
+                // weekends (Friday to Sunday local, never while a big event runs). Albums, journal, visitors and achievements read the
+                // same month map; a new map applied at runtime changes the season at once.
+                var zone = _progression.Config.TimeZone;
+                var seasonConfig = new SeasonConfig();
+                _seasons = new SeasonService(_save.State, _clock, seasonConfig, _save, zone);
+                // Captures force a season whatever the date (no card is owed then).
+                if (_options.SeasonOverride is RefugeSeason forcedSeason)
+                    _seasons.Override = forcedSeason;
+                _albumHooks.Seasons = seasonConfig;
+                _journalHooks.Seasons = seasonConfig;
+                _visitors.Seasons = seasonConfig;
+                _achievementHooks.Seasons = seasonConfig;
+                var seasonAlbumHooks = _albumHooks;
+                var seasonJournalHooks = _journalHooks;
+                var seasonAchievementHooks = _achievementHooks;
+                _seasons.Changed += _ =>
+                {
+                    seasonAlbumHooks.Refresh();
+                    seasonJournalHooks.CheckSeason();
+                    seasonAchievementHooks.CountSeason();
+                };
+                _weekends = new WeekendService(_save.State, _clock, null, _save)
+                {
+                    Zone = zone, Events = _events, Hatch = _hatch, Bond = _daily.Bond, Garden = _garden.Config, Expeditions = _expeditions.Config,
+                    Albums = _albums.Config,
+                };
+                var weekendEvents = _events;
+                var weekends = _weekends;
+                _weekends.BigEventRunning = () => weekendEvents.IsRunning;
+                _events.PhaseChanged += _ => weekends.Invalidate();
+                _weekends.Refresh();
                 _offers = new OfferService(_content, _save.State, _grants, _save) { Events = _events };
                 _store = new StoreService(_content, _offers, CreateStoreProvider(), _clock, _save);
             });
@@ -377,6 +411,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.AttachJournal(_journal, _visitors);
                 _analytics.AttachCosmetics(_cosmetics, _companions);
                 _analytics.AttachEvents(_events);
+                _analytics.AttachWeekends(_weekends);
                 _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
             });
 
@@ -392,6 +427,9 @@ namespace PocketWilds.Bootstrap
                 _activities.OnResume();
                 // T48: an event ended while away converts its leftover currency to Light now (once; the summary waits for the view).
                 _events.Tick();
+                // T48B: the season and the weekend of the return (a season card owed while away waits for the idle refuge).
+                _seasons.Refresh();
+                _weekends.Refresh();
                 if (OfflineAtBoot.CreditedSeconds > 0.0)
                     GameLog.Info(LogCategory.Save, $"Offline {OfflineAtBoot.CreditedSeconds:F0} s, +{BigValueFormatter.ToDebugString(OfflineAtBoot.Light)} Light");
             });
@@ -459,10 +497,13 @@ namespace PocketWilds.Bootstrap
                 Context.Cosmetics = _cosmetics;
                 Context.Companions = _companions;
                 Context.Events = _events;
+                Context.Seasons = _seasons;
+                Context.Weekends = _weekends;
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);
                 _loop.SetFeedback(_audio, _haptics);
+                _loop.SetCalendar(_seasons, _weekends);
                 if (_options.LoadTargetScene)
                 {
                     var scene = Stopwatch.StartNew();
@@ -605,6 +646,8 @@ namespace PocketWilds.Bootstrap
             _expeditionHooks?.Dispose();
             _expeditionHooks = null;
             _expeditions = null;
+            _seasons = null;
+            _weekends = null;
             _gardenHooks?.Dispose();
             _gardenHooks = null;
             _garden = null;
@@ -635,6 +678,19 @@ namespace PocketWilds.Bootstrap
             _palettes?.Dispose();
             _palettes = null;
         }
+
+        /// <summary>T48B Remote Config entry (the server task): « events.refuge_seasons », the JSON month map (null or empty: the default). True when applied; an invalid map changes nothing.</summary>
+        public bool ApplyRemoteSeasonMonths(string json) => _seasons != null && _seasons.Config.ApplyRemoteMonths(json);
+
+        /// <summary>T48B Remote Config entry: « events.weekends », the JSON list of weekends (null or empty: the default rotation). True when applied.</summary>
+        public bool ApplyRemoteWeekends(string json) => _weekends != null && _weekends.Config.ApplyRemoteList(json);
+
+        /// <summary>T48B Remote Config entry: « flags.refuge_seasons » or « flags.weekend_specials ». True when the key is one of them.</summary>
+        public bool ApplyRemoteSeasonFlag(string key, bool value) =>
+            (_seasons != null && _seasons.Config.TryOverrideFlag(key, value)) || (_weekends != null && _weekends.Config.TryOverrideFlag(key, value));
+
+        /// <summary>T48B Remote Config entry: events.weekend.bond_multiplier or events.weekend.egg_novelty_bonus, inside their bounds.</summary>
+        public bool ApplyRemoteWeekendNumber(string key, double value) => _weekends != null && _weekends.Config.TryOverride(key, value);
 
         private void OnApplicationQuit()
         {

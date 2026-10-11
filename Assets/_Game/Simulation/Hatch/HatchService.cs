@@ -384,6 +384,39 @@ namespace PocketWilds.Simulation
             return misses >= egg.PityHardLimit ? 1.0 : SpeciesBonus(misses);
         }
 
+        /// <summary>
+        /// T48B the Week-end des Œufs (events.weekend.egg_novelty_bonus, set by <see cref="WeekendService"/>): the new species and
+        /// new color protections of every egg × (1 + this), at most 1 (<see cref="SpeciesBonus"/>, <see cref="NewVariantChance"/>).
+        /// Discovery eggs already give a novelty whenever one exists. 0 outside the weekend.
+        /// </summary>
+        public double EggNoveltyBonus { get; set; }
+
+        /// <summary>T48B the chance the next Discovery egg gives a species or a color not discovered yet (1 while anything is left).</summary>
+        public double DiscoveryNoveltyChance()
+        {
+            var collection = _state.Collection;
+            var allSpecies = _content.Species;
+            double baseChance = 0.0;
+            for (int i = 0; i < allSpecies.Count && baseChance <= 0.0; i++)
+            {
+                var species = allSpecies[i];
+                if (!species.IsSecret && !species.IsCompanion && !collection.DiscoveredSpecies.Contains(species.Id)
+                    && _variantsBySpeciesTier.ContainsKey(species.Id) && IsBiomeOpen(species.Biome))
+                    baseChance = 1.0;
+            }
+            var variants = _content.Variants;
+            for (int i = 0; i < variants.Count && baseChance <= 0.0; i++)
+            {
+                var variant = variants[i];
+                if (!variant.IsSecret && !collection.DiscoveredVariants.Contains(variant.Id) && collection.DiscoveredSpecies.Contains(variant.Species))
+                    baseChance = 1.0;
+            }
+            return baseChance;
+        }
+
+        /// <summary>T48B a novelty chance with the egg weekend's bonus: × (1 + bonus), clamped to [0, 1].</summary>
+        public static double WeekendNovelty(double chance, double bonus) => Math.Max(0.0, Math.Min(1.0, chance * (1.0 + Math.Max(0.0, bonus))));
+
         /// <summary>T35C: Keen Nose (Essence tree) adds this much to the new species protection per miss (same cap).</summary>
         public double SpeciesPityBonusPerMiss { get; set; }
 
@@ -391,7 +424,7 @@ namespace PocketWilds.Simulation
         public double VariantPityMultiplier { get; set; } = 1.0;
 
         public double SpeciesBonus(int misses) =>
-            Math.Min(_config.PitySpeciesCap, (_config.PitySpeciesPerMiss + SpeciesPityBonusPerMiss) * misses);
+            WeekendNovelty(Math.Min(_config.PitySpeciesCap, (_config.PitySpeciesPerMiss + SpeciesPityBonusPerMiss) * misses), EggNoveltyBonus);
 
         /// <summary>New variant bonus for a species given its misses and mastery milestones.</summary>
         public double VariantBonus(ContentId species, int misses)
@@ -410,7 +443,7 @@ namespace PocketWilds.Simulation
         {
             _state.Pity.VariantMisses.TryGetValue(species, out int misses);
             double curiosity = _modifiers != null ? _modifiers.VariantChanceBonus(biome) : 0.0;
-            return Math.Min(_config.PityVariantTotalCap, VariantBonus(species, misses) + curiosity);
+            return WeekendNovelty(Math.Min(_config.PityVariantTotalCap, VariantBonus(species, misses) + curiosity), EggNoveltyBonus);
         }
 
         /// <summary>The species a Focus egg targets right now (doc 02 Œufs, section 2.2), in pool order. 0 for other eggs.</summary>
@@ -443,9 +476,12 @@ namespace PocketWilds.Simulation
             {
                 odds.Free = true;
                 odds.Stock = _state.World.DiscoveryEggs;
+                odds.NoveltyBonus = Math.Max(0.0, EggNoveltyBonus);
+                odds.NoveltyChance = DiscoveryNoveltyChance();
                 return;
             }
 
+            odds.NoveltyBonus = Math.Max(0.0, EggNoveltyBonus);
             int count = EffectivePool(egg);
             if (egg.FocusTargetCount > 0)
             {

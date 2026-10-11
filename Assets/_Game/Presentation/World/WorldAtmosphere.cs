@@ -117,6 +117,59 @@ namespace PocketWilds.Presentation
             return r;
         }
 
+        /// <summary>
+        /// T48B the season over a mood (before the rain): tinted sun, ambient, sky, clouds and fog; in the morning a colored sky
+        /// (Givre: pink) and a height fog boost (Récolte: mist). Pure math on the blended state, no allocation.
+        /// </summary>
+        public static AtmosphereState Seasonal(in AtmosphereState s, in SeasonTint t, float hour)
+        {
+            if (!t.Active)
+                return s;
+            var r = s;
+            r.SunColor = Multiply(s.SunColor, t.Sun);
+            r.SunIntensity = s.SunIntensity * t.SunIntensity;
+            r.AmbientTop = Multiply(s.AmbientTop, t.Ambient);
+            r.AmbientEquator = Multiply(s.AmbientEquator, t.Ambient);
+            r.AmbientBottom = Multiply(s.AmbientBottom, Color.Lerp(Color.white, t.Ambient, 0.5f));
+            r.SkyTop = Multiply(s.SkyTop, t.Sky);
+            r.SkyHorizon = Multiply(s.SkyHorizon, Color.Lerp(Color.white, t.Sky, 0.6f));
+            r.CloudLight = Multiply(s.CloudLight, t.Cloud);
+            r.CloudShade = Multiply(s.CloudShade, t.Cloud);
+            r.FogColor = Color.Lerp(s.FogColor, t.Fog, t.FogWeight);
+            float morning = MorningWeight(hour);
+            float sky = morning * t.MorningSkyWeight;
+            if (sky > 0f)
+            {
+                r.SkyHorizon = Color.Lerp(r.SkyHorizon, t.MorningSky, sky);
+                r.SkyBottom = Color.Lerp(r.SkyBottom, t.MorningSky, sky * 0.7f);
+                r.SunGlowTint = Color.Lerp(r.SunGlowTint, t.MorningSky, sky * 0.5f);
+                r.CloudLight = Color.Lerp(r.CloudLight, t.MorningSky, sky * 0.35f);
+                r.FogColor = Color.Lerp(r.FogColor, t.MorningSky, sky * 0.3f);
+            }
+            float mist = morning * t.MorningMist;
+            if (mist > 0f)
+            {
+                r.HeightFogStrength = Mathf.Lerp(r.HeightFogStrength, Mathf.Max(r.HeightFogStrength, 0.75f), mist);
+                r.FogStart = r.FogStart * Mathf.Lerp(1f, 0.72f, mist);
+            }
+            return r;
+        }
+
+        /// <summary>0 at night and in the afternoon, 1 from 6:30 to 9:00 (rises from 4:30, falls to 0 at 11:00).</summary>
+        public static float MorningWeight(float hour)
+        {
+            hour = Mathf.Repeat(hour, 24f);
+            if (hour <= 4.5f || hour >= 11f)
+                return 0f;
+            if (hour < 6.5f)
+                return Mathf.SmoothStep(0f, 1f, (hour - 4.5f) / 2f);
+            if (hour > 9f)
+                return Mathf.SmoothStep(1f, 0f, (hour - 9f) / 2f);
+            return 1f;
+        }
+
+        private static Color Multiply(Color a, Color b) => new Color(a.r * b.r, a.g * b.g, a.b * b.b, a.a);
+
         public static AtmosphereState Lerp(in AtmosphereState a, in AtmosphereState b, float t) => new AtmosphereState
         {
             SunColor = Color.Lerp(a.SunColor, b.SunColor, t),
@@ -198,6 +251,14 @@ namespace PocketWilds.Presentation
         }
     }
 
+    /// <summary>T48B what a season changes in the light (SeasonLookSet.Look.Tint). Default: nothing.</summary>
+    public struct SeasonTint
+    {
+        public bool Active;
+        public Color Sun, Ambient, Sky, Cloud, MorningSky, Fog;
+        public float SunIntensity, MorningSkyWeight, FogWeight, MorningMist;
+    }
+
     /// <summary>
     /// Lighting moods over the day (doc 07): morning, day and evening profiles blended from the device's local time,
     /// softened (no black night: late hours stay on a warm evening). Checked once per second, re-applied only when
@@ -222,6 +283,7 @@ namespace PocketWilds.Presentation
         private bool _dirty = true;
         private float _rain;
         private bool _night;
+        private SeasonTint _season;
 
         public WorldAtmosphere(LightingProfile morning, LightingProfile day, LightingProfile evening, Light sun, Camera camera,
             in WorldQualityProfile.Tier quality, LightingProfile night = null)
@@ -253,6 +315,16 @@ namespace PocketWilds.Presentation
             _rain = rain;
             _dirty = true;
         }
+
+        /// <summary>T48B the season's tint (SeasonPresenter): re-applied on the next tick. Default: none.</summary>
+        public void SetSeason(in SeasonTint tint)
+        {
+            _season = tint;
+            _dirty = true;
+            _nextApply = float.NegativeInfinity;
+        }
+
+        public SeasonTint Season => _season;
 
         /// <summary>Events only: the night mood (stars, moonlight) replaces the clock until switched off.</summary>
         public void SetNight(bool night)
@@ -304,6 +376,7 @@ namespace PocketWilds.Presentation
             Hour = Mathf.Repeat(hour, 24f);
             Resolve(Hour, out var a, out var b, out float t);
             var state = _night ? _moods[(int)LightingMood.Night] : AtmosphereState.Lerp(_moods[(int)a], _moods[(int)b], Mathf.SmoothStep(0f, 1f, t));
+            state = AtmosphereState.Seasonal(state, _season, Hour);
             state = AtmosphereState.Rainy(state, _rain);
             state.ApplyScene(_sun, _camera);
             state.ApplyShaderGlobals(_quality);

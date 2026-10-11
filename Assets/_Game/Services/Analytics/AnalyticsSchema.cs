@@ -121,6 +121,9 @@ namespace PocketWilds.Services.Analytics
         EventShopBuy = 204,
         EventQuestDone = 205,
         EventEnd = 206,
+
+        // T48B (doc 08 section 9.5): the special weekends.
+        WeekendSeen = 210,
     }
 
     /// <summary>Screens worth counting: the values of doc 08 section 9.5 (realigned in T37, before any data was sent).</summary>
@@ -299,6 +302,8 @@ namespace PocketWilds.Services.Analytics
             AnalyticsEventId.EventQuestDone => new[] { Field.U(0), Field.I(0), Field.I(1) },
             // event, currency left, Light exponent, tier, Light mantissa
             AnalyticsEventId.EventEnd => new[] { Field.U(0), Field.I(0), Field.I(1), Field.I(2), Field.D(0, 3) },
+            // T48B. kind (WeekendKind: 1 activities to 6 albums)
+            AnalyticsEventId.WeekendSeen => new[] { Field.I(0) },
             // index (1 to 3)
             AnalyticsEventId.WelcomeGift => new[] { Field.I(0) },
             // seconds from Today opened to the last claim, taps, items claimed

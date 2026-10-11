@@ -88,10 +88,28 @@ namespace PocketWilds.Presentation
         private float _density = 1f;
         private uint _seed = 0x9E3779B9u;
 
-        public AmbientLife(AmbientLifeKit kit, PaletteTable palettes, float density = 1f)
+        /// <param name="seasons">T48B: adds the fireflies of Soleil evenings (off until <see cref="SetFireflies"/>). Optional.</param>
+        public AmbientLife(AmbientLifeKit kit, PaletteTable palettes, float density = 1f, SeasonLookSet seasons = null)
         {
             int count = kit != null && kit.material != null ? kit.species.Length : 0;
-            _species = new SpeciesState[count];
+            bool fireflies = seasons != null && seasons.fireflyMaterial != null && seasons.quadMesh != null;
+            _species = new SpeciesState[count + (fireflies ? 1 : 0)];
+            if (fireflies)
+            {
+                var def = seasons.fireflies;
+                def.mesh = seasons.quadMesh;
+                def.behaviour = AmbientLifeBehaviour.Firefly;
+                def.perAnchor = Mathf.Max(1, def.perAnchor);
+                var extents = def.mesh.bounds.extents;
+                _species[count] = new SpeciesState
+                {
+                    Def = def,
+                    // The quad stands in x and y: its glow core is the body that keeps out of every volume.
+                    Radius = Mathf.Max(extents.x, extents.y) * def.scale,
+                    FlyParams = Params(seasons.fireflyMaterial, 0, Vector3.zero, Vector2.zero),
+                    GroundParams = Params(seasons.fireflyMaterial, 0, Vector3.zero, Vector2.zero),
+                };
+            }
             for (int i = 0; i < count; i++)
             {
                 var def = kit.species[i];
@@ -135,7 +153,44 @@ namespace PocketWilds.Presentation
         {
             _density = Mathf.Clamp01(density);
             foreach (var s in _species)
-                s.ActiveSlots = _density <= 0f ? 0 : Mathf.Clamp(Mathf.CeilToInt(s.Def.perAnchor * _density - 0.0001f), 1, s.Def.perAnchor);
+            {
+                float share = s.Def.behaviour == AmbientLifeBehaviour.Firefly ? _density * _fireflies : _density;
+                s.ActiveSlots = share <= 0f ? 0 : Mathf.Clamp(Mathf.CeilToInt(s.Def.perAnchor * share - 0.0001f), 1, s.Def.perAnchor);
+            }
+        }
+
+        private float _fireflies;
+
+        /// <summary>T48B: share of the fireflies out (0 none, 1 all; SeasonPresenter, Soleil evenings). No allocation.</summary>
+        public void SetFireflies(float weight)
+        {
+            weight = Mathf.Clamp01(weight);
+            if (Mathf.Abs(weight - _fireflies) < 0.02f && !(weight == 0f && _fireflies > 0f) && !(weight == 1f && _fireflies < 1f))
+                return;
+            _fireflies = weight;
+            SetDensity(_density);
+        }
+
+        public float FireflyWeight => _fireflies;
+
+        /// <summary>T48B: fireflies flying now (tests).</summary>
+        public int ActiveFireflies
+        {
+            get
+            {
+                int n = 0;
+                foreach (var s in _species)
+                {
+                    if (s.Def.behaviour != AmbientLifeBehaviour.Firefly)
+                        continue;
+                    for (int i = 0; i < s.Count; i++)
+                    {
+                        if (s.Agents[i].Slot < s.ActiveSlots)
+                            n++;
+                    }
+                }
+                return n;
+            }
         }
 
         /// <summary>The refuge's animals: insects fly around them, birds keep away from them.</summary>
@@ -330,6 +385,10 @@ namespace PocketWilds.Presentation
                         case AmbientLifeBehaviour.Bee:
                             TickInsect(ref a, s.Radius, dt, 0.8f, -0.2f, 0.12f, 0.5f, 1.3f, 1.3f, 4f);
                             break;
+                        case AmbientLifeBehaviour.Firefly:
+                            // Slow wide drifts from the flowers' height up to under the crowns' reach.
+                            TickInsect(ref a, s.Radius, dt, 1.3f, -0.1f, 0.85f, 2.5f, 5.5f, 0.3f, 0.9f);
+                            break;
                         default:
                             TickBird(ref a, s, i, dt);
                             if (a.State == Fly)
@@ -376,8 +435,8 @@ namespace PocketWilds.Presentation
                     if (!bird)
                     {
                         // Bob in flight: butterflies float, bees buzz.
-                        float bob = s.Def.behaviour == AmbientLifeBehaviour.Bee ? 0.025f : 0.06f;
-                        float rate = s.Def.behaviour == AmbientLifeBehaviour.Bee ? 13f : 5.5f;
+                        float bob = s.Def.behaviour == AmbientLifeBehaviour.Bee ? 0.025f : s.Def.behaviour == AmbientLifeBehaviour.Firefly ? 0.04f : 0.06f;
+                        float rate = s.Def.behaviour == AmbientLifeBehaviour.Bee ? 13f : s.Def.behaviour == AmbientLifeBehaviour.Firefly ? 1.7f : 5.5f;
                         position.y += Mathf.Sin(time * rate + a.Seed * 6.28f) * bob;
                     }
                     var rotation = Quaternion.LookRotation(-a.Forward, Vector3.up) * Quaternion.Euler(-a.Pitch, 0f, 0f);

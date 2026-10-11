@@ -45,6 +45,9 @@ namespace PocketWilds.Presentation
         private float _nextShower = -1f;
         private uint _random = 0x6A09E667u;
         private float _time;
+        private float _showerFrequency = 1f;
+        private bool _rainAllowed = true;
+        private bool _rainbowAllowed = true;
 
         public WeatherSystem(WeatherKit kit, WorldAtmosphere atmosphere, in WorldQualityProfile.Tier quality)
         {
@@ -82,10 +85,35 @@ namespace PocketWilds.Presentation
             _sunRays = quality.sunRays;
         }
 
+        public float ShowerFrequency => _showerFrequency;
+        public bool RainAllowed => _rainAllowed;
+        public bool RainbowAllowed => _rainbowAllowed;
+
+        /// <summary>
+        /// T48B season rules: showers come <paramref name="showerFrequency"/> times as often (Éveil 1.8); Givre has neither rain nor
+        /// rainbow (a shower running when they stop ends at once, the light dries with it).
+        /// </summary>
+        public void SetSeasonRules(float showerFrequency, bool rain, bool rainbow)
+        {
+            showerFrequency = Mathf.Clamp(showerFrequency, 0.25f, 4f);
+            if (_phase == Phase.Clear && _nextShower >= 0f && !Mathf.Approximately(showerFrequency, _showerFrequency))
+                _nextShower = _time + Mathf.Max(0f, _nextShower - _time) * _showerFrequency / showerFrequency;
+            _showerFrequency = showerFrequency;
+            _rainAllowed = rain;
+            _rainbowAllowed = rainbow;
+            bool stop = (!rain && _phase != Phase.Clear && _phase != Phase.Rainbow) || (!rainbow && _phase == Phase.Rainbow);
+            if (!stop || _kit == null)
+                return;
+            Rain = 0f;
+            Rainbow = 0f;
+            EndShower(_time);
+            _atmosphere?.SetRain(0f);
+        }
+
         /// <summary>Starts a shower now (events, captures, tests). Its length is drawn from the kit range.</summary>
         public void StartShower(float time)
         {
-            if (_kit == null)
+            if (_kit == null || !_rainAllowed)
                 return;
             Enter(Phase.RainIn, time, _kit.rampSeconds);
         }
@@ -106,14 +134,14 @@ namespace PocketWilds.Presentation
                 return;
             _time = time;
             if (_nextShower < 0f)
-                _nextShower = time + Mathf.Lerp(_kit.showerEveryMinutes.x, _kit.showerEveryMinutes.y, Next()) * 60f;
+                _nextShower = time + Mathf.Lerp(_kit.showerEveryMinutes.x, _kit.showerEveryMinutes.y, Next()) * 60f / _showerFrequency;
             float t = _phaseLength > 0f && !float.IsPositiveInfinity(_phaseLength) ? Mathf.Clamp01((time - _phaseStart) / _phaseLength) : 0f;
             switch (_phase)
             {
                 case Phase.Clear:
                     Rain = 0f;
                     Rainbow = 0f;
-                    if (time >= _nextShower)
+                    if (time >= _nextShower && _rainAllowed)
                         Enter(Phase.RainIn, time, _kit.rampSeconds);
                     break;
                 case Phase.RainIn:
@@ -132,7 +160,7 @@ namespace PocketWilds.Presentation
                     {
                         Rain = 0f;
                         bool daylight = _atmosphere == null || (!_atmosphere.Night && _atmosphere.Hour > 7.5f && _atmosphere.Hour < 18.5f);
-                        if (daylight)
+                        if (daylight && _rainbowAllowed)
                             Enter(Phase.Rainbow, time, _kit.rainbowSeconds);
                         else
                             EndShower(time);
@@ -226,7 +254,7 @@ namespace PocketWilds.Presentation
         {
             _phase = Phase.Clear;
             _phaseLength = 0f;
-            _nextShower = time + Mathf.Lerp(_kit.showerEveryMinutes.x, _kit.showerEveryMinutes.y, Next()) * 60f;
+            _nextShower = time + Mathf.Lerp(_kit.showerEveryMinutes.x, _kit.showerEveryMinutes.y, Next()) * 60f / _showerFrequency;
         }
 
         private float Next()

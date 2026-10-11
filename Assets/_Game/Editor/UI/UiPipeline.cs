@@ -145,6 +145,9 @@ namespace PocketWilds.Editor.UI
             // T44C visitor variants (never in eggs).
             { "variant.rabbit.meadow_visitor.name", "Meadow Rabbit", "Lapin des prés" },
             { "variant.rabbit.snow_visitor.name", "Snow Rabbit", "Lapin de neige" },
+            // T48B season visitors (palette variants, never in eggs).
+            { "variant.fawn.white_visitor.name", "White Fawn", "Faon blanc" },
+            { "variant.squirrel.sun_visitor.name", "Sun Squirrel", "Écureuil soleil" },
             { "species.squirrel.name", "Squirrel", "Écureuil" },
             { "variant.squirrel.red.name", "Red", "Roux" },
             { "variant.squirrel.brown.name", "Brown", "Brun" },
@@ -336,6 +339,10 @@ namespace PocketWilds.Editor.UI
                 table.languageCode = Languages[language];
                 for (int i = 0; i < Texts.GetLength(0); i++)
                     table.Set(Texts[i, 0], Texts[i, language + 1]);
+                // T48B: the seasons and the special weekends (card, chip sheet, the stored weekend notification).
+                var seasons = SeasonTexts.Texts;
+                for (int i = 0; i < seasons.GetLength(0); i++)
+                    table.Set(seasons[i, 0], seasons[i, language + 1]);
                 // T36: the rendez-vous texts (wishes, journal, Today, gifts) keep their own table.
                 var daily = DailyVisitTexts.Texts;
                 for (int i = 0; i < daily.GetLength(0); i++)
@@ -792,7 +799,9 @@ namespace PocketWilds.Editor.UI
             var card = BuildWishCard(root, tokens);
             // T48: the Event button, third on the rail (EventUiPipeline.AddHudEvent).
             var eventRoot = EventUiPipeline.AddHudEvent(rail, hud, tokens);
-            hud.SetDailyReferences(rail, new[] { playRoot, todayRoot, eventRoot }, todayButton, todayRoot, todayGroup, todayIcon.rectTransform,
+            // T48B: the weekend chip, in the Event button's slot (weekends never run during a big event).
+            var weekendRoot = SeasonUiPipeline.AddHudWeekend(rail, hud, tokens);
+            hud.SetDailyReferences(rail, new[] { playRoot, todayRoot, eventRoot, weekendRoot }, todayButton, todayRoot, todayGroup, todayIcon.rectTransform,
                 todayDot.rectTransform, gemsCollect, card);
         }
 

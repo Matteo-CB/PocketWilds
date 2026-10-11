@@ -386,7 +386,10 @@ namespace PocketWilds.Simulation
             _journal.Add(JournalMoment.Season, (uint)season, 0, Key("page.season." + season.ToString(CultureInfo.InvariantCulture) + ".name"));
         }
 
-        private int CurrentSeason() => AlbumHooks.SeasonOfMonth(TimeZoneInfo.ConvertTime(DailyDay.Now(_state, _clock), _journal.Zone).Month);
+        /// <summary>T48B the active month map (Remote Config « events.refuge_seasons »); null: the default map.</summary>
+        public SeasonConfig? Seasons { get; set; }
+
+        private int CurrentSeason() => SeasonConfig.SeasonNumber(Seasons, TimeZoneInfo.ConvertTime(DailyDay.Now(_state, _clock), _journal.Zone).Month);
 
         // ------------------------------------------------------------------------------------------- bonds and companions
 

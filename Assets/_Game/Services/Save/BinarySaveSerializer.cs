@@ -37,8 +37,9 @@ namespace PocketWilds.Services.Save
         /// 8: Discovery egg stock (World 3). 9: Renewal memory and Essence tree. 10: daily rendez-vous and inventory (T36).
         /// 11: activities (T37). 12: expeditions (T42). 13: garden (T43). 14: albums (T44A). 15: achievements and profile
         /// items (T44B). 16: the refuge journal and the rare visitors (T44C). 17: accessories worn and companions (T47). 18: the event instances (T48).
+        /// 19: the season card and the special weekend seen (T48B).
         /// </summary>
-        public const int CurrentVersion = 18;
+        public const int CurrentVersion = 19;
     }
 
     /// <summary>
@@ -73,6 +74,7 @@ namespace PocketWilds.Services.Save
         private const ushort JournalVersion = 1;
         private const ushort CosmeticsVersion = 1;
         private const ushort EventsVersion = 1;
+        private const ushort SeasonsVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -219,6 +221,10 @@ namespace PocketWilds.Services.Save
 
             mark = BeginSection(output, SaveSectionId.Events, EventsVersion);
             WriteEvents(output, state.Events);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Seasons, SeasonsVersion);
+            WriteSeasons(output, state.Seasons);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -418,6 +424,9 @@ namespace PocketWilds.Services.Save
                 // Saves older than schema 18 have no events: none was ever entered (T48).
                 if (document.TryGetSection(SaveSectionId.Events, out var events))
                     ReadEvents(events, state.Events);
+                // Saves older than schema 19 have no seasons: the first launch stores the season as seen, no card (T48B).
+                if (document.TryGetSection(SaveSectionId.Seasons, out var seasons))
+                    ReadSeasons(seasons, state.Seasons);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -1442,6 +1451,20 @@ namespace PocketWilds.Services.Save
                 if (companions.IndexOf(record.Species) < 0)
                     companions.Companions.Add(record);
             }
+        }
+
+        private static void WriteSeasons(ByteBufferWriter output, SeasonState seasons)
+        {
+            output.WriteInt32(seasons.CardKey);
+            output.WriteInt32(seasons.WeekendSeenKey);
+        }
+
+        private static void ReadSeasons(SaveSection section, SeasonState seasons)
+        {
+            RequireVersion(section, SeasonsVersion);
+            var r = section.CreateReader();
+            seasons.CardKey = r.ReadInt32();
+            seasons.WeekendSeenKey = r.ReadInt32();
         }
 
         private static void WriteEvents(ByteBufferWriter output, EventState events)

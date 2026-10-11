@@ -623,6 +623,8 @@ namespace PocketWilds.Presentation
             TickOutfit(deltaTime);
             // T48: the event hub, its HUD button and the end summary.
             TickEvents(time, deltaTime);
+            // T48B: the weekend chip and the season card (a calm refuge only).
+            TickSeasons(time);
             _modalView?.Tick(deltaTime);
             _summaryView?.Tick(deltaTime);
             if (_shop != null)

@@ -265,6 +265,10 @@ namespace PocketWilds.Editor.Events
 
         private static long EstimateBytes(string path)
         {
+            // T48B: a texture counts its size on the phone (Android format, max size, mips) from its import settings: the editor's
+            // runtime size followed the editor's state (formats, loaded mips, readable copies) and moved by several MB.
+            if (AssetImporter.GetAtPath(path) is TextureImporter importer)
+                return AndroidTextureBytes(importer);
             long total = 0;
             bool runtime = false;
             foreach (var obj in AssetDatabase.LoadAllAssetsAtPath(path))
@@ -278,6 +282,45 @@ namespace PocketWilds.Editor.Events
             if (runtime)
                 return total;
             return File.Exists(path) ? new FileInfo(path).Length : 0L;
+        }
+
+        /// <summary>Bytes of a texture on Android: its size after the max size, the format's bits per pixel, × 4/3 with mips.</summary>
+        public static long AndroidTextureBytes(TextureImporter importer)
+        {
+            importer.GetSourceTextureWidthAndHeight(out int width, out int height);
+            var android = importer.GetPlatformTextureSettings("Android");
+            int max = android.overridden ? android.maxTextureSize : importer.maxTextureSize;
+            float scale = Mathf.Min(1f, (float)max / Mathf.Max(1, Mathf.Max(width, height)));
+            long w = Math.Max(1, (long)Mathf.Round(width * scale));
+            long h = Math.Max(1, (long)Mathf.Round(height * scale));
+            var format = android.overridden ? android.format : importer.GetAutomaticFormat("Android");
+            double bytes = w * h * BitsPerPixel(format) / 8.0;
+            if (importer.mipmapEnabled)
+                bytes *= 4.0 / 3.0;
+            return (long)Math.Ceiling(bytes);
+        }
+
+        private static double BitsPerPixel(TextureImporterFormat format)
+        {
+            switch (format)
+            {
+                case TextureImporterFormat.ASTC_4x4: case TextureImporterFormat.ASTC_HDR_4x4: return 8.0;
+                case TextureImporterFormat.ASTC_5x5: case TextureImporterFormat.ASTC_HDR_5x5: return 128.0 / 25.0;
+                case TextureImporterFormat.ASTC_6x6: case TextureImporterFormat.ASTC_HDR_6x6: return 128.0 / 36.0;
+                case TextureImporterFormat.ASTC_8x8: case TextureImporterFormat.ASTC_HDR_8x8: return 2.0;
+                case TextureImporterFormat.ASTC_10x10: case TextureImporterFormat.ASTC_HDR_10x10: return 1.28;
+                case TextureImporterFormat.ASTC_12x12: case TextureImporterFormat.ASTC_HDR_12x12: return 128.0 / 144.0;
+                case TextureImporterFormat.ETC_RGB4: case TextureImporterFormat.ETC2_RGB4: case TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA:
+                case TextureImporterFormat.ETC_RGB4Crunched: return 4.0;
+                case TextureImporterFormat.ETC2_RGBA8: case TextureImporterFormat.ETC2_RGBA8Crunched: case TextureImporterFormat.Alpha8:
+                case TextureImporterFormat.R8: return 8.0;
+                case TextureImporterFormat.RGB16: case TextureImporterFormat.RGBA16: case TextureImporterFormat.R16: case TextureImporterFormat.RG16:
+                    return 16.0;
+                case TextureImporterFormat.RGB24: return 24.0;
+                case TextureImporterFormat.RGBAHalf: return 64.0;
+                case TextureImporterFormat.RGBAFloat: return 128.0;
+                default: return 32.0; // RGBA32 and anything unknown: the safe upper bound.
+            }
         }
     }
 }

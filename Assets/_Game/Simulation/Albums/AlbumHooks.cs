@@ -231,11 +231,17 @@ namespace PocketWilds.Simulation
                 _albums.GrantFixed(sticker, false);
         }
 
-        /// <summary>The refuge season of the local date: 1 Éveil (March to May), 2 Soleil, 3 Récolte, 4 Givre (December to February).</summary>
+        /// <summary>T48B the active month map (Remote Config « events.refuge_seasons »); null: the default map.</summary>
+        public SeasonConfig? Seasons { get; set; }
+
+        /// <summary>
+        /// The refuge season of the local date under the active month map: by default 1 Éveil (March to May), 2 Soleil, 3 Récolte,
+        /// 4 Givre (December to February).
+        /// </summary>
         public int CurrentSeason()
         {
             var zone = _progression?.Config.TimeZone ?? TimeZoneInfo.Local;
-            return SeasonOfMonth(TimeZoneInfo.ConvertTime(_ctx.Now, zone).Month);
+            return SeasonConfig.SeasonNumber(Seasons, TimeZoneInfo.ConvertTime(_ctx.Now, zone).Month);
         }
 
         public static int SeasonOfMonth(int month) => month >= 3 && month <= 5 ? 1 : month >= 6 && month <= 8 ? 2 : month >= 9 && month <= 11 ? 3 : 4;

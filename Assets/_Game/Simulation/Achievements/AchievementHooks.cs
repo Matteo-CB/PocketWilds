@@ -506,12 +506,15 @@ namespace PocketWilds.Simulation
             SyncJournal();
         }
 
-        /// <summary>The refuge season of today, counted once (ACH-199; a winter spans December to February).</summary>
+        /// <summary>T48B the active month map (Remote Config « events.refuge_seasons »); null: the default map.</summary>
+        public SeasonConfig? Seasons { get; set; }
+
+        /// <summary>The refuge season of today, counted once per season run (ACH-199; by default a winter spans December to February).</summary>
         public void CountSeason()
         {
             var now = DailyDay.Now(_state, _clock);
-            int season = AlbumHooks.SeasonOfMonth(now.Month);
-            int year = now.Month <= 2 ? now.Year - 1 : now.Year;
+            int season = SeasonConfig.SeasonNumber(Seasons, now.Month);
+            int year = SeasonConfig.RunYear(Seasons, now.Year, now.Month);
             int key = year * 4 + season;
             var s = _achievements.State;
             if (s.SeasonKey == key)

@@ -1432,9 +1432,31 @@ namespace PocketWilds.Services.Analytics
             Record(ref e);
         }
 
+        /// <summary>T48B weekend_seen (210): the first time each special weekend is seen on screen.</summary>
+        public void AttachWeekends(WeekendService? weekends)
+        {
+            if (_weekends != null)
+                _weekends.Seen -= _onWeekendSeen;
+            _weekends = weekends;
+            if (weekends == null)
+                return;
+            _onWeekendSeen ??= OnWeekendSeen;
+            weekends.Seen += _onWeekendSeen;
+        }
+
+        private WeekendService? _weekends;
+        private Action<WeekendKind>? _onWeekendSeen;
+
+        private void OnWeekendSeen(WeekendKind kind)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.WeekendSeen) { I0 = (int)kind };
+            Record(ref e);
+        }
+
         public void AttachJournal(JournalService? journal, VisitorService? visitors)
         {
             DetachJournal();
+            AttachWeekends(null);
             _journal = journal;
             _visitors = visitors;
             _onJournalWritten ??= OnJournalWritten;
@@ -1505,6 +1527,7 @@ namespace PocketWilds.Services.Analytics
         public void Dispose()
         {
             DetachJournal();
+            AttachWeekends(null);
             DetachCosmetics();
             DetachAchievements();
             DetachAlbums();

@@ -33,6 +33,8 @@ namespace PocketWilds.Presentation
         [SerializeField] private WorldQualityProfile _worldQuality;
         [Tooltip("Butterflies, bees and birds of the biome, spawned at the chunks' VFX anchors (T33). Optional.")]
         [SerializeField] private AmbientLifeKit _ambientLife;
+        [Tooltip("T48B: the season looks (DEF_SeasonLooks): palette rows, light, weather rules, drift and fireflies. Optional.")]
+        [SerializeField] private SeasonLookSet _seasonLooks;
         [SerializeField] private Light _sun;
         [SerializeField] private RefugeCameraRig _cameraRig;
         [Tooltip("Pan limits around the egg spawn (half size, m). Keeps the island edge from filling the screen.")]
@@ -98,6 +100,7 @@ namespace PocketWilds.Presentation
         private AmbientLife _life;
         private WorldAtmosphere _atmosphere;
         private WeatherSystem _weather;
+        private SeasonPresenter _seasons;
         private WorldChunk _startChunk;
         private Action<int, ChunkStreamState> _onChunkState;
         private Action<QualityState> _onQuality;
@@ -125,6 +128,8 @@ namespace PocketWilds.Presentation
         public AmbientLife Life => _life;
         public WorldAtmosphere Atmosphere => _atmosphere;
         public WeatherSystem Weather => _weather;
+        /// <summary>T48B the season on screen (palettes, light, drift, fireflies); captures force a season through it.</summary>
+        public SeasonPresenter Seasons => _seasons;
 
         private WorldQualityProfile.Tier WorldQuality(QualityTier tier) =>
             _worldQuality != null ? _worldQuality.Get(tier) : WorldQualityProfile.Default(tier);
@@ -191,7 +196,7 @@ namespace PocketWilds.Presentation
             var ground = WorldQuality(quality.Ground);
             _scatter = new ScatterRenderer(context.Palettes, ground.scatterDensity);
             _scatter.SetDistanceFade(ground.scatterFadeStart, ground.scatterFadeEnd);
-            _life = _ambientLife != null ? new AmbientLife(_ambientLife, context.Palettes, WorldQuality(quality.Life).ambientLifeDensity) : null;
+            _life = _ambientLife != null ? new AmbientLife(_ambientLife, context.Palettes, WorldQuality(quality.Life).ambientLifeDensity, _seasonLooks) : null;
             while (!_streamer.PinnedSettled)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -245,6 +250,8 @@ namespace PocketWilds.Presentation
             }
             else
                 PresentationQuality.Apply(quality);
+            // T48B: the season's rows, light, weather rules, drift and fireflies; Changed switches them without a reload.
+            _seasons = new SeasonPresenter(context.Seasons, context.Palettes, _seasonLooks, _atmosphere, _weather, _life, WorldQuality(quality.Weather));
             if (_streamer == null)
                 GameLog.Warning(LogCategory.Presentation, "Entered without PrepareAsync: no streamed world.");
             if (_startChunk != null && _cameraRig != null && _startChunk.EggSpawn != null)
@@ -403,6 +410,7 @@ namespace PocketWilds.Presentation
             var weather = WorldQuality(quality.Weather);
             _weather?.SetQuality(weather);
             _atmosphere?.SetQuality(weather);
+            _seasons?.SetQuality(weather);
             var camera = _cameraRig != null ? _cameraRig.Camera : Camera.main;
             LightingProfile.ApplyQuality(_sun, camera, quality);
             _refuge?.RefreshPresentationQuality();
@@ -467,6 +475,8 @@ namespace PocketWilds.Presentation
             _scatter = null;
             _life?.Clear();
             _life = null;
+            _seasons?.Dispose();
+            _seasons = null;
             _atmosphere = null;
             _weather = null;
             _startChunk = null;
@@ -581,6 +591,7 @@ namespace PocketWilds.Presentation
             _journalCaptures?.Tick(Time.unscaledTime);
             _weather?.Tick(Time.unscaledTime);
             _atmosphere?.Tick(Time.unscaledTime);
+            _seasons?.Tick(Time.unscaledTime);
             var camera = _cameraRig != null ? _cameraRig.Camera : null;
             _scatter?.Render(camera);
             if (_life != null)
@@ -590,6 +601,8 @@ namespace PocketWilds.Presentation
             }
             if (_weather != null && _cameraRig != null)
                 _weather.Render(camera, _refuge != null ? _refuge.ViewFocus : _cameraRig.Focus);
+            if (_seasons != null && _cameraRig != null)
+                _seasons.Render(camera, _refuge != null ? _refuge.ViewFocus : _cameraRig.Focus);
             if (_context != null)
                 UpdateAmbienceMix();
         }

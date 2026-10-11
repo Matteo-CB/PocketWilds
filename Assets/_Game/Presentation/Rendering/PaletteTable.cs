@@ -9,7 +9,8 @@ namespace PocketWilds.Presentation
     /// <summary>
     /// Every palette (animal variants, eggs, then world palettes) in one tiny global texture, 8 colors per row.
     /// Built once at boot. A new palette is data only: no material, no texture asset, no code.
-    /// Shaders read the row from the per-renderer Shader User Value.
+    /// Shaders read the row from the per-renderer Shader User Value. T48B: the texture keeps its CPU copy (8 x rows x 4 bytes,
+    /// 16 KB at 512 rows) so a season rewrites a few world rows in place and uploads them in one Apply.
     /// </summary>
     public sealed class PaletteTable : IDisposable
     {
@@ -20,6 +21,7 @@ namespace PocketWilds.Presentation
 
         private readonly Dictionary<ContentId, int> _rowById;
         private Texture2D _texture;
+        private int _pendingRows;
 
         public PaletteTable(ContentRegistry registry)
         {
@@ -49,7 +51,7 @@ namespace PocketWilds.Presentation
                 hideFlags = HideFlags.DontSave,
             };
             _texture.SetPixels32(pixels);
-            _texture.Apply(updateMipmaps: false, makeNoLongerReadable: true);
+            _texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
 
             Shader.SetGlobalTexture(PaletteTextureId, _texture);
             Shader.SetGlobalFloat(RowCountId, rows);
@@ -62,6 +64,50 @@ namespace PocketWilds.Presentation
 
         /// <summary>Row of a variant or egg palette.</summary>
         public bool TryGetRow(ContentId id, out int row) => _rowById.TryGetValue(id, out row);
+
+        /// <summary>T48B the 8 colors a row holds now (CPU copy of the texture). No allocation.</summary>
+        public void ReadRow(int row, Color32[] into)
+        {
+            var pixels = _texture.GetPixelData<Color32>(0);
+            for (int c = 0; c < Columns; c++)
+                into[c] = pixels[row * Columns + c];
+        }
+
+        /// <summary>
+        /// T48B rewrites one row in the CPU copy from colors[offset..offset+8). False when it already holds them (nothing to upload).
+        /// The upload waits for <see cref="ApplyRows"/>. No allocation.
+        /// </summary>
+        public bool WriteRow(int row, Color32[] colors, int offset = 0)
+        {
+            if (_texture == null || row < 0 || row >= RowCount)
+                return false;
+            var pixels = _texture.GetPixelData<Color32>(0);
+            bool changed = false;
+            for (int c = 0; c < Columns; c++)
+            {
+                int at = row * Columns + c;
+                var color = colors[offset + c];
+                var old = pixels[at];
+                if (old.r == color.r && old.g == color.g && old.b == color.b && old.a == color.a)
+                    continue;
+                pixels[at] = color;
+                changed = true;
+            }
+            if (changed)
+                _pendingRows++;
+            return changed;
+        }
+
+        /// <summary>T48B uploads the rows written since the last call in one Apply; returns how many rows changed (0: no upload).</summary>
+        public int ApplyRows()
+        {
+            int rows = _pendingRows;
+            if (rows == 0 || _texture == null)
+                return 0;
+            _texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+            _pendingRows = 0;
+            return rows;
+        }
 
         private void Write(Color32[] pixels, int row, ContentId id, Color32[] palette)
         {

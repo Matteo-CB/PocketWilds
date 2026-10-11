@@ -566,9 +566,11 @@ namespace PocketWilds.Editor.UI
                 var icon = UiPipeline.AddImage("Icon", iconBack.rectTransform, Load(Icon("ICO_Info")), Color.white, Image.Type.Simple);
                 UiPipeline.Place(icon.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 6f), new Vector2(84f, 84f));
 
-                var title = UiPipeline.AddText("Title", card, TextRole.Heading, 70f, tokens.textPrimary, "Title", 52f);
+                // Text spacing rule: 40 from the card's edges, and down to 40 pt so a long title (« La saison Récolte commence »)
+                // shrinks instead of running past the card.
+                var title = UiPipeline.AddText("Title", card, TextRole.Heading, 70f, tokens.textPrimary, "Title", 40f);
                 title.alignment = TextAlignmentOptions.Center;
-                UiPipeline.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -124f), new Vector2(810f, 96f));
+                UiPipeline.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -124f), new Vector2(780f, 96f));
                 var body = UiPipeline.AddText("Body", card, TextRole.Body, 42f, tokens.textPrimary, "");
                 body.alignment = TextAlignmentOptions.Top;
                 body.textWrappingMode = TextWrappingModes.Normal;

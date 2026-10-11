@@ -59,6 +59,9 @@ namespace PocketWilds.Simulation
         /// <summary>T48: the event instances entered (frozen numbers, currency, track, egg, shop, quests, challenges, end).</summary>
         public EventState Events { get; } = new EventState();
 
+        /// <summary>T48B: the season card already shown and the special weekend already seen (schema 19).</summary>
+        public SeasonState Seasons { get; } = new SeasonState();
+
         /// <summary>The welcome is over: the tutorial wish was done, or the save already holds 5 animals (doc 01, section 1.1).</summary>
         public bool IsOnboardingDone => DailyVisit.OnboardingDone || Collection.Count >= 5;
 

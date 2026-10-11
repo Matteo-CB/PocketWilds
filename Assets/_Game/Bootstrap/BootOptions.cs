@@ -45,6 +45,9 @@ namespace PocketWilds.Bootstrap
         /// <summary>T48: the events calendar replacing the default one (empty in this build); tests and captures inject « event.test ».</summary>
         public PocketWilds.Simulation.EventCalendar EventCalendarOverride;
 
+        /// <summary>T48B captures: the season shown whatever the date (null follows the month map). Read by the season service.</summary>
+        public PocketWilds.Simulation.RefugeSeason? SeasonOverride;
+
         /// <summary>When false, stays in the bootstrap scene after boot (tests).</summary>
         public bool LoadTargetScene = true;
 

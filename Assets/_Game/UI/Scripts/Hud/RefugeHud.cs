@@ -17,7 +17,7 @@ namespace PocketWilds.UI
     /// owned in a small round badge and its dot; while a game plays the whole HUD fades out and catches no touch.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IDailyHud, IPlayHud, IAlbumHud, IProfileHud, IEventHud, IMotionSettings
+    public sealed partial class RefugeHud : MonoBehaviour, IRefugeHud, IProgressionHud, IEggChoiceHud, IDailyHud, IPlayHud, IAlbumHud, IProfileHud, IEventHud, IMotionSettings
     {
         private const float PulseSeconds = 0.4f;
 

@@ -846,7 +846,7 @@ namespace PocketWilds.Tests.EditMode
             document.RemoveSection(SaveSectionId.Events);
             document.SchemaVersion = 17;
             SaveMigrations.CreatePipeline().Migrate(document);
-            Assert.AreEqual(18, document.SchemaVersion);
+            Assert.AreEqual(SaveSchema.CurrentVersion, document.SchemaVersion);
             var migrated = serializer.Deserialize(document);
             Assert.AreEqual(0, migrated.Events.Instances.Count);
         }

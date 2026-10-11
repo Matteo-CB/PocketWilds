@@ -67,6 +67,18 @@ namespace PocketWilds.Simulation
         public bool Free;
         public int Stock;
 
+        /// <summary>
+        /// T48B the Week-end des Œufs' bonus (events.weekend.egg_novelty_bonus, 0.5 = +50 %) on the new species and new color
+        /// protections, already applied to <see cref="NewSpeciesBonus"/> and <see cref="NewVariantBonus"/>; 0 outside it.
+        /// </summary>
+        public double NoveltyBonus;
+
+        /// <summary>
+        /// T48B Discovery eggs: the chance the next egg gives something new (a species or a color not discovered yet): 1 while
+        /// anything is left, 0 when nothing is left to discover.
+        /// </summary>
+        public double NoveltyChance;
+
         public void Clear()
         {
             Egg = ContentId.None;
@@ -80,6 +92,8 @@ namespace PocketWilds.Simulation
             PityHardLimit = 0;
             Free = false;
             Stock = 0;
+            NoveltyBonus = 0.0;
+            NoveltyChance = 0.0;
         }
     }
 

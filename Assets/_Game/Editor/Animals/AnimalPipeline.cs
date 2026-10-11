@@ -481,6 +481,10 @@ namespace PocketWilds.Editor.Animals
                     pattern: Hex("C9CED6"), channel: PatternChannel.MaskA, strength: 12, secret: true, mastery: 20),
                 Variant("variant.squirrel.goldenhazel", RarityTier.Legendary, Hex("C99653"), Hex("B58542"), Hex("F3E3C3"), Hex("3A2A22"), Hex("1E1414"),
                     pattern: Hex("F2DFB0"), channel: PatternChannel.MaskB, strength: 14, secret: true, mastery: 30),
+                // T48B visitor variant « Écureuil soleil » (season 2, Soleil): warm golden coat, sunny orange tail, honey tail tip and
+                // ear tufts (mask A). Palette only, secret: never in eggs, pities or genetics.
+                Variant("variant.squirrel.sun_visitor", RarityTier.Rare, Hex("E8B24E"), Hex("E2893A"), Hex("FBEFD2"), Hex("5A3A2E"), Hex("1E1414"),
+                    pattern: Hex("F7DA7A"), channel: PatternChannel.MaskA, strength: 14, secret: true, visitor: true),
             };
             EditorUtility.SetDirty(asset);
             return asset;
@@ -616,6 +620,19 @@ namespace PocketWilds.Editor.Animals
             ("Idle_B", "FieldHamsterStash"),
         };
 
+        /// <summary>
+        /// T48B the two season visitor variants (variant.fawn.white_visitor, variant.squirrel.sun_visitor): palette variants on the
+        /// existing meshes, so only the Squirrel and Fawn definitions are rewritten (no model export, no prefab).
+        /// </summary>
+        [MenuItem("Pocket Wilds/Animals/Update Season Visitor Variants (T48B)", priority = 158)]
+        public static void UpdateSeasonVisitorVariants()
+        {
+            EnsureSquirrelDefinition();
+            EnsureFawnDefinition();
+            AssetDatabase.SaveAssets();
+            Debug.Log("[AnimalPipeline] Squirrel and Fawn definitions updated with their season visitor variants.");
+        }
+
         [MenuItem("Pocket Wilds/Animals/Build Field Hamster (T47)", priority = 157)]
         public static void BuildFieldHamster()
         {
@@ -722,6 +739,10 @@ namespace PocketWilds.Editor.Animals
                     pattern: Hex("F2DDA8"), channel: PatternChannel.MaskB, strength: 14, secret: true, mastery: 30),
                 Variant("variant.fawn.daisy", RarityTier.Epic, Hex("B38A66"), Hex("EBC8B8"), Hex("F5EADA"), Hex("4F3A2C"), Hex("1E1414"),
                     pattern: Hex("FFFDF2"), channel: PatternChannel.MaskA, strength: 16, secret: true),
+                // T48B visitor variant « Faon blanc » (season 1, Éveil): pearly white coat, blossom pink ears, soft pale blossom spots
+                // (mask A), silver hooves. Palette only, secret: never in eggs, pities or genetics.
+                Variant("variant.fawn.white_visitor", RarityTier.Rare, Hex("F7F6F1"), Hex("F5CFD6"), Hex("FFFFFF"), Hex("C7CCD6"), Hex("1E1820"),
+                    pattern: Hex("F3E3EC"), channel: PatternChannel.MaskA, strength: 10, secret: true, visitor: true),
             };
             EditorUtility.SetDirty(asset);
             return asset;
