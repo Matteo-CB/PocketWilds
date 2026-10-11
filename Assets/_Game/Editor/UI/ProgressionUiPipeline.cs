@@ -280,6 +280,7 @@ namespace PocketWilds.Editor.UI
                 content.gameObject.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Folder);
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, UpgradesPath).GetComponent<UpgradesScreen>();
             }
             finally
@@ -430,9 +431,20 @@ namespace PocketWilds.Editor.UI
             UiPipeline.ConfigureButton(button, back);
             label = UiPipeline.AddText("Label", back.rectTransform, TextRole.Button, 56f, tokens.textPrimary, "OK", 40f);
             label.alignment = TextAlignmentOptions.Center;
-            UiPipeline.Place(label.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 8f), new Vector2(size.x - 50f, 96f));
+            UiPipeline.Place(label.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, PillCenter(size.y)),
+                new Vector2(size.x - 50f, 96f));
             return button;
         }
+
+        /// <summary>
+        /// The visible pill of UI_Button_Primary_9Slice sits above its rect's center: the sprite (168 px of borders) has 6 px
+        /// clear at the top and 35 px of soft shadow at the bottom, borders shrink with a rect under 168. Texts center on the
+        /// pill, never on the rect (owner report 2026-10-11: « Jouer » touched the top edge).
+        /// </summary>
+        internal static float PillCenter(float height) => 14.5f * Mathf.Min(1f, height / 168f);
+
+        /// <summary>Half the visible pill's height for a button of that height (see <see cref="PillCenter"/>).</summary>
+        internal static float PillHalfHeight(float height) => (height - 41f * Mathf.Min(1f, height / 168f)) * 0.5f;
 
         /// <summary>A Light price: icon and value, centered on <paramref name="position"/> for a typical short value.</summary>
         private static TMP_Text PriceRow(RectTransform parent, UiColorTokens tokens, Vector2 anchor, Vector2 position, float size, out RectTransform iconRect)
@@ -497,6 +509,7 @@ namespace PocketWilds.Editor.UI
                     open, openBack, openLabel);
                 content.SetActive(false);
                 canvas.enabled = false;
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, ZoneOpenPath).GetComponent<ZoneOpenScreen>();
             }
             finally
@@ -592,6 +605,7 @@ namespace PocketWilds.Editor.UI
                 screen.SetRowReferences(sourcesHeader, sourceRows, sourceNames, sourceValues, trackHeader, trackRows, checks, dots, levels, rewards);
                 content.SetActive(false);
                 canvas.enabled = false;
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, RefugeLevelPath).GetComponent<RefugeLevelScreen>();
             }
             finally
@@ -634,6 +648,7 @@ namespace PocketWilds.Editor.UI
                     claim, claimLabel);
                 content.SetActive(false);
                 canvas.enabled = false;
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, LevelRewardPath).GetComponent<LevelRewardScreen>();
             }
             finally
@@ -690,6 +705,7 @@ namespace PocketWilds.Editor.UI
                     price, open, openBack, openLabel);
                 content.SetActive(false);
                 canvas.enabled = false;
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, BiomeGatePath).GetComponent<BiomeGateScreen>();
             }
             finally

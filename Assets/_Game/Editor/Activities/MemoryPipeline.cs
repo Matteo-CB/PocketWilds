@@ -303,6 +303,7 @@ namespace PocketWilds.Editor.Activities
                 canvas.enabled = false;
 
                 Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath));
+                UiPipeline.MaskScrollContent(root);
                 var saved = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath).GetComponent<MemoryScreenView>();
                 report.Add($"{MemoryLayout.ScreenPrefabName}: {cards.Length} cards, {glints.Length} glints, {hearts.Length} hearts, {paws.Length} pawprints"
                            + (saved.Valid ? "" : " (INCOMPLETE)"));

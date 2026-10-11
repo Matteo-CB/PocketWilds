@@ -45,7 +45,7 @@ namespace PocketWilds.Tests.PlayMode
                 Object.Destroy(bootstrap.gameObject);
             try
             {
-                Directory.Delete(_saveDir, true);
+                TestSaveDir.Release(_saveDir);
             }
             catch (IOException)
             {
@@ -164,20 +164,26 @@ namespace PocketWilds.Tests.PlayMode
             Time.timeScale = 3f;
             bool special = controller.SpecialCount > 0;
             frames = 0;
+            bool ringSeen = false;
             while (special && game.ActiveSpecial == NutDropItemKind.None && game.Elapsed < 50f && presenter.Playing && frames++ < 60 * 60)
             {
                 pilot.Steer(SpecialFalling(controller));
                 yield return null;
+                ringSeen |= stage.RingShown;
                 AssertClear(stage);
             }
             Time.timeScale = 1f;
             if (special && game.ActiveSpecial != NutDropItemKind.None)
             {
                 // The stage reads the game's events in its own Update, before or after the game's tick depending on the
-                // scripts' order: the ring (0.75 s) shows within a few frames.
-                for (int wait = 0; wait < 5 && !stage.RingShown; wait++)
+                // scripts' order: the ring (0.75 s) shows within a few frames. At ×3 a slow editor frame can outlast it,
+                // so every frame counts.
+                for (int wait = 0; wait < 5 && !ringSeen; wait++)
+                {
                     yield return null;
-                Assert.IsTrue(stage.RingShown, "A soft ring around the basket (H-VFX-ACT-003-04).");
+                    ringSeen |= stage.RingShown;
+                }
+                Assert.IsTrue(ringSeen, "A soft ring around the basket (H-VFX-ACT-003-04).");
                 if (hud != null)
                     Assert.IsTrue(hud.BoostShown, "The HUD's boost chip shows the special.");
                 if (game.ActiveSpecial == NutDropItemKind.WideBasket)

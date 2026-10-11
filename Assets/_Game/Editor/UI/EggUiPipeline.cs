@@ -293,6 +293,7 @@ namespace PocketWilds.Editor.UI
                 content.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Path.GetDirectoryName(SummaryPath));
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, SummaryPath).GetComponent<RewardSummaryScreen>();
             }
             finally

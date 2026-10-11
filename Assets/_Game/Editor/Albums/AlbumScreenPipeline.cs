@@ -219,6 +219,7 @@ namespace PocketWilds.Editor.Albums
                 canvas.enabled = false;
 
                 Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath));
+                UiPipeline.MaskScrollContent(root);
                 var saved = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath).GetComponent<AlbumScreenView>();
                 report.Add($"{AlbumLayout.ScreenPrefabName}: {p.covers.Length} covers, {p.slots.Length} slots, {p.rows.Length} choice rows, "
                            + $"{p.reveal.confetti.Length + p.reveal.bubbles.Length + p.reveal.stars.Length + 2} reveal particles, {labels.Length} labels, "

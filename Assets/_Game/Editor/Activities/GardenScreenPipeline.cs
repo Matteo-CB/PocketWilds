@@ -362,6 +362,7 @@ namespace PocketWilds.Editor.Activities
                 canvas.enabled = false;
 
                 Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath));
+                UiPipeline.MaskScrollContent(root);
                 var saved = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath).GetComponent<GardenScreenView>();
                 report.Add($"{GardenLayout.ScreenPrefabName}: {p.beds.Length} bed labels, {p.packets.Length} packets, {p.challenges.Length} challenges, "
                            + $"{p.products.Length} product chips, {texts.Length} labels, {borrow.Names.Distinct().Count()} kit sprites borrowed, "
@@ -585,7 +586,7 @@ namespace PocketWilds.Editor.Activities
         {
             p.beds = new GardenScreenParts.Bed[GardenLayout.PlotCount];
             var ownedSize = new Vector2(500f, 88f);
-            var signSize = new Vector2(420f, 150f);
+            var signSize = new Vector2(470f, 150f);
             for (int i = 0; i < p.beds.Length; i++)
             {
                 var b = new GardenScreenParts.Bed();
@@ -621,8 +622,10 @@ namespace PocketWilds.Editor.Activities
                 b.sign = Img("Sign", locked, art.CoverSign, art.CoverSign != null ? Color.white : Card, Image.Type.Sliced, TopCenter, new Vector2(0f, -75f), signSize);
                 if (art.CoverSign == null)
                     borrow.Kit(b.sign, KitPanel);
-                b.signLabel = Label("Label", locked, TextRole.Label, 36f, Text, TextAlignmentOptions.Center, TopCenter, new Vector2(0f, -46f),
-                    new Vector2(380f, LineBox(36f, 1)), 1, i == 0 ? T(GardenText.NewPlot, GardenText.PlotClub) : Array.Empty<string>());
+                // On the board only (the sign art's board is 85 % of its width, 400 of the 470, its middle 56 under the top): the
+                // longest text (« With the Wild Club », 365 at 30) keeps a margin each side (owner report 2026-10-11).
+                b.signLabel = Label("Label", locked, TextRole.Label, 30f, Text, TextAlignmentOptions.Center, TopCenter, new Vector2(0f, -56f),
+                    new Vector2(380f, LineBox(30f, 1) + 4f), 1, i == 0 ? T(GardenText.NewPlot, GardenText.PlotClub) : Array.Empty<string>());
                 b.priceGem = Img("Gem", locked, null, Color.white, Image.Type.Simple, TopCenter, new Vector2(-44f, -108f), new Vector2(44f, 44f));
                 b.price = Label("Price", locked, TextRole.NumberSmall, 36f, Text, TextAlignmentOptions.MidlineLeft, TopCenter, new Vector2(40f, -108f),
                     new Vector2(120f, LineBox(36f, 1)), 1, i == 0 ? new[] { "400", "9999" } : Array.Empty<string>());

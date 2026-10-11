@@ -40,7 +40,7 @@ namespace PocketWilds.Tests.PlayMode
                 Object.Destroy(bootstrap.gameObject);
             try
             {
-                Directory.Delete(_saveDir, true);
+                TestSaveDir.Release(_saveDir);
             }
             catch (IOException)
             {

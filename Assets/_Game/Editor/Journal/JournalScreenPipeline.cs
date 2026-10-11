@@ -174,6 +174,7 @@ namespace PocketWilds.Editor.Journal
                 canvas.enabled = false;
 
                 Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath));
+                UiPipeline.MaskScrollContent(root);
                 var saved = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath).GetComponent<JournalScreenView>();
                 report.Add($"{JournalLayout.ScreenPrefabName}: {p.cards.Length} cards, {p.headers.Length} headers, {p.moments.Length} moment rows, "
                            + $"{labels.Length} labels, {borrow.Names.Distinct().Count()} kit sprites borrowed" + (saved.Valid ? "" : " (INCOMPLETE)"));

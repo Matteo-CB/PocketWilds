@@ -627,6 +627,7 @@ namespace PocketWilds.Editor.UI
                 EggUiPipeline.AddHudEggChoice(action, costRow, costIcon, buttonImage, egg, hud, tokens);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(HudPrefabPath));
+                MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, HudPrefabPath).GetComponent<RefugeHud>();
             }
             finally
@@ -1063,6 +1064,7 @@ namespace PocketWilds.Editor.UI
                 canvas.enabled = false;
 
                 Directory.CreateDirectory(Path.GetDirectoryName(OfflineReturnPrefabPath));
+                MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, OfflineReturnPrefabPath).GetComponent<OfflineReturnScreen>();
             }
             finally
@@ -1246,6 +1248,7 @@ namespace PocketWilds.Editor.UI
                 content.gameObject.SetActive(false);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(CodexPrefabPath));
+                MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, CodexPrefabPath).GetComponent<CodexScreen>();
             }
             finally
@@ -1479,6 +1482,28 @@ namespace PocketWilds.Editor.UI
             rect.pivot = pivot;
             rect.anchoredPosition = position;
             rect.sizeDelta = size;
+        }
+
+        /// <summary>
+        /// Graphics are made non-maskable (cheaper), so everything inside a scroll list's viewport is turned maskable again
+        /// before a screen is saved: its RectMask2D then clips the cells (owner report 2026-10-11: on the profile and the
+        /// Codex, scrolled cells spilled over the header). Every screen pipeline calls it; ScrollClipTests checks it.
+        /// </summary>
+        internal static int MaskScrollContent(GameObject root)
+        {
+            int changed = 0;
+            foreach (var scroll in root.GetComponentsInChildren<ScrollRect>(true))
+            {
+                var viewport = scroll.viewport != null ? scroll.viewport : (RectTransform)scroll.transform;
+                foreach (var graphic in viewport.GetComponentsInChildren<MaskableGraphic>(true))
+                {
+                    if (graphic.maskable)
+                        continue;
+                    graphic.maskable = true;
+                    changed++;
+                }
+            }
+            return changed;
         }
 
         internal static Image AddImage(string name, Transform parent, Sprite sprite, Color color, Image.Type type)

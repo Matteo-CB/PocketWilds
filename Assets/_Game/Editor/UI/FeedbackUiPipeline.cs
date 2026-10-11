@@ -379,6 +379,7 @@ namespace PocketWilds.Editor.UI
                 content.gameObject.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Path.GetDirectoryName(SheetPrefabPath));
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, SheetPrefabPath).GetComponent<AnimalSheetScreen>();
             }
             finally
@@ -592,6 +593,7 @@ namespace PocketWilds.Editor.UI
                 content.gameObject.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Path.GetDirectoryName(ModalPrefabPath));
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, ModalPrefabPath).GetComponent<ModalScreen>();
             }
             finally

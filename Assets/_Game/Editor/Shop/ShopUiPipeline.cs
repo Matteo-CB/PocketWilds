@@ -406,6 +406,7 @@ namespace PocketWilds.Editor.Shop
                     gemsHeader, gems, restoreButton, restoreLabel, toastGroup, toastLabel, Icons());
                 content.gameObject.SetActive(false);
                 Directory.CreateDirectory(Path.GetDirectoryName(ShopPrefabPath));
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, ShopPrefabPath).GetComponent<ShopScreen>();
             }
             finally
@@ -462,6 +463,7 @@ namespace PocketWilds.Editor.Shop
                 modal.SetReferences(kit.Tokens, content.gameObject, closeButton, card, panel, toastGroup, toastLabel, Icons());
                 content.gameObject.SetActive(false);
                 Directory.CreateDirectory(Path.GetDirectoryName(OfferModalPrefabPath));
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, OfferModalPrefabPath).GetComponent<OfferModalView>();
             }
             finally

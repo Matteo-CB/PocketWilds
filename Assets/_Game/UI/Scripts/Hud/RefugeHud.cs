@@ -186,6 +186,11 @@ namespace PocketWilds.UI
             _actions = actions;
             if (_bound)
                 return;
+            // The menus' scroll lists and buttons share one EventSystem: its drag threshold follows the screen density (8 dp),
+            // so a tap with a trembling finger stays a tap and a scroll starts when the finger really moves.
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            if (events != null)
+                events.pixelDragThreshold = TouchSlop.Pixels(Screen.dpi);
             _bound = true;
             _light = new BigValueText(_lightLabel);
             _rate = new BigValueText(_rateLabel, "+", "/s");

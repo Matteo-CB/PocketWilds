@@ -57,7 +57,12 @@ namespace PocketWilds.Presentation
             }
         }
 
-        private void Awake() => _rig = GetComponent<RefugeCameraRig>();
+        private void Awake()
+        {
+            _rig = GetComponent<RefugeCameraRig>();
+            // A tap stays a tap within the device's touch slop (8 dp), never a fixed few pixels on a dense screen.
+            _tapMaxPixels = Mathf.Max(_tapMaxPixels, PocketWilds.Core.TouchSlop.Pixels(Screen.dpi));
+        }
 
         private void Update()
         {

@@ -54,7 +54,7 @@ namespace PocketWilds.Tests.PlayMode
             PresentationQuality.Apply(QualityTier.Medium);
             try
             {
-                Directory.Delete(_saveDir, true);
+                TestSaveDir.Release(_saveDir);
             }
             catch (IOException)
             {

@@ -360,6 +360,7 @@ namespace PocketWilds.Editor.Activities
                 canvas.enabled = false;
 
                 Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath));
+                UiPipeline.MaskScrollContent(root);
                 var saved = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath).GetComponent<ExpeditionScreenView>();
                 report.Add($"{ExpeditionLayout.ScreenPrefabName}: {p.slots.Length} slots, {p.destinations.Length} destination cards, {p.animals.Length} portraits, "
                            + $"{p.challenges.Length} challenges, {p.postcards.Length} postcards, {labels.Length} labels, {borrow.Names.Distinct().Count()} kit sprites borrowed"
@@ -734,11 +735,12 @@ namespace PocketWilds.Editor.Activities
                     new Vector2(inner, LineBox(36f, 1)), 1, Filled(ExpeditionText.SpeedUpsLeft, "3"), T(ExpeditionText.SpeedUpsNone));
                 s.speedUpBack = borrow.Kit(Img("SpeedUp", away, null, Accent, Image.Type.Sliced, BottomCenter, new Vector2(0f, 68f), new Vector2(inner, 108f)), KitPill);
                 s.speedUp = ButtonOn(s.speedUpBack);
-                s.speedUpLabel = Label("Label", s.speedUpBack.transform, TextRole.Label, 36f, Text, TextAlignmentOptions.Center, Center, new Vector2(0f, 23f),
-                    new Vector2(inner - 30f, LineBox(36f, 1)), 1, T(ExpeditionText.SpeedUp));
-                s.speedUpGem = Img("Gem", s.speedUpBack.transform, null, Color.white, Image.Type.Simple, Center, new Vector2(-34f, -24f), new Vector2(40f, 40f));
-                s.speedUpCost = Label("Cost", s.speedUpBack.transform, TextRole.NumberSmall, 36f, Text, TextAlignmentOptions.MidlineLeft, Center,
-                    new Vector2(46f, -23f), new Vector2(110f, LineBox(36f, 1)), 1, new[] { "999" });
+                // Two lines inside the pill with even margins (owner report 2026-10-11: texts never touch their edges).
+                s.speedUpLabel = Label("Label", s.speedUpBack.transform, TextRole.Label, 32f, Text, TextAlignmentOptions.Center, Center, new Vector2(0f, 21f),
+                    new Vector2(inner - 30f, LineBox(32f, 1)), 1, T(ExpeditionText.SpeedUp));
+                s.speedUpGem = Img("Gem", s.speedUpBack.transform, null, Color.white, Image.Type.Simple, Center, new Vector2(-32f, -21f), new Vector2(34f, 34f));
+                s.speedUpCost = Label("Cost", s.speedUpBack.transform, TextRole.NumberSmall, 32f, Text, TextAlignmentOptions.MidlineLeft, Center,
+                    new Vector2(44f, -20f), new Vector2(110f, LineBox(32f, 1)), 1, new[] { "999" });
 
                 // Back: the postcard icon and « Voir la carte postale » on up to two lines, the slot glowing.
                 var back = UiPipeline.Rect("Back", rootRect);

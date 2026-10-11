@@ -122,7 +122,10 @@ namespace PocketWilds.Editor.UI
         public const float HeaderHeight = 196f;
         /// <summary>Room for a lifted, outlined card and the tag on its top edge.</summary>
         public const float CarouselHeight = 530f;
-        public const float FooterHeight = 338f;
+        public const float FooterHeight = 360f;
+
+        /// <summary>The « Jouer » button: tall enough for its label and its ticket line inside the visible pill.</summary>
+        public const float PlayHeight = 172f;
         public const float NameRowHeight = 120f;
         public const float ThemesHeight = 112f;
         public const float ChallengesHeight = 460f;
@@ -563,7 +566,7 @@ namespace PocketWilds.Editor.UI
                 var practiceBack = UiPipeline.AddImage("Practice", panel, kit.Pill, Color.white, Image.Type.Sliced);
                 practiceBack.pixelsPerUnitMultiplier = 1.6f;
                 practiceBack.raycastTarget = true;
-                UiPipeline.Place(practiceBack.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 34f + 150f + 18f),
+                UiPipeline.Place(practiceBack.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 34f + PlayHeight + 18f),
                     new Vector2(952f, 112f));
                 var practice = practiceBack.gameObject.AddComponent<Button>();
                 UiPipeline.ConfigureButton(practice, practiceBack);
@@ -580,18 +583,21 @@ namespace PocketWilds.Editor.UI
                 practiceLine.lineSpacing = -10f;
                 UiPipeline.Place(practiceLine.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-28f, 0f), new Vector2(380f, 96f));
 
-                var play = ProgressionUiPipeline.PrimaryButton(panel, tokens, "Play", new Vector2(0f, 34f), new Vector2(952f, 150f), out var playBack,
+                var play = ProgressionUiPipeline.PrimaryButton(panel, tokens, "Play", new Vector2(0f, 34f), new Vector2(952f, PlayHeight), out var playBack,
                     out var playLabel);
-                playLabel.fontSizeMax = 60f;
-                playLabel.fontSize = 60f;
-                playLabel.fontSizeMin = 44f;
-                UiPipeline.Place(playLabel.rectTransform, center, center, new Vector2(0f, 22f), new Vector2(900f, 80f));
+                // Two lines inside the visible pill (131 of the 172, centered above the rect: ProgressionUiPipeline.PillCenter):
+                // the label and the ticket line keep a margin from its edges and between them (owner report 2026-10-11).
+                float pill = ProgressionUiPipeline.PillCenter(PlayHeight);
+                playLabel.fontSizeMax = 50f;
+                playLabel.fontSize = 50f;
+                playLabel.fontSizeMin = 40f;
+                UiPipeline.Place(playLabel.rectTransform, center, center, new Vector2(0f, pill + 24f), new Vector2(900f, 60f));
                 var costRow = UiPipeline.Rect("Cost", playBack.rectTransform);
-                UiPipeline.Place(costRow, center, center, new Vector2(0f, -38f), new Vector2(600f, 52f));
+                UiPipeline.Place(costRow, center, center, new Vector2(0f, pill - 27f), new Vector2(600f, 44f));
                 var costIcon = UiPipeline.AddImage("Icon", costRow, kit.Ticket, Color.white, Image.Type.Simple);
-                UiPipeline.Place(costIcon.rectTransform, center, new Vector2(0f, 0.5f), new Vector2(-40f, 0f), new Vector2(48f, 48f));
-                var costText = UiPipeline.AddText("Value", costRow, TextRole.Label, 40f, tokens.textPrimary, "1", 36f);
-                UiPipeline.Place(costText.rectTransform, center, new Vector2(0f, 0.5f), new Vector2(18f, 2f), new Vector2(300f, 52f));
+                UiPipeline.Place(costIcon.rectTransform, center, new Vector2(0f, 0.5f), new Vector2(-36f, 0f), new Vector2(38f, 38f));
+                var costText = UiPipeline.AddText("Value", costRow, TextRole.Label, 34f, tokens.textPrimary, "1", 32f);
+                UiPipeline.Place(costText.rectTransform, center, new Vector2(0f, 0.5f), new Vector2(16f, 2f), new Vector2(300f, 46f));
 
                 screen.SetReferences(tokens, canvas, content.gameObject, group, safe, panel, outside, close, title, chip, count, next);
                 screen.SetCardReferences(cardScroll, viewport, list, cards);
@@ -605,6 +611,7 @@ namespace PocketWilds.Editor.UI
                 content.gameObject.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Folder);
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, HubPath).GetComponent<ActivityHubScreen>();
             }
             finally
@@ -731,20 +738,21 @@ namespace PocketWilds.Editor.UI
             UiPipeline.Stretch(back.rectTransform);
             var button = back.gameObject.AddComponent<Button>();
             UiPipeline.ConfigureButton(button, back);
-            var number = UiPipeline.AddText("Number", cell, TextRole.NumberSmall, 48f, tokens.textPrimary, (index + 1).ToString());
+            // Inside the visible card (about 117 of its 136): the number and the stars or lock keep a margin from its edges.
+            var number = UiPipeline.AddText("Number", cell, TextRole.NumberSmall, 46f, tokens.textPrimary, (index + 1).ToString());
             number.alignment = TextAlignmentOptions.Center;
-            UiPipeline.Place(number.rectTransform, center, center, new Vector2(0f, 22f), new Vector2(120f, 60f));
+            UiPipeline.Place(number.rectTransform, center, center, new Vector2(0f, 18f), new Vector2(120f, 56f));
             var stars = new Image[3];
             for (int i = 0; i < stars.Length; i++)
             {
                 stars[i] = UiPipeline.AddImage("Star" + i, cell, kit.Star, MarkOff, Image.Type.Simple);
-                UiPipeline.Place(stars[i].rectTransform, center, center, new Vector2(-38f + i * 38f, -34f), new Vector2(32f, 32f));
+                UiPipeline.Place(stars[i].rectTransform, center, center, new Vector2(-36f + i * 36f, -27f), new Vector2(30f, 30f));
             }
             GameObject lockMark = null;
             if (kit.Lock != null)
             {
                 var lockImage = UiPipeline.AddImage("Lock", cell, kit.Lock, new Color(1f, 1f, 1f, 0.75f), Image.Type.Simple);
-                UiPipeline.Place(lockImage.rectTransform, center, center, new Vector2(0f, -34f), new Vector2(36f, 36f));
+                UiPipeline.Place(lockImage.rectTransform, center, center, new Vector2(0f, -27f), new Vector2(32f, 32f));
                 lockMark = lockImage.gameObject;
                 lockMark.SetActive(false);
             }
@@ -931,6 +939,7 @@ namespace PocketWilds.Editor.UI
                 content.gameObject.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Folder);
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, HudPath).GetComponent<ActivityHudScreen>();
             }
             finally
@@ -1385,6 +1394,7 @@ namespace PocketWilds.Editor.UI
                 content.gameObject.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Folder);
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, ResultPath).GetComponent<ActivityResultScreen>();
             }
             finally
@@ -1473,6 +1483,7 @@ namespace PocketWilds.Editor.UI
                 content.gameObject.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Folder);
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, TicketsEmptyPath).GetComponent<TicketsEmptyCard>();
             }
             finally

@@ -248,6 +248,7 @@ namespace PocketWilds.Editor.Profile
                 canvas.enabled = false;
 
                 Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath));
+                UiPipeline.MaskScrollContent(root);
                 var saved = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath).GetComponent<ProfileScreenView>();
                 report.Add($"{ProfileLayout.ScreenPrefabName}: {p.badges.Length} badge cells, {p.rows.Length} rows, {p.frames.Length} frame cells, "
                            + $"{p.chips.Length} chips, {labels.Length} labels, {borrow.Names.Distinct().Count()} kit sprites borrowed"

@@ -362,6 +362,7 @@ namespace PocketWilds.Editor.UI
                 content.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Folder);
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, TodayPath).GetComponent<TodayScreen>();
             }
             finally
@@ -697,6 +698,7 @@ namespace PocketWilds.Editor.UI
                 content.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Folder);
+                UiPipeline.MaskScrollContent(root);
                 return PrefabUtility.SaveAsPrefabAsset(root, JournalPath).GetComponent<WeeklyJournalScreen>();
             }
             finally
@@ -745,12 +747,13 @@ namespace PocketWilds.Editor.UI
             // « Tu as déjà commencé »: a soft green tag in the right column until the goal is reached (first journal).
             var headStart = UiPipeline.AddImage("HeadStart", row, kit.Pill, tokens.success, Image.Type.Sliced);
             headStart.pixelsPerUnitMultiplier = 1.6f;
-            UiPipeline.Place(headStart.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-14f, 0f), new Vector2(300f, 100f));
-            var headStartLabel = UiPipeline.AddText("Label", headStart.rectTransform, TextRole.Label, 36f, tokens.backgroundLight, "Off to a good start");
+            UiPipeline.Place(headStart.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-14f, 0f), new Vector2(320f, 112f));
+            // Two short lines inside the pill with a margin all round (owner report 2026-10-11: texts never touch their edges).
+            var headStartLabel = UiPipeline.AddText("Label", headStart.rectTransform, TextRole.Label, 32f, tokens.backgroundLight, "Off to a good start");
             headStartLabel.alignment = TextAlignmentOptions.Center;
             headStartLabel.textWrappingMode = TextWrappingModes.Normal;
-            headStartLabel.lineSpacing = -10f;
-            UiPipeline.Place(headStartLabel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 2f), new Vector2(276f, 90f));
+            headStartLabel.lineSpacing = -8f;
+            UiPipeline.Place(headStartLabel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 3f), new Vector2(284f, 96f));
             headStart.gameObject.SetActive(false);
 
             var view = row.gameObject.AddComponent<JournalGoalRowView>();
