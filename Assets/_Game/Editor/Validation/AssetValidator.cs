@@ -50,6 +50,8 @@ namespace PocketWilds.Editor.Validation
             ["Rabbit"] = new[] { 2600, 1000, 450 },
             ["Squirrel"] = new[] { 2800, 1100, 500 },
             ["Hedgehog"] = new[] { 3000, 1200, 500 },
+            // T46: the first medium animal (Manifest « moyen »: 2.5k to 4k triangles at LOD0).
+            ["Fawn"] = new[] { 4000, 1600, 800 },
         };
 
         public static readonly int[] DefaultSmallAnimalBudget = { 3000, 1200, 500 };

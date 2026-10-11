@@ -83,12 +83,18 @@ namespace PocketWilds.Simulation
             System.Array.Clear(_biomeVariants, 0, _biomeVariants.Length);
             System.Array.Clear(_biomePlainVariants, 0, _biomePlainVariants.Length);
             System.Array.Clear(_speciesPlainVariants, 0, _speciesPlainVariants.Length);
-            int secret = 0, plain = 0;
+            int secret = 0, plain = 0, masteryColors = 0;
             foreach (var id in c.DiscoveredVariants)
             {
                 // T44C: a visitor's variant has its own Codex page; it never counts with the collection's variants.
-                if (!_content.Variants.TryGet(id, out var variant) || variant.IsVisitor || variant.MasteryLevel > 0)
+                if (!_content.Variants.TryGet(id, out var variant) || variant.IsVisitor)
                     continue;
+                // T46: a mastery color counts for « Couleurs de maîtrise » only.
+                if (variant.MasteryLevel > 0)
+                {
+                    masteryColors++;
+                    continue;
+                }
                 if (variant.IsSecret)
                     secret++;
                 else
@@ -105,6 +111,7 @@ namespace PocketWilds.Simulation
                     _speciesPlainVariants[species]++;
             }
             a.Raise(AchievementCounter.SecretVariants, secret);
+            a.Raise(AchievementCounter.MasteryVariants, masteryColors);
             int fullSets = 0;
             for (int s = 0; s < _speciesPlainVariants.Length; s++)
                 if (_speciesPlainVariants[s] >= 6)

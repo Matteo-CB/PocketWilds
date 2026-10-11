@@ -22,8 +22,16 @@
       "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_export.py"]
     },
     {
+      "blend": "SourceArt/Blender/Animals/Fawn/BL_Animal_Fawn.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
       "blend": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "builders": ["SourceArt/Blender/Tools/pw_anim_library.py", "SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
+      "blend": "SourceArt/Blender/Rigs/BL_Rig_MediumQuadruped.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_anim_medium.py", "SourceArt/Blender/Tools/pw_export.py"]
     },
     {
       "blend": "SourceArt/Blender/Eggs/BL_Egg_Family.blend",

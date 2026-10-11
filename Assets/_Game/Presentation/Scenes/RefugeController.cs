@@ -636,6 +636,8 @@ namespace PocketWilds.Presentation
             TickArrivals(time);
             // T44C: a rare visitor walks in, sits, is greeted, walks out.
             TickVisitors(time, deltaTime);
+            // T46: a mastery color arrives beside the egg.
+            TickMasteryColors(time);
             // T36: bubbles follow their animals; hidden under a screen or a hatch (the wish card alone keeps its bubble).
             Bubbles?.Tick(time, deltaTime, (ModalOpen && !(Daily != null && Daily.CardOnlyOpen)) || Hatching);
             _hatch.Tick(time, deltaTime);

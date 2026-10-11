@@ -12,7 +12,7 @@ namespace PocketWilds.Editor.Import
     /// </summary>
     public sealed class AssetImportRules : AssetPostprocessor
     {
-        private const uint Version = 5;
+        private const uint Version = 6;
 
         public const string AnimalsRoot = "Assets/_Game/Art/Animals/";
         public const string AnimationsRoot = "Assets/_Game/Art/Animations/";
@@ -23,15 +23,19 @@ namespace PocketWilds.Editor.Import
         /// <summary>Sockets exposed when GameObjects are optimized, per rig family. Paths are below the model root.</summary>
         public static readonly Dictionary<string, string[]> FamilySockets = new Dictionary<string, string[]>
         {
-            ["SK_SmallQuadruped"] = new[]
-            {
-                "SK_SmallQuadruped/Root/Pelvis/Spine/Chest/Neck/Head/SOCK_HeadTop",
-                "SK_SmallQuadruped/Root/Pelvis/Spine/Chest/Neck/SOCK_Neck",
-                "SK_SmallQuadruped/Root/Pelvis/Spine/SOCK_Back",
-                "SK_SmallQuadruped/Root/Pelvis/Tail_01/SOCK_TailBase",
-                "SK_SmallQuadruped/Root/Pelvis/Spine/Chest/Neck/Head/Ear_L_01/SOCK_Ear_L",
-                "SK_SmallQuadruped/Root/Pelvis/Spine/Chest/Neck/Head/Ear_R_01/SOCK_Ear_R",
-            },
+            ["SK_SmallQuadruped"] = QuadrupedSockets("SK_SmallQuadruped"),
+            // T46: same bone names and socket parents (pw_rig), another root.
+            ["SK_MediumQuadruped"] = QuadrupedSockets("SK_MediumQuadruped"),
+        };
+
+        private static string[] QuadrupedSockets(string root) => new[]
+        {
+            root + "/Root/Pelvis/Spine/Chest/Neck/Head/SOCK_HeadTop",
+            root + "/Root/Pelvis/Spine/Chest/Neck/SOCK_Neck",
+            root + "/Root/Pelvis/Spine/SOCK_Back",
+            root + "/Root/Pelvis/Tail_01/SOCK_TailBase",
+            root + "/Root/Pelvis/Spine/Chest/Neck/Head/Ear_L_01/SOCK_Ear_L",
+            root + "/Root/Pelvis/Spine/Chest/Neck/Head/Ear_R_01/SOCK_Ear_R",
         };
 
         public static readonly string[] LoopingClipMarkers = { "_Loop", "_Idle_A", "Locomotion_" };

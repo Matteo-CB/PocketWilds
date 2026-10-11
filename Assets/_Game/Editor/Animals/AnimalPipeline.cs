@@ -47,7 +47,7 @@ namespace PocketWilds.Editor.Animals
         {
             ("Idle", "Idle_A", false, null),
             ("IdleLook", "Idle_B", true, null),
-            ("Move", "Locomotion_Hop", false, null),
+            ("Move", "Locomotion_Hop", false, null), // the Move clip is per family: see ClipFor
             ("Happy", "Happy", true, null),
             ("React", "ReactTouch", true, null),
             ("SleepEnter", "Sleep_Enter", false, "Sleep"),
@@ -57,6 +57,11 @@ namespace PocketWilds.Editor.Animals
             ("Social", "Social_Nose", true, null),
             ("Inspect", "Inspect", true, null),
         };
+
+        /// <summary>Clip suffix of the Move state: the small family hops, the medium family walks (T46).</summary>
+        public static string MoveClip(string family) => family == "MediumQuadruped" ? "Locomotion_Walk" : "Locomotion_Hop";
+
+        private static string ClipFor(string family, string state, string clipSuffix) => state == "Move" ? MoveClip(family) : clipSuffix;
 
         [MenuItem("Pocket Wilds/Animals/Build Rabbit (T10)", priority = 150)]
         public static void BuildRabbit()
@@ -110,6 +115,13 @@ namespace PocketWilds.Editor.Animals
         {
             BuildFieldMouse();
             BuildGuineaPig();
+        }
+
+        [MenuItem("Pocket Wilds/Animals/Build Fawn (T46)", priority = 156)]
+        public static void BuildFawn()
+        {
+            // Fawns greet fawns with their own clip (social group 1); a calm walk.
+            BuildSpecies("Fawn", "MediumQuadruped", EnsureFawnDefinition, null, b => { b.moveSpeed = 0.32f; b.socialGroup = 1; });
         }
 
         public static void BuildSpecies(string species, string family, Func<SpeciesDefinitionAsset> ensureDefinition,
@@ -181,7 +193,7 @@ namespace PocketWilds.Editor.Animals
             int i = 0;
             foreach (var (stateName, clipSuffix, _, _) in FamilyStates)
             {
-                string clipName = $"AN_{family}_{clipSuffix}";
+                string clipName = $"AN_{family}_{ClipFor(family, stateName, clipSuffix)}";
                 if (!clips.TryGetValue(clipName, out var clip))
                     throw new InvalidOperationException("Missing clip " + clipName);
                 var state = machine.AddState(stateName, new Vector3(300, 60 * i++, 0));
@@ -253,7 +265,7 @@ namespace PocketWilds.Editor.Animals
             {
                 if (!states.TryGetValue(stateName, out var state))
                     return false;
-                if (!clips.TryGetValue($"AN_{family}_{clipSuffix}", out var clip) || state.motion != clip)
+                if (!clips.TryGetValue($"AN_{family}_{ClipFor(family, stateName, clipSuffix)}", out var clip) || state.motion != clip)
                     return false;
                 string target = next ?? (returnsToIdle ? "Idle" : null);
                 if (target == null ? state.transitions.Length != 0
@@ -371,6 +383,11 @@ namespace PocketWilds.Editor.Animals
                 // T44C visitor variants (doc Rétention, rare visitors): palettes only, secret so they are never in the egg
                 // odds, the pities or the genetics (HatchService skips IsSecret; doc 02 Oeufs: « jamais de visiteur »).
                 Variant("variant.rabbit.meadow_visitor", RarityTier.Rare, Hex("B9CBA6"), Hex("F4C3D2"), Hex("FBF3DE"), Hex("E98A93"), Hex("2A1E1C"), secret: true, visitor: true),
+                Variant("variant.rabbit.caramel", RarityTier.Rare, Hex("D69A55"), Hex("F4C4A8"), Hex("F7EBD0"), Hex("E89A9E"), Hex("2A1E1C"), secret: true, mastery: 10),
+                Variant("variant.rabbit.moon", RarityTier.Epic, Hex("E3E6EC"), Hex("F3C9CF"), Hex("FFFFFF"), Hex("E3A0AA"), Hex("1E1820"),
+                    pattern: Hex("34416B"), channel: PatternChannel.MaskB, strength: 16, secret: true, mastery: 20),
+                Variant("variant.rabbit.peach", RarityTier.Legendary, Hex("F6C3A0"), Hex("F7CDB8"), Hex("FBEFDF"), Hex("E8A49A"), Hex("2A1E1C"),
+                    pattern: Hex("EE9E6E"), channel: PatternChannel.MaskA, strength: 14, secret: true, mastery: 30),
                 Variant("variant.rabbit.snow_visitor", RarityTier.Rare, Hex("F8FBFF"), Hex("CFE3F5"), Hex("E3EFFA"), Hex("F2B6C2"), Hex("22303F"), secret: true, visitor: true),
             };
             EditorUtility.SetDirty(asset);
@@ -399,6 +416,11 @@ namespace PocketWilds.Editor.Animals
                 Variant("variant.squirrel.black", RarityTier.Rare, Hex("443833"), Hex("332A27"), Hex("9C8C82"), Hex("5E4A46"), Hex("0B0808")),
                 Variant("variant.squirrel.autumn", RarityTier.Epic, Hex("E58A35"), Hex("C8442E"), Hex("FBE5C2"), Hex("8E3A2C"), Hex("1E1210"),
                     pattern: Hex("F4C24C"), channel: PatternChannel.MaskA, strength: 15),
+                Variant("variant.squirrel.copper", RarityTier.Rare, Hex("C46A35"), Hex("B65E2E"), Hex("F3D0AE"), Hex("3A2622"), Hex("1E1414"), secret: true, mastery: 10),
+                Variant("variant.squirrel.snow", RarityTier.Epic, Hex("F7F7F5"), Hex("D9DCE0"), Hex("FFFFFF"), Hex("4A3A3A"), Hex("1E1414"),
+                    pattern: Hex("C9CED6"), channel: PatternChannel.MaskA, strength: 12, secret: true, mastery: 20),
+                Variant("variant.squirrel.goldenhazel", RarityTier.Legendary, Hex("C99653"), Hex("B58542"), Hex("F3E3C3"), Hex("3A2A22"), Hex("1E1414"),
+                    pattern: Hex("F2DFB0"), channel: PatternChannel.MaskB, strength: 14, secret: true, mastery: 30),
             };
             EditorUtility.SetDirty(asset);
             return asset;
@@ -430,6 +452,12 @@ namespace PocketWilds.Editor.Animals
                 Variant("variant.hedgehog.white", RarityTier.Rare, Hex("F8F0E8"), Hex("EDE2D6"), Hex("FFFFFF"), Hex("E49AA0"), Hex("2A1A1C")),
                 Variant("variant.hedgehog.mushroom", RarityTier.Epic, Hex("EAD6BD"), Hex("D2433A"), Hex("FFF4E6"), Hex("3A2A28"), Hex("1A1212"),
                     pattern: Hex("FFF8F0"), channel: PatternChannel.MaskA, strength: 15),
+                Variant("variant.hedgehog.chestnut", RarityTier.Rare, Hex("B6764A"), Hex("7A4A2E"), Hex("F1E2CC"), Hex("2A1E1C"), Hex("140E0D"),
+                    pattern: Hex("E2B48A"), channel: PatternChannel.MaskB, strength: 10, secret: true, mastery: 10),
+                Variant("variant.hedgehog.lavender", RarityTier.Epic, Hex("BDB3C6"), Hex("9C87B0"), Hex("F6F1F8"), Hex("3A2E3E"), Hex("141012"),
+                    pattern: Hex("D9CEE6"), channel: PatternChannel.MaskB, strength: 14, secret: true, mastery: 20),
+                Variant("variant.hedgehog.moss", RarityTier.Legendary, Hex("EFE3CC"), Hex("6F8F4E"), Hex("F8F0E2"), Hex("2E2A20"), Hex("140E0D"),
+                    pattern: Hex("A9C98A"), channel: PatternChannel.MaskA, strength: 14, secret: true, mastery: 30),
                 // T44C visitor variant: warm cream spines tipped with soft blossom pink (light lobe tips, mask B). Secret: never in eggs.
                 Variant("variant.hedgehog.flower_visitor", RarityTier.Rare, Hex("F2E3CE"), Hex("EBD9BC"), Hex("FFF6EA"), Hex("4A3532"), Hex("1C1414"),
                     pattern: Hex("F6BFD2"), channel: PatternChannel.MaskB, strength: 14, secret: true, visitor: true),
@@ -506,6 +534,41 @@ namespace PocketWilds.Editor.Animals
             return asset;
         }
 
+        private static SpeciesDefinitionAsset EnsureFawnDefinition()
+        {
+            var asset = LoadOrCreate<SpeciesDefinitionAsset>(DefinitionPath("Fawn"));
+            asset.sourceId = "species.fawn";
+            asset.displayKey = "species.fawn.name";
+            asset.rigFamily = RigFamily.MediumQuadruped;
+            asset.biomeId = "biome.grassland";
+            asset.baseProduction = 1.0;
+            asset.visualKey = "PF_Animal_Fawn";
+
+            // Fawn regions: secondary = inner ears, belly = chest, underside, inner legs and muzzle, detail = nose and hooves,
+            // mask A = round spots, mask B = fern stripes along the back.
+            // Secret rows are the mastery colors (mastery 10/20/30) and one plain secret color: never in eggs, wishes or genetics.
+            asset.variants = new List<SpeciesDefinitionAsset.VariantEntry>
+            {
+                Variant("variant.fawn.chestnutspots", RarityTier.Common, Hex("A0663F"), Hex("E9C3B4"), Hex("F3E6D0"), Hex("4A3328"), Hex("1E1414"),
+                    pattern: Hex("FFF8EE"), channel: PatternChannel.MaskA, strength: 16),
+                Variant("variant.fawn.lightbrown", RarityTier.Common, Hex("C08A5E"), Hex("E9C6B6"), Hex("F4E8D4"), Hex("5A3D2C"), Hex("1E1414")),
+                Variant("variant.fawn.cream", RarityTier.Uncommon, Hex("EFDDBE"), Hex("F3C9C4"), Hex("FFFDF8"), Hex("B5875A"), Hex("1E1414")),
+                Variant("variant.fawn.darkbrown", RarityTier.Uncommon, Hex("6E4A33"), Hex("D9B9A6"), Hex("EADBC8"), Hex("2E211C"), Hex("120C0C")),
+                Variant("variant.fawn.white", RarityTier.Rare, Hex("F8F5F0"), Hex("F3CACB"), Hex("FFFFFF"), Hex("B9B7B6"), Hex("1E1414")),
+                Variant("variant.fawn.blossom", RarityTier.Epic, Hex("F4C9CF"), Hex("FBE9EA"), Hex("FFFFFF"), Hex("C98B8F"), Hex("1E1414"),
+                    pattern: Hex("F09DB0"), channel: PatternChannel.MaskA, strength: 14),
+                Variant("variant.fawn.honey", RarityTier.Rare, Hex("E0AE62"), Hex("F2CDB3"), Hex("F7EBD3"), Hex("8A6145"), Hex("1E1414"), secret: true, mastery: 10),
+                Variant("variant.fawn.dew", RarityTier.Epic, Hex("AEB7C4"), Hex("E5C9CC"), Hex("FFFFFF"), Hex("5E6470"), Hex("1E1414"),
+                    pattern: Hex("FFFFFF"), channel: PatternChannel.MaskA, strength: 14, secret: true, mastery: 20),
+                Variant("variant.fawn.goldenfern", RarityTier.Legendary, Hex("C89A4E"), Hex("EFCBAA"), Hex("F4E5C6"), Hex("6B4A2C"), Hex("1E1414"),
+                    pattern: Hex("F2DDA8"), channel: PatternChannel.MaskB, strength: 14, secret: true, mastery: 30),
+                Variant("variant.fawn.daisy", RarityTier.Epic, Hex("B38A66"), Hex("EBC8B8"), Hex("F5EADA"), Hex("4F3A2C"), Hex("1E1414"),
+                    pattern: Hex("FFFDF2"), channel: PatternChannel.MaskA, strength: 16, secret: true),
+            };
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
         private static SpeciesDefinitionAsset.VariantEntry Variant(string id, RarityTier rarity, Color primary, Color secondary,
             Color belly, Color detail, Color eye, Color? pattern = null, PatternChannel channel = PatternChannel.None, int strength = 0, bool secret = false, bool visitor = false, int mastery = 0)
         {
@@ -536,7 +599,7 @@ namespace PocketWilds.Editor.Animals
         public static void UpdateSpeciesDefinitions()
         {
             foreach (var ensure in new Func<SpeciesDefinitionAsset>[] { EnsureRabbitDefinition, EnsureSquirrelDefinition, EnsureHedgehogDefinition,
-                EnsureFieldMouseDefinition, EnsureGuineaPigDefinition })
+                EnsureFieldMouseDefinition, EnsureGuineaPigDefinition, EnsureFawnDefinition })
                 EnsureContentDatabase(ensure());
             AssetDatabase.SaveAssets();
         }

@@ -428,6 +428,8 @@ namespace PocketWilds.Editor.Audio
                 new SpeciesVoice { species = "species.hedgehog", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 0.84f },
                 new SpeciesVoice { species = "species.fieldmouse", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 1.30f },
                 new SpeciesVoice { species = "species.guineapig", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 1.15f },
+                // Fawn: the small bank, lower and softer; the medium bank comes later.
+                new SpeciesVoice { species = "species.fawn", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 0.90f },
             };
             catalog.familyFallback = new SpeciesVoice { species = string.Empty, happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 1f };
             EditorUtility.SetDirty(catalog);

@@ -123,6 +123,9 @@ namespace PocketWilds.Presentation
         public JournalService Journal { get; set; }
 
         public VisitorService Visitors { get; set; }
+
+        /// <summary>T46: the mastery colors given at species mastery 10, 20 and 30.</summary>
+        public MasteryColorService MasteryColors { get; set; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

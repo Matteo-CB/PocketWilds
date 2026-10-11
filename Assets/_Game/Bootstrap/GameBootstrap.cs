@@ -86,6 +86,7 @@ namespace PocketWilds.Bootstrap
         private AchievementHooks _achievementHooks;
         private JournalService _journal;
         private VisitorService _visitors;
+        private MasteryColorService _masteryColors;
         private JournalHooks _journalHooks;
         private GrantService _grants;
         private OfferService _offers;
@@ -272,6 +273,12 @@ namespace PocketWilds.Bootstrap
                 _achievementHooks = new AchievementHooks(_achievements, _profileItems, _save.State, _clock, _content, _economy, _hatch,
                     _mastery, _progression, _activities, _daily, _expeditions, _garden, _albums, _albumHooks);
                 // T44C: the refuge journal (63 moments, pictures captured once) and the rare visitors (one or two a day).
+                // T46: the mastery colors (10, 20 and 30 of a species); what an older save already earned is granted now.
+                _masteryColors = new MasteryColorService(_save.State, _content, _clock)
+                {
+                    Mastery = _mastery, Economy = _economy, Refuge = _progression.Refuge, AchievementHooks = _achievementHooks, Save = _save,
+                };
+                _masteryColors.CatchUp();
                 _journal = new JournalService(_save.State.Journal, _clock, _save.State) { Save = _save };
                 var activities = _activities;
                 var daily = _daily;
@@ -400,6 +407,7 @@ namespace PocketWilds.Bootstrap
                 Context.ProfileItems = _profileItems;
                 Context.Journal = _journal;
                 Context.Visitors = _visitors;
+                Context.MasteryColors = _masteryColors;
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);
@@ -550,6 +558,8 @@ namespace PocketWilds.Bootstrap
             _journalHooks = null;
             _journal = null;
             _visitors = null;
+            _masteryColors?.Dispose();
+            _masteryColors = null;
             _achievementHooks?.Dispose();
             _achievementHooks = null;
             _achievements = null;

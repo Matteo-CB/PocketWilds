@@ -79,7 +79,61 @@ FIELDMOUSE_TAIL = [(0, 0.140, 0.090), (0, 0.188, 0.070), (0, 0.232, 0.078), (0, 
                    (0, 0.272, 0.150), (0, 0.258, 0.190)]
 
 
+FAWN_TAIL = [(0, 0.190, 0.362), (0, 0.212, 0.345), (0, 0.228, 0.322)]
+# Slender legs as continuous chains (thin separate volumes broke apart): shoulder or hip, knee or hock, fetlock, hoof.
+FAWN_FRONT_LEG = [(0.048, -0.058, 0.305), (0.052, -0.066, 0.190), (0.054, -0.072, 0.070), (0.055, -0.079, 0.016)]
+FAWN_HIND_LEG = [(0.050, 0.112, 0.300), (0.058, 0.098, 0.208), (0.062, 0.140, 0.115), (0.063, 0.136, 0.016)]
+
+
+def _legs(points, radii):
+    """A leg chain on both sides."""
+    return _chain(points, radii) + _chain([(-x, y, z) for x, y, z in points], radii)
+
 SPECS = {
+    # Fawn (A-SP-006), the first MediumQuadruped: a big gentle head with large leaf ears on the ear bones, bead
+    # eyes, a short muzzle, slender legs with simple hooves, a small white tail tuft. The whole spec sits on
+    # SK_MediumQuadruped (pw_rig), whose bones carry the same names as SmallQuadruped.
+    "Fawn": dict(
+        armature="SK_MediumQuadruped",
+        blockout=[
+            _ell((0, -0.175, 0.468), (0.074, 0.084, 0.071), part="head"),
+            _ell((0.034, -0.205, 0.448), (0.034, 0.040, 0.034), stiff=1.6, mirror=True, part="head"),   # cheeks
+            _ell((0, -0.245, 0.440), (0.036, 0.050, 0.033), rot=(-14, 0, 0), stiff=1.5, part="head"),   # muzzle
+            _ell((0, -0.118, 0.402), (0.040, 0.044, 0.080), rot=(28, 0, 0)),                             # neck
+            _ell((0, -0.050, 0.338), (0.066, 0.074, 0.074)),                                             # chest
+            _ell((0, 0.045, 0.338), (0.070, 0.128, 0.070)),                                              # body
+            _ell((0, 0.135, 0.346), (0.068, 0.070, 0.072)),                                              # rump
+            _ell((0, 0.206, 0.352), (0.022, 0.028, 0.034), rot=(30, 0, 0), stiff=1.6),                   # tail tuft
+            _ell((0.048, 0.112, 0.288), (0.034, 0.048, 0.070), mirror=True),                             # haunches
+            _ell((0.054, -0.079, 0.022), (0.019, 0.023, 0.022), mirror=True),                            # front hooves
+            _ell((0.063, 0.136, 0.022), (0.019, 0.023, 0.022), mirror=True),                             # hind hooves
+        ] + _legs(FAWN_FRONT_LEG, (0.026, 0.019, 0.018)) + _legs(FAWN_HIND_LEG, (0.030, 0.021, 0.018)),
+        # Leaf ears along the ear bones (distance along the bone axis, half sizes: thickness, width, length): the
+        # flat side faces forward.
+        ears=[(-0.004, (0.012, 0.018, 0.026)), (0.040, (0.012, 0.036, 0.048)), (0.088, (0.010, 0.024, 0.028))],
+        # Long ears in two segments, bent by the family's ear bones (the Rabbit rule).
+        ear_mode="long",
+        tail_path=FAWN_TAIL,
+        tail_member_y=(0.180, 0.196),
+        eyes=dict(x=0.042, z=0.480, r=0.022, sink=0.35),
+        nose=dict(x=0.0, z=0.446, r=0.013, sink=0.45),
+        head_center=(0, -0.175, 0.468),
+        head_radii=(0.074, 0.084, 0.071),
+        # The legs below the body move with their bones; the trunk above follows the spine.
+        hind_leg_band=(0.300, 0.250),
+        front_leg_band=(0.300, 0.250),
+        lod0_faces=1600,
+        lod1_mode="collapse",
+        lod1_tris=1200,
+        lod2_tris=560,
+        back_probe_y=0.04,
+        sockets={
+            "SOCK_Neck": (0.0, -0.112, 0.405),
+            "SOCK_TailBase": (0.0, 0.205, 0.356),
+            "SOCK_Ear_L": (-0.040, -0.120, 0.530),
+            "SOCK_Ear_R": (0.040, -0.120, 0.530),
+        },
+    ),
     # Field Mouse (A-SP-004): the smallest of the meadow. Big round head, large round ears that belong to the
     # head (they turn with it), bead eyes, small pointed muzzle, compact pear body, short legs, a thin long tail
     # curling up at the end (one solid chain on the two tail bones, half their motion).
@@ -243,6 +297,11 @@ SPECS = {
 
 # ---------------------------------------------------------------- helpers
 
+def armature_of(species):
+    """The species' family skeleton (SmallQuadruped unless its spec names another, e.g. SK_MediumQuadruped)."""
+    return bpy.data.objects[SPECS[species].get("armature", ARMATURE)]
+
+
 def view3d():
     area = next(a for a in bpy.context.screen.areas if a.type == 'VIEW_3D')
     region = next(r for r in area.regions if r.type == 'WINDOW')
@@ -396,7 +455,7 @@ def build_blockout(species):
             add((-c[0], c[1], c[2]), el["half"], (el["rot"][0], -el["rot"][1], -el["rot"][2]), el["stiff"], mirrored_axis)
 
     # Ears ride the shared ear bones so their animation bends them from the base.
-    arm = bpy.data.objects[ARMATURE]
+    arm = armature_of(species)
     for side, (base, tip) in ear_axes(arm).items():
         axis = (tip - base).normalized()
         rot = axis.to_track_quat('Z', 'Y')
@@ -710,7 +769,7 @@ def skin_lod0(species):
     """Heat weights, then the family rules proven on Rabbit: rigid face, soft head-to-neck ellipsoid,
     legs only drive the lower limbs, ears by bone axis, tail by its path. Max 3 influences."""
     spec = SPECS[species]
-    arm = bpy.data.objects[ARMATURE]
+    arm = armature_of(species)
     obj = bpy.data.objects[f"SKM_{species}_LOD0"]
     me = obj.data; vg = obj.vertex_groups
     regions = me.color_attributes["PW_Regions"].data
@@ -754,7 +813,8 @@ def skin_lod0(species):
     for v in me.vertices:
         co = v.co; w = _get(vg, v)
         r, g, b, a = regions[v.index].color
-        if a > 0.5 or b > 0.5:
+        # Eyes and nose ride the head; a detail tag low on the legs is the Fawn's hooves (pw_masks), not the face.
+        if a > 0.5 or (b > 0.5 and co.z > 0.1):
             _put(vg, v, {"Head": 1.0}); continue
         # Legs only drive the lower part of haunches and shoulders; the volume above follows the trunk.
         hind_band = spec.get("hind_leg_band", (0.15, 0.085))
@@ -801,7 +861,8 @@ def skin_lod0(species):
     for v in me.vertices:
         co = v.co
         r, g, b, a = regions[v.index].color
-        if a > 0.5 or b > 0.5:
+        # Eyes and nose ride the head; a detail tag low on the legs is the Fawn's hooves (pw_masks), not the face.
+        if a > 0.5 or (b > 0.5 and co.z > 0.1):
             _put(vg, v, {"Head": 1.0}); continue
         ew = _ear_weights(species, arm, co)
         if ew is not None:
@@ -849,7 +910,7 @@ def _collapse(src, name, target_tris):
 
 def build_lods(species):
     spec = SPECS[species]
-    arm = bpy.data.objects[ARMATURE]
+    arm = armature_of(species)
     lod0 = bpy.data.objects[f"SKM_{species}_LOD0"]
     if spec.get("lod1_mode") == "collapse":
         # Small features (squirrel ears) survive a collapse of LOD0 better than a coarse QuadriFlow.
@@ -910,7 +971,7 @@ def build_lods(species):
 def place_sockets(species):
     """Standard SmallQuadruped sockets, world-aligned at rest (same convention for every species)."""
     spec = SPECS[species]
-    arm = bpy.data.objects[ARMATURE]
+    arm = armature_of(species)
     lod0 = bpy.data.objects[f"SKM_{species}_LOD0"]
     bvh = BVHTree.FromObject(lod0, bpy.context.evaluated_depsgraph_get())
 

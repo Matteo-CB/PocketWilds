@@ -49,10 +49,7 @@ namespace PocketWilds.Editor.Albums
         /// <summary>The stickers of the same pages that cannot be captured today, and why.</summary>
         public static readonly (string id, string reason)[] Unavailable =
         {
-            ("STK-GL-06", "Faon: species not in the game yet"),
             ("STK-GL-07", "Hamster: species not in the game yet"),
-            ("STK-GL-10", "Faon: species not in the game yet"),
-            ("STK-GL-12", "the 6 species of the meadow (Faon missing)"),
             ("STK-GL-22", "big leaf prop missing, and the light rain is not frozen by the capture tool yet"),
             ("STK-GL-23", "the rainbow weather is not frozen by the capture tool yet"),
             ("STK-GL-24", "golden butterfly (signature moment): effect not in the game yet"),
@@ -204,6 +201,26 @@ namespace PocketWilds.Editor.Albums
                     S.Animal("squirrel.red", -0.18f, 0.32f, 175f, "Idle", 0.5f),
                     S.Animal("fieldmouse.warmbrown", 0.16f, 0.34f, 190f, "Idle", 0.7f),
                     S.Animal("hedgehog.brown", 0.48f, 0.02f, 205f, "Idle", 0.4f)).InZone("streambend", 0f, 1.6f).Far(9f, 0.8f),
+                // T46: the fawn is in the game, the Prairie has its six species.
+                D("STK-GL-06", PageGrassland1, StickerFraming.Full, StickerLight.Morning,
+                    "Fawn standing among the Prairie flowers, a surprised look (React), morning",
+                    S.Animal("fawn.chestnutspots", 0f, 0f, 205f, "React", 0.25f).Focus(),
+                    KitMesh("GL_Flower_A", DaisyWhite, -0.36f, -0.2f, 20f),
+                    KitMesh("GL_Flower_D", Poppy, 0.38f, -0.16f, 140f),
+                    KitMesh("GL_Flower_A", DaisyWhite, 0.3f, 0.36f, 260f)).View(0f, 6f),
+                D("STK-GL-10", PageGrassland1, StickerFraming.Scene, StickerLight.Day,
+                    "Hedgehog and fawn peeking out on each side of GL_Tree_D at the edge of its crown (nothing enters the tree), Orchard light",
+                    GlProp("Tree_D", 0f, 0.2f, 0f),
+                    S.Animal("hedgehog.brown", -1.45f, 0.05f, 140f, "Inspect", 0.4f),
+                    S.Animal("fawn.lightbrown", 1.5f, 0.1f, 225f, "IdleLook", 0.35f)).View(0f, 8f),
+                D("STK-GL-12", PageGrassland1, StickerFraming.Scene, StickerLight.Evening,
+                    "The six meadow species close together, the fawn in the middle, all looking at the camera, the Old Tree behind",
+                    S.Animal("fawn.chestnutspots", 0f, 0.16f, 185f, "Idle", 0.3f),
+                    S.Animal("rabbit.brown", -0.62f, 0.06f, 170f, "Idle", 0.2f),
+                    S.Animal("squirrel.red", 0.62f, 0.06f, 195f, "Idle", 0.5f),
+                    S.Animal("hedgehog.brown", -0.36f, -0.56f, 175f, "Idle", 0.4f),
+                    S.Animal("fieldmouse.warmbrown", 0.02f, -0.62f, 185f, "Idle", 0.7f),
+                    S.Animal("guineapig.caramel", 0.4f, -0.56f, 195f, "Idle", 0.6f)).InZone("hill", 0f, 2.2f).Far(10f, 0.8f),
 
                 // ---------------------------------------------------------------- Prairie page 2: the biome (zone landscapes)
                 D("STK-GL-13", PageGrassland2, StickerFraming.Landscape, StickerLight.Morning, "The Start: egg pedestal, path, grass and daisies")

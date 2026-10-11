@@ -64,11 +64,8 @@ def rabbit_masks(co, n, ctx):
         mask_a = max(mask_a, smoothstep(0.55, 0.7, t))
     mask_a *= 1.0 - belly * 0.85
 
-    # Mask B: Dutch-style saddle (rear half) plus both ears. Reserved for future variants.
-    mask_b = smoothstep(0.02, 0.06, co.y)
-    if on_ear:
-        mask_b = max(mask_b, smoothstep(0.05, 0.2, t))
-    mask_b *= 1.0 - belly
+    # Mask B: both ear tips in a soft gradient (T46, mastery color Moon: « bouts d'oreilles bleu nuit en dégradé »).
+    mask_b = smoothstep(0.50, 0.95, t) if on_ear else 0.0
 
     return secondary, belly, mask_a, mask_b
 
@@ -236,6 +233,61 @@ def guineapig_masks(co, n, ctx):
     return secondary, belly, mask_a, mask_b
 
 
+def _fawn_spots():
+    """Fawn spots: two rows each side of the spine and one lower row on the flanks, rump to shoulder."""
+    spots = []
+    for row, (x, z, r) in enumerate(((0.026, 0.402, 0.013), (0.050, 0.385, 0.012), (0.066, 0.350, 0.011))):
+        for k in range(6):
+            y = -0.030 + k * 0.034 + (0.017 if row % 2 else 0.0)
+            for sx in (1, -1):
+                spots.append(((sx * x, y, z), r))
+    return spots
+
+
+def fawn_masks(co, n, ctx):
+    """Secondary = inner ears (rose beige), belly = underside, chest, inner legs, muzzle, chin and tail tuft,
+    detail = hooves (with the nose), mask A = round spots, mask B = light fern stripes along the back."""
+    axes = ctx["ears"]
+    side = "L" if co.x > 0 else "R"
+    base, tip = axes[side]
+    p, t = intersect_point_line(co, base, tip)
+    radial = (co - p).length
+    on_ear = co.z > 0.50 and radial < 0.05 and -0.1 < t < 2.4 and abs(co.x) > 0.035
+    facing = n.dot(Vector((0, -1, 0)))
+    inner = smoothstep(0.15, 0.5, facing) * smoothstep(0.25, 0.6, t) * (1.0 - smoothstep(1.7, 2.2, t)) if on_ear else 0.0
+
+    hooves = smoothstep(0.040, 0.030, co.z)
+    hc = ctx["head_center"]; hr = ctx["head_radii"]
+    dh = co - hc
+    head_s = math.sqrt((dh.x / hr[0]) ** 2 + (dh.y / hr[1]) ** 2 + (dh.z / hr[2]) ** 2)
+    belly = 0.0
+    if not on_ear:
+        under = smoothstep(-0.25, -0.65, n.z) * smoothstep(0.24, 0.27, co.z)
+        # The inner side of the legs (the normal turned toward the body's middle) is lighter; the outside keeps the coat.
+        toward_middle = -n.x * (1.0 if co.x > 0 else -1.0)
+        inner_leg = smoothstep(0.25, 0.65, toward_middle) * (1.0 - smoothstep(0.24, 0.30, co.z)) * smoothstep(0.05, 0.08, co.z)
+        nose = ctx["nose"]
+        muzzle = smoothstep(0.045, 0.022, (co - nose).length)
+        chin = smoothstep(0.30, 0.70, max(facing, 0.8 * n.dot(Vector((0, 0, -1))))) * smoothstep(nose.z + 0.002, nose.z - 0.030, co.z)
+        chin *= 1.0 - smoothstep(1.05, 1.25, head_s)
+        chest = smoothstep(0.35, 0.7, facing) * smoothstep(-0.02, -0.08, co.y) * (1.0 - smoothstep(0.33, 0.37, co.z)) * smoothstep(0.85, 1.05, head_s)
+        tuft = smoothstep(0.195, 0.21, co.y) * smoothstep(-0.1, -0.5, n.z + 0.3 * n.y)
+        belly = max(under, inner_leg, muzzle, chin, chest, tuft) * (1.0 - hooves)
+
+    mask_a = 0.0
+    if not on_ear and co.z > 0.30:
+        for center, radius in ctx["spots"]:
+            mask_a = max(mask_a, smoothstep(radius * 1.15, radius * 0.45, (co - Vector(center)).length))
+        mask_a *= 1.0 - belly
+    mask_b = 0.0
+    if co.z > 0.36 and -0.06 < co.y < 0.17:
+        spine = smoothstep(0.010, 0.004, abs(co.x))
+        branch = abs(((co.y + abs(co.x) * 1.4) / 0.032) % 1.0 - 0.5)
+        fern = smoothstep(0.16, 0.06, branch) * smoothstep(0.050, 0.030, abs(co.x)) * smoothstep(0.006, 0.012, abs(co.x))
+        mask_b = max(spine, fern) * smoothstep(0.35, 0.6, n.z) * (1.0 - belly)
+    return inner, belly, mask_a, mask_b, hooves
+
+
 RULES = {
     "Rabbit": dict(
         fn=rabbit_masks,
@@ -266,6 +318,12 @@ RULES = {
         spots=[((0.055, -0.135, 0.175), 0.060), ((-0.060, -0.040, 0.170), 0.075), ((0.085, 0.050, 0.130), 0.070),
                ((-0.095, 0.110, 0.110), 0.070), ((0.030, 0.150, 0.165), 0.065)],
     ),
+    "Fawn": dict(
+        fn=fawn_masks,
+        head_center=(0.0, -0.175, 0.468),
+        head_radii=(0.074, 0.084, 0.071),
+        spots=_fawn_spots(),
+    ),
     "Squirrel": dict(
         fn=squirrel_masks,
         head_center=(0.0, -0.080, 0.300),
@@ -293,8 +351,14 @@ def _tail_path(species):
     return pw_species.SPECS.get(species, {}).get("tail_path", [])
 
 
-def apply(species, armature_name="SK_SmallQuadruped", nose_object="WORK_Nose"):
+def apply(species, armature_name=None, nose_object="WORK_Nose"):
     rule = RULES[species]
+    if armature_name is None:
+        try:
+            import pw_species
+            armature_name = pw_species.SPECS.get(species, {}).get("armature", "SK_SmallQuadruped")
+        except ImportError:
+            armature_name = "SK_SmallQuadruped"
     armature = bpy.data.objects[armature_name]
     ctx = {
         "ears": _ear_axes(armature),
@@ -326,8 +390,11 @@ def apply(species, armature_name="SK_SmallQuadruped", nose_object="WORK_Nose"):
                 # Eyes and nose keep their own tags and no pattern.
                 per_vertex.append((0.0, 0.0))
                 continue
-            sec, belly, ma, mb = rule["fn"](v.co, v.normal, ctx)
-            regions.data[v.index].color = (sec, belly, b, a)
+            out = rule["fn"](v.co, v.normal, ctx)
+            sec, belly, ma, mb = out[:4]
+            # A fifth value paints the detail region too (Fawn hooves share the nose's detail color).
+            detail = max(b, out[4]) if len(out) > 4 else b
+            regions.data[v.index].color = (sec, belly, detail, a)
             per_vertex.append((ma, mb))
         for loop in me.loops:
             uv.data[loop.index].uv = per_vertex[loop.vertex_index]

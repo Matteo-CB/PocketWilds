@@ -1,0 +1,162 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3fca47bd620ed94d97b65eda064ecb2, type: 3}
+  m_Name: DEF_Species_Fawn
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.SpeciesDefinitionAsset
+  sourceId: species.fawn
+  displayKey: species.fawn.name
+  rigFamily: 1
+  biomeId: biome.grassland
+  baseProduction: 1
+  visualKey: PF_Animal_Fawn
+  secret: 0
+  variants:
+  - sourceId: variant.fawn.chestnutspots
+    displayKey: variant.fawn.chestnutspots.name
+    rarity: 0
+    primary: {r: 0.627451, g: 0.4, b: 0.24705882, a: 1}
+    secondary: {r: 0.9137255, g: 0.7647059, b: 0.7058824, a: 1}
+    belly: {r: 0.9529412, g: 0.9019608, b: 0.8156863, a: 1}
+    detail: {r: 0.2901961, g: 0.2, b: 0.15686275, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 1, g: 0.972549, b: 0.93333334, a: 1}
+    patternChannel: 1
+    patternStrength: 16
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+  - sourceId: variant.fawn.lightbrown
+    displayKey: variant.fawn.lightbrown.name
+    rarity: 0
+    primary: {r: 0.7529412, g: 0.5411765, b: 0.36862746, a: 1}
+    secondary: {r: 0.9137255, g: 0.7764706, b: 0.7137255, a: 1}
+    belly: {r: 0.95686275, g: 0.9098039, b: 0.83137256, a: 1}
+    detail: {r: 0.3529412, g: 0.23921569, b: 0.17254902, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.5990588, g: 0.42382354, b: 0.29103923, a: 1}
+    patternChannel: 0
+    patternStrength: 0
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+  - sourceId: variant.fawn.cream
+    displayKey: variant.fawn.cream.name
+    rarity: 1
+    primary: {r: 0.9372549, g: 0.8666667, b: 0.74509805, a: 1}
+    secondary: {r: 0.9529412, g: 0.7882353, b: 0.76862746, a: 1}
+    belly: {r: 1, g: 0.99215686, b: 0.972549, a: 1}
+    detail: {r: 0.70980394, g: 0.5294118, b: 0.3529412, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.7280784, g: 0.65166664, b: 0.55456865, a: 1}
+    patternChannel: 0
+    patternStrength: 0
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+  - sourceId: variant.fawn.darkbrown
+    displayKey: variant.fawn.darkbrown.name
+    rarity: 1
+    primary: {r: 0.43137255, g: 0.2901961, b: 0.2, a: 1}
+    secondary: {r: 0.8509804, g: 0.7254902, b: 0.6509804, a: 1}
+    belly: {r: 0.91764706, g: 0.85882354, b: 0.78431374, a: 1}
+    detail: {r: 0.18039216, g: 0.12941177, b: 0.10980392, a: 1}
+    eye: {r: 0.07058824, g: 0.047058824, b: 0.047058824, a: 1}
+    pattern: {r: 0.3739608, g: 0.24813727, b: 0.17300001, a: 1}
+    patternChannel: 0
+    patternStrength: 0
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+  - sourceId: variant.fawn.white
+    displayKey: variant.fawn.white.name
+    rarity: 2
+    primary: {r: 0.972549, g: 0.9607843, b: 0.9411765, a: 1}
+    secondary: {r: 0.9529412, g: 0.7921569, b: 0.79607844, a: 1}
+    belly: {r: 1, g: 1, b: 1, a: 1}
+    detail: {r: 0.7254902, g: 0.7176471, b: 0.7137255, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.7527843, g: 0.717549, b: 0.69182354, a: 1}
+    patternChannel: 0
+    patternStrength: 0
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+  - sourceId: variant.fawn.blossom
+    displayKey: variant.fawn.blossom.name
+    rarity: 3
+    primary: {r: 0.95686275, g: 0.7882353, b: 0.8117647, a: 1}
+    secondary: {r: 0.9843137, g: 0.9137255, b: 0.91764706, a: 1}
+    belly: {r: 1, g: 1, b: 1, a: 1}
+    detail: {r: 0.7882353, g: 0.54509807, b: 0.56078434, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.9411765, g: 0.6156863, b: 0.6901961, a: 1}
+    patternChannel: 1
+    patternStrength: 14
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+  - sourceId: variant.fawn.honey
+    displayKey: variant.fawn.honey.name
+    rarity: 2
+    primary: {r: 0.8784314, g: 0.68235296, b: 0.38431373, a: 1}
+    secondary: {r: 0.9490196, g: 0.8039216, b: 0.7019608, a: 1}
+    belly: {r: 0.96862745, g: 0.92156863, b: 0.827451, a: 1}
+    detail: {r: 0.5411765, g: 0.38039216, b: 0.27058825, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.6869019, g: 0.5226471, b: 0.3020196, a: 1}
+    patternChannel: 0
+    patternStrength: 0
+    secret: 1
+    visitor: 0
+    masteryLevel: 10
+  - sourceId: variant.fawn.dew
+    displayKey: variant.fawn.dew.name
+    rarity: 3
+    primary: {r: 0.68235296, g: 0.7176471, b: 0.76862746, a: 1}
+    secondary: {r: 0.8980392, g: 0.7882353, b: 0.8, a: 1}
+    belly: {r: 1, g: 1, b: 1, a: 1}
+    detail: {r: 0.36862746, g: 0.39215687, b: 0.4392157, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 1, g: 1, b: 1, a: 1}
+    patternChannel: 1
+    patternStrength: 14
+    secret: 1
+    visitor: 0
+    masteryLevel: 20
+  - sourceId: variant.fawn.goldenfern
+    displayKey: variant.fawn.goldenfern.name
+    rarity: 4
+    primary: {r: 0.78431374, g: 0.6039216, b: 0.30588236, a: 1}
+    secondary: {r: 0.9372549, g: 0.79607844, b: 0.6666667, a: 1}
+    belly: {r: 0.95686275, g: 0.8980392, b: 0.7764706, a: 1}
+    detail: {r: 0.41960785, g: 0.2901961, b: 0.17254902, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.9490196, g: 0.8666667, b: 0.65882355, a: 1}
+    patternChannel: 2
+    patternStrength: 14
+    secret: 1
+    visitor: 0
+    masteryLevel: 30
+  - sourceId: variant.fawn.daisy
+    displayKey: variant.fawn.daisy.name
+    rarity: 3
+    primary: {r: 0.7019608, g: 0.5411765, b: 0.4, a: 1}
+    secondary: {r: 0.92156863, g: 0.78431374, b: 0.72156864, a: 1}
+    belly: {r: 0.9607843, g: 0.91764706, b: 0.85490197, a: 1}
+    detail: {r: 0.30980393, g: 0.22745098, b: 0.17254902, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 1, g: 0.99215686, b: 0.9490196, a: 1}
+    patternChannel: 1
+    patternStrength: 16
+    secret: 1
+    visitor: 0
+    masteryLevel: 0

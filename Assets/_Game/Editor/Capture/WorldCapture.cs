@@ -218,6 +218,12 @@ namespace PocketWilds.Editor.Capture
             Debug.Log("[WorldCapture] " + CaptureSpecies("T45", "guineapig", new[] { "caramel", "cream", "black", "tricolor", "greywhite", "golden", "cinnamon", "marshmallow", "apricot", "milkcloud" }));
         }
 
+        [MenuItem("Pocket Wilds/Capture/Fawn Variants (T46)", priority = 540)]
+        public static void CaptureT46Menu()
+        {
+            Debug.Log("[WorldCapture] " + CaptureSpecies("T46", "fawn", new[] { "chestnutspots", "lightbrown", "cream", "darkbrown", "white", "blossom", "honey", "dew", "goldenfern", "daisy" }));
+        }
+
         /// <summary>
         /// Shared variant prompt: the six palettes of one species on one prefab in a 2 x 3 grid on the meadow
         /// (Medium lighting), then the gameplay frame with a species mix and a closer three-quarter view.

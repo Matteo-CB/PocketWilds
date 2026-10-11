@@ -252,7 +252,7 @@ namespace PocketWilds.Editor.Eggs
             EditorUtility.SetDirty(database);
         }
 
-        public static readonly string[] GrasslandSpecies = { "species.rabbit", "species.squirrel", "species.hedgehog", "species.fieldmouse", "species.guineapig" };
+        public static readonly string[] GrasslandSpecies = { "species.rabbit", "species.squirrel", "species.hedgehog", "species.fieldmouse", "species.guineapig", "species.fawn" };
 
         private static EggDefinitionAsset EnsureEgg(string assetName, string sourceId, EggTier tier, Action<EggDefinitionAsset> fill)
         {

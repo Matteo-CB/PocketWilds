@@ -26,6 +26,7 @@ namespace PocketWilds.Tests.EditMode
             public string Name;
             public (string Variant, RarityTier Rarity)[] Variants;
             public (int Min, int Max)[] Lods;
+            public string Family = "SmallQuadruped";
             public override string ToString() => Name;
         }
 
@@ -60,9 +61,18 @@ namespace PocketWilds.Tests.EditMode
                     ("tricolor", RarityTier.Uncommon), ("greywhite", RarityTier.Rare), ("golden", RarityTier.Epic) },
                 Lods = new[] { (1700, 2400), (750, 1000), (350, 500) },
             };
+            // T46: the fawn rides the MediumQuadruped skeleton and its own family clips.
+            yield return new Case
+            {
+                Name = "Fawn",
+                Family = "MediumQuadruped",
+                Variants = new[] { ("chestnutspots", RarityTier.Common), ("lightbrown", RarityTier.Common), ("cream", RarityTier.Uncommon),
+                    ("darkbrown", RarityTier.Uncommon), ("white", RarityTier.Rare), ("blossom", RarityTier.Epic) },
+                Lods = new[] { (2400, 4000), (900, 1600), (400, 800) },
+            };
         }
 
-        private const string Family = "SmallQuadruped";
+        private const string SmallFamily = "SmallQuadruped";
         private readonly List<GameObject> _spawned = new List<GameObject>();
 
         [TearDown]
@@ -91,7 +101,7 @@ namespace PocketWilds.Tests.EditMode
             var id = SpeciesId(c);
             Assert.IsTrue(registry.Species.TryGet(id, out var species));
             Assert.AreEqual("PF_Animal_" + c.Name, species.VisualKey);
-            Assert.AreEqual(RigFamily.SmallQuadruped, species.RigFamily);
+            Assert.AreEqual(c.Family == "MediumQuadruped" ? RigFamily.MediumQuadruped : RigFamily.SmallQuadruped, species.RigFamily);
             Assert.AreEqual(ContentId.FromSource("biome.grassland"), species.Biome);
             foreach (var (name, rarity) in c.Variants)
             {
@@ -107,10 +117,10 @@ namespace PocketWilds.Tests.EditMode
         }
 
         [Test]
-        public void MasteryColors_AreThreePerNewSpecies_AtTenTwentyThirty_NeverInEggs()
+        public void MasteryColors_AreThreePerSpecies_AtTenTwentyThirty_NeverInEggs()
         {
             var registry = Registry();
-            foreach (var (species, plain) in new[] { ("fieldmouse", "buttercup"), ("guineapig", "milkcloud") })
+            foreach (var (species, plain) in new[] { ("fieldmouse", "buttercup"), ("guineapig", "milkcloud"), ("fawn", "daisy"), ("rabbit", null), ("squirrel", null), ("hedgehog", null) })
             {
                 var id = ContentId.FromSource("species." + species);
                 var levels = new List<int>();
@@ -126,6 +136,8 @@ namespace PocketWilds.Tests.EditMode
                 levels.Sort();
                 CollectionAssert.AreEqual(new[] { 10, 20, 30 }, levels, species);
 
+                if (plain == null)
+                    continue;
                 Assert.IsTrue(registry.Variants.TryGet(ContentId.FromSource($"variant.{species}.{plain}"), out var secret), plain);
                 Assert.IsTrue(secret.IsSecret, plain);
                 Assert.AreEqual(0, secret.MasteryLevel, plain);
@@ -135,11 +147,17 @@ namespace PocketWilds.Tests.EditMode
         [TestCaseSource(nameof(Species))]
         public void Model_ReusesTheFamilySkeleton_SameBonesSameBindPoses(Case c)
         {
-            var rabbit = (ModelImporter)AssetImporter.GetAtPath(AnimalPipeline.ModelPath("Rabbit"));
+            string skeleton = "SK_" + c.Family;
+            // The reference of a family: its first species model (the rabbit) or, for the medium family, the clips file.
+            string referencePath = c.Family == SmallFamily ? AnimalPipeline.ModelPath("Rabbit") : AnimalPipeline.ClipsPath(c.Family);
+            var rabbit = (ModelImporter)AssetImporter.GetAtPath(referencePath);
             var model = (ModelImporter)AssetImporter.GetAtPath(AnimalPipeline.ModelPath(c.Name));
-            var rabbitBones = rabbit.transformPaths.Where(p => p.Contains("SK_SmallQuadruped")).OrderBy(p => p).ToArray();
-            var bones = model.transformPaths.Where(p => p.Contains("SK_SmallQuadruped")).OrderBy(p => p).ToArray();
+            // Bones only: the clips file carries no sockets (the species place theirs on their mesh, same parent bones).
+            var rabbitBones = rabbit.transformPaths.Where(p => p.Contains(skeleton) && !p.Contains("/SOCK_")).OrderBy(p => p).ToArray();
+            var bones = model.transformPaths.Where(p => p.Contains(skeleton) && !p.Contains("/SOCK_")).OrderBy(p => p).ToArray();
             CollectionAssert.AreEqual(rabbitBones, bones, "Clips bind by path: the hierarchy must be identical.");
+            if (c.Family != SmallFamily)
+                return;
 
             var rabbitPoses = LoadLod0(AnimalPipeline.ModelPath("Rabbit")).bindposes;
             var poses = LoadLod0(AnimalPipeline.ModelPath(c.Name)).bindposes;
@@ -178,13 +196,13 @@ namespace PocketWilds.Tests.EditMode
         {
             var view = AssetDatabase.LoadAssetAtPath<AnimalView>(AnimalPipeline.PrefabPath(c.Name));
             Assert.IsNotNull(view);
-            var family = AssetDatabase.LoadAssetAtPath<AnimatorController>(AnimalPipeline.ControllerPath(Family));
+            var family = AssetDatabase.LoadAssetAtPath<AnimatorController>(AnimalPipeline.ControllerPath(c.Family));
             var runtime = view.Animator.runtimeAnimatorController;
             if (runtime is AnimatorOverrideController aoc)
             {
                 // Overrides swap family clips only: same states, no species-only clip.
                 Assert.AreSame(family, aoc.runtimeAnimatorController);
-                var familyClips = AssetDatabase.LoadAllAssetsAtPath(AnimalPipeline.ClipsPath(Family)).OfType<AnimationClip>().ToList();
+                var familyClips = AssetDatabase.LoadAllAssetsAtPath(AnimalPipeline.ClipsPath(c.Family)).OfType<AnimationClip>().ToList();
                 var pairs = new List<KeyValuePair<AnimationClip, AnimationClip>>();
                 aoc.GetOverrides(pairs);
                 foreach (var pair in pairs.Where(p => p.Value != null))
@@ -284,7 +302,7 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreEqual("AN_SmallQuadruped_Happy_Bounce", aoc["AN_SmallQuadruped_Happy"].name);
             Assert.IsTrue(aoc["AN_SmallQuadruped_Locomotion_Hop"].isLooping, "The walk loops like the hop it replaces.");
             // Same length as Happy: the shared behavior timing still fits.
-            Assert.AreEqual(aoc["AN_SmallQuadruped_Happy"].length, AssetDatabase.LoadAllAssetsAtPath(AnimalPipeline.ClipsPath(Family))
+            Assert.AreEqual(aoc["AN_SmallQuadruped_Happy"].length, AssetDatabase.LoadAllAssetsAtPath(AnimalPipeline.ClipsPath(SmallFamily))
                 .OfType<AnimationClip>().First(x => x.name == "AN_SmallQuadruped_Happy").length, 0.01f);
 
             var catalog = AssetDatabase.LoadAssetAtPath<AnimalVisualCatalog>(AnimalPipeline.VisualCatalogPath);

@@ -348,6 +348,8 @@ namespace PocketWilds.Presentation
                     }
                     if (context.Visitors != null)
                         _refuge.Visitors = context.Visitors;
+                    if (context.MasteryColors != null)
+                        _refuge.MasteryColors = context.MasteryColors;
                 }
             }
             _onQuality = ApplyQuality;
@@ -420,7 +422,10 @@ namespace PocketWilds.Presentation
             }
             _activityPresenter?.Dispose();
             if (_refuge != null)
+            {
                 _refuge.Visitors = null;
+                _refuge.MasteryColors = null;
+            }
             _journalCaptures?.Dispose();
             _journalCaptures = null;
             _journalPresenter?.Dispose();
