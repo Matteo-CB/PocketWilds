@@ -45,6 +45,9 @@ namespace PocketWilds.Services.Save
 
         /// <summary>T44C: the refuge journal (pages, first times, capture flags, surprises seen) and the rare visitors (schema 16).</summary>
         Journal = 22,
+
+        /// <summary>T47: accessories worn per animal and the companions (animal, bond XP, rewards, arrival owed) (schema 17).</summary>
+        Cosmetics = 23,
     }
 
     public sealed class SaveSection

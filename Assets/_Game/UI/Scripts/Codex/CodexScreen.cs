@@ -15,7 +15,7 @@ namespace PocketWilds.UI
     /// while it is open; closing is instant. Ticked by the refuge, no Update.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class CodexScreen : MonoBehaviour, ICodexView, IMotionSettings
+    public sealed class CodexScreen : MonoBehaviour, ICodexView, IMotionSettings, ICodexCompanionView
     {
         public const float HeaderRowHeight = 112f;
         public const float CardRowHeight = 428f;
@@ -73,6 +73,23 @@ namespace PocketWilds.UI
         [SerializeField] private RectTransform _sheetMasteryBar;
         [SerializeField] private RectTransform _sheetMasteryFill;
         [SerializeField] private TMP_Text _sheetMasteryXp;
+
+        [Header("T47 Companions tab")]
+        [SerializeField] private Button _speciesTab;
+        [SerializeField] private Image _speciesTabBack;
+        [SerializeField] private TMP_Text _speciesTabLabel;
+        [SerializeField] private Button _companionsTab;
+        [SerializeField] private Image _companionsTabBack;
+        [SerializeField] private TMP_Text _companionsTabLabel;
+        [SerializeField] private GameObject _companionsPanel;
+        [SerializeField] private ScrollRect _companionScroll;
+        [SerializeField] private RectTransform _companionContent;
+        [SerializeField] private CodexCompanionCardView[] _companionCards = System.Array.Empty<CodexCompanionCardView>();
+        private CompanionService _companions;
+        private PocketWilds.Content.ContentRegistry _contentRegistry;
+        private PlayerState _playerState;
+        private bool _companionsShown;
+        private bool _tabsListening;
 
         private readonly VirtualListLayout _layout = new VirtualListLayout();
         private readonly Stack<CodexHeaderView> _freeHeaders = new Stack<CodexHeaderView>();
@@ -148,6 +165,8 @@ namespace PocketWilds.UI
             _listContent.anchoredPosition = Vector2.zero;
             _scroll.velocity = Vector2.zero;
             UpdateRows(true);
+            BindTabs();
+            ShowCompanions(false);
         }
 
         /// <summary>T34A: straight to a species page (the animal sheet's Details); the list stays behind it.</summary>
@@ -177,7 +196,9 @@ namespace PocketWilds.UI
                 _fade = Mathf.Min(1f, _fade + unscaledDeltaTime / FadeSeconds);
                 _group.alpha = ReduceMotion ? 1f : _fade;
             }
-            if (_sheetIndex < 0)
+            if (_companionsShown)
+                TickCompanions();
+            else if (_sheetIndex < 0)
                 UpdateRows(false);
         }
 
@@ -335,6 +356,123 @@ namespace PocketWilds.UI
             _sheetOwned = sheetOwned;
             _sheetVariantsTitle = sheetVariantsTitle;
             _slots = slots;
+        }
+
+        // ---------------- T47 Companions tab ----------------
+
+        public bool CompanionsShown => _companionsShown;
+        public int CompanionCardCount => _companionCards.Length;
+        public CodexCompanionCardView GetCompanionCard(int index) => _companionCards[index];
+        public Button CompanionsTabButton => _companionsTab;
+        public Button SpeciesTabButton => _speciesTab;
+
+        public void BindCompanions(CompanionService companions, PocketWilds.Content.ContentRegistry content, PlayerState state)
+        {
+            _companions = companions;
+            _contentRegistry = content;
+            _playerState = state;
+        }
+
+        /// <summary>
+        /// Species or Companions (codex.companions.title). Companions have their own cards: a silhouette and the pack's name until
+        /// owned, then the bond ladder, looks and the outfit button. They never count in the Codex percentage.
+        /// </summary>
+        public void ShowCompanions(bool companions)
+        {
+            if (_companionsPanel == null || !_open)
+                return;
+            if (companions && _sheetIndex >= 0)
+                CloseSheet();
+            _companionsShown = companions && _companions != null;
+            _companionsPanel.SetActive(_companionsShown);
+            _viewport.gameObject.SetActive(!_companionsShown);
+            if (_tokens != null && _speciesTabBack != null)
+            {
+                _speciesTabBack.color = _companionsShown ? _tokens.panelSecondary : _tokens.accentPrimary;
+                _companionsTabBack.color = _companionsShown ? _tokens.accentPrimary : _tokens.panelSecondary;
+            }
+            if (!_companionsShown)
+                return;
+            var rows = CompanionCatalog.Rows;
+            for (int i = 0; i < _companionCards.Length; i++)
+            {
+                bool on = i < rows.Length;
+                _companionCards[i].gameObject.SetActive(on);
+                if (on)
+                    _companionCards[i].Bind(rows[i], _companions, _contentRegistry, _playerState, _text, _actions as ICodexCompanionActions, Close);
+            }
+            LayoutCompanions();
+            _companionContent.anchoredPosition = Vector2.zero;
+            _companionScroll.velocity = Vector2.zero;
+        }
+
+        private void BindTabs()
+        {
+            if (_speciesTab == null)
+                return;
+            _speciesTabLabel.text = Text(OutfitText.CodexSpeciesTab);
+            _companionsTabLabel.text = Text(OutfitText.CodexCompanionsTab);
+            if (_tabsListening)
+                return;
+            _tabsListening = true;
+            _speciesTab.onClick.AddListener(() => OnTab(false));
+            _companionsTab.onClick.AddListener(() => OnTab(true));
+        }
+
+        private void OnTab(bool companions)
+        {
+            if (!_open || _closing || companions == _companionsShown)
+                return;
+            ShowCompanions(companions);
+            _actions?.CodexNavigated(companions);
+        }
+
+        /// <summary>The pack bought over the Codex: the silhouette becomes the card (a set check, no allocation).</summary>
+        private void TickCompanions()
+        {
+            bool changed = false;
+            for (int i = 0; i < _companionCards.Length; i++)
+            {
+                if (_companionCards[i].gameObject.activeSelf && _companionCards[i].NeedsRebind)
+                {
+                    _companionCards[i].Rebind();
+                    changed = true;
+                }
+            }
+            if (changed)
+                LayoutCompanions();
+        }
+
+        private void LayoutCompanions()
+        {
+            const float gap = 40f;
+            float y = gap;
+            for (int i = 0; i < _companionCards.Length; i++)
+            {
+                if (!_companionCards[i].gameObject.activeSelf)
+                    continue;
+                var rect = (RectTransform)_companionCards[i].transform;
+                rect.anchoredPosition = new Vector2(0f, -y);
+                y += _companionCards[i].Height + gap;
+            }
+            _companionContent.sizeDelta = new Vector2(_companionContent.sizeDelta.x, y);
+        }
+
+        /// <summary>Prefab builder hook for the T47 tabs and Companions panel (Editor OutfitUiPipeline).</summary>
+        public void SetCompanionReferences(Button speciesTab, Image speciesTabBack, TMP_Text speciesTabLabel, Button companionsTab,
+            Image companionsTabBack, TMP_Text companionsTabLabel, GameObject companionsPanel, ScrollRect companionScroll,
+            RectTransform companionContent, CodexCompanionCardView[] companionCards)
+        {
+            _speciesTab = speciesTab;
+            _speciesTabBack = speciesTabBack;
+            _speciesTabLabel = speciesTabLabel;
+            _companionsTab = companionsTab;
+            _companionsTabBack = companionsTabBack;
+            _companionsTabLabel = companionsTabLabel;
+            _companionsPanel = companionsPanel;
+            _companionScroll = companionScroll;
+            _companionContent = companionContent;
+            _companionCards = companionCards;
         }
 
         // ---------------- List ----------------
@@ -544,6 +682,11 @@ namespace PocketWilds.UI
 
         private void OnBackPressed()
         {
+            if (_companionsShown)
+            {
+                Close();
+                return;
+            }
             if (_sheetIndex >= 0)
             {
                 CloseSheet();
@@ -560,6 +703,9 @@ namespace PocketWilds.UI
             ReleaseAll();
             _sheet.SetActive(false);
             _sheetIndex = -1;
+            _companionsShown = false;
+            if (_companionsPanel != null)
+                _companionsPanel.SetActive(false);
             _content.SetActive(false);
             _actions?.CodexClosed();
         }

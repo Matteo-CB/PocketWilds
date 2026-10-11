@@ -28,6 +28,8 @@ namespace PocketWilds.Editor.Production
         public const string BlenderAnimals = "SourceArt/Blender/Animals";
         public const string BlenderEggs = "SourceArt/Blender/Eggs";
         public const int BaseVariantsTarget = 6;
+        /// <summary>A companion's looks (T47: base, bond 5, bond 10).</summary>
+        public const int CompanionLooksTarget = 3;
 
         /// <summary>One check of a species or an egg: passed, or what is missing.</summary>
         public readonly struct Check
@@ -92,9 +94,14 @@ namespace PocketWilds.Editor.Production
                 bool inCatalog = visuals != null && visuals.TryGet(species.visualKey, out var entry) && entry.prefab != null;
                 row.Checks.Add(new Check("Catalogue visuel", inCatalog, inCatalog ? species.visualKey : $"{species.visualKey} absent de DEF_AnimalVisualCatalog"));
 
+                // A companion (T47) has its own looks (three, given by its bond) and never comes from an egg.
                 int baseVariants = species.variants.Count(v => !v.secret);
-                row.Checks.Add(new Check("Variantes", baseVariants >= BaseVariantsTarget,
-                    $"{baseVariants} de base (cible {BaseVariantsTarget}), {species.variants.Count(v => v.secret)} secrètes"));
+                if (species.companion)
+                    row.Checks.Add(new Check("Variantes", species.variants.Count >= CompanionLooksTarget,
+                        $"compagnon : {species.variants.Count} apparences (cible {CompanionLooksTarget})"));
+                else
+                    row.Checks.Add(new Check("Variantes", baseVariants >= BaseVariantsTarget,
+                        $"{baseVariants} de base (cible {BaseVariantsTarget}), {species.variants.Count(v => v.secret)} secrètes"));
 
                 var keys = new[] { species.displayKey }.Concat(species.variants.Select(v => v.displayKey)).ToList();
                 var missing = MissingTexts(database, keys);
@@ -107,7 +114,10 @@ namespace PocketWilds.Editor.Production
                     $"{portraits}/{species.variants.Count} vignettes, silhouette {(silhouette ? "oui" : "non")} (Vignettes)"));
 
                 var eggs = database.eggs.Where(e => e != null && e.pool.Any(p => p.speciesId == species.sourceId && p.weight > 0f)).Select(e => e.name).ToList();
-                row.Checks.Add(new Check("Œufs", eggs.Count > 0, eggs.Count > 0 ? string.Join(", ", eggs) : "aucun œuf ne la donne (pool des DEF_Egg_*)"));
+                if (species.companion)
+                    row.Checks.Add(new Check("Œufs", eggs.Count == 0, eggs.Count == 0 ? "compagnon : jamais dans un œuf" : "un compagnon ne doit être dans aucun œuf : " + string.Join(", ", eggs)));
+                else
+                    row.Checks.Add(new Check("Œufs", eggs.Count > 0, eggs.Count > 0 ? string.Join(", ", eggs) : "aucun œuf ne la donne (pool des DEF_Egg_*)"));
                 rows.Add(row);
             }
             return rows;

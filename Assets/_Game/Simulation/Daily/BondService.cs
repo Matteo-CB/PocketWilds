@@ -44,6 +44,9 @@ namespace PocketWilds.Simulation
             _ctx = ctx;
         }
 
+        /// <summary>T47: the companions' own bond track (XP per source, 10 counted touches a day). Null: no companion system.</summary>
+        public ICompanionBondSink? Companions { get; set; }
+
         /// <summary>An animal was touched; counted: inside the daily caps (wishes and the journal count only those).</summary>
         public event Action<uint, bool>? Touched;
 
@@ -85,7 +88,8 @@ namespace PocketWilds.Simulation
             if (visit.TouchesToday < config.BondTouchCapTotal)
             {
                 visit.TouchesByAnimal.TryGetValue(animal, out byte mine);
-                if (mine < config.BondTouchCapAnimal && mine < byte.MaxValue)
+                int capAnimal = Companions != null && Companions.IsCompanion(animal) ? CompanionService.TouchesPerDay : config.BondTouchCapAnimal;
+                if (mine < capAnimal && mine < byte.MaxValue)
                 {
                     visit.TouchesByAnimal[animal] = (byte)(mine + 1);
                     visit.TouchesToday++;
@@ -187,6 +191,8 @@ namespace PocketWilds.Simulation
             var collection = _ctx.State.Collection;
             if (!collection.TryGet(animal, out var instance))
                 return 0;
+            // A companion's bond XP has its own 25 levels: it keeps counting once the bond points are full.
+            Companions?.OnBondEvent(animal, source);
 
             double multiplier = 1.0;
             var essence = _ctx.Progression?.Essence;

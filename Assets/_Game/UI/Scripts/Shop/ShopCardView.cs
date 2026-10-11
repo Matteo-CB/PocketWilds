@@ -36,6 +36,20 @@ namespace PocketWilds.UI
         [SerializeField] private Image _priceGem;
         [SerializeField] private RectTransform _wait;
 
+        [Header("T47 pack (« Pack de la Prairie »)")]
+        [SerializeField] private GameObject _oneTimeChip;
+        [SerializeField] private TMP_Text _oneTimeLabel;
+        [SerializeField] private GameObject _packRow;
+        [SerializeField] private Image[] _packIcons = Array.Empty<Image>();
+        [SerializeField] private TMP_Text[] _packLabels = Array.Empty<TMP_Text>();
+        [SerializeField] private TMP_Text _note;
+        [SerializeField] private Sprite _packFallback;
+        [Tooltip("The buy button's place for other offers, then for a pack (bottom anchors, pivot = anchor).")]
+        [SerializeField] private Vector2 _buyAnchor = new Vector2(1f, 0f);
+        [SerializeField] private Vector2 _buyPosition;
+        [SerializeField] private Vector2 _packBuyAnchor = new Vector2(1f, 0f);
+        [SerializeField] private Vector2 _packBuyPosition;
+
         private Action<ContentId> _onBuy;
         private ContentId _offer;
         private bool _waiting;
@@ -44,6 +58,16 @@ namespace PocketWilds.UI
         public ContentId Offer => _offer;
         public string PriceText => _price != null ? _price.text : string.Empty;
         public bool Interactable => _buy != null && _buy.interactable;
+        public string TitleText => _title != null ? _title.text : string.Empty;
+        public string ContentsText => _contents != null && _contents.gameObject.activeSelf ? _contents.text : string.Empty;
+        public string OneTimeText => _oneTimeChip != null && _oneTimeChip.activeSelf ? _oneTimeLabel.text : string.Empty;
+        public string NoteText => _note != null && _note.gameObject.activeSelf ? _note.text : string.Empty;
+        public Sprite ArtShown => _art != null && _art.enabled ? _art.sprite : null;
+
+        /// <summary>T47: the pack's content row (icons with labels) as shown.</summary>
+        public int PackItemsShown { get; private set; }
+        public string PackLabel(int index) => _packLabels[index].text;
+        public Sprite PackIcon(int index) => _packIcons[index].sprite;
 
         public void Initialize(Action<ContentId> onBuy)
         {
@@ -117,6 +141,7 @@ namespace PocketWilds.UI
                 }
             }
 
+            BindPack(card, text, sprites);
             ShopText.SetPrice(_price, text, card);
             if (_priceGem != null)
                 _priceGem.gameObject.SetActive(card.GemCost > 0 && !card.Owned);
@@ -128,6 +153,82 @@ namespace PocketWilds.UI
             if (_wait != null)
                 _wait.gameObject.SetActive(thisBusy);
             _price.gameObject.SetActive(!thisBusy);
+        }
+
+        /// <summary>
+        /// T47 pack: the body line, « Offre unique » as a badge (no caption), the content row (the companion, the Gems, the burrow,
+        /// the crown), the restore note under the button, which takes its pack place. Other offers keep the T28 look.
+        /// </summary>
+        private void BindPack(in ShopCardModel card, ILocalization text, Func<string, Sprite> sprites)
+        {
+            bool pack = card.ContentCount > 0;
+            if (pack)
+            {
+                if (_gemsIcon != null)
+                    _gemsIcon.SetActive(false);
+                if (_contents != null && !string.IsNullOrEmpty(card.BodyKey))
+                    _contents.SetText(ShopText.Get(text, card.BodyKey));
+            }
+            bool chip = pack && !string.IsNullOrEmpty(card.OneTimeKey) && !card.Owned && _oneTimeChip != null;
+            if (_oneTimeChip != null)
+            {
+                _oneTimeChip.SetActive(chip);
+                if (chip)
+                    _oneTimeLabel.SetText(ShopText.Get(text, card.OneTimeKey));
+            }
+            if (chip && _caption != null)
+                _caption.gameObject.SetActive(false);
+            PackItemsShown = 0;
+            if (_packRow != null)
+            {
+                _packRow.SetActive(pack);
+                for (int i = 0; i < _packIcons.Length && i < _packLabels.Length; i++)
+                {
+                    bool on = pack && i < card.ContentCount;
+                    _packIcons[i].transform.parent.gameObject.SetActive(on);
+                    if (!on)
+                        continue;
+                    var item = card.GetContent(i);
+                    var icon = string.IsNullOrEmpty(item.IconKey) ? null : sprites(item.IconKey);
+                    _packIcons[i].sprite = icon != null ? icon : _packFallback;
+                    _packLabels[i].SetText(item.Amount > 0
+                        ? ShopText.Format(text, UiTextKeys.ShopContentsGems, item.Amount)
+                        : ShopText.Get(text, item.LabelKey));
+                    PackItemsShown++;
+                }
+            }
+            if (_note != null)
+            {
+                _note.gameObject.SetActive(pack && card.RestoreNote);
+                if (pack && card.RestoreNote)
+                    _note.SetText(ShopText.Get(text, UiTextKeys.ShopRestoreNote));
+            }
+            var buy = _buyBackground != null ? _buyBackground.rectTransform : null;
+            if (buy != null && _packRow != null)
+            {
+                var anchor = pack ? _packBuyAnchor : _buyAnchor;
+                buy.anchorMin = anchor;
+                buy.anchorMax = anchor;
+                buy.pivot = anchor;
+                buy.anchoredPosition = pack ? _packBuyPosition : _buyPosition;
+            }
+        }
+
+        /// <summary>Prefab builder hook for the T47 pack parts (Editor ShopUiPipeline).</summary>
+        public void SetPackReferences(GameObject oneTimeChip, TMP_Text oneTimeLabel, GameObject packRow, Image[] packIcons, TMP_Text[] packLabels,
+            TMP_Text note, Sprite packFallback, Vector2 buyAnchor, Vector2 buyPosition, Vector2 packBuyAnchor, Vector2 packBuyPosition)
+        {
+            _oneTimeChip = oneTimeChip;
+            _oneTimeLabel = oneTimeLabel;
+            _packRow = packRow;
+            _packIcons = packIcons;
+            _packLabels = packLabels;
+            _note = note;
+            _packFallback = packFallback;
+            _buyAnchor = buyAnchor;
+            _buyPosition = buyPosition;
+            _packBuyAnchor = packBuyAnchor;
+            _packBuyPosition = packBuyPosition;
         }
 
         /// <summary>Three dots breathe while the store answers (transform only, no Animator).</summary>

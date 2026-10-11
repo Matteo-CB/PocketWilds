@@ -11,13 +11,28 @@ Usage inside Blender, with BL_Rig_SmallQuadruped.blend open:
 T34E (charte « fait main », section 8):
 - The Root bone points up, so its local Y is world up: the bounce now lifts the body. It used to ride the bone's
   local Z, which is the animal's forward axis, and every hop slid the body 5 to 8 cm forward and back.
-- Ear twitches at rest stay within 8 degrees."""
+- Ear twitches at rest stay within 8 degrees.
+
+T47: scale channels ("sx", "sy", "sz", bone-local) for a subtle squash; only the Field Hamster Stash uses them, on the
+Head bone (cheeks puff, no shape key, no new bone). Every clip keys the Head scale at 1 so none inherits a squash."""
 import bpy, math
 
 ARM = bpy.data.objects["SK_SmallQuadruped"]
 ROT = 'pose.bones["{}"].rotation_euler'
 LOC = 'pose.bones["{}"].location'
+SCL = 'pose.bones["{}"].scale'
 AXIS = {"rx": 0, "ry": 1, "rz": 2, "lz": 2}
+SCALE_CHANNELS = ("sx", "sy", "sz")
+
+
+def head_scale_channels():
+    """Bone-local scale channels of the Head bone that run along world X (width) and world Z (height) at rest, so
+    the squash reads the same whatever the bone's roll."""
+    m = ARM.data.bones["Head"].matrix_local.to_3x3()
+    axes = [m.col[i].normalized() for i in range(3)]
+    width = max(range(3), key=lambda i: abs(axes[i].x))
+    height = max((i for i in range(3) if i != width), key=lambda i: abs(axes[i].z))
+    return SCALE_CHANNELS[width], SCALE_CHANNELS[height]
 
 def both(name_fmt, channel, keys, mirror_sign=1):
     """Same keys for L and R. mirror_sign=-1 flips R values (outward ear splay on Z)."""
@@ -52,6 +67,13 @@ def build(name, frames, loop, tracks):
         keys = root_keys if i == 1 else [(0, 0.0), (frames, 0.0)]
         for f, v in keys:
             fc.keyframe_points.insert(f, v, options={'FAST'})
+    # Scale (squash) channels: the Head always, any other bone only when the clip keys it.
+    scale_bones = ["Head"] + sorted({b for (b, ch) in tracks if ch in SCALE_CHANNELS and b != "Head"})
+    for bone in scale_bones:
+        for i, ch in enumerate(SCALE_CHANNELS):
+            fc = act.fcurve_ensure_for_datablock(ARM, SCL.format(bone), index=i, group_name=bone)
+            for f, v in tracks.get((bone, ch), [(0, 1.0), (frames, 1.0)]):
+                fc.keyframe_points.insert(f, v, options={'FAST'})
     for fc in fcurves(act):
         for kp in fc.keyframe_points:
             kp.interpolation = 'BEZIER'
@@ -232,6 +254,42 @@ def clips():
     t.update(both("HindLeg_{}_Upper", "rx", [(0, 0), (8, -8), (13, 0), (20, -6), (25, 0), (30, 0)]))
     t.update(both("Ear_{}_01", "rx", [(0, 0), (6, 5), (10, -10), (15, 4), (20, -8), (26, 0), (30, 0)]))
     c["AN_SmallQuadruped_Happy_Bounce"] = (30, False, t)
+
+    # ---------------- FieldHamsterGreet (T47): the companion's hello when the player comes back. 1 s one-shot.
+    # A small lean back, one front paw lifts and waggles while the other lifts a little, a bright nod, ears perk.
+    # Legs only swing forward (paws rise, never below the ground); Root lifts 8 mm at most.
+    t = {("Root", "lz"): [(0, 0), (4, 0.0), (9, 0.008), (16, 0.006), (22, 0.002), (30, 0)],
+         ("Chest", "rx"): [(0, 0), (4, 0), (9, -5), (18, -4), (25, 0), (30, 0)],
+         ("Neck", "rx"): [(0, 0), (8, -4), (13, 6), (18, -2), (22, 4), (27, 0), (30, 0)],
+         ("Head", "rx"): [(0, 0), (4, 3), (8, -9), (13, 12), (18, -4), (22, 8), (27, 0), (30, 0)],
+         ("Head", "rz"): [(0, 0), (8, 0), (13, 6), (20, 6), (27, 0), (30, 0)],
+         ("FrontLeg_L_Upper", "rx"): [(0, 0), (4, 0), (9, 32), (20, 30), (26, 4), (30, 0)],
+         ("FrontLeg_L_Lower", "rx"): [(0, 0), (5, 0), (9, -16), (12, -6), (15, -18), (18, -6), (21, -16), (26, -2), (30, 0)],
+         ("FrontPaw_L", "rx"): [(0, 0), (5, 0), (9, 10), (12, 22), (15, 8), (18, 22), (21, 10), (26, 0), (30, 0)],
+         ("FrontLeg_R_Upper", "rx"): [(0, 0), (4, 0), (10, 12), (19, 10), (25, 0), (30, 0)],
+         ("FrontLeg_R_Lower", "rx"): [(0, 0), (5, 0), (10, -6), (19, -5), (25, 0), (30, 0)],
+         ("Tail_01", "rx"): [(0, 0), (9, 8), (18, -3), (26, 0), (30, 0)]}
+    t.update(both("Ear_{}_01", "rx", [(0, 0), (4, 4), (9, -10), (14, -6), (19, -9), (26, 0), (30, 0)]))
+    t.update(both("Ear_{}_01", "rz", [(0, 0), (9, -6), (19, -4), (27, 0), (30, 0)], -1))
+    c["AN_SmallQuadruped_FieldHamsterGreet"] = (30, False, t)
+
+    # ---------------- FieldHamsterStash (T47): sniffs the ground, picks a seed with both paws, tucks it in a cheek
+    # in two pushes (the cheeks puff by a subtle Head squash: 7 % wider, 3 % lower), a happy wiggle, back to rest.
+    # 2.4 s one-shot. Safe on every SmallQuadruped: rotations within the Eat and Inspect ranges, paws only rise.
+    width, height = head_scale_channels()
+    t = {("Neck", "rx"): [(0, 0), (8, 14), (20, 14), (28, 2), (50, 0), (72, 0)],
+         ("Head", "rx"): [(0, 0), (8, 14), (11, 18), (14, 14), (17, 18), (20, 12), (28, -4), (34, 2), (38, -3), (44, 1), (50, -2), (62, 0), (72, 0)],
+         ("Head", "rz"): [(0, 0), (8, 6), (20, 4), (28, 0), (50, 0), (53, 5), (56, -5), (59, 4), (62, 0), (72, 0)],
+         ("Chest", "rx"): [(0, 0), (8, 0), (20, 0), (28, -3), (48, -3), (60, 0), (72, 0)],
+         ("Root", "lz"): [(0, 0), (20, 0), (28, 0.004), (48, 0.004), (60, 0), (72, 0)],
+         ("Head", width): [(0, 1.0), (26, 1.0), (31, 1.045), (34, 1.035), (39, 1.07), (52, 1.07), (64, 1.02), (72, 1.0)],
+         ("Head", height): [(0, 1.0), (26, 1.0), (31, 0.985), (34, 0.99), (39, 0.97), (52, 0.97), (64, 0.993), (72, 1.0)],
+         ("Tail_01", "rx"): [(0, 0), (40, 0), (44, 8), (50, -4), (56, 0), (72, 0)]}
+    t.update(both("FrontLeg_{}_Upper", "rx", [(0, 0), (8, 8), (16, 10), (24, 26), (32, 28), (40, 22), (48, 4), (56, 0), (72, 0)]))
+    t.update(both("FrontLeg_{}_Lower", "rx", [(0, 0), (8, -4), (24, -22), (32, -24), (40, -18), (48, -2), (56, 0), (72, 0)]))
+    t.update(both("FrontPaw_{}", "rx", [(0, 0), (24, 14), (32, 18), (40, 12), (48, 0), (72, 0)]))
+    t.update(both("Ear_{}_01", "rx", [(0, 0), (8, 8), (20, 8), (30, -4), (40, -6), (52, -2), (62, 0), (72, 0)]))
+    c["AN_SmallQuadruped_FieldHamsterStash"] = (72, False, t)
     return c
 
 def build_all():
@@ -241,5 +299,5 @@ def build_all():
         made.append(name)
     ARM.animation_data.action = None
     for pb in ARM.pose.bones:
-        pb.rotation_euler = (0, 0, 0); pb.location = (0, 0, 0)
+        pb.rotation_euler = (0, 0, 0); pb.location = (0, 0, 0); pb.scale = (1, 1, 1)
     return made

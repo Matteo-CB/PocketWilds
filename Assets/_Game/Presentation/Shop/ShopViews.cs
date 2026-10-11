@@ -34,6 +34,52 @@ namespace PocketWilds.Presentation
         public OfferBadge Badge;
         public bool OneTime;
         public bool Owned;
+
+        /// <summary>T47 pack: the body line key (« Hamster des champs + 500 Gemmes + Terrier douillet »), empty otherwise.</summary>
+        public string BodyKey;
+
+        /// <summary>T47 pack: the « Offre unique » badge key (shown while not owned), empty otherwise.</summary>
+        public string OneTimeKey;
+
+        /// <summary>T47 pack: « Restauré sur un nouvel appareil. » under the button.</summary>
+        public bool RestoreNote;
+
+        /// <summary>T47 pack: what it holds, as icons with labels (up to <see cref="MaxContents"/>, in order).</summary>
+        public int ContentCount;
+        public ShopContentItem Content0, Content1, Content2, Content3;
+
+        public const int MaxContents = 4;
+
+        public ShopContentItem GetContent(int index) => index switch
+        {
+            0 => Content0,
+            1 => Content1,
+            2 => Content2,
+            _ => Content3,
+        };
+
+        public void AddContent(in ShopContentItem item)
+        {
+            switch (ContentCount)
+            {
+                case 0: Content0 = item; break;
+                case 1: Content1 = item; break;
+                case 2: Content2 = item; break;
+                case 3: Content3 = item; break;
+                default: return;
+            }
+            ContentCount++;
+        }
+    }
+
+    /// <summary>One thing a pack holds: an icon and a name key, or an amount of Gems (« 500 Gemmes »).</summary>
+    public struct ShopContentItem
+    {
+        public string IconKey;
+        public string LabelKey;
+
+        /// <summary>Gems (the label is « {0} Gemmes »); 0 for an item.</summary>
+        public long Amount;
     }
 
     /// <summary>Feedback after a shop action. Views map each one to a short localized line.</summary>

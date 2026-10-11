@@ -107,6 +107,11 @@ namespace PocketWilds.Services.Analytics
         VisitorTouch = 181,
         VisitorLeft = 182,
         JournalEntry = 344,
+
+        // T47 (doc 08 section 9.5): the companions' bond (85), their arrival (190) and the accessories worn (343).
+        CompanionBondLevel = 85,
+        CompanionArrive = 190,
+        OutfitEquip = 343,
     }
 
     /// <summary>Screens worth counting: the values of doc 08 section 9.5 (realigned in T37, before any data was sent).</summary>
@@ -265,6 +270,12 @@ namespace PocketWilds.Services.Analytics
             AnalyticsEventId.VisitorLeft => new[] { Field.I(0), Field.I(1) },
             // moment number (1 to 63, the doc's table order), image kind (JournalImageKind), pages in the journal
             AnalyticsEventId.JournalEntry => new[] { Field.I(0), Field.I(1), Field.I(2) },
+            // T47. companion species, bond level reached (1 to 25)
+            AnalyticsEventId.CompanionBondLevel => new[] { Field.U(0), Field.I(0) },
+            // companion species, bond level at arrival (above 0 when it comes back after a refund)
+            AnalyticsEventId.CompanionArrive => new[] { Field.U(0), Field.I(0) },
+            // item, species, socket
+            AnalyticsEventId.OutfitEquip => new[] { Field.U(0), Field.U(1), Field.I(0) },
             // index (1 to 3)
             AnalyticsEventId.WelcomeGift => new[] { Field.I(0) },
             // seconds from Today opened to the last claim, taps, items claimed

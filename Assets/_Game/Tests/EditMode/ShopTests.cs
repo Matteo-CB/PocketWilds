@@ -527,7 +527,8 @@ namespace PocketWilds.Tests.EditMode
                     }
                     var starter = model.GetFeatured(0);
                     Assert.AreEqual(ShopPipeline.StarterGems, starter.Gems);
-                    Assert.AreEqual("entitlement.cosmetic.flower_crown.name", starter.ItemKey);
+                    // The Meadow Pack's hero item is its companion (the crown and the burrow come with it).
+                    Assert.AreEqual("species.fieldhamster.name", starter.ItemKey);
                     Assert.IsTrue(starter.OneTime);
 
                     presenter.Buy(starter.Offer);

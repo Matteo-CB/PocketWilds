@@ -42,6 +42,7 @@ namespace PocketWilds.Editor.Saves
             created += WriteIfMissing("GoldenSave_Albums_v14", BuildAlbums());
             created += WriteIfMissing("GoldenSave_Achievements_v15", BuildAchievements());
             created += WriteIfMissing("GoldenSave_Journal_v16", BuildJournal());
+            created += WriteIfMissing("GoldenSave_Cosmetics_v17", BuildCosmetics());
             AssetDatabase.Refresh();
             Debug.Log($"[GoldenSaves] {created} fixture(s) created in {Folder}.");
         }
@@ -418,6 +419,34 @@ namespace PocketWilds.Editor.Saves
         /// two garden plants, a best Renewal; the visitors open on day 9800, the meadow rabbit touched twice, the snow rabbit
         /// kept, today's first visit greeted, the guaranteed first visit, 3 greetings.
         /// </summary>
+        /// <summary>T47: a crown worn on HeadTop, the Meadow Pack bought, the Field Hamster placed at bond 9 (its arrival seen).</summary>
+        private static PlayerState BuildCosmetics()
+        {
+            var state = BuildJournal();
+            state.Meta.ProfileId = new Guid("6f0c1a2e-0000-4000-8000-0000000000c7");
+            state.Meta.Revision = 430;
+            state.Entitlements.Owned.Add(ContentId.FromSource("companion.fieldhamster"));
+            state.Entitlements.Owned.Add(ContentId.FromSource("decor.cozy_burrow"));
+            state.Entitlements.Owned.Add(ContentId.FromSource("cosmetic.flower_crown"));
+            state.Entitlements.ProcessedTransactions.Add("golden-meadow-pack-1");
+            uint first = state.Collection.Count > 0 ? state.Collection[0].InstanceId : 0u;
+            if (first != 0)
+                state.Cosmetics.Set(first, AccessorySocket.HeadTop, new EquippedAccessory { Accessory = ContentId.FromSource("cosmetic.flower_crown"), Palette = 1 });
+            uint hamster = state.Collection.Add(new AnimalInstance
+            {
+                Species = ContentId.FromSource("species.fieldhamster"),
+                Variant = ContentId.FromSource("variant.fieldhamster.fieldgold"),
+                Seed = 0x5EED0047u,
+                CreatedUtcSeconds = (uint)BaseTime.AddDays(9).ToUnixTimeSeconds(),
+                Rarity = RarityTier.Rare,
+            });
+            state.Companions.Companions.Add(new CompanionRecord
+            {
+                Species = ContentId.FromSource("species.fieldhamster"), AnimalId = hamster, BondXp = 1300, RewardedLevel = 9, PhotoDay = 20372,
+            });
+            return state;
+        }
+
         private static PlayerState BuildJournal()
         {
             var state = BuildAchievements();

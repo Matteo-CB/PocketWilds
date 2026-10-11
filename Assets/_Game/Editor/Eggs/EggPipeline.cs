@@ -252,6 +252,13 @@ namespace PocketWilds.Editor.Eggs
             EditorUtility.SetDirty(database);
         }
 
+        /// <summary>T47: the species definition of the shipped database says companion.</summary>
+        private static bool IsCompanion(string speciesId)
+        {
+            var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(PocketWilds.Editor.UI.UiPipeline.ContentDatabasePath);
+            return database != null && database.species.Exists(s => s != null && s.sourceId == speciesId && s.companion);
+        }
+
         public static readonly string[] GrasslandSpecies = { "species.rabbit", "species.squirrel", "species.hedgehog", "species.fieldmouse", "species.guineapig", "species.fawn" };
 
         private static EggDefinitionAsset EnsureEgg(string assetName, string sourceId, EggTier tier, Action<EggDefinitionAsset> fill)
@@ -273,7 +280,11 @@ namespace PocketWilds.Editor.Eggs
             // roll, discovery from pity).
             asset.pool = new System.Collections.Generic.List<EggDefinitionAsset.PoolEntry>();
             foreach (var species in GrasslandSpecies)
-                asset.pool.Add(new EggDefinitionAsset.PoolEntry { speciesId = species, weight = 1f });
+            {
+                // T47: a companion comes from its pack only (the registry also refuses it in a pool).
+                if (!IsCompanion(species))
+                    asset.pool.Add(new EggDefinitionAsset.PoolEntry { speciesId = species, weight = 1f });
+            }
             asset.starterSpeciesId = "";
             asset.unlockBiomeMastery = 0;
             asset.focusTargetCount = 0;

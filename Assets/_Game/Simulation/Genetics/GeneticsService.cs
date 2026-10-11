@@ -12,6 +12,9 @@ namespace PocketWilds.Simulation
         SameAnimal = 1,
         DifferentSpecies = 2,
         UnknownSpecies = 3,
+
+        /// <summary>T47: a companion never breeds.</summary>
+        Companion = 4,
     }
 
     /// <summary>One possible child palette and its exact chance.</summary>
@@ -128,8 +131,10 @@ namespace PocketWilds.Simulation
                 return BreedCheck.SameAnimal;
             if (a.Species != b.Species)
                 return BreedCheck.DifferentSpecies;
-            if (!_content.Species.TryGet(a.Species, out _) || !_variantsBySpecies.ContainsKey(a.Species))
+            if (!_content.Species.TryGet(a.Species, out var species) || !_variantsBySpecies.ContainsKey(a.Species))
                 return BreedCheck.UnknownSpecies;
+            if (species.IsCompanion)
+                return BreedCheck.Companion;
             return BreedCheck.Ok;
         }
 

@@ -83,8 +83,10 @@ namespace PocketWilds.Simulation
         /// <summary>The biome the player starts in (zones and upgrades screens open on it by default).</summary>
         public ContentId FirstBiome => Config.Biomes[0].Id;
 
+        /// <summary>Upgrades, zones and biome mastery, then the companion packs owned (T47 Meadow Pack: +5 % for the Meadow).</summary>
         public double BiomeProductionMultiplier(ContentId biome) =>
-            Upgrades.ProductionMultiplier(biome) * Zones.ProductionMultiplier(biome) * Mastery.ProductionMultiplier(biome);
+            Upgrades.ProductionMultiplier(biome) * Zones.ProductionMultiplier(biome) * Mastery.ProductionMultiplier(biome)
+            * CompanionCatalog.BiomeMultiplier(_state.Entitlements, biome);
 
         /// <summary>Cozy Nests of the biome, then Morning Eggs of the Essence tree (Basic and Focus eggs).</summary>
         public double EggPriceMultiplier(ContentId biome) => Upgrades.EggPriceMultiplier(biome) * Essence.EggPriceMultiplier;

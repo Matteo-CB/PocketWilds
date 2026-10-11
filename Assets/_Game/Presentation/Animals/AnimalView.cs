@@ -25,6 +25,7 @@ namespace PocketWilds.Presentation
         [SerializeField] private Renderer _blobShadow;
 
         private SkinnedMeshRenderer[] _skinned;
+        private AccessoryView _accessories;
         private MeshRenderer[] _meshes;
         private Transform _transform;
         private bool _initialized;
@@ -47,6 +48,11 @@ namespace PocketWilds.Presentation
         public Transform SocketBack => _socketBack;
         public Transform SocketTailBase => _socketTailBase;
         public int RendererCount => _renderers.Length;
+
+        /// <summary>T47: the accessories layer (added once by <see cref="AccessoryView.Ensure"/>), or null.</summary>
+        public AccessoryView Accessories => _accessories;
+
+        internal void AttachAccessories(AccessoryView accessories) => _accessories = accessories;
 
         /// <summary>Editor/prefab builder hook. Runtime code never rewires a view.</summary>
         public void SetReferences(Renderer[] renderers, Animator animator, LODGroup lodGroup,
@@ -130,6 +136,9 @@ namespace PocketWilds.Presentation
         public void ResetForPool()
         {
             EnsureInitialized();
+            // T47: a recycled view never keeps the previous owner's accessories.
+            if (_accessories != null)
+                _accessories.Clear();
             OwnerInstanceId = 0;
             Species = ContentId.None;
             ApplyVisualData(0u);

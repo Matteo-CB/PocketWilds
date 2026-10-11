@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afbeb878d75897849bab3c102f5d6785, type: 3}
+  m_Name: DEF_CosmeticVisualCatalog
+  m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.CosmeticVisualCatalog
+  accessories:
+  - accessoryId: cosmetic.flower_crown
+    visualKey: ACC_FlowerCrown
+    prefab: {fileID: 3467280983660530154, guid: 21c6f13b6e170a044b4409ac15c117f1, type: 3}
+    palettes:
+    - meadow
+    - blossom
+    - frost
+    paletteRows:
+    - palette.accessory.flower_crown.meadow
+    - palette.accessory.flower_crown.blossom
+    - palette.accessory.flower_crown.frost
+    warm: 2
+  - accessoryId: accessory.fieldhamster.seedbasket
+    visualKey: ACC_SeedBasket
+    prefab: {fileID: 7618695170562253674, guid: d5b992c4a5accf34aa4da07b5131acb5, type: 3}
+    palettes:
+    - meadow
+    - blossom
+    - frost
+    paletteRows:
+    - palette.accessory.seedbasket.meadow
+    - palette.accessory.seedbasket.blossom
+    - palette.accessory.seedbasket.frost
+    warm: 2
+  burrowItem: decor.cozy_burrow
+  burrowPrefab: {fileID: 1904504953423159916, guid: 0d43a4350cf1e384f8c4e8aa3547ce9b, type: 3}
+  burrowPalette: palette.grassland.cozy_burrow
+  burrowPlaced: 1
+  burrowPosition: {x: 3.9, y: 0.0049478305, z: -1.8499999}
+  burrowYaw: 315
+  burrowRadius: 0.5792548
+  burrowObstacles:
+  - a: {x: 3.8315763, y: -1.9070935}
+    b: {x: 3.947331, y: -1.7837222}
+    radius: 0.49466816
+    baseY: 0.0049478305
+    bottom: 0
+    top: 0.42442474
+    kind: 0
+  burrowRestSpot: {x: 3.278273, y: 0.0000066757266, z: -1.2282729}

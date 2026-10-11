@@ -126,6 +126,12 @@ namespace PocketWilds.Presentation
 
         /// <summary>T46: the mastery colors given at species mastery 10, 20 and 30.</summary>
         public MasteryColorService MasteryColors { get; set; }
+
+        /// <summary>T47: accessories and outfits worn per animal (Changed tells which animal to dress again).</summary>
+        public CosmeticService Cosmetics { get; set; }
+
+        /// <summary>T47: the companions (Arrived and the pending arrival for the 2 s staging, bond and its rewards, looks).</summary>
+        public CompanionService Companions { get; set; }
     }
 
     /// <summary>Implemented by one root component per gameplay scene.</summary>

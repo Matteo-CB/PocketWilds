@@ -36,9 +36,9 @@ namespace PocketWilds.Services.Save
         /// 7: biome zones, mastery and upgrades (World 2), Progression section (refuge level, decorations, treats).
         /// 8: Discovery egg stock (World 3). 9: Renewal memory and Essence tree. 10: daily rendez-vous and inventory (T36).
         /// 11: activities (T37). 12: expeditions (T42). 13: garden (T43). 14: albums (T44A). 15: achievements and profile
-        /// items (T44B). 16: the refuge journal and the rare visitors (T44C).
+        /// items (T44B). 16: the refuge journal and the rare visitors (T44C). 17: accessories worn and companions (T47).
         /// </summary>
-        public const int CurrentVersion = 16;
+        public const int CurrentVersion = 17;
     }
 
     /// <summary>
@@ -70,6 +70,7 @@ namespace PocketWilds.Services.Save
         private const ushort AlbumsVersion = 1;
         private const ushort AchievementsVersion = 1;
         private const ushort JournalVersion = 1;
+        private const ushort CosmeticsVersion = 1;
 
         public int CurrentSchemaVersion => SaveSchema.CurrentVersion;
 
@@ -206,6 +207,10 @@ namespace PocketWilds.Services.Save
 
             mark = BeginSection(output, SaveSectionId.Journal, JournalVersion);
             WriteJournal(output, state.Journal, state.Visitors);
+            EndSection(output, mark);
+
+            mark = BeginSection(output, SaveSectionId.Cosmetics, CosmeticsVersion);
+            WriteCosmetics(output, state.Cosmetics, state.Companions);
             EndSection(output, mark);
 
             SaveFileFormat.FinishPayload(output);
@@ -399,6 +404,9 @@ namespace PocketWilds.Services.Save
                 // pages (no « first hatch » on an older account) and no visitor has been met yet (T44C).
                 if (document.TryGetSection(SaveSectionId.Journal, out var journal))
                     ReadJournal(journal, state.Journal, state.Visitors);
+                // Saves older than schema 17 have no cosmetics: nothing worn, no companion placed yet (T47).
+                if (document.TryGetSection(SaveSectionId.Cosmetics, out var cosmetics))
+                    ReadCosmetics(cosmetics, state.Cosmetics, state.Companions);
                 if (document.TryGetSection(SaveSectionId.Codex, out var codex))
                     ReadCodex(codex, state.Codex);
                 else
@@ -1350,6 +1358,79 @@ namespace PocketWilds.Services.Save
             if (v.FirstVisitor >= VisitorState.Visitors)
                 v.FirstVisitor = 0;
             v.Greetings = Math.Max(0, r.ReadInt32());
+        }
+
+        private static void WriteCosmetics(ByteBufferWriter output, CosmeticState cosmetics, CompanionState companions)
+        {
+            output.WriteInt32(cosmetics.Animals.Count);
+            foreach (var pair in cosmetics.Animals)
+            {
+                output.WriteUInt32(pair.Key);
+                var slots = pair.Value;
+                byte worn = 0;
+                for (int s = 0; s < slots.Length; s++)
+                    if (!slots[s].IsEmpty)
+                        worn++;
+                output.WriteByte(worn);
+                for (int s = 0; s < slots.Length; s++)
+                {
+                    if (slots[s].IsEmpty)
+                        continue;
+                    output.WriteByte((byte)s);
+                    output.WriteContentId(slots[s].Accessory);
+                    output.WriteByte(slots[s].Palette);
+                }
+            }
+            output.WriteInt32(companions.Companions.Count);
+            for (int i = 0; i < companions.Companions.Count; i++)
+            {
+                var c = companions.Companions[i];
+                output.WriteContentId(c.Species);
+                output.WriteUInt32(c.AnimalId);
+                output.WriteInt32(c.BondXp);
+                output.WriteByte(c.RewardedLevel);
+                output.WriteBool(c.ArrivalPending);
+                output.WriteInt32(c.PhotoDay);
+            }
+        }
+
+        /// <summary>Unknown accessories and companions load as they are: CosmeticService.Prune and CompanionService.Sync settle them.</summary>
+        private static void ReadCosmetics(SaveSection section, CosmeticState cosmetics, CompanionState companions)
+        {
+            RequireVersion(section, CosmeticsVersion);
+            var r = section.CreateReader();
+            cosmetics.Animals.Clear();
+            int animals = ReadCount(ref r);
+            for (int i = 0; i < animals; i++)
+            {
+                uint animal = r.ReadUInt32();
+                int worn = r.ReadByte();
+                for (int k = 0; k < worn; k++)
+                {
+                    int socket = r.ReadByte();
+                    var accessory = r.ReadContentId();
+                    byte palette = r.ReadByte();
+                    // A socket this build does not know is skipped, never an error.
+                    if (socket < CosmeticState.Sockets && accessory.IsValid)
+                        cosmetics.Set(animal, (AccessorySocket)socket, new EquippedAccessory { Accessory = accessory, Palette = palette });
+                }
+            }
+            companions.Companions.Clear();
+            int count = ReadCount(ref r);
+            for (int i = 0; i < count; i++)
+            {
+                var record = new CompanionRecord
+                {
+                    Species = r.ReadContentId(),
+                    AnimalId = r.ReadUInt32(),
+                    BondXp = Math.Max(0, Math.Min(CompanionService.MaxXp, r.ReadInt32())),
+                    RewardedLevel = (byte)Math.Min(CompanionService.MaxLevel, (int)r.ReadByte()),
+                    ArrivalPending = r.ReadBool(),
+                    PhotoDay = r.ReadInt32(),
+                };
+                if (companions.IndexOf(record.Species) < 0)
+                    companions.Companions.Add(record);
+            }
         }
 
         private static void WriteIds(ByteBufferWriter output, uint[] ids, int count)

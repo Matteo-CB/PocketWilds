@@ -152,6 +152,11 @@ namespace PocketWilds.Presentation
         /// <summary>H-VFX-ACT-003-04's ring is playing around the basket.</summary>
         public bool RingShown => _ringT >= 0f;
 
+        /// <summary>Rings started since the stage was made (tests: a special caught between two checks still counts).</summary>
+        public int RingsStarted => _ringsStarted;
+
+        private int _ringsStarted;
+
         /// <summary>The animal plays its walk (Move) rather than its Idle.</summary>
         public bool Walking => _moving;
 
@@ -1062,6 +1067,7 @@ namespace PocketWilds.Presentation
             if (_data.ring == null)
                 return;
             _ringT = 0f;
+            _ringsStarted++;
             _data.ring.transform.position = new Vector3(_basketPos.x, (_rimTopNow + _basketBottomNow) * 0.5f, _basketPos.z);
             _ringEmit.startSize = Mathf.Max(0.1f, _basketHalf * 2.7f);
             _data.ring.Emit(_ringEmit, 1);

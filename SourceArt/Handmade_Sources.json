@@ -27,7 +27,8 @@
     },
     {
       "blend": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
-      "builders": ["SourceArt/Blender/Tools/pw_anim_library.py", "SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_export.py"]
+      "builders": ["SourceArt/Blender/Tools/pw_anim_library.py", "SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animations/SmallQuadruped/AN_SmallQuadruped.fbx (15 clips, T47 FieldHamsterGreet and FieldHamsterStash)"]
     },
     {
       "blend": "SourceArt/Blender/Rigs/BL_Rig_MediumQuadruped.blend",
@@ -43,14 +44,7 @@
     },
     {
       "blend": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
-      "builders": [
-        "SourceArt/Blender/Tools/pw_grassland.py",
-        "SourceArt/Blender/Tools/pw_grassland_t33.py",
-        "SourceArt/Blender/Tools/pw_grassland_t33b.py",
-        "SourceArt/Blender/Tools/pw_grassland_t33b_props.py",
-        "SourceArt/Blender/Tools/pw_grassland_t35a_props.py",
-        "SourceArt/Blender/Tools/pw_export.py"
-      ]
+      "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_grassland_t33.py", "SourceArt/Blender/Tools/pw_grassland_t33b.py", "SourceArt/Blender/Tools/pw_grassland_t33b_props.py", "SourceArt/Blender/Tools/pw_grassland_t35a_props.py", "SourceArt/Blender/Tools/pw_export.py"]
     },
     {
       "blend": "SourceArt/Blender/Activities/BL_Activity_Grooming.blend",
@@ -71,19 +65,48 @@
     {
       "blend": "SourceArt/Blender/Activities/BL_Activity_Garden.blend",
       "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_nutdrop.py", "SourceArt/Blender/Tools/pw_postcards.py", "SourceArt/Blender/Tools/pw_garden.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
+      "blend": "SourceArt/Blender/Animals/FieldHamster/BL_Animal_FieldHamster.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animals/FieldHamster/Models/SKM_FieldHamster.fbx (LOD0-2, sockets)", "PF_Animal_FieldHamster and its definition (Editor/Animals/AnimalPipeline.cs)"]
+    },
+    {
+      "blend": "SourceArt/Blender/Accessories/BL_Accessories.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_accessories.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Props/Accessories/ACC_FlowerCrown.fbx", "Assets/_Game/Art/Props/Accessories/ACC_SeedBasket.fbx", "the accessory prefabs and definitions (Unity accessory pipeline)"]
+    },
+    {
+      "blend": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_T47.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_grassland_t39_props.py", "SourceArt/Blender/Tools/pw_grassland_t47_props.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Environment/Grassland/Models/GL_Props_T47.fbx (Decor_CozyBurrow)", "the decor.cozy_burrow decoration prefab (Unity decoration pipeline)"]
     }
   ],
   "generated": [
     {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Accessory_FlowerCrown.png",
+      "from": "the fitted ACC_FlowerCrown accessory of BL_Accessories.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Accessory_SeedBasket.png",
+      "from": "the fitted ACC_SeedBasket accessory of BL_Accessories.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Decor_CozyBurrow.png",
+      "from": "Decor_CozyBurrow of BL_Biome_Grassland_T47.blend, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/UI/Shop/ICO_Companion_FieldHamster.png",
+      "from": "the Field Hamster model (BL_Animal_FieldHamster.blend) in its base look, rendered in Unity",
+      "builders": ["Assets/_Game/Editor/Cosmetics/AccessoryVisualPipeline.cs"]
+    },
+    {
       "final": "Assets/_Game/Art/Environment/Grassland/Baked/",
       "from": "the Prairie FBX meshes, baked and combined in Unity",
-      "builders": [
-        "Assets/_Game/Editor/Environment/GrasslandPipeline.cs",
-        "Assets/_Game/Editor/Environment/GrasslandPipeline.T33.cs",
-        "Assets/_Game/Editor/Environment/GrasslandPipeline.T33B.Kit.cs",
-        "Assets/_Game/Editor/Environment/GrasslandPipeline.T39.cs",
-        "Assets/_Game/Editor/Environment/ZonePipeline.cs"
-      ]
+      "builders": ["Assets/_Game/Editor/Environment/GrasslandPipeline.cs", "Assets/_Game/Editor/Environment/GrasslandPipeline.T33.cs", "Assets/_Game/Editor/Environment/GrasslandPipeline.T33B.Kit.cs", "Assets/_Game/Editor/Environment/GrasslandPipeline.T39.cs", "Assets/_Game/Editor/Environment/ZonePipeline.cs"]
     },
     {
       "final": "Assets/_Game/Art/Eggs/Textures/T_EggMask_Common.png",
@@ -108,11 +131,7 @@
     {
       "final": "Assets/_Game/Art/UI/Albums/Stickers/",
       "from": "the album stickers: captures of the game's own animal prefabs, props, plants and Prairie zones with the game shaders, palettes and light profiles (masters in SourceArt/UI/Stickers)",
-      "builders": [
-        "Assets/_Game/Editor/Albums/StickerCapturePipeline.cs",
-        "Assets/_Game/Editor/Albums/StickerCaptureDefinitions.cs",
-        "Assets/_Game/Editor/Albums/StickerImage.cs"
-      ]
+      "builders": ["Assets/_Game/Editor/Albums/StickerCapturePipeline.cs", "Assets/_Game/Editor/Albums/StickerCaptureDefinitions.cs", "Assets/_Game/Editor/Albums/StickerImage.cs"]
     },
     {
       "final": "Assets/_Game/Art/UI/Activities/Expeditions/Destinations/",
@@ -127,25 +146,7 @@
     {
       "final": "Assets/_Game/Art/UI/Fonts/",
       "from": "Pocket Round and Pocket Plush drawn as stroke skeletons by our own code: the Latin core and one fallback per script and region (SourceArt/Fonts/Build, pw_font_build.py --scripts); the Han components and IDS data are pw_font_han_*.txt beside the tools",
-      "builders": [
-        "SourceArt/Fonts/Tools/pw_font_engine.py",
-        "SourceArt/Fonts/Tools/pw_font_glyphs.py",
-        "SourceArt/Fonts/Tools/pw_font_build.py",
-        "SourceArt/Fonts/Tools/pw_font_proof.py",
-        "SourceArt/Fonts/Tools/pw_font_scripts_proof.py",
-        "SourceArt/Fonts/Tools/pw_font_cyrillic_greek.py",
-        "SourceArt/Fonts/Tools/pw_font_cyrillic_greek_test.py",
-        "SourceArt/Fonts/Tools/pw_font_vietnamese.py",
-        "SourceArt/Fonts/Tools/pw_font_vietnamese_test.py",
-        "SourceArt/Fonts/Tools/pw_font_thai.py",
-        "SourceArt/Fonts/Tools/pw_font_thai_test.py",
-        "SourceArt/Fonts/Tools/pw_font_kana.py",
-        "SourceArt/Fonts/Tools/pw_font_kana_test.py",
-        "SourceArt/Fonts/Tools/pw_font_hangul.py",
-        "SourceArt/Fonts/Tools/pw_font_hangul_test.py",
-        "SourceArt/Fonts/Tools/pw_font_han.py",
-        "SourceArt/Fonts/Tools/pw_font_han_test.py"
-      ]
+      "builders": ["SourceArt/Fonts/Tools/pw_font_engine.py", "SourceArt/Fonts/Tools/pw_font_glyphs.py", "SourceArt/Fonts/Tools/pw_font_build.py", "SourceArt/Fonts/Tools/pw_font_proof.py", "SourceArt/Fonts/Tools/pw_font_scripts_proof.py", "SourceArt/Fonts/Tools/pw_font_cyrillic_greek.py", "SourceArt/Fonts/Tools/pw_font_cyrillic_greek_test.py", "SourceArt/Fonts/Tools/pw_font_vietnamese.py", "SourceArt/Fonts/Tools/pw_font_vietnamese_test.py", "SourceArt/Fonts/Tools/pw_font_thai.py", "SourceArt/Fonts/Tools/pw_font_thai_test.py", "SourceArt/Fonts/Tools/pw_font_kana.py", "SourceArt/Fonts/Tools/pw_font_kana_test.py", "SourceArt/Fonts/Tools/pw_font_hangul.py", "SourceArt/Fonts/Tools/pw_font_hangul_test.py", "SourceArt/Fonts/Tools/pw_font_han.py", "SourceArt/Fonts/Tools/pw_font_han_test.py"]
     }
   ],
   "largeTextures": [

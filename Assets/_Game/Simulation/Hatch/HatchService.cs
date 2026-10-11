@@ -758,7 +758,7 @@ namespace PocketWilds.Simulation
             for (int i = 0; i < allSpecies.Count; i++)
             {
                 var species = allSpecies[i];
-                if (species.IsSecret || collection.DiscoveredSpecies.Contains(species.Id) || !_variantsBySpeciesTier.ContainsKey(species.Id)
+                if (species.IsSecret || species.IsCompanion || collection.DiscoveredSpecies.Contains(species.Id) || !_variantsBySpeciesTier.ContainsKey(species.Id)
                     || !IsBiomeOpen(species.Biome))
                     continue;
                 double weight = species.Biome == _cameraBiome ? _config.DiscoveryCameraBiomeWeight : 1.0;

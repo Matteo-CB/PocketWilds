@@ -13,6 +13,9 @@ namespace PocketWilds.Simulation
         AlreadyGranted = 1,
 
         UnknownProduct = 2,
+
+        /// <summary>T47: a refund or store revoke took the product's items back (NewItems counts the items removed).</summary>
+        Revoked = 3,
     }
 
     /// <summary>What one purchase gave. Immutable, handed to presentation and analytics.</summary>
@@ -59,6 +62,9 @@ namespace PocketWilds.Simulation
         /// <summary>Raised for every new grant (never for a repeated transaction).</summary>
         public event Action<GrantResult>? Granted;
 
+        /// <summary>T47: raised when a refund or revoke took items back (companions leave, worn items come off).</summary>
+        public event Action<GrantResult>? Revoked;
+
         public bool Owns(ContentId item) => _state.Entitlements.Owned.Contains(item);
 
         /// <summary>True when every item a product grants is already owned (one-time products).</summary>
@@ -96,6 +102,30 @@ namespace PocketWilds.Simulation
             var result = new GrantResult(GrantStatus.Granted, productId, offerId, gems, newItems, transactionId);
             _save?.RequestSave(SaveUrgency.Priority);
             Granted?.Invoke(result);
+            return result;
+        }
+
+        /// <summary>
+        /// T47: a refund or a store revoke (doc Packs: « le remboursement retire les objets du pack et le compagnon »). Removes the
+        /// product's permanent items; the Gems stay (already spent or not, the wallet never goes below zero by a refund). The
+        /// transaction stays processed, so a late callback of the same purchase never grants again. Listeners remove the
+        /// companion and take worn items off.
+        /// </summary>
+        public GrantResult Revoke(string transactionId, ContentId productId)
+        {
+            if (!_content.Shop.Products.TryGet(productId, out var product))
+                return new GrantResult(GrantStatus.UnknownProduct, productId, ContentId.None, 0, 0, transactionId ?? string.Empty);
+            if (!string.IsNullOrEmpty(transactionId))
+                _state.Entitlements.ProcessedTransactions.Add(transactionId);
+            int removed = 0;
+            foreach (var item in product.Entitlements)
+            {
+                if (_state.Entitlements.Owned.Remove(item))
+                    removed++;
+            }
+            var result = new GrantResult(GrantStatus.Revoked, productId, ContentId.None, 0, removed, transactionId ?? string.Empty);
+            _save?.RequestSave(SaveUrgency.Priority);
+            Revoked?.Invoke(result);
             return result;
         }
 

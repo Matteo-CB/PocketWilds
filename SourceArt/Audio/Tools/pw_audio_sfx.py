@@ -362,6 +362,33 @@ def small_chirp(v):
     return wet(x, ROOM, 0.06)
 
 
+HAMSTER_FORMANTS = [(1700.0, 0.5, 1.0), (3100.0, 0.35, 0.7), (4200.0, 0.3, 0.25)]
+
+
+def hamster_squeak_happy(v):
+    """J-AN-HamsterSqueakHappy (T47, the Field Hamster companion's signature): a bright tiny squeak, never a recording.
+    v0: one rising squeak with a little nose puff before it; v1: a quick double squeak, the second one higher.
+    Higher formants than the small family bank so the companion reads apart from the other meadow animals."""
+    rng = np.random.default_rng(1700 + v)
+    out = np.zeros(samples(0.28))
+    if v == 0:
+        place(out, _puff(0.04, 1800.0, 5000.0, 0.004, 0.012, rng) * 0.07, 0.0)
+        place(out, _eep(0.17, 1450.0, 2050.0, 0.045, HAMSTER_FORMANTS, rng, breath=0.12, hold=0.05, decay=0.035,
+                        attack=0.008), 0.03)
+    else:
+        place(out, _eep(0.09, 1550.0, 1900.0, 0.02, HAMSTER_FORMANTS, rng, breath=0.1, hold=0.02, decay=0.02,
+                        attack=0.006), 0.0)
+        place(out, _eep(0.12, 1700.0, 2250.0, 0.025, HAMSTER_FORMANTS, rng, breath=0.1, hold=0.03, decay=0.03,
+                        attack=0.006) * 0.9, 0.095)
+    x = fft_filter(out, chain(lowpass(9000.0, 2), highpass(420.0, 2)))
+    x = wet(x, ROOM, 0.05)
+    # The bank stays within 150 to 300 ms: the room tail is cut at 260 ms with a 40 ms fade.
+    x = x[:samples(0.26)].copy()
+    k = samples(0.04)
+    x[-k:] *= np.linspace(1.0, 0.0, k)
+    return x
+
+
 def small_sleep(v):
     """J-AN-SmallQuadruped_Sleep: a light inhale or a small sigh."""
     rng = np.random.default_rng(1300 + v)
@@ -1705,6 +1732,8 @@ SFX = {
     'SFX_Animal_Rabbit_Sleep': (rabbit_sleep, 2, -27.0, 'Animals'),
     'SFX_Animal_Small_Chirp': (small_chirp, 4, -21.0, 'Animals'),
     'SFX_Animal_Small_Sleep': (small_sleep, 2, -27.0, 'Animals'),
+    # T47: the Field Hamster companion's signature squeak (bank HamsterSqueakHappy, cooldown 6 s on the Unity side).
+    'SFX_Animal_HamsterSqueakHappy': (hamster_squeak_happy, 2, -21.0, 'Animals'),
     # T34B2
     'SFX_UI_PanelClose': (lambda v: panel_close(), 1, -26.0, 'UI'),
     'SFX_UI_Tab': (ui_tab, 2, -29.0, 'UI'),

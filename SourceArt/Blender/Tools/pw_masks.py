@@ -4,6 +4,8 @@ Writes, on every LOD of a species:
   - color attribute PW_Regions (POINT): R secondary, G belly, B detail, A eyes. B and A are kept.
   - UV map PW_Masks (UV0 in Unity): x = mask A, y = mask B. No seams: every corner of a vertex
     gets the same value, so Unity does not split vertices.
+  - UV map PW_Masks2 (UV1 in Unity), only when a rule returns a sixth value: x = mask C, y = 0 (Field Hamster back
+    spots). SH_AnimalMaster reads pattern mask 3 (C) from uv1.x.
 Rules are species data (RULES dict), evaluated on rest-pose positions so all LODs match.
 """
 import math
@@ -233,6 +235,62 @@ def guineapig_masks(co, n, ctx):
     return secondary, belly, mask_a, mask_b
 
 
+FIELDHAMSTER_EARS = ((0.062, -0.100, 0.255), (-0.062, -0.100, 0.255))
+FIELDHAMSTER_CHEEKS = ((0.066, -0.140, 0.136), (-0.066, -0.140, 0.136))
+
+
+def fieldhamster_masks(co, n, ctx):
+    """Secondary = inner ears and paws (pale pink), belly = white underside, chest, lower cheeks, chin and muzzle over
+    the golden back. Mask A = ear glow (the whole ear), mask B = cheek band (a soft stripe over each cheek pouch,
+    from under the eye to the jaw), mask C (second UV map, uv1.x) = round back spots along the spine."""
+    ear_c = Vector(FIELDHAMSTER_EARS[0] if co.x > 0 else FIELDHAMSTER_EARS[1])
+    ear_d = (co - ear_c).length
+    on_ear = co.z > 0.220 and ear_d < 0.052 and abs(co.x) > 0.030
+    facing = n.dot(Vector((0, -1, 0)))
+    inner = smoothstep(0.10, 0.40, facing) * smoothstep(0.038, 0.024, ear_d) if on_ear else 0.0
+    paws = smoothstep(0.024, 0.010, co.z)
+    secondary = max(inner, paws)
+
+    hc = ctx["head_center"]; hr = ctx["head_radii"]
+    dh = co - hc
+    head_s = math.sqrt((dh.x / hr[0]) ** 2 + (dh.y / hr[1]) ** 2 + (dh.z / hr[2]) ** 2)
+    nose = ctx["nose"]
+    belly = 0.0
+    if not on_ear:
+        under = smoothstep(-0.20, -0.60, n.z)
+        # White flanks below a soft wavy line, golden above: the classic field hamster coat.
+        line = 0.085 + 0.012 * math.sin(co.y * 38.0)
+        low = 1.0 - smoothstep(line - 0.012, line + 0.012, co.z)
+        chest = smoothstep(0.30, 0.70, facing) * (1.0 - smoothstep(0.13, 0.17, co.z)) * smoothstep(0.85, 1.05, head_s)
+        muzzle = smoothstep(0.046, 0.022, (co - nose).length)
+        chin = smoothstep(0.30, 0.70, max(facing, 0.8 * n.dot(Vector((0, 0, -1))))) * smoothstep(nose.z + 0.002, nose.z - 0.028, co.z)
+        cheek_low = 0.0
+        for c in FIELDHAMSTER_CHEEKS:
+            d = co - Vector(c)
+            if d.x * c[0] > 0:
+                cheek_low = max(cheek_low, smoothstep(0.065, 0.040, d.length) * smoothstep(0.004, -0.014, d.z))
+        belly = max(under, low, chest, muzzle, chin, cheek_low) * (1.0 - paws)
+
+    mask_a = smoothstep(0.056, 0.040, ear_d) * smoothstep(0.208, 0.228, co.z) if abs(co.x) > 0.025 else 0.0
+
+    mask_b = 0.0
+    if not on_ear:
+        for c in FIELDHAMSTER_CHEEKS:
+            d = co - Vector(c)
+            if d.x * c[0] > 0:
+                # A slanted band across the pouch: distance to a plane tilted from the eye down to the jaw.
+                band = abs(d.z * 0.82 - d.y * 0.57 - 0.010)
+                mask_b = max(mask_b, smoothstep(0.016, 0.007, band) * smoothstep(0.082, 0.066, d.length))
+        mask_b *= 1.0 - belly * 0.6
+
+    mask_c = 0.0
+    if not on_ear:
+        for center, radius in ctx["spots"]:
+            mask_c = max(mask_c, smoothstep(radius * 1.15, radius * 0.35, (co - Vector(center)).length))
+        mask_c *= (1.0 - belly) * smoothstep(1.0, 1.15, head_s)
+    return secondary, belly, mask_a, mask_b, None, mask_c
+
+
 def _fawn_spots():
     """Fawn spots: two rows each side of the spine and one lower row on the flanks, rump to shoulder."""
     spots = []
@@ -318,6 +376,15 @@ RULES = {
         spots=[((0.055, -0.135, 0.175), 0.060), ((-0.060, -0.040, 0.170), 0.075), ((0.085, 0.050, 0.130), 0.070),
                ((-0.095, 0.110, 0.110), 0.070), ((0.030, 0.150, 0.165), 0.065)],
     ),
+    "FieldHamster": dict(
+        fn=fieldhamster_masks,
+        head_center=(0.0, -0.112, 0.166),
+        head_radii=(0.090, 0.084, 0.084),
+        # Back spots (mask C): five round spots down the spine and two on the upper flanks.
+        spots=[((0.0, -0.030, 0.245), 0.040), ((0.0, 0.045, 0.255), 0.044), ((0.0, 0.115, 0.232), 0.040),
+               ((0.075, 0.010, 0.222), 0.034), ((-0.075, 0.010, 0.222), 0.034), ((0.065, 0.120, 0.203), 0.030),
+               ((-0.065, 0.120, 0.203), 0.030)],
+    ),
     "Fawn": dict(
         fn=fawn_masks,
         head_center=(0.0, -0.175, 0.468),
@@ -383,20 +450,27 @@ def apply(species, armature_name=None, nose_object="WORK_Nose"):
         uv = me.uv_layers.new(name="PW_Masks")
         part_attr = me.attributes.get("PW_Part")
         per_vertex = []
+        per_vertex_c = []
         for v in me.vertices:
             ctx["part"] = part_attr.data[v.index].value if part_attr is not None else 0
             r, g, b, a = regions.data[v.index].color
             if a > 0.5 or b > 0.5:
                 # Eyes and nose keep their own tags and no pattern.
                 per_vertex.append((0.0, 0.0))
+                per_vertex_c.append((0.0, 0.0))
                 continue
             out = rule["fn"](v.co, v.normal, ctx)
             sec, belly, ma, mb = out[:4]
-            # A fifth value paints the detail region too (Fawn hooves share the nose's detail color).
-            detail = max(b, out[4]) if len(out) > 4 else b
+            # A fifth value paints the detail region too (Fawn hooves share the nose's detail color); None keeps it.
+            detail = max(b, out[4]) if len(out) > 4 and out[4] is not None else b
             regions.data[v.index].color = (sec, belly, detail, a)
             per_vertex.append((ma, mb))
+            per_vertex_c.append((out[5] if len(out) > 5 else 0.0, 0.0))
         for loop in me.loops:
             uv.data[loop.index].uv = per_vertex[loop.vertex_index]
+        if any(c[0] > 0.0 for c in per_vertex_c):
+            uv2 = me.uv_layers.new(name="PW_Masks2")
+            for loop in me.loops:
+                uv2.data[loop.index].uv = per_vertex_c[loop.vertex_index]
         report.append((obj.name, len(me.vertices)))
     return report

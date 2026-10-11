@@ -259,3 +259,45 @@ MonoBehaviour:
       fade: 0.2
       moveFade: 0.12
       reactFade: 0.06
+  - visualKey: PF_Animal_FieldHamster
+    prefab: {fileID: 2377413872583621506, guid: 783ebf6fa1e559d439f8c866509c5a81, type: 3}
+    softCapacity: 24
+    hardCapacity: 48
+    behavior:
+      idleWeight: 0.2
+      idleLookWeight: 0.18
+      wanderWeight: 0.32
+      eatWeight: 0.14
+      inspectWeight: 0.1
+      sleepWeight: 0.06
+      socialWeight: 0.09
+      idleSeconds: {x: 2.5, y: 6}
+      eatSeconds: {x: 4, y: 9}
+      sleepSeconds: {x: 10, y: 24}
+      idleLookSeconds: 3.8
+      inspectSeconds: 1.5
+      reactSeconds: 0.67
+      happySeconds: 1.04
+      wakeSeconds: 0.67
+      socialSeconds: 1.32
+      socialGroup: 0
+      socialRadius: 2.2
+      socialGap: 0.49109682
+      socialWaitSeconds: 3
+      interestRadius: 2.6
+      eatAtPointChance: 0.6
+      moveSpeed: 0.27
+      turnDegreesPerSecond: 300
+      wanderDistance: {x: 0.5, y: 1.6}
+      personalSpace: 0.45
+      body:
+        front: 0.24054842
+        back: -0.20588149
+        halfWidth: 0.14715146
+        height: 0.3006754
+      tierBDurationScale: 1.5
+      tierBWanderScale: 0.5
+      fade: 0.2
+      moveFade: 0.12
+      reactFade: 0.06
+  cosmetics: {fileID: 11400000, guid: 8c44696691b6fc4419ff06346b73cf52, type: 2}

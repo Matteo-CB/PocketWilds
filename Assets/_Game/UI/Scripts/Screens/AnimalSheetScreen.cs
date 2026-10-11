@@ -21,7 +21,8 @@ namespace PocketWilds.UI
     /// Grooming can start; the two buttons share the row, a lone one sits centered under the bond bar.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class AnimalSheetScreen : MonoBehaviour, IAnimalSheetView, IAnimalSheetTreatView, IAnimalSheetGroomView, IMotionSettings
+    public sealed class AnimalSheetScreen : MonoBehaviour, IAnimalSheetView, IAnimalSheetTreatView, IAnimalSheetGroomView, IMotionSettings,
+        IAnimalSheetOutfitView
     {
         public const int MaxTraits = 6;
         private const float OpenSeconds = 0.22f;
@@ -76,6 +77,11 @@ namespace PocketWilds.UI
         [SerializeField] private GameObject _groomFree;
         [SerializeField] private TMP_Text _groomFreeLabel;
         [SerializeField] private GameObject _groomTicket;
+
+        [Header("T47 outfit (« Tenue »)")]
+        [SerializeField] private RectTransform _outfitRoot;
+        [SerializeField] private Button _outfitButton;
+        [SerializeField] private TMP_Text _outfitLabel;
 
         /// <summary>The row under the bond bar (card space, top-left anchor): a lone button, or the treat and « Brosser » side by side.</summary>
         [SerializeField] private Vector2 _rowSolo = new Vector2(550f, -620f);
@@ -137,6 +143,8 @@ namespace PocketWilds.UI
         public Vector2 GroomPosition => _groomRoot != null ? _groomRoot.anchoredPosition : Vector2.zero;
         public RectTransform TreatRect => _treatRoot;
         public RectTransform GroomRect => _groomRoot;
+        public Button OutfitButton => _outfitButton;
+        public bool OutfitShown => _outfitRoot != null && _outfitRoot.gameObject.activeSelf;
 
         /// <summary>The bond bar's fill as drawn (0 to 1), animations included.</summary>
         public float BondFillShown { get; private set; }
@@ -156,7 +164,12 @@ namespace PocketWilds.UI
                     _treatButton.onClick.AddListener(OnTreat);
                 if (_groomButton != null)
                     _groomButton.onClick.AddListener(OnGroom);
+                if (_outfitButton != null)
+                    _outfitButton.onClick.AddListener(OnOutfit);
             }
+            if (_outfitLabel != null)
+                _outfitLabel.text = localization.Get(OutfitText.SheetButton);
+            SetOutfit(false);
             _bondLabel.text = localization.Get(FeedbackText.SheetBond);
             if (_treatLabel != null)
                 _treatLabel.text = localization.Get(DailyVisitText.SheetTreat);
@@ -191,6 +204,7 @@ namespace PocketWilds.UI
             Open(sample, localization, null);
             SetTreat(new SheetTreatData { Available = true, Owned = 12, Preferred = true });
             SetGroom(true, true);
+            SetOutfit(true);
             if (_groomTicket != null)
                 _groomTicket.SetActive(true);
             _group.alpha = 0f;
@@ -331,6 +345,35 @@ namespace PocketWilds.UI
             _closing = true;
             Finish();
             actions?.OpenSpeciesDetails(species);
+        }
+
+        // ---------------- T47 « Tenue » (IAnimalSheetOutfitView) ----------------
+
+        /// <summary>« Tenue » between the heart and Details: shown when something fits this animal or the pack can be offered.</summary>
+        public void SetOutfit(bool available)
+        {
+            if (_outfitRoot != null && _outfitRoot.gameObject.activeSelf != available)
+                _outfitRoot.gameObject.SetActive(available);
+        }
+
+        private void OnOutfit()
+        {
+            if (_closing || !IsOpen || !OutfitShown)
+                return;
+            var actions = _actions;
+            uint animal = _data.InstanceId;
+            // Closes at once (no fade): the outfit panel rises in the same frame, the camera turns to the animal.
+            _closing = true;
+            Finish();
+            (actions as IAnimalSheetOutfitActions)?.OpenOutfit(animal);
+        }
+
+        /// <summary>Prefab builder hook for the T47 « Tenue » button (Editor FeedbackUiPipeline).</summary>
+        public void SetOutfitReferences(RectTransform root, Button button, TMP_Text label)
+        {
+            _outfitRoot = root;
+            _outfitButton = button;
+            _outfitLabel = label;
         }
 
         // ---------------- T36 treat (IAnimalSheetTreatView) ----------------
@@ -716,6 +759,8 @@ namespace PocketWilds.UI
                 _treatButton.onClick.RemoveListener(OnTreat);
             if (_groomButton != null)
                 _groomButton.onClick.RemoveListener(OnGroom);
+            if (_outfitButton != null)
+                _outfitButton.onClick.RemoveListener(OnOutfit);
         }
     }
 }

@@ -22,6 +22,7 @@ namespace PocketWilds.Services.Save
             new Migration0013AddAlbums(),
             new Migration0014AddAchievements(),
             new Migration0015AddJournal(),
+            new Migration0016AddCosmetics(),
         };
 
         public static SaveMigrationPipeline CreatePipeline() => new SaveMigrationPipeline(SaveSchema.CurrentVersion, All());
@@ -237,6 +238,20 @@ namespace PocketWilds.Services.Save
     {
         public int FromVersion => 15;
         public int ToVersion => 16;
+
+        public void Apply(SaveDocument document)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Schema 16 to 17 (T47): the Cosmetics section (accessories worn, companions). Nothing to convert: without it no animal
+    /// wears anything and no companion is placed yet; an owned companion item (none existed before) would be placed at boot.
+    /// </summary>
+    public sealed class Migration0016AddCosmetics : ISaveMigration
+    {
+        public int FromVersion => 16;
+        public int ToVersion => 17;
 
         public void Apply(SaveDocument document)
         {

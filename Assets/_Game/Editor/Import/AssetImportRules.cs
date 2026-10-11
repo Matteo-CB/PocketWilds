@@ -88,12 +88,22 @@ namespace PocketWilds.Editor.Import
         /// <summary>
         /// Family clips keep bone rotations only, plus Root position for the in-place bounce.
         /// Position and scale curves would force the reference species' bone offsets onto every
-        /// other species of the family, so they are stripped at import.
+        /// other species of the family, so they are stripped at import. One exception (T47): the Head
+        /// bone's scale where it leaves 1 (the Field Hamster's cheek squash); a scale is relative to the
+        /// rest pose, so it fits every species, and curves that stay at 1 are dropped.
         /// </summary>
         private void OnPostprocessAnimation(GameObject root, AnimationClip clip)
         {
             if (!assetPath.StartsWith(AnimationsRoot, StringComparison.Ordinal))
                 return;
+
+            // The three axes of the Head's scale stay together: one axis left alone would not mean « at rest ».
+            bool headScale = false;
+            foreach (var binding in AnimationUtility.GetCurveBindings(clip))
+            {
+                if (binding.type == typeof(Transform) && IsHeadScale(binding) && LeavesOne(AnimationUtility.GetEditorCurve(clip, binding)))
+                    headScale = true;
+            }
 
             foreach (var binding in AnimationUtility.GetCurveBindings(clip))
             {
@@ -104,9 +114,26 @@ namespace PocketWilds.Editor.Import
                 bool rotation = binding.propertyName.StartsWith("m_LocalRotation", StringComparison.Ordinal)
                                 || binding.propertyName.StartsWith("localEuler", StringComparison.Ordinal);
                 bool keep = isBone && (rotation || (isRoot && binding.propertyName.StartsWith("m_LocalPosition", StringComparison.Ordinal)));
+                if (!keep && headScale && IsHeadScale(binding))
+                    keep = true;
                 if (!keep)
                     AnimationUtility.SetEditorCurve(clip, binding, null);
             }
+        }
+
+        private static bool IsHeadScale(EditorCurveBinding binding) =>
+            binding.path.EndsWith("/Head", StringComparison.Ordinal) && binding.propertyName.StartsWith("m_LocalScale", StringComparison.Ordinal);
+
+        private static bool LeavesOne(AnimationCurve curve)
+        {
+            if (curve == null)
+                return false;
+            foreach (var key in curve.keys)
+            {
+                if (Mathf.Abs(key.value - 1f) > 1e-4f)
+                    return true;
+            }
+            return false;
         }
 
         public static bool IsLooping(string clipName)

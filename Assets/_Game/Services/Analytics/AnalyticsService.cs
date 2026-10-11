@@ -1286,6 +1286,62 @@ namespace PocketWilds.Services.Analytics
         private VisitorGreetedHandler? _onVisitorGreeted;
 
         /// <summary>T44C: the refuge journal's pages (journal_entry) and the rare visitors (visitor_arrive, _touch, _left).</summary>
+        /// <summary>T47: accessories put on (outfit_equip), companions arriving (companion_arrive) and their bond levels.</summary>
+        public void AttachCosmetics(CosmeticService? cosmetics, CompanionService? companions)
+        {
+            DetachCosmetics();
+            _cosmetics = cosmetics;
+            _companions = companions;
+            _onEquipped ??= OnAccessoryEquipped;
+            _onCompanionArrived ??= OnCompanionArrived;
+            _onCompanionLevel ??= OnCompanionLevel;
+            if (cosmetics != null)
+                cosmetics.Equipped += _onEquipped;
+            if (companions != null)
+            {
+                companions.Arrived += _onCompanionArrived;
+                companions.LevelReached += _onCompanionLevel;
+            }
+        }
+
+        private void DetachCosmetics()
+        {
+            if (_cosmetics != null)
+                _cosmetics.Equipped -= _onEquipped;
+            if (_companions != null)
+            {
+                _companions.Arrived -= _onCompanionArrived;
+                _companions.LevelReached -= _onCompanionLevel;
+            }
+            _cosmetics = null;
+            _companions = null;
+        }
+
+        private CosmeticService? _cosmetics;
+        private CompanionService? _companions;
+        private AccessoryEquippedHandler? _onEquipped;
+        private Action<ContentId, uint>? _onCompanionArrived;
+        private CompanionLevelHandler? _onCompanionLevel;
+
+        private void OnAccessoryEquipped(uint animal, ContentId accessory, ContentId species, AccessorySocket socket)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.OutfitEquip) { U0 = accessory.Value, U1 = species.Value, I0 = (int)socket };
+            Record(ref e);
+        }
+
+        private void OnCompanionArrived(ContentId species, uint animal)
+        {
+            int level = _companions != null ? _companions.GetBond(species).Level : 0;
+            var e = new AnalyticsEvent(AnalyticsEventId.CompanionArrive) { U0 = species.Value, I0 = level };
+            Record(ref e);
+        }
+
+        private void OnCompanionLevel(in CompanionLevelUp levelUp)
+        {
+            var e = new AnalyticsEvent(AnalyticsEventId.CompanionBondLevel) { U0 = levelUp.Species.Value, I0 = levelUp.Level };
+            Record(ref e);
+        }
+
         public void AttachJournal(JournalService? journal, VisitorService? visitors)
         {
             DetachJournal();
@@ -1359,6 +1415,7 @@ namespace PocketWilds.Services.Analytics
         public void Dispose()
         {
             DetachJournal();
+            DetachCosmetics();
             DetachAchievements();
             DetachAlbums();
             DetachGarden();

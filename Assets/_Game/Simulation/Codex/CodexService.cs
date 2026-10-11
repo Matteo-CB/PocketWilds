@@ -134,7 +134,8 @@ namespace PocketWilds.Simulation
             for (int s = 0; s < species.Count; s++)
                 Array.Sort(_variantOrder, _variantStart[s], _variantCount[s], new RarityOrder(variants));
 
-            // Sections: biomes in progression order, then species without a known biome.
+            // Sections: biomes in progression order, then species without a known biome. Companions have their own tab (T47):
+            // never in a section, so never in the completion.
             var order = new List<int>(species.Count);
             var sections = new List<CodexSection>();
             var placed = new bool[species.Count];
@@ -144,7 +145,7 @@ namespace PocketWilds.Simulation
                 int start = order.Count;
                 for (int s = 0; s < species.Count; s++)
                 {
-                    if (species[s].Biome == biome.Id)
+                    if (species[s].Biome == biome.Id && !species[s].IsCompanion)
                     {
                         order.Add(s);
                         placed[s] = true;
@@ -156,7 +157,7 @@ namespace PocketWilds.Simulation
             int rest = order.Count;
             for (int s = 0; s < species.Count; s++)
             {
-                if (!placed[s])
+                if (!placed[s] && !species[s].IsCompanion)
                     order.Add(s);
             }
             if (order.Count > rest)

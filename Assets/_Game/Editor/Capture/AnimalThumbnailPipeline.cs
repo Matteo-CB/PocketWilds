@@ -147,7 +147,7 @@ namespace PocketWilds.Editor.Capture
             return written.Count + " thumbnails, " + skipped + " species without a visual";
         }
 
-        private static Camera CreateCamera()
+        internal static Camera CreateCamera()
         {
             var go = new GameObject("ThumbnailCamera");
             var camera = go.AddComponent<Camera>();
@@ -208,7 +208,7 @@ namespace PocketWilds.Editor.Capture
         /// Two renders: on black, color = C x a; on white, color = C x a + (1 - a). So a = 1 - (white - black)
         /// and the black render is the premultiplied color. Linear-light floats, row-major from the bottom.
         /// </summary>
-        private static void Capture(Camera camera, out float[] premultiplied, out float[] alpha)
+        internal static void Capture(Camera camera, out float[] premultiplied, out float[] alpha)
         {
             var black = RenderOnce(camera, Color.black);
             var white = RenderOnce(camera, Color.white);
@@ -253,7 +253,7 @@ namespace PocketWilds.Editor.Capture
         }
 
         /// <summary>Square around the visible pixels plus a small margin, inside the render.</summary>
-        private static RectInt CropAround(float[] alpha)
+        internal static RectInt CropAround(float[] alpha)
         {
             int minX = RenderSize, minY = RenderSize, maxX = -1, maxY = -1;
             for (int y = 0; y < RenderSize; y++)
@@ -280,7 +280,7 @@ namespace PocketWilds.Editor.Capture
         }
 
         /// <summary>Area-averaged downscale of the crop in premultiplied space, then straight alpha.</summary>
-        private static Texture2D Resample(float[] premultiplied, float[] alpha, RectInt crop, bool silhouette)
+        internal static Texture2D Resample(float[] premultiplied, float[] alpha, RectInt crop, bool silhouette)
         {
             var pixels = new Color32[Size * Size];
             float scale = crop.width / (float)Size;
@@ -335,7 +335,7 @@ namespace PocketWilds.Editor.Capture
 
         private static byte ToGamma(float linear) => ToByte(Mathf.LinearToGammaSpace(Mathf.Clamp01(linear)));
 
-        private static void WritePng(string path, Texture2D texture)
+        internal static void WritePng(string path, Texture2D texture)
         {
             File.WriteAllBytes(path, texture.EncodeToPNG());
             Object.DestroyImmediate(texture);

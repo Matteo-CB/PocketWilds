@@ -209,6 +209,46 @@ SPECS = {
             "SOCK_Ear_R": (0.062, -0.105, 0.212),
         },
     ),
+    # Field Hamster (T47, the Meadow Pack companion): a chubby round ball, no neck, a big head with soft cheek pouches
+    # wider than the skull, round ears standing on the head (they turn with it), bead eyes, a tiny muzzle, short legs
+    # with only the paws showing, no visible tail. Read against the Guinea Pig: rounder and taller (a ball, not a
+    # potato), round ears twice as big, puffed cheeks, golden back over a white belly. The Stash clip squashes the Head
+    # bone a little: the whole face is rigid on Head, so the cheeks puff the same on every LOD.
+    "FieldHamster": dict(
+        blockout=[
+            _ell((0, 0.035, 0.128), (0.122, 0.122, 0.128)),                          # round body, a tall dome
+            _ell((0, 0.098, 0.118), (0.116, 0.088, 0.110)),                          # round rump
+            _ell((0, -0.058, 0.118), (0.106, 0.080, 0.104)),                         # chest
+            _ell((0, -0.112, 0.166), (0.090, 0.084, 0.084), part="head"),
+            _ell((0.066, -0.140, 0.136), (0.058, 0.052, 0.050), stiff=1.6, mirror=True, part="head"),  # cheek pouches
+            _ell((0, -0.200, 0.142), (0.030, 0.026, 0.024), stiff=1.5, part="head"),  # tiny muzzle
+            _ell((0.062, -0.100, 0.255), (0.042, 0.018, 0.040), rot=(-6, 20, 16), stiff=2.2, mirror=True, part="head"),  # round ears
+            _ell((0.050, -0.088, 0.042), (0.022, 0.022, 0.030), mirror=True),       # front legs, short
+            _ell((0.050, -0.104, 0.014), (0.020, 0.026, 0.014), mirror=True),       # front paws
+            _ell((0.074, 0.092, 0.072), (0.044, 0.058, 0.054), mirror=True),        # haunches
+            _ell((0.070, 0.084, 0.014), (0.024, 0.040, 0.014), mirror=True),        # hind feet
+        ],
+        eyes=dict(x=0.050, z=0.182, r=0.020, sink=0.35),
+        nose=dict(x=0.0, z=0.150, r=0.012, sink=0.45),
+        head_center=(0, -0.112, 0.166),
+        head_radii=(0.090, 0.084, 0.084),
+        ear_mode="none",
+        hind_leg_band=(0.055, 0.025),
+        front_leg_band=(0.055, 0.025),
+        leg_band_bones=("Upper", "Lower"),
+        lod0_faces=1120,
+        lod1_mode="collapse",
+        lod1_tris=880,
+        lod2_tris=350,
+        back_probe_y=0.04,
+        sockets={
+            "SOCK_Neck": (0.0, -0.070, 0.140),
+            # The tail is hidden: the socket stays on the rump for the family hierarchy, no accessory uses it.
+            "SOCK_TailBase": (0.0, 0.185, 0.100),
+            "SOCK_Ear_L": (-0.062, -0.100, 0.272),
+            "SOCK_Ear_R": (0.062, -0.100, 0.272),
+        },
+    ),
     # Squirrel (A-SP-002): slightly narrower face than Rabbit, compact body, front paws tucked close to
     # the chest, small tufted ears on the Ear_01 bones, very large curled tail as one solid volume.
     "Squirrel": dict(

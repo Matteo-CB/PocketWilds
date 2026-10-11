@@ -136,6 +136,48 @@ namespace PocketWilds.Presentation
             return true;
         }
 
+        /// <summary>T47: whether a featured or moment offer grants this item (the Meadow Pack grants the crown and the hamster).</summary>
+        public bool HasOfferGranting(ContentId item) => FindOfferGranting(item, out _);
+
+        /// <summary>
+        /// T47: the pack's offer modal opened from the outfit picker or a Codex silhouette: the offer whose product grants this
+        /// item, featured first. Opens even while owned (the modal then says « Acheté »). False when the shop is locked or none.
+        /// </summary>
+        public bool TryOpenOfferGranting(ContentId item)
+        {
+            if (_offerView == null || !Unlocked || OfferOpen || ShopOpen || !FindOfferGranting(item, out var offer))
+                return false;
+            _modalCloseIn = -1f;
+            _modalOffer = offer.Id;
+            _offerView.Open(BuildCard(offer, _store.NowUnix), this, _text, this);
+            _audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
+            _analytics.ScreenView(ScreenId.OfferModal);
+            _analytics.OfferImpression(offer.Id, offer.Placement);
+            return true;
+        }
+
+        private bool FindOfferGranting(ContentId item, out OfferDefinition found)
+        {
+            found = null;
+            var offers = _catalog.Offers;
+            for (int pass = 0; pass < 2 && found == null; pass++)
+            {
+                for (int i = 0; i < offers.Count; i++)
+                {
+                    var offer = offers[i];
+                    var placement = pass == 0 ? OfferPlacement.ShopFeatured : OfferPlacement.Moment;
+                    if (offer.Placement != placement || !offer.Product.IsValid || !_catalog.Products.TryGet(offer.Product, out var product))
+                        continue;
+                    if (System.Array.IndexOf(product.Entitlements, item) >= 0)
+                    {
+                        found = offer;
+                        break;
+                    }
+                }
+            }
+            return found != null;
+        }
+
         public void Tick(float unscaledDeltaTime)
         {
             if (_store.IsReady != _wasReady)
@@ -347,8 +389,41 @@ namespace PocketWilds.Presentation
                 card.ItemKey = item.DisplayKey;
                 card.ItemIconKey = item.IconKey;
             }
+            FillPack(ref card, offer, items);
             return card;
         }
+
+        /// <summary>
+        /// T47 pack card (a store product granting a companion, « Pack de la Prairie »): the companion is the hero art, the frozen
+        /// body and « Offre unique » keys, the restore note under the button, and a row of what it holds in order: the companion,
+        /// the Gems, then the other items (the burrow, the crown). No struck-through price, no percentage, no countdown.
+        /// </summary>
+        private void FillPack(ref ShopCardModel card, OfferDefinition offer, ContentId[] items)
+        {
+            if (!offer.Product.IsValid || items.Length == 0 || !_catalog.Entitlements.TryGet(items[0], out var first)
+                || first.Kind != EntitlementKind.Companion)
+                return;
+            card.ArtKey = first.IconKey;
+            card.BonusPercent = 0;
+            string title = offer.DisplayKey ?? string.Empty;
+            card.BodyKey = title.EndsWith(".title") ? title.Substring(0, title.Length - ".title".Length) + ".body" : string.Empty;
+            card.OneTimeKey = card.OneTime ? PackOneTimeKey : string.Empty;
+            card.RestoreNote = true;
+            card.ContentCount = 0;
+            // A companion's full name would take three lines under its icon: the row uses its short name (species.x.short).
+            string firstLabel = first.Kind == EntitlementKind.Companion && first.DisplayKey.EndsWith(".name", StringComparison.Ordinal)
+                ? first.DisplayKey.Substring(0, first.DisplayKey.Length - ".name".Length) + ".short"
+                : first.DisplayKey;
+            card.AddContent(new ShopContentItem { IconKey = first.IconKey, LabelKey = firstLabel });
+            if (card.Gems > 0)
+                card.AddContent(new ShopContentItem { IconKey = GemsIconKey, Amount = card.Gems });
+            for (int i = 1; i < items.Length; i++)
+                if (_catalog.Entitlements.TryGet(items[i], out var other))
+                    card.AddContent(new ShopContentItem { IconKey = other.IconKey, LabelKey = other.DisplayKey });
+        }
+
+        public const string PackOneTimeKey = "shop.pack.one_time";
+        public const string GemsIconKey = "ICO_Currency_Gems";
 
         /// <summary>
         /// Extra Gems compared to the smallest pack, priced per started euro (0,99 counts as 1 euro): 550 Gems for

@@ -29,6 +29,8 @@ namespace PocketWilds.UI
         public const string ShopNotEnoughGems = "shop.not_enough_gems";
         public const string ShopRestored = "shop.restore.done";
         public const string ShopNothingToRestore = "shop.restore.none";
+        public const string ShopRestoreNote = "shop.restore_note";
+        public const string ShopPackOneTime = "shop.pack.one_time";
 
         /// <summary>T34: the device is warm, the picture is lighter (key owned by the quality service).</summary>
         public const string QualityThermalNotice = PocketWilds.Presentation.QualityService.ThermalNoticeKey;
@@ -37,7 +39,7 @@ namespace PocketWilds.UI
         {
             OfflineWelcomeBack, CollectButton, CodexTitle, CodexVariants, CodexNew, CodexUnknown,
             ShopTitle, ShopFeatured, ShopGems, ShopBestValue, ShopOwned, ShopOneTime, ShopContentsGems, ShopRestore, ShopThanks, ShopThanksItem,
-            ShopFailed, ShopPending, ShopUnavailable, ShopNotEnoughGems, ShopRestored, ShopNothingToRestore,
+            ShopFailed, ShopPending, ShopUnavailable, ShopNotEnoughGems, ShopRestored, ShopNothingToRestore, ShopRestoreNote, ShopPackOneTime,
             QualityThermalNotice,
             // T34A: reveal banner, rarity names, egg odds, modal buttons, toasts, animal sheet.
             PocketWilds.Presentation.FeedbackText.RevealNewSpecies, PocketWilds.Presentation.FeedbackText.RevealNewVariant,

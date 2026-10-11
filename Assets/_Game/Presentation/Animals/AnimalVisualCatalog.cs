@@ -23,6 +23,9 @@ namespace PocketWilds.Presentation
 
         public List<Entry> entries = new List<Entry>();
 
+        [Tooltip("T47: accessory prefabs and palettes, the Cozy Burrow and its measured spot (cosmetic pipelines).")]
+        public CosmeticVisualCatalog cosmetics;
+
         public bool TryGet(string visualKey, out Entry entry)
         {
             foreach (var e in entries)

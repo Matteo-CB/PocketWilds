@@ -40,9 +40,14 @@ namespace PocketWilds.Content
             ContentId biome,
             double baseProduction,
             string visualKey,
-            bool isSecret = false)
+            bool isSecret = false,
+            bool isCompanion = false,
+            byte hiddenSockets = 0)
         {
-            IsSecret = isSecret;
+            HiddenSockets = hiddenSockets;
+            // A companion is always secret too: every « species to find » rule (eggs, wishes, journal goals, gates) skips it.
+            IsSecret = isSecret || isCompanion;
+            IsCompanion = isCompanion;
             Id = id;
             DisplayKey = displayKey;
             RigFamily = rigFamily;
@@ -55,6 +60,17 @@ namespace PocketWilds.Content
 
         /// <summary>Secret species: hidden in the Codex until found, never targeted by the discovery pity.</summary>
         public bool IsSecret { get; }
+
+        /// <summary>
+        /// T47 companion (A-SP-101 and up): given by its entitlement, one per account. Never in an egg pool, never bred,
+        /// out of the Codex completion (its own Companions tab), never asked by any requirement.
+        /// </summary>
+        public bool IsCompanion { get; }
+
+        /// <summary>T47: accessory sockets this species hides (bits of <see cref="AccessorySocket"/>), e.g. the hamster's TailBase.</summary>
+        public byte HiddenSockets { get; }
+
+        public bool HidesSocket(AccessorySocket socket) => (HiddenSockets & (1 << (int)socket)) != 0;
 
         /// <summary>Localization key, e.g. "species.rabbit.name". Never the English text.</summary>
         public string DisplayKey { get; }

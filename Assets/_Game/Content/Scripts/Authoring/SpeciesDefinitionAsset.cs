@@ -46,12 +46,19 @@ namespace PocketWilds.Content
         public string visualKey = "PF_Animal_New";
         [Tooltip("Secret species: hidden until found, never given by the discovery pity.")]
         public bool secret;
+        [Tooltip("T47 companion: given by its entitlement, never in eggs, never bred, out of the Codex completion.")]
+        public bool companion;
+        [Tooltip("T47: accessory sockets the species hides (no accessory there), e.g. TailBase for a hidden tail.")]
+        public List<AccessorySocket> hiddenSockets = new List<AccessorySocket>();
         public List<VariantEntry> variants = new List<VariantEntry>();
 
         public SpeciesDefinition ToRuntime()
         {
+            int hidden = 0;
+            foreach (var socket in hiddenSockets)
+                hidden |= 1 << (int)socket;
             return new SpeciesDefinition(ContentId.FromSource(sourceId), displayKey, rigFamily,
-                ContentId.FromSource(biomeId), baseProduction, visualKey, secret);
+                ContentId.FromSource(biomeId), baseProduction, visualKey, secret, companion, (byte)hidden);
         }
 
         public VariantDefinition ToRuntime(VariantEntry entry)

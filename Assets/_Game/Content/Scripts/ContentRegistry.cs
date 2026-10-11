@@ -118,11 +118,19 @@ namespace PocketWilds.Content
     {
         public ShopContent(ContentTable<ProductDefinition> products, ContentTable<OfferDefinition> offers, ContentTable<EntitlementDefinition> entitlements,
             int unlockMinAnimals)
+            : this(products, offers, entitlements, unlockMinAnimals, ContentTable<AccessoryDefinition>.Empty, ContentTable<OutfitDefinition>.Empty)
+        {
+        }
+
+        public ShopContent(ContentTable<ProductDefinition> products, ContentTable<OfferDefinition> offers, ContentTable<EntitlementDefinition> entitlements,
+            int unlockMinAnimals, ContentTable<AccessoryDefinition> accessories, ContentTable<OutfitDefinition> outfits)
         {
             Products = products;
             Offers = offers;
             Entitlements = entitlements;
             UnlockMinAnimals = unlockMinAnimals;
+            Accessories = accessories;
+            Outfits = outfits;
         }
 
         public static ShopContent Empty { get; } = new ShopContent(ContentTable<ProductDefinition>.Empty, ContentTable<OfferDefinition>.Empty,
@@ -137,6 +145,12 @@ namespace PocketWilds.Content
 
         /// <summary>Animals owned before the shop shortcut shows (int.MaxValue: no shop).</summary>
         public int UnlockMinAnimals { get; }
+
+        /// <summary>T47: wearable data of the cosmetic items (same ids as their entitlements).</summary>
+        public ContentTable<AccessoryDefinition> Accessories { get; }
+
+        /// <summary>T47: sets of 1 to 3 accessories with one shared palette.</summary>
+        public ContentTable<OutfitDefinition> Outfits { get; }
     }
 
     public enum ContentIssueSeverity
@@ -175,6 +189,8 @@ namespace PocketWilds.Content
         private readonly List<ProductDefinition> _products = new List<ProductDefinition>();
         private readonly List<OfferDefinition> _offers = new List<OfferDefinition>();
         private readonly List<EntitlementDefinition> _entitlements = new List<EntitlementDefinition>();
+        private readonly List<AccessoryDefinition> _accessories = new List<AccessoryDefinition>();
+        private readonly List<OutfitDefinition> _outfits = new List<OutfitDefinition>();
         private int _shopUnlockMinAnimals = int.MaxValue;
         private readonly Dictionary<uint, string> _seenHashes = new Dictionary<uint, string>();
         private readonly HashSet<uint> _tombstones = new HashSet<uint>();
@@ -318,6 +334,53 @@ namespace PocketWilds.Content
                 _entitlements.Add(definition);
         }
 
+        /// <summary>
+        /// T47: the wearable data of a cosmetic item. Its id is the item's id (checked at build), so it claims no id of its own;
+        /// one accessory per item.
+        /// </summary>
+        public void AddAccessory(AccessoryDefinition definition, string sourceId)
+        {
+            if (string.IsNullOrEmpty(definition.DisplayKey) || string.IsNullOrEmpty(definition.IconKey) || string.IsNullOrEmpty(definition.VisualKey))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Accessory needs a display key, an icon key and a visual key."));
+                return;
+            }
+            if (!Enum.IsDefined(typeof(AccessorySocket), definition.Socket) || definition.FamilyFits.Length == 0 || definition.Palettes.Length == 0)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Accessory needs a socket, a compatible rig family and a palette."));
+                return;
+            }
+            if (definition.TrisBudget <= 0 || definition.TrisBudget > AccessoryDefinition.MaxTris)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Accessory triangle budget is 1 to " + AccessoryDefinition.MaxTris + "."));
+                return;
+            }
+            if (!ContentIdFormat.IsValid(sourceId) || ContentIdHash.Compute(sourceId) != definition.Id.Value)
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Accessory id does not match its source ID."));
+                return;
+            }
+            if (_accessories.Exists(a => a.Id == definition.Id))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Duplicate accessory."));
+                return;
+            }
+            _accessories.Add(definition);
+        }
+
+        /// <summary>T47: an outfit, 1 to 3 known accessories on different sockets sharing one palette (checked at build).</summary>
+        public void AddOutfit(OutfitDefinition definition, string sourceId)
+        {
+            int count = definition.Accessories.Length;
+            if (count < 1 || count > OutfitDefinition.MaxAccessories || string.IsNullOrEmpty(definition.Palette) || string.IsNullOrEmpty(definition.DisplayKey))
+            {
+                _issues.Add(new ContentIssue(ContentIssueSeverity.Error, sourceId, "Outfit needs 1 to 3 accessories, a palette and a display key."));
+                return;
+            }
+            if (TryClaim(definition.Id, sourceId))
+                _outfits.Add(definition);
+        }
+
         public void AddProduct(ProductDefinition definition, string sourceId)
         {
             if (string.IsNullOrEmpty(definition.StoreSku))
@@ -397,6 +460,13 @@ namespace PocketWilds.Content
                     if (species != null && !_variants.Exists(v => v.Species == entry.Species && !v.IsSecret))
                         _issues.Add(new ContentIssue(ContentIssueSeverity.Error, egg.Id.ToString(), "Every egg pool species needs a normal variant."));
                 }
+                foreach (var entry in egg.Pool)
+                {
+                    // T47: a companion comes from its entitlement only, never from an egg.
+                    var species = _species.Find(s => s.Id == entry.Species);
+                    if (species != null && species.IsCompanion)
+                        _issues.Add(new ContentIssue(ContentIssueSeverity.Error, egg.Id.ToString(), "A companion is never in an egg pool."));
+                }
                 if (egg.StarterSpecies.IsValid && Array.FindIndex(egg.Pool, e => e.Species == egg.StarterSpecies) < 0)
                     _issues.Add(new ContentIssue(ContentIssueSeverity.Error, egg.Id.ToString(), "Starter species must be in the egg pool."));
             }
@@ -422,7 +492,8 @@ namespace PocketWilds.Content
             _offers.Sort((a, b) => a.Placement != b.Placement ? a.Placement.CompareTo(b.Placement)
                 : a.Priority != b.Priority ? b.Priority.CompareTo(a.Priority) : a.Id.CompareTo(b.Id));
             var shop = new ShopContent(new ContentTable<ProductDefinition>(_products), new ContentTable<OfferDefinition>(_offers),
-                new ContentTable<EntitlementDefinition>(_entitlements), _shopUnlockMinAnimals);
+                new ContentTable<EntitlementDefinition>(_entitlements), _shopUnlockMinAnimals, new ContentTable<AccessoryDefinition>(_accessories),
+                new ContentTable<OutfitDefinition>(_outfits));
             return new ContentRegistry(new ContentTable<SpeciesDefinition>(_species), new ContentTable<VariantDefinition>(_variants),
                 new ContentTable<EggDefinition>(_eggs), new ContentTable<PaletteDefinition>(_palettes), new ContentTable<BiomeDefinition>(_biomes), shop);
         }
@@ -447,6 +518,33 @@ namespace PocketWilds.Content
                 }
                 if (p.Kind == ProductKind.Consumable && p.Entitlements.Length > 0)
                     _issues.Add(new ContentIssue(ContentIssueSeverity.Error, p.Id.ToString(), "Permanent items must be sold as a non-consumable product."));
+            }
+            // T47: an accessory is the wearable side of a cosmetic item; an outfit's pieces sit on different sockets and share its palette.
+            var accessories = new Dictionary<ContentId, AccessoryDefinition>();
+            foreach (var a in _accessories)
+            {
+                accessories[a.Id] = a;
+                var item = _entitlements.Find(e => e.Id == a.Id);
+                if (item == null || item.Kind != EntitlementKind.Cosmetic)
+                    _issues.Add(new ContentIssue(ContentIssueSeverity.Error, a.Id.ToString(), "Accessory needs a Cosmetic item with the same id."));
+            }
+            foreach (var outfit in _outfits)
+            {
+                int sockets = 0;
+                foreach (var id in outfit.Accessories)
+                {
+                    if (!accessories.TryGetValue(id, out var a))
+                    {
+                        _issues.Add(new ContentIssue(ContentIssueSeverity.Error, outfit.Id.ToString(), "Outfit uses an unknown accessory."));
+                        continue;
+                    }
+                    int bit = 1 << (int)a.Socket;
+                    if ((sockets & bit) != 0)
+                        _issues.Add(new ContentIssue(ContentIssueSeverity.Error, outfit.Id.ToString(), "Outfit accessories need different sockets."));
+                    sockets |= bit;
+                    if (a.PaletteIndex(outfit.Palette) < 0)
+                        _issues.Add(new ContentIssue(ContentIssueSeverity.Error, outfit.Id.ToString(), "Every outfit accessory lists the shared palette."));
+                }
             }
             foreach (var o in _offers)
             {

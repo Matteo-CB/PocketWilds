@@ -534,6 +534,23 @@ namespace PocketWilds.Editor.Animals
             return asset;
         }
 
+        /// <summary>
+        /// T47: the Meadow Pack's companion walks like the guinea pig; its joy is its own greeting (played when the player
+        /// comes back) and its second idle tucks a seed in its cheeks.
+        /// </summary>
+        public static readonly (string Family, string Species)[] FieldHamsterClips =
+        {
+            ("Locomotion_Hop", "Locomotion_Walk"),
+            ("Happy", "FieldHamsterGreet"),
+            ("Idle_B", "FieldHamsterStash"),
+        };
+
+        [MenuItem("Pocket Wilds/Animals/Build Field Hamster (T47)", priority = 157)]
+        public static void BuildFieldHamster()
+        {
+            BuildSpecies("FieldHamster", "SmallQuadruped", EnsureFieldHamsterDefinition, FieldHamsterClips, b => b.moveSpeed = 0.27f);
+        }
+
         private static SpeciesDefinitionAsset EnsureFawnDefinition()
         {
             var asset = LoadOrCreate<SpeciesDefinitionAsset>(DefinitionPath("Fawn"));
@@ -569,6 +586,39 @@ namespace PocketWilds.Editor.Animals
             return asset;
         }
 
+        /// <summary>
+        /// T47 Field Hamster, the Meadow Pack's companion (A-SP-101): never in eggs, never bred, out of the Codex completion
+        /// (companion implies secret), no TailBase socket (hidden tail). Its three looks are Rare (« produit comme un animal Rare
+        /// de son biome ») and secret: the base look, then the looks given at bond 5 and 10 (CompanionCatalog).
+        /// </summary>
+        internal static SpeciesDefinitionAsset EnsureFieldHamsterDefinition()
+        {
+            var asset = LoadOrCreate<SpeciesDefinitionAsset>(DefinitionPath("FieldHamster"));
+            asset.sourceId = "species.fieldhamster";
+            asset.displayKey = "species.fieldhamster.name";
+            asset.rigFamily = RigFamily.SmallQuadruped;
+            asset.biomeId = "biome.grassland";
+            asset.baseProduction = 1.0;
+            asset.visualKey = "PF_Animal_FieldHamster";
+            asset.secret = true;
+            asset.companion = true;
+            asset.hiddenSockets = new List<AccessorySocket> { AccessorySocket.TailBase };
+
+            // Field hamster regions: primary = golden back, secondary = round ears and paws, belly = white belly, chest and muzzle,
+            // shared masks on one mesh (pw_masks fieldhamster_masks): cheek band = mask B, back spots = mask C, ear glow = mask A.
+            asset.variants = new List<SpeciesDefinitionAsset.VariantEntry>
+            {
+                Variant("variant.fieldhamster.fieldgold", RarityTier.Rare, Hex("D9A257"), Hex("F2C3B2"), Hex("FCF6EA"), Hex("E8959E"), Hex("1E1414"),
+                    pattern: Hex("F7E6C8"), channel: PatternChannel.MaskB, strength: 12, secret: true),
+                Variant("variant.fieldhamster.wheatcream", RarityTier.Rare, Hex("EAD2A4"), Hex("F4CEC0"), Hex("FFFCF4"), Hex("E8A0A6"), Hex("1E1414"),
+                    pattern: Hex("C99A5E"), channel: PatternChannel.MaskC, strength: 12, secret: true),
+                Variant("variant.fieldhamster.fieldlavender", RarityTier.Rare, Hex("B8A5C8"), Hex("EBC7D5"), Hex("FBF8FC"), Hex("E6A2B2"), Hex("1E1414"),
+                    pattern: Hex("F3DCF2"), channel: PatternChannel.MaskA, strength: 14, secret: true),
+            };
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
         private static SpeciesDefinitionAsset.VariantEntry Variant(string id, RarityTier rarity, Color primary, Color secondary,
             Color belly, Color detail, Color eye, Color? pattern = null, PatternChannel channel = PatternChannel.None, int strength = 0, bool secret = false, bool visitor = false, int mastery = 0)
         {
@@ -599,7 +649,7 @@ namespace PocketWilds.Editor.Animals
         public static void UpdateSpeciesDefinitions()
         {
             foreach (var ensure in new Func<SpeciesDefinitionAsset>[] { EnsureRabbitDefinition, EnsureSquirrelDefinition, EnsureHedgehogDefinition,
-                EnsureFieldMouseDefinition, EnsureGuineaPigDefinition, EnsureFawnDefinition })
+                EnsureFieldMouseDefinition, EnsureGuineaPigDefinition, EnsureFawnDefinition, EnsureFieldHamsterDefinition })
                 EnsureContentDatabase(ensure());
             AssetDatabase.SaveAssets();
         }

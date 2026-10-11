@@ -42,6 +42,7 @@ namespace PocketWilds.Editor.Shop
 
         public static string BuildAll()
         {
+            Problems.Clear();
             string catalog = ShopPipeline.Build();
             UiPipeline.EnsureLocalization();
             AssetDatabase.Refresh();
@@ -56,8 +57,11 @@ namespace PocketWilds.Editor.Shop
             AssetDatabase.SaveAssets();
             UiPipeline.SetupScene();
             WireScene();
-            return catalog + "; shop UI built and wired.";
+            return catalog + "; shop UI built and wired." + (Problems.Length > 0 ? " Text fit: " + Problems : " Texts fit in en and fr.");
         }
+
+        /// <summary>T47: labels that do not fit in both languages (empty when all fit).</summary>
+        private static readonly System.Text.StringBuilder Problems = new System.Text.StringBuilder();
 
         private static Kit LoadKit()
         {
@@ -120,7 +124,23 @@ namespace PocketWilds.Editor.Shop
                 entries.Add(new ShopIconSet.Entry { key = sprite.name, sprite = sprite });
             }
             entries.Add(new ShopIconSet.Entry { key = "ICO_Currency_Gems", sprite = AssetDatabase.LoadAssetAtPath<Sprite>(UiPipeline.GemsIconPath) });
+            // T47 pack: the hero hamster, the burrow and the crown (rendered by the world lane; its thumbnail or the paw until then).
+            var paw = PocketWilds.Editor.UI.OutfitUiPipeline.FindSprite("ICO_Paw");
+            var crown = PocketWilds.Editor.UI.OutfitUiPipeline.FindSprite("ICO_Accessory_FlowerCrown")
+                        ?? PocketWilds.Editor.UI.OutfitUiPipeline.FindSprite("ICO_Cosmetic_FlowerCrown") ?? paw;
+            AddIcon(entries, "ICO_Companion_FieldHamster", PocketWilds.Editor.UI.OutfitUiPipeline.FindSprite("ICO_Companion_FieldHamster")
+                ?? PocketWilds.Editor.UI.OutfitUiPipeline.FindSprite("TH_variant_fieldhamster_fieldgold") ?? paw);
+            AddIcon(entries, "ICO_Decor_CozyBurrow", PocketWilds.Editor.UI.OutfitUiPipeline.FindSprite("ICO_Decor_CozyBurrow") ?? paw);
+            AddIcon(entries, "ICO_Accessory_FlowerCrown", crown);
+            AddIcon(entries, "ICO_Cosmetic_FlowerCrown", crown);
             return entries.ToArray();
+        }
+
+        private static void AddIcon(List<ShopIconSet.Entry> entries, string key, Sprite sprite)
+        {
+            if (sprite == null || entries.Exists(e => e.key == key))
+                return;
+            entries.Add(new ShopIconSet.Entry { key = key, sprite = sprite });
         }
 
         // ---------------- Cards ----------------
@@ -215,7 +235,8 @@ namespace PocketWilds.Editor.Shop
             {
                 root.layer = 5;
                 var rect = (RectTransform)root.transform;
-                rect.sizeDelta = new Vector2(960f, 430f);
+                // T47: at the pack's height (the shop sets each card's height: 430 for other offers).
+                rect.sizeDelta = new Vector2(960f, PackCardHeight);
                 var view = root.AddComponent<ShopCardView>();
                 BuildWideContent(kit, view, rect, artSize: 290f, titleSize: 58f, compact: true);
                 Maskable(root);
@@ -244,11 +265,12 @@ namespace PocketWilds.Editor.Shop
             {
                 // Art left, text right, price bottom right.
                 var glow = UiPipeline.AddImage("Glow", rect, kit.Glow, new Color(1f, 0.93f, 0.72f, 0.75f), Image.Type.Simple);
-                UiPipeline.Place(glow.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(200f, 6f), new Vector2(380f, 380f));
+                // T47: art held at the top-left (the pack card is taller).
+                UiPipeline.Place(glow.rectTransform, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), new Vector2(190f, -200f), new Vector2(380f, 380f));
                 art = UiPipeline.AddImage("Art", rect, null, Color.white, Image.Type.Simple);
-                UiPipeline.Place(art.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(200f, 14f), new Vector2(artSize, artSize));
+                UiPipeline.Place(art.rectTransform, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), new Vector2(190f, -196f), new Vector2(artSize, artSize));
                 gemBadge = UiPipeline.AddImage("GemsBadge", rect, kit.Gem, Color.white, Image.Type.Simple);
-                UiPipeline.Place(gemBadge.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(300f, -100f), new Vector2(110f, 110f));
+                UiPipeline.Place(gemBadge.rectTransform, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), new Vector2(290f, -300f), new Vector2(110f, 110f));
                 title = UiPipeline.AddText("Title", rect, TextRole.Heading, titleSize, kit.Tokens.textPrimary, "Starter Pack");
                 UiPipeline.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(390f, -46f), new Vector2(540f, 76f));
                 contents = UiPipeline.AddText("Contents", rect, TextRole.Body, 40f, kit.Tokens.textSecondary, "500 Gems + Flower Crown");
@@ -268,7 +290,7 @@ namespace PocketWilds.Editor.Shop
                 var glow = UiPipeline.AddImage("Glow", rect, kit.Glow, new Color(1f, 0.93f, 0.72f, 0.85f), Image.Type.Simple);
                 UiPipeline.Place(glow.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -280f), new Vector2(560f, 560f));
                 art = UiPipeline.AddImage("Art", rect, null, Color.white, Image.Type.Simple);
-                UiPipeline.Place(art.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -270f), new Vector2(artSize, artSize));
+                UiPipeline.Place(art.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -300f), new Vector2(artSize, artSize));
                 gemBadge = UiPipeline.AddImage("GemsBadge", rect, kit.Gem, Color.white, Image.Type.Simple);
                 UiPipeline.Place(gemBadge.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(160f, -400f), new Vector2(150f, 150f));
                 title = UiPipeline.AddText("Title", rect, TextRole.Heading, titleSize, kit.Tokens.textPrimary, "Starter Pack");
@@ -288,6 +310,77 @@ namespace PocketWilds.Editor.Shop
             }
             view.SetReferences(kit.Tokens, art, null, title, contents, caption, null, null, badge, badgeLabel, buy, buyBack, price, priceGem, wait,
                 null, gemBadge.gameObject);
+            AddPackParts(kit, view, rect, compact);
+        }
+
+        /// <summary>T47: the shop's pack card height (content row and restore note).</summary>
+        public const float PackCardHeight = 760f;
+
+        /// <summary>
+        /// T47 pack parts (« Pack de la Prairie »): « Offre unique » as a badge, a row of four icons with their names (the hamster,
+        /// 500 Gems, the burrow, the crown), « Restauré sur un nouvel appareil. » under the button, which moves to the bottom center.
+        /// Every label measured in en and fr at its smallest size.
+        /// </summary>
+        private static void AddPackParts(Kit kit, ShopCardView view, RectTransform rect, bool compact)
+        {
+            var top = new Vector2(0.5f, 1f);
+            var bottom = new Vector2(0.5f, 0f);
+            var oneTime = compact
+                ? Chip(kit, rect, "OneTime", kit.Tokens.currencyGems, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(392f, -252f), new Vector2(400f, 58f), 36f,
+                    "One-time offer", out var oneTimeLabel)
+                : Chip(kit, rect, "OneTime", kit.Tokens.currencyGems, top, top, new Vector2(0f, -30f), new Vector2(420f, 64f), 38f, "One-time offer",
+                    out oneTimeLabel);
+            oneTimeLabel.enableAutoSizing = true;
+            oneTimeLabel.fontSizeMax = oneTimeLabel.fontSize;
+            oneTimeLabel.fontSizeMin = TextStyleSheet.MinimumReadableSize;
+            Problems.Append(PocketWilds.Editor.UI.OutfitTexts.Fit(oneTimeLabel, UiTextKeys.ShopPackOneTime));
+
+            var row = UiPipeline.Rect("PackRow", rect);
+            // The modal card is 920 wide: its row keeps 32 on each side; the shop card has the room for 240 cells.
+            float cellPitch = compact ? 240f : 214f;
+            float cellWidth = compact ? 240f : 212f;
+            float icon = compact ? 88f : 104f;
+            if (compact)
+                UiPipeline.Place(row, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -350f), new Vector2(960f, 196f));
+            else
+                UiPipeline.Place(row, top, top, new Vector2(0f, -760f), new Vector2(856f, 212f));
+            var icons = new Image[ShopCardModel.MaxContents];
+            var labels = new TMP_Text[ShopCardModel.MaxContents];
+            string[] keys = { "species.fieldhamster.short", UiTextKeys.ShopContentsGems, "decor.cozy_burrow.name", "entitlement.cosmetic.flower_crown.name" };
+            for (int i = 0; i < icons.Length; i++)
+            {
+                var cell = UiPipeline.Rect("Item" + i, row);
+                float x = compact ? 120f + i * cellPitch : (i - 1.5f) * cellPitch;
+                UiPipeline.Place(cell, compact ? new Vector2(0f, 1f) : top, top, new Vector2(x, 0f), new Vector2(cellWidth, icon + 108f));
+                icons[i] = UiPipeline.AddImage("Icon", cell, kit.Gem, Color.white, Image.Type.Simple);
+                icons[i].preserveAspect = true;
+                UiPipeline.Place(icons[i].rectTransform, top, top, Vector2.zero, new Vector2(icon, icon));
+                var label = UiPipeline.AddText("Label", cell, TextRole.Label, 34f, kit.Tokens.textPrimary, "Field Hamster", 30f);
+                label.textWrappingMode = TextWrappingModes.Normal;
+                label.alignment = TextAlignmentOptions.Top;
+                label.enableAutoSizing = true;
+                label.fontSizeMax = TextStyleSheet.MinimumReadableSize;
+                label.fontSizeMin = TextStyleSheet.MinimumReadableSize;
+                // Two lines at most in both languages (« Hamster des / champs »).
+                UiPipeline.Place(label.rectTransform, top, top, new Vector2(0f, -(icon + 8f)), new Vector2(cellWidth, 100f));
+                Problems.Append(PocketWilds.Editor.UI.OutfitTexts.Fit(label, keys[i]));
+                labels[i] = label;
+            }
+            row.gameObject.SetActive(false);
+
+            var note = UiPipeline.AddText("RestoreNote", rect, TextRole.Caption, compact ? 32f : 34f, kit.Tokens.textSecondary, "Restored on a new device.", 30f);
+            note.alignment = TextAlignmentOptions.Center;
+            UiPipeline.Place(note.rectTransform, bottom, bottom, new Vector2(0f, compact ? 12f : 40f), new Vector2(compact ? 880f : 820f, compact ? 44f : 50f));
+            Problems.Append(PocketWilds.Editor.UI.OutfitTexts.Fit(note, UiTextKeys.ShopRestoreNote));
+            note.gameObject.SetActive(false);
+
+            var fallback = PocketWilds.Editor.UI.OutfitUiPipeline.FindSprite("ICO_Paw");
+            if (compact)
+                view.SetPackReferences(oneTime, oneTimeLabel, row.gameObject, icons, labels, note, fallback, new Vector2(1f, 0f), new Vector2(-34f, 30f),
+                    bottom, new Vector2(0f, 76f));
+            else
+                view.SetPackReferences(oneTime, oneTimeLabel, row.gameObject, icons, labels, note, fallback, bottom, new Vector2(0f, 60f), bottom,
+                    new Vector2(0f, 112f));
         }
 
         private static void Maskable(GameObject root)
@@ -440,7 +533,8 @@ namespace PocketWilds.Editor.Shop
                 scrim.maskable = false;
 
                 var panel = UiPipeline.Rect("Panel", content);
-                UiPipeline.Place(panel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), new Vector2(920f, 1060f));
+                // T47: 1320 tall for the pack's content row and restore note.
+                UiPipeline.Place(panel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), new Vector2(920f, 1320f));
                 var card = panel.gameObject.AddComponent<ShopCardView>();
                 BuildWideContent(kit, card, panel, artSize: 400f, titleSize: 72f, compact: false);
                 var closeImage = UiPipeline.AddImage("Close", panel, kit.Circle, kit.Tokens.panelSecondary, Image.Type.Simple);
@@ -452,7 +546,7 @@ namespace PocketWilds.Editor.Shop
                 UiPipeline.Place(cross.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 4f), new Vector2(60f, 60f));
 
                 var toast = UiPipeline.Rect("Toast", content);
-                UiPipeline.Place(toast, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 1f), new Vector2(0f, -530f), new Vector2(900f, 116f));
+                UiPipeline.Place(toast, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 1f), new Vector2(0f, -650f), new Vector2(900f, 116f));
                 var toastGroup = toast.gameObject.AddComponent<CanvasGroup>();
                 toastGroup.alpha = 0f;
                 toastGroup.blocksRaycasts = false;

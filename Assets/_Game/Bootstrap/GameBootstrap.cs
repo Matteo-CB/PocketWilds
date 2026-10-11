@@ -87,6 +87,8 @@ namespace PocketWilds.Bootstrap
         private JournalService _journal;
         private VisitorService _visitors;
         private MasteryColorService _masteryColors;
+        private CosmeticService _cosmetics;
+        private CompanionService _companions;
         private JournalHooks _journalHooks;
         private GrantService _grants;
         private OfferService _offers;
@@ -297,6 +299,26 @@ namespace PocketWilds.Bootstrap
                 }
                 _save.BeforeSerialize += _offline.CaptureSnapshot;
                 _grants = new GrantService(_content, _save.State, _save);
+                // T47: accessories worn and the companions (the Meadow Pack's Field Hamster). Every grant or revoke syncs the
+                // companions; a pack bought or restored before this build places its companion now, worn items no longer valid come off.
+                _cosmetics = new CosmeticService(_save.State, _content, _save) { Grants = _grants };
+                _companions = new CompanionService(_save.State, _content, _clock, _save)
+                {
+                    Grants = _grants, Economy = _economy, Essence = _progression.Essence, Refuge = _progression.Refuge, ProfileItems = _profileItems,
+                    Cosmetics = _cosmetics, DayKey = () => daily.Context.TodayKey,
+                };
+                _daily.Bond.Companions = _companions;
+                var journalHooks = _journalHooks;
+                var content = _content;
+                _companions.Arrived += (species, animal) =>
+                    journalHooks.OnCompanionJoined(species, animal, content.Species.TryGet(species, out var d) ? d.DisplayKey : string.Empty);
+                _companions.LevelReached += (in CompanionLevelUp up) =>
+                {
+                    if (up.Level == CompanionService.MaxLevel)
+                        journalHooks.OnCompanionBond25(up.Species, up.Animal, content.Species.TryGet(up.Species, out var d) ? d.DisplayKey : string.Empty);
+                };
+                _companions.Sync();
+                _cosmetics.Prune();
                 _offers = new OfferService(_content, _save.State, _grants, _save);
                 _store = new StoreService(_content, _offers, CreateStoreProvider(), _clock, _save);
             });
@@ -331,6 +353,7 @@ namespace PocketWilds.Bootstrap
                 _analytics.AttachAlbums(_albums);
                 _analytics.AttachAchievements(_achievements, _profileItems);
                 _analytics.AttachJournal(_journal, _visitors);
+                _analytics.AttachCosmetics(_cosmetics, _companions);
                 _analytics.SetDeviceState((int)_quality.CurrentTier, _batterySaver, ReadMemoryMb);
             });
 
@@ -408,6 +431,8 @@ namespace PocketWilds.Bootstrap
                 Context.Journal = _journal;
                 Context.Visitors = _visitors;
                 Context.MasteryColors = _masteryColors;
+                Context.Cosmetics = _cosmetics;
+                Context.Companions = _companions;
                 _loop = gameObject.AddComponent<GameLoop>();
                 _loop.Initialize(Context);
                 _loop.SetAnalytics(_analytics);
@@ -560,6 +585,9 @@ namespace PocketWilds.Bootstrap
             _visitors = null;
             _masteryColors?.Dispose();
             _masteryColors = null;
+            _companions?.Dispose();
+            _companions = null;
+            _cosmetics = null;
             _achievementHooks?.Dispose();
             _achievementHooks = null;
             _achievements = null;

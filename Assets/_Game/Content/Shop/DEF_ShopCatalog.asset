@@ -51,11 +51,13 @@ MonoBehaviour:
     gems: 13000
     entitlements: []
   - sourceId: product.starter.001
-    storeSku: pw_starter_001
+    storeSku: pw.pack.grassland
     kind: 1
     referencePriceCents: 199
     gems: 500
     entitlements:
+    - companion.fieldhamster
+    - decor.cozy_burrow
     - cosmetic.flower_crown
   offers:
   - sourceId: offer.gems.tier01
@@ -161,7 +163,7 @@ MonoBehaviour:
     artKey: ICO_GemPack_06
     experimentId: 
   - sourceId: offer.starter.001
-    displayKey: shop.starter_pack.title
+    displayKey: shop.pack.grassland.title
     placement: 0
     priority: 100
     product: product.starter.001
@@ -178,7 +180,7 @@ MonoBehaviour:
     artKey: ICO_Cosmetic_FlowerCrown
     experimentId: 
   - sourceId: offer.starter.moment
-    displayKey: shop.starter_pack.title
+    displayKey: shop.pack.grassland.title
     placement: 2
     priority: 100
     product: product.starter.001
@@ -199,3 +201,100 @@ MonoBehaviour:
     kind: 0
     displayKey: entitlement.cosmetic.flower_crown.name
     iconKey: ICO_Cosmetic_FlowerCrown
+  - sourceId: companion.fieldhamster
+    kind: 4
+    displayKey: species.fieldhamster.name
+    iconKey: ICO_Companion_FieldHamster
+  - sourceId: decor.cozy_burrow
+    kind: 1
+    displayKey: decor.cozy_burrow.name
+    iconKey: ICO_Decor_CozyBurrow
+  - sourceId: accessory.fieldhamster.seedbasket
+    kind: 0
+    displayKey: accessory.fieldhamster.seedbasket.name
+    iconKey: ICO_Accessory_SeedBasket
+  accessories:
+  - sourceId: cosmetic.flower_crown
+    displayKey: entitlement.cosmetic.flower_crown.name
+    socket: 0
+    families:
+    - family: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    - family: 1
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1.3, y: 1.3, z: 1.3}
+    speciesFits:
+    - speciesId: species.rabbit
+      localPosition: {x: 0, y: 0.013392801, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.7, y: 0.7, z: 0.7}
+    - speciesId: species.squirrel
+      localPosition: {x: 0, y: 0.012250009, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    - speciesId: species.hedgehog
+      localPosition: {x: 0, y: 0.005813859, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.65, y: 0.65, z: 0.65}
+    - speciesId: species.fieldmouse
+      localPosition: {x: 0, y: 0.009508187, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.8, y: 0.8, z: 0.8}
+    - speciesId: species.guineapig
+      localPosition: {x: 0, y: 0.0074731037, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.7, y: 0.7, z: 0.7}
+    - speciesId: species.fawn
+      localPosition: {x: 0, y: 0.011705251, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.6, y: 0.6, z: 0.6}
+    - speciesId: species.fieldhamster
+      localPosition: {x: 0, y: 0.0036172403, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    excludedSpecies: []
+    palettes:
+    - meadow
+    - blossom
+    - frost
+    trisBudget: 350
+    iconKey: ICO_Cosmetic_FlowerCrown
+    visualKey: ACC_FlowerCrown
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  - sourceId: accessory.fieldhamster.seedbasket
+    displayKey: accessory.fieldhamster.seedbasket.name
+    socket: 2
+    families:
+    - family: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    speciesFits:
+    - speciesId: species.fieldmouse
+      localPosition: {x: 0, y: 0.0008930608, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.75, y: 0.75, z: 0.75}
+    - speciesId: species.guineapig
+      localPosition: {x: 0, y: 0.002312048, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 0.95, y: 0.95, z: 0.95}
+    - speciesId: species.fieldhamster
+      localPosition: {x: 0, y: 0.00040661683, z: 0}
+      localEuler: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+    excludedSpecies:
+    - species.rabbit
+    - species.squirrel
+    - species.hedgehog
+    palettes:
+    - meadow
+    - blossom
+    - frost
+    trisBudget: 200
+    iconKey: ICO_Accessory_SeedBasket
+    visualKey: ACC_SeedBasket
+    sourceKey: SourceArt/Blender/Accessories/BL_Accessories.blend
+  outfits: []

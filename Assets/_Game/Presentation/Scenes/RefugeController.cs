@@ -289,7 +289,7 @@ namespace PocketWilds.Presentation
             _scheduler.SetInterests(walkData.Interests);
             // T33C no-collision rule: animals stand on the ground, never enter a prop, the water or the egg spot.
             _scheduler.SetGround(walkData.Ground);
-            _scheduler.SetObstacles(walkData.Obstacles);
+            SetWalkObstacles(walkData.Obstacles);
             if (chunk.EggSpawn != null)
             {
                 _eggCenter = chunk.EggSpawn.position;
@@ -303,6 +303,8 @@ namespace PocketWilds.Presentation
                 _shop.Prewarm();
             }
 
+            // T47: accessories, the companion and the Cozy Burrow (its volume joins the obstacles before anyone spawns).
+            InitCosmetics();
             SpawnSavedAnimals();
             WarmupSpares();
             PresentEgg();
@@ -559,7 +561,7 @@ namespace PocketWilds.Presentation
         /// <summary>A screen covers the refuge: world touches and hatching wait.</summary>
         public bool ModalOpen =>
             OfflineScreenOpen || CodexOpen || ShopOpen || SheetOpen || DialogOpen || ProgressionOpen || SummaryOpen || DailyOpen
-            || ActivitiesOpen || (AlbumsOpenCheck != null && AlbumsOpenCheck());
+            || ActivitiesOpen || (AlbumsOpenCheck != null && AlbumsOpenCheck()) || OutfitOpen;
 
         /// <summary>T44A: the albums screen is open (world touches wait), set by the scene entry.</summary>
         public Func<bool> AlbumsOpenCheck { get; set; }
@@ -613,6 +615,8 @@ namespace PocketWilds.Presentation
             UpdateOfflineReturn(deltaTime);
             _codexView?.Tick(deltaTime);
             _sheetView?.Tick(deltaTime);
+            // T47: the outfit picker, and the camera keeping its animal in view.
+            TickOutfit(deltaTime);
             _modalView?.Tick(deltaTime);
             _summaryView?.Tick(deltaTime);
             if (_shop != null)
@@ -638,6 +642,8 @@ namespace PocketWilds.Presentation
             TickVisitors(time, deltaTime);
             // T46: a mastery color arrives beside the egg.
             TickMasteryColors(time);
+            // T47: the companion's staged arrival and greeting, the Cozy Burrow.
+            TickCompanion(time);
             // T36: bubbles follow their animals; hidden under a screen or a hatch (the wish card alone keeps its bubble).
             Bubbles?.Tick(time, deltaTime, (ModalOpen && !(Daily != null && Daily.CardOnlyOpen)) || Hatching);
             _hatch.Tick(time, deltaTime);
@@ -799,6 +805,7 @@ namespace PocketWilds.Presentation
                 bool available = Activities != null && Activities.CanGroom(out free);
                 groom.SetGroom(available, available && free);
             }
+            RefreshSheetOutfit(view.OwnerInstanceId);
             _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
             _context.Haptics.Play(HapticEventId.TapLight);
         }
@@ -904,6 +911,7 @@ namespace PocketWilds.Presentation
         {
             if (_codexView == null || _context.Codex == null || ModalOpen || Hatching)
                 return;
+            BindCodexCompanions();
             _codexView.OpenSpecies(_context.Codex, _context.Localization, this, species);
             _context.Analytics.ScreenView(ScreenId.Codex);
             _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
@@ -1125,6 +1133,7 @@ namespace PocketWilds.Presentation
         {
             if (_codexView == null || _context.Codex == null || ModalOpen || Hatching)
                 return;
+            BindCodexCompanions();
             _codexView.Open(_context.Codex, _context.Localization, this);
             _context.Analytics.ScreenView(ScreenId.Codex);
             _context.Audio.Play(AudioEventId.PanelOpen, Vector3.zero, default);
@@ -1135,6 +1144,8 @@ namespace PocketWilds.Presentation
         {
             _context.Audio.Play(AudioEventId.PanelClose, Vector3.zero, default);
             SetWorldVisible(true);
+            // T47: « Tenue » on a companion card.
+            OpenPendingOutfit();
         }
 
         public void CodexNavigated(bool deeper) =>
@@ -1314,8 +1325,11 @@ namespace PocketWilds.Presentation
         private bool TryAcquire(in AnimalVisualSnapshot snapshot, out AnimalView view)
         {
             view = null;
-            return _speciesSlot.TryGetValue(snapshot.Species, out int slot)
-                   && _animals.TryAcquire(_speciesHandles[slot], snapshot, out view);
+            if (!_speciesSlot.TryGetValue(snapshot.Species, out int slot) || !_animals.TryAcquire(_speciesHandles[slot], snapshot, out view))
+                return false;
+            // T47: what the animal wears (nothing per frame afterwards: the view follows CosmeticService.Changed).
+            _wardrobe?.Dress(view);
+            return true;
         }
 
         private BehaviorProfile ProfileOf(ContentId species) =>
@@ -1810,6 +1824,7 @@ namespace PocketWilds.Presentation
             _hatch.Clear();
             _multi.Clear();
             _vfx?.Dispose();
+            DisposeCosmetics();
             _animals.Dispose();
             _eggs.Clear();
         }
@@ -1886,9 +1901,11 @@ namespace PocketWilds.Presentation
                 {
                     ref readonly var animal = ref collection[i];
                     // T36: an animal with a pending wish is shown first too (its bubble is in the world, doc 06 screen 002).
-                    bool first = animal.IsFavorite || HasWish(animal.InstanceId);
+                    // T47: the companion is shown first too; one whose arrival is owed walks in staged instead.
+                    bool first = animal.IsFavorite || HasWish(animal.InstanceId) || IsCompanionAnimal(animal.InstanceId);
                     // T42: an animal away on an expedition is not in the refuge (it still produces).
-                    if (first != (pass == 0) || IsVisible(animal.InstanceId) || IsAway(animal.InstanceId))
+                    if (first != (pass == 0) || IsVisible(animal.InstanceId) || IsAway(animal.InstanceId)
+                        || ArrivalOwed(animal.InstanceId))
                         continue;
                     var position = area.PointAt(SeedHash.Unit(animal.Seed, 0x51A70001u) * 0.9f + 0.05f,
                         SeedHash.Unit(animal.Seed, 0x51A70002u) * 0.9f + 0.05f);
@@ -2028,7 +2045,7 @@ namespace PocketWilds.Presentation
             _walkArea = walk.Area;
             _scheduler.SetArea(walk.Area);
             _scheduler.SetGround(walk.Ground);
-            _scheduler.SetObstacles(walk.Obstacles);
+            SetWalkObstacles(walk.Obstacles);
             _scheduler.SetInterests(walk.Interests);
         }
 

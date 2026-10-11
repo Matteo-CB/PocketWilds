@@ -354,12 +354,13 @@ namespace PocketWilds.Editor.UI
 
                 var detailsImage = UiPipeline.AddImage("Details", card, buttonSprite, tokens.accentPrimary, Image.Type.Sliced);
                 detailsImage.raycastTarget = true;
-                UiPipeline.Place(detailsImage.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-56f, 52f), new Vector2(560f, 156f));
+                // T47: 380 wide (was 560) so « Tenue » fits between the heart and Details, same margins.
+                UiPipeline.Place(detailsImage.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-56f, 52f), new Vector2(SheetDetailsWidth, 156f));
                 var details = detailsImage.gameObject.AddComponent<Button>();
                 UiPipeline.ConfigureButton(details, detailsImage);
                 var detailsLabel = UiPipeline.AddText("Label", detailsImage.rectTransform, TextRole.Button, 58f, tokens.textPrimary, "Details", 44f);
                 detailsLabel.alignment = TextAlignmentOptions.Center;
-                UiPipeline.Place(detailsLabel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 8f), new Vector2(500f, 100f));
+                UiPipeline.Place(detailsLabel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 8f), new Vector2(SheetDetailsWidth - 50f, 100f));
 
                 var closeRoot = UiPipeline.Rect("Close", card);
                 // Floats on the card's corner: the name keeps the whole top row.
@@ -376,6 +377,7 @@ namespace PocketWilds.Editor.UI
                 screen.SetReferences(canvas, content.gameObject, group, safe, card, scrim, close, portrait, frame, name, species, badge, rarityLabel,
                     stars, traits, bondLabel, bar.rectTransform, fill.rectTransform, bondLevel, favorite, heart, details, detailsLabel, rarity, tokens, visuals);
                 AddSheetTreat(screen, card, tokens, buttonSprite);
+                OutfitUiPipeline.AddSheetOutfit(screen, card, tokens, buttonSprite, SheetDetailsWidth);
                 content.gameObject.SetActive(false);
                 canvas.enabled = false;
                 Directory.CreateDirectory(Path.GetDirectoryName(SheetPrefabPath));
@@ -387,6 +389,9 @@ namespace PocketWilds.Editor.UI
                 Object.DestroyImmediate(root);
             }
         }
+
+        /// <summary>T47: Details narrowed from 560 so « Tenue » sits between it and the heart.</summary>
+        public const float SheetDetailsWidth = 380f;
 
         /// <summary>The quick sheet's card height (T34A 860, + 100 in T36 for the treat row).</summary>
         public const float SheetCardHeight = 960f;

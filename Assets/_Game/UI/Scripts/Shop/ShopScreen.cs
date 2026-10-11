@@ -38,6 +38,8 @@ namespace PocketWilds.UI
         [SerializeField] private TMP_Text _toastLabel;
         [SerializeField] private ShopIconSet _icons = new ShopIconSet();
         [SerializeField] private float _featuredHeight = 430f;
+        [Tooltip("T47: a pack card (content row, restore note) is taller.")]
+        [SerializeField] private float _packHeight = 760f;
         [SerializeField] private float _gemCardHeight = 470f;
         [SerializeField] private float _gemRowGap = 28f;
 
@@ -108,7 +110,7 @@ namespace PocketWilds.UI
                     var card = _model.GetFeatured(i);
                     _featuredCards[i].gameObject.SetActive(true);
                     _featuredCards[i].Bind(card, _text, _sprites, busy, busyOffer == card.Offer);
-                    Place((RectTransform)_featuredCards[i].transform, ref y, _featuredHeight);
+                    Place((RectTransform)_featuredCards[i].transform, ref y, card.ContentCount > 0 ? _packHeight : _featuredHeight);
                     y += SectionGap * 0.5f;
                 }
                 y += SectionGap;

@@ -10,11 +10,14 @@ namespace PocketWilds.Content
         Decoration = 1,
         Perk = 2,
         AdRemoval = 3,
+
+        /// <summary>T47: a companion animal (unique per account; CompanionService places it in its biome).</summary>
+        Companion = 4,
     }
 
     /// <summary>
     /// Something the player owns for good once granted (purchase, pass, event): a cosmetic, a decoration, a
-    /// perk. Owned ids live in the save (EntitlementState.Owned); the feature that uses the item reads them.
+    /// perk, a companion. Owned ids live in the save (EntitlementState.Owned); the feature that uses the item reads them.
     /// </summary>
     public sealed class EntitlementDefinition : IContentDefinition
     {

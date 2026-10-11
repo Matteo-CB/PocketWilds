@@ -81,8 +81,8 @@ namespace PocketWilds.Editor.UI
             { UiTextKeys.ShopPending, "Purchase pending. It will arrive soon.", "Achat en attente. Il arrivera bientôt." },
             { UiTextKeys.ShopUnavailable, "Shop unavailable. Try again later.", "Boutique indisponible. Réessaie plus tard." },
             { UiTextKeys.ShopNotEnoughGems, "Not enough Gems.", "Pas assez de Gemmes." },
-            { UiTextKeys.ShopRestored, "Purchases restored", "Achats restaurés" },
-            { UiTextKeys.ShopNothingToRestore, "Nothing to restore", "Rien à restaurer" },
+            { UiTextKeys.ShopRestored, "Purchases restored: {0}", "Achats restaurés : {0}" },
+            { UiTextKeys.ShopNothingToRestore, "Nothing to restore.", "Rien à restaurer." },
             // T34: heat protection lowered the picture. Calm, no alarm word.
             { UiTextKeys.QualityThermalNotice, "Phone is warm: lighter visuals to stay smooth", "Téléphone chaud : image allégée pour rester fluide" },
             // T34A: reveal banner, rarity names (shape and stars too, never color alone), egg odds, toasts, animal sheet.
@@ -117,6 +117,19 @@ namespace PocketWilds.Editor.UI
             { FeedbackText.SheetBond, "Bond", "Lien" },
             { "shop.starter_pack.title", "Starter Pack", "Pack de départ" },
             { "entitlement.cosmetic.flower_crown.name", "Flower Crown", "Couronne de fleurs" },
+            // T47 Meadow Pack (the Starter Pack's product, store SKU pw.pack.grassland), its items and the Field Hamster.
+            { "shop.pack.grassland.title", "Meadow Pack", "Pack de la Prairie" },
+            // A number stays with its unit on one line (non-breaking spaces).
+            { "shop.pack.grassland.body", "Field Hamster + 500 Gems + Cozy Burrow", "Hamster des champs + 500 Gemmes + Terrier douillet" },
+            { "shop.pack.one_time", "One-time offer", "Offre unique" },
+            { "shop.restore_note", "Restored on a new device.", "Restauré sur un nouvel appareil." },
+            { "decor.cozy_burrow.name", "Cozy Burrow", "Terrier douillet" },
+            { "accessory.fieldhamster.seedbasket.name", "Seed Basket", "Panier de graines" },
+            { "species.fieldhamster.name", "Field Hamster", "Hamster des champs" },
+            { "species.fieldhamster.short", "Field Hamster", "Hamster" },
+            { "variant.fieldhamster.fieldgold.name", "Field Gold", "Doré des champs" },
+            { "variant.fieldhamster.wheatcream.name", "Wheat Cream", "Crème de blé" },
+            { "variant.fieldhamster.fieldlavender.name", "Field Lavender", "Lavande des champs" },
             // Content names (display keys of biome, egg, species and variant definitions).
             { "biome.grassland.name", "Meadow", "Prairie" },
             { "egg.grassland.basic.name", "Meadow Egg", "Œuf de prairie" },
@@ -210,6 +223,7 @@ namespace PocketWilds.Editor.UI
             { "variant.hedgehog.lavender.name", "Lavender", "Lavande" },
             { "variant.hedgehog.moss.name", "Moss", "Mousse" },
             { "mastery.color.toast", "New mastery color: {variant}!", "Nouvelle couleur de maîtrise : {variant} !" },
+            { "companion.arrive.toast", "The Field Hamster joins the refuge!", "Le Hamster des champs arrive au refuge !" },
             // T35A Upgrades screen (doc 02 Améliorations, section 11.7). Gains are what the purchase brings.
             { ProgressionText.UpgradesTitle, "Upgrades", "Améliorer" },
             { ProgressionText.QtyOne, "× 1", "× 1" },
@@ -344,6 +358,10 @@ namespace PocketWilds.Editor.UI
                 var memories = JournalScreenTexts.ContentTexts();
                 for (int i = 0; i < memories.GetLength(0); i++)
                     table.Set(memories[i, 0], memories[i, language + 1]);
+                // T47: the outfit picker and the Codex's Companions tab.
+                var outfits = OutfitTexts.Texts;
+                for (int i = 0; i < outfits.GetLength(0); i++)
+                    table.Set(outfits[i, 0], outfits[i, language + 1]);
                 EditorUtility.SetDirty(table);
                 if (!database.localization.Contains(table))
                     database.localization.Insert(Mathf.Min(language, database.localization.Count), table);
@@ -1132,7 +1150,8 @@ namespace PocketWilds.Editor.UI
                 header.anchorMax = new Vector2(1f, 1f);
                 header.pivot = new Vector2(0.5f, 1f);
                 header.anchoredPosition = Vector2.zero;
-                header.sizeDelta = new Vector2(0f, 300f);
+                // T47: 120 more for the Species / Companions tabs under the progress bar.
+                header.sizeDelta = new Vector2(0f, OutfitUiPipeline.CodexHeaderHeight);
                 var backImage = AddImage("Back", header, circle, Color.white, Image.Type.Simple);
                 backImage.raycastTarget = true;
                 Place(backImage.rectTransform, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), new Vector2(110f, -100f), new Vector2(140f, 140f));
@@ -1162,7 +1181,7 @@ namespace PocketWilds.Editor.UI
                 viewport.anchorMin = Vector2.zero;
                 viewport.anchorMax = Vector2.one;
                 viewport.offsetMin = Vector2.zero;
-                viewport.offsetMax = new Vector2(0f, -300f);
+                viewport.offsetMax = new Vector2(0f, -OutfitUiPipeline.CodexHeaderHeight);
                 viewport.gameObject.AddComponent<RectMask2D>();
                 var dragArea = viewport.gameObject.AddComponent<Image>();
                 dragArea.color = new Color(1f, 1f, 1f, 0f);
@@ -1245,6 +1264,8 @@ namespace PocketWilds.Editor.UI
                     fillRect, progressLabel, scroll, viewport, listContent, headerRow, cardRow, sheetRect.gameObject, sheetScroll,
                     sheetContent, portrait, sheetName, owned, variantsTitle, slots);
                 screen.SetMasteryReferences(masteryRow.gameObject, rowLevel, rowBar.rectTransform, rowFill.rectTransform, rowXp);
+                // T47: the Species / Companions tabs and the Companions panel (its own scroll, behind the species sheet).
+                OutfitUiPipeline.AddCodexCompanions(screen, safe, header, sheetRect, tokens);
                 content.gameObject.SetActive(false);
 
                 Directory.CreateDirectory(Path.GetDirectoryName(CodexPrefabPath));
