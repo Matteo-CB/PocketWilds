@@ -39,7 +39,9 @@ namespace PocketWilds.Editor.Activities
     /// built set again for the tests and the validator.
     /// Registers the set in the Addressables group Activity_HideAndSeek. Run after « Build Grassland Strip and Hide Decor
     /// (T39) », « Setup Grassland Streaming (T27) » and « Measure Bodies ». Deterministic and idempotent; the log tells, per
-    /// chunk, what was found and how well the shares were met (Diagnose(address) traces every decor's verdict).
+    /// chunk, what was found and how well the shares were met (Diagnose(address) traces every decor's verdict). The build
+    /// measures on every core and keeps what it measured in Library (HideSpotPipeline.Cache.cs): a zone whose inputs did not
+    /// change is read back, a changed species or chunk is measured again; the asset is only written when it changes.
     /// </summary>
     public static partial class HideSpotPipeline
     {
@@ -176,17 +178,87 @@ namespace PocketWilds.Editor.Activities
         [MenuItem("Pocket Wilds/Activities/Build Hide Spots (T39)", priority = 241)]
         public static void BuildMenu() => Debug.Log("[HideSpotPipeline] " + Build());
 
-        public static string Build()
+        [MenuItem("Pocket Wilds/Activities/Build Hide Spots, Measuring Everything Again (T39)", priority = 243)]
+        public static void RebuildMenu() => Debug.Log("[HideSpotPipeline] " + Build(false));
+
+        public static string Build() => Build(true);
+
+        /// <summary>
+        /// Builds the set. <paramref name="useCache"/>: read the zones and shares cached in Library (false measures everything
+        /// again; the cache is written either way).
+        /// </summary>
+        public static string Build(bool useCache)
         {
             var watch = Stopwatch.StartNew();
             var report = new StringBuilder();
-            Prof.Reset();
-            long b0 = Prof.Now;
             var species = LoadSpecies(report);
-            Prof.Add(Prof.LoadSpecies, b0);
             if (species.Count == 0)
                 return "No species with a visual prefab: run the animal pipeline first. " + report;
-            long b1 = Prof.Now;
+            var worlds = LoadZoneWorlds(report);
+            double loadSeconds = watch.Elapsed.TotalSeconds;
+
+            var stats = new MeasureStats();
+            var entries = MeasureZones(worlds, species, useCache, true, stats);
+            var zones = new List<HideSpotSet.Zone>();
+            var spots = new List<HideSpotSet.Spot>();
+            var placements = new List<Vector3>();
+            var measured = new List<float>();
+            var lines = new List<string>();
+            int hitTotal = 0, entryTotal = 0, unreachableTotal = 0, over40 = 0, overlaps = 0, firstUnreachable = 0, firstEntries = 0;
+            foreach (var zone in entries)
+            {
+                var z = zone.Zone;
+                z.firstSpot = spots.Count;
+                z.spotCount = zone.Spots.Length;
+                zones.Add(z);
+                spots.AddRange(zone.Spots);
+                placements.AddRange(zone.Placements);
+                measured.AddRange(zone.Measured);
+                hitTotal += zone.ReachableHits;
+                entryTotal += zone.Entries;
+                unreachableTotal += zone.Unreachable;
+                firstUnreachable += zone.FirstUnreachable;
+                firstEntries += zone.FirstEntries;
+                over40 += zone.Over40;
+                overlaps += zone.Overlaps;
+                lines.Add(zone.Line);
+            }
+
+            var asset = AssetDatabase.LoadAssetAtPath<HideSpotSet>(AssetPath);
+            if (asset == null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(AssetPath));
+                asset = ScriptableObject.CreateInstance<HideSpotSet>();
+                AssetDatabase.CreateAsset(asset, AssetPath);
+            }
+            var speciesIds = species.Select(s => s.Id).ToArray();
+            bool changed = !SameContent(asset, zones, spots, speciesIds, placements, measured);
+            if (changed)
+            {
+                asset.SetAuthoring(zones.ToArray(), spots.ToArray(), speciesIds, placements.ToArray(), measured.ToArray());
+                EditorUtility.SetDirty(asset);
+                AssetDatabase.SaveAssets();
+            }
+            string addressables = EnsureAddressables(asset);
+
+            report.Insert(0, $"{AssetPath}: {zones.Count} zones, {spots.Count} spots, {species.Count} species " +
+                             $"({string.Join(", ", species.Select(s => $"{s.Name} {s.Pose}, {s.Height:F2} m"))}); " +
+                             $"reachable levels within ±{LevelTolerance * 100f:F0} points: {hitTotal}/{entryTotal - unreachableTotal} " +
+                             $"({(entryTotal - unreachableTotal > 0 ? 100f * hitTotal / (entryTotal - unreachableTotal) : 0f):F0} %, target 75 %), " +
+                             $"unreachable {unreachableTotal}/{entryTotal} ({(entryTotal > 0 ? 100f * unreachableTotal / entryTotal : 0f):F1} %, at most {UnreachableLimit * 100f:F0} %; " +
+                             $"among the first {FirstSpots} spots of each zone {firstUnreachable}/{firstEntries} ({(firstEntries > 0 ? 100f * firstUnreachable / firstEntries : 0f):F1} %)), " +
+                             $"zones with {GoodZoneSpots}+ spots: {zones.Count(z => z.spotCount >= GoodZoneSpots)} (at least {GoodZones}), " +
+                             $"most hidden above {MaxHiddenShare * 100f:F0} %: {over40}, overlaps: {overlaps} (must be 0); {addressables}; " +
+                             $"asset {(changed ? "written" : "unchanged")}; {watch.Elapsed.TotalSeconds:F1} s (load {loadSeconds:F1} s, keys {stats.KeySeconds:F1} s, " +
+                             $"{stats.Cached} zones from the cache, {stats.Measured} measured in {stats.MeasureSeconds:F1} s on {Math.Max(1, System.Environment.ProcessorCount - 1)} threads, " +
+                             $"shares read back {stats.ShareHits}, measured {stats.ShareMisses}; per zone: thread seconds).\n");
+            report.Append(string.Join("\n", lines));
+            return report.ToString();
+        }
+
+        /// <summary>The Grassland chunks of the chunk set, loaded as the pipeline sees them, each with its neighbours' obstacles.</summary>
+        internal static List<ChunkWorld> LoadZoneWorlds(StringBuilder report)
+        {
             var set = AssetDatabase.LoadAssetAtPath<WorldChunkSet>(WorldContentPipeline.ChunkSetPath);
             var ids = new HashSet<string>();
             if (set != null)
@@ -211,81 +283,38 @@ namespace PocketWilds.Editor.Activities
             }
             foreach (var world in worlds)
                 world.AddNeighbourObstacles(worlds);
+            return worlds;
+        }
 
-            Prof.Add(Prof.LoadChunks, b1);
-            long b2 = Prof.Now;
-            var zones = new List<HideSpotSet.Zone>();
-            var spots = new List<HideSpotSet.Spot>();
-            var placements = new List<Vector3>();
-            var measured = new List<float>();
-            var lines = new List<string>();
-            int hitTotal = 0, entryTotal = 0, unreachableTotal = 0, over40 = 0, overlaps = 0, firstUnreachable = 0, firstEntries = 0;
-            try
+        /// <summary>The asset already holds exactly these tables (bit for bit): nothing to write.</summary>
+        private static bool SameContent(HideSpotSet asset, List<HideSpotSet.Zone> zones, List<HideSpotSet.Spot> spots, uint[] species,
+            List<Vector3> placements, List<float> measured)
+        {
+            if (asset.ZoneCount != zones.Count || asset.SpotCount != spots.Count || asset.SpeciesCount != species.Length)
+                return false;
+            for (int i = 0; i < zones.Count; i++)
             {
-                for (int w = 0; w < worlds.Count; w++)
-                {
-                    var world = worlds[w];
-                    EditorUtility.DisplayProgressBar("Hide spots (T39)", world.Address, w / (float)worlds.Count);
-                    var chunkWatch = Stopwatch.StartNew();
-                    var zone = BuildZone(world, species);
-                    var z = zone.Zone;
-                    z.firstSpot = spots.Count;
-                    z.spotCount = zone.Spots.Count;
-                    zones.Add(z);
-                    foreach (var spot in zone.Spots)
-                    {
-                        spots.Add(spot.Spot);
-                        for (int s = 0; s < species.Count; s++)
-                        {
-                            for (int level = 0; level < HideSpotSet.ShareLevels; level++)
-                            {
-                                placements.Add(spot.Placements[s, level]);
-                                measured.Add(spot.Measured[s, level]);
-                            }
-                        }
-                    }
-                    hitTotal += zone.ReachableHits;
-                    entryTotal += zone.Entries;
-                    unreachableTotal += zone.Unreachable;
-                    firstUnreachable += zone.FirstUnreachable;
-                    firstEntries += zone.FirstEntries;
-                    over40 += zone.Over40;
-                    overlaps += zone.Overlaps;
-                    lines.Add(zone.Describe(species, chunkWatch.Elapsed.TotalSeconds));
-                }
+                var a = asset.GetZone(i);
+                var b = zones[i];
+                if (a.chunkId != b.chunkId || !Same(a.cameraPosition, b.cameraPosition) || !Same(a.cameraRotation, b.cameraRotation)
+                    || !Same(a.fieldOfView, b.fieldOfView) || !Same(a.gatherPoint, b.gatherPoint) || a.firstSpot != b.firstSpot || a.spotCount != b.spotCount)
+                    return false;
             }
-            finally
-            {
-                EditorUtility.ClearProgressBar();
-            }
-            Prof.Add(Prof.Zones, b2);
-            long b3 = Prof.Now;
-
-            var asset = AssetDatabase.LoadAssetAtPath<HideSpotSet>(AssetPath);
-            if (asset == null)
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(AssetPath));
-                asset = ScriptableObject.CreateInstance<HideSpotSet>();
-                AssetDatabase.CreateAsset(asset, AssetPath);
-            }
-            asset.SetAuthoring(zones.ToArray(), spots.ToArray(), species.Select(s => s.Id).ToArray(), placements.ToArray(), measured.ToArray());
-            EditorUtility.SetDirty(asset);
-            AssetDatabase.SaveAssets();
-            string addressables = EnsureAddressables(asset);
-            Prof.Add(Prof.Save, b3);
-
-            report.Insert(0, $"{AssetPath}: {zones.Count} zones, {spots.Count} spots, {species.Count} species " +
-                             $"({string.Join(", ", species.Select(s => $"{s.Name} {s.Pose}, {s.Height:F2} m"))}); " +
-                             $"reachable levels within ±{LevelTolerance * 100f:F0} points: {hitTotal}/{entryTotal - unreachableTotal} " +
-                             $"({(entryTotal - unreachableTotal > 0 ? 100f * hitTotal / (entryTotal - unreachableTotal) : 0f):F0} %, target 75 %), " +
-                             $"unreachable {unreachableTotal}/{entryTotal} ({(entryTotal > 0 ? 100f * unreachableTotal / entryTotal : 0f):F1} %, at most {UnreachableLimit * 100f:F0} %; " +
-                             $"among the first {FirstSpots} spots of each zone {firstUnreachable}/{firstEntries} ({(firstEntries > 0 ? 100f * firstUnreachable / firstEntries : 0f):F1} %)), " +
-                             $"zones with {GoodZoneSpots}+ spots: {zones.Count(z => z.spotCount >= GoodZoneSpots)} (at least {GoodZones}), " +
-                             $"most hidden above {MaxHiddenShare * 100f:F0} %: {over40}, overlaps: {overlaps} (must be 0); {addressables}; " +
-                             $"{watch.Elapsed.TotalSeconds:F0} s.\n");
-            report.Append(string.Join("\n", lines));
-            report.Append("\n" + Prof.Report());
-            return report.ToString();
+            for (int i = 0; i < spots.Count; i++)
+                if (!Same(asset.GetSpot(i), spots[i]))
+                    return false;
+            for (int i = 0; i < species.Length; i++)
+                if (asset.GetSpecies(i).Value != species[i])
+                    return false;
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            var storedPlacements = (Vector3[])typeof(HideSpotSet).GetField("_placements", flags).GetValue(asset);
+            var storedMeasured = (float[])typeof(HideSpotSet).GetField("_measured", flags).GetValue(asset);
+            if (storedPlacements.Length != placements.Count || storedMeasured.Length != measured.Count)
+                return false;
+            for (int i = 0; i < placements.Count; i++)
+                if (!Same(storedPlacements[i], placements[i]) || !Same(storedMeasured[i], measured[i]))
+                    return false;
+            return true;
         }
 
         /// <summary>Diagnostics: the authored focus of each listed chunk, every decor's verdict, the chosen spots. Writes nothing.</summary>
@@ -528,6 +557,10 @@ namespace PocketWilds.Editor.Activities
             public float Height;
             public string Pose;
 
+            /// <summary>The cache's keys (HideSpotPipeline.Cache.cs): what the meter reads of it, and all a zone uses.</summary>
+            public Key128 MeasureKey;
+            public Key128 Key;
+
             public Vector3[] Vertices => Frames[0];
 
             /// <summary>Plan reach of the hiding body in any heading, at the clearance scale.</summary>
@@ -764,6 +797,10 @@ namespace PocketWilds.Editor.Activities
             public Vector3 Origin;
             public List<Obstacle> Obstacles = new List<Obstacle>();
             public GroundHeightField Field;
+
+            /// <summary>The cache's keys of its triangles and of its ground (HideSpotPipeline.Cache.cs).</summary>
+            public Key128 GeometryKey;
+            public Key128 GroundKey;
             public Vector3? Egg;
             public Vector3 Heart;
             public readonly List<Vector3> Vertices = new List<Vector3>();
@@ -987,8 +1024,7 @@ namespace PocketWilds.Editor.Activities
             /// The chunk-space point is on the island at least <paramref name="margin"/> from its outer edge (the strip's back and
             /// front edges and its two rounded ends; the seams between chunks are no edge): ground all around it.
             /// </summary>
-            public bool OnIsland(Vector3 p, float margin) { long p0 = Prof.Now; try { return OnIslandCore(p, margin); } finally { Prof.Add(Prof.OnIsland, p0); } }
-            private bool OnIslandCore(Vector3 p, float margin)
+            public bool OnIsland(Vector3 p, float margin)
             {
                 float x = p.x + Origin.x, z = p.z + Origin.z;
                 if (!StripGround(x, z))
@@ -1007,6 +1043,10 @@ namespace PocketWilds.Editor.Activities
             /// <summary>The ground triangles (chunk space), for meters that leave out every prop.</summary>
             public Vector3[] GroundVertices => _groundVertices;
             public int[] GroundTriangles => _groundTriangles;
+            public Color32[] GroundColors => _groundColors;
+
+            /// <summary>The chunks whose ground makes the island (null until <see cref="AddNeighbourObstacles"/>).</summary>
+            public List<ChunkWorld> Strip => _strip;
 
             /// <summary>Every prop instance of the chunk that is not a decor of the zone (fences, the well, the windmill...).</summary>
             public readonly List<(List<Vector3> vertices, List<int> triangles)> OtherProps = new List<(List<Vector3>, List<int>)>();
@@ -1041,8 +1081,7 @@ namespace PocketWilds.Editor.Activities
             }
 
             /// <summary>The worn path's paint (ground vertex color B) at a point, nearest vertex (GrasslandPipeline.WornMask).</summary>
-            public float Worn(float x, float z) { long p0 = Prof.Now; try { return WornCore(x, z); } finally { Prof.Add(Prof.Worn, p0); } }
-            private float WornCore(float x, float z)
+            public float Worn(float x, float z)
             {
                 if (_groundColors.Length == 0)
                     return 0f;
@@ -1069,8 +1108,7 @@ namespace PocketWilds.Editor.Activities
             /// Where an animal may stand to hide: inside the chunk (away from the seams' hedge), on the ground's top, off the
             /// worn path (« jamais sur les chemins »), off the egg's place and the walk area's heart.
             /// </summary>
-            public bool Allowed(Vector3 p, float reach, bool hiding) { long p0 = Prof.Now; try { return AllowedCore(p, reach, hiding); } finally { Prof.Add(Prof.Allowed, p0); } }
-            private bool AllowedCore(Vector3 p, float reach, bool hiding)
+            public bool Allowed(Vector3 p, float reach, bool hiding)
             {
                 // A hidden animal keeps away from the seams (the next zone's hedge); a landing or the gathering only stays
                 // on this chunk's ground.
@@ -1095,8 +1133,7 @@ namespace PocketWilds.Editor.Activities
             }
 
             /// <summary>Free space between a body capsule and the obstacles it could touch at its height (negative: inside).</summary>
-            public float Clearance(BodyShape body, Vector3 position, float yaw, float scale, float height = -1f) { long p0 = Prof.Now; try { return ClearanceCore(body, position, yaw, scale, height); } finally { Prof.Add(Prof.Clearance, p0); } }
-            private float ClearanceCore(BodyShape body, Vector3 position, float yaw, float scale, float height)
+            public float Clearance(BodyShape body, Vector3 position, float yaw, float scale, float height = -1f)
             {
                 body.Segment(position, yaw, scale, out var a, out var b);
                 float radius = body.halfWidth * scale;
@@ -1136,9 +1173,28 @@ namespace PocketWilds.Editor.Activities
                 return which;
             }
 
+            /// <summary>
+            /// <see cref="DiscClearance"/> below 0 (the disc enters something), answered at the first such obstacle, past the
+            /// ones whose bounding disc stands clearly apart (their gap is positive whatever the rounding).
+            /// </summary>
+            public bool DiscOverlaps(Vector3 position, float radius, float height)
+            {
+                var p = CollisionMath.Flat(position);
+                foreach (var o in Obstacles)
+                {
+                    if (!o.BlocksWalker(position.y, height))
+                        continue;
+                    float far = o.Reach + radius + 0.01f;
+                    if ((p - o.Center).sqrMagnitude > far * far)
+                        continue;
+                    if (Mathf.Sqrt(CollisionMath.PointSegmentDistanceSq(p, o.a, o.b)) - o.radius - radius < 0f)
+                        return true;
+                }
+                return false;
+            }
+
             /// <summary>Free space around a disc on the ground (an animal in any heading, the gathering place).</summary>
-            public float DiscClearance(Vector3 position, float radius, float height) { long p0 = Prof.Now; try { return DiscClearanceCore(position, radius, height); } finally { Prof.Add(Prof.DiscClearance, p0); } }
-            private float DiscClearanceCore(Vector3 position, float radius, float height)
+            public float DiscClearance(Vector3 position, float radius, float height)
             {
                 var p = CollisionMath.Flat(position);
                 float best = float.MaxValue;

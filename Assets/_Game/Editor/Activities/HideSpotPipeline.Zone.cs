@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using PocketWilds.Editor.Environment;
@@ -112,15 +113,38 @@ namespace PocketWilds.Editor.Activities
 
         internal static ZoneResult BuildZone(ChunkWorld world, List<SpeciesModel> species)
         {
-            var hint = GrasslandPipeline.HideZoneFocusFor(world.Address) ?? SearchFocus(world);
-            var focuses = new[] { hint, hint + new Vector2(0.75f, 0f), hint - new Vector2(0.75f, 0f), hint + new Vector2(0f, 0.75f), hint - new Vector2(0f, 0.75f) };
             ZoneResult best = null;
-            foreach (var focus in focuses)
+            foreach (var focus in FocusesOf(world))
             {
                 var attempt = Attempt(world, species, focus);
                 if (best == null || Better(attempt, best))
                     best = attempt;
-                if (best.Spots.Count >= 12 && best.HitRatio >= 0.85f && best.UnreachableRatio <= 0.1f && best.Over40 == 0)
+                if (Enough(best))
+                    break;
+            }
+            return best;
+        }
+
+        /// <summary>The focuses a zone tries, in order: the authored one (else the searched one), then 0.75 m around it.</summary>
+        internal static Vector2[] FocusesOf(ChunkWorld world)
+        {
+            var hint = GrasslandPipeline.HideZoneFocusFor(world.Address) ?? SearchFocus(world);
+            return new[] { hint, hint + new Vector2(0.75f, 0f), hint - new Vector2(0.75f, 0f), hint + new Vector2(0f, 0.75f), hint - new Vector2(0f, 0.75f) };
+        }
+
+        /// <summary>A zone this good ends the search: the later focuses are not tried.</summary>
+        private static bool Enough(ZoneResult best) =>
+            best.Spots.Count >= 12 && best.HitRatio >= 0.85f && best.UnreachableRatio <= 0.1f && best.Over40 == 0;
+
+        /// <summary>The zone <see cref="BuildZone"/> keeps from its attempts, in the focuses' order (the later ones may be null).</summary>
+        internal static ZoneResult Pick(IList<ZoneResult> attempts)
+        {
+            ZoneResult best = null;
+            foreach (var attempt in attempts)
+            {
+                if (best == null || Better(attempt, best))
+                    best = attempt;
+                if (Enough(best))
                     break;
             }
             return best;
@@ -192,52 +216,87 @@ namespace PocketWilds.Editor.Activities
 
         private static ZoneResult Attempt(ChunkWorld world, List<SpeciesModel> species, Vector2 focus)
         {
-            var result = new ZoneResult { Address = world.Address, Name = world.Name, Focus = focus };
-            var (position, rotation) = NominalCamera(world, focus);
-            var meter = new ShareMeter(position, rotation, world.Vertices, world.Triangles);
-            var occlusion = new OcclusionMeters(world, position, rotation);
-            bool InFrame(Vector3 p) => InNominalFrame(position, rotation, p, SelectHalfWidth, SelectTop, SelectBottom, SelectFov);
+            var attempt = BeginAttempt(world, species, focus);
+            for (int decor = 0; decor < world.Decor.Count; decor++)
+                for (int side = 0; side < 2; side++)
+                    MeasureCandidate(attempt, decor, side);
+            return FinishAttempt(attempt);
+        }
+
+        /// <summary>
+        /// One focus of a zone being tried: its camera, its meters and frames, and the candidate measured behind each decor on
+        /// each side. The candidates are independent of each other: the build measures them on every core.
+        /// </summary>
+        internal sealed class AttemptContext
+        {
+            public ChunkWorld World;
+            public List<SpeciesModel> Species;
+            public Vector2 Focus;
+            public Vector3 Position;
+            public Quaternion Rotation;
+            public ShareMeter Meter;
+            public OcclusionMeters Occlusion;
+
+            /// <summary>Per decor × 2 + side: the candidate, null when that side gives no spot.</summary>
+            public SpotResult[] Candidates;
+
+            public bool InFrame(Vector3 p) => InNominalFrame(Position, Rotation, p, SelectHalfWidth, SelectTop, SelectBottom, SelectFov);
+
             // Slides, landings and the gathering may use the widest field of view, a little inside its edges (the final fit
             // frames them with the animals' boxes).
-            bool InWholeFrame(Vector3 p) => InNominalFrame(position, rotation, p, 0.84f, 0.62f, 0.68f, MaxFov);
-            bool InSlideFrame(Vector3 p) => InNominalFrame(position, rotation, p, 0.86f, 0.64f, 0.70f, MaxFov);
+            public bool InWholeFrame(Vector3 p) => InNominalFrame(Position, Rotation, p, 0.84f, 0.62f, 0.68f, MaxFov);
+            public bool InSlideFrame(Vector3 p) => InNominalFrame(Position, Rotation, p, 0.86f, 0.64f, 0.70f, MaxFov);
+        }
 
-            long a0 = Prof.Now;
-            var candidates = new List<SpotResult>();
-            foreach (var decor in world.Decor)
+        internal static AttemptContext BeginAttempt(ChunkWorld world, List<SpeciesModel> species, Vector2 focus, MeasureMemo memo = null)
+        {
+            var (position, rotation) = NominalCamera(world, focus);
+            return new AttemptContext
             {
-                // The decor and the ground just behind it are in the frame.
-                var behind = (Flat(decor.Center) - Flat(position)).normalized;
-                var probe = decor.Center + new Vector3(behind.x, 0f, behind.y) * (decor.GroundReach + 0.3f);
-                if (!InFrame(decor.Center) || !InFrame(probe))
-                {
-                    if (Trace != null && InNominalFrame(position, rotation, decor.Center, 1f, 1f, 1f))
-                        Trace.Append($"  {decor.Prop} ({decor.Center.x:F1}, {decor.Center.z:F1}): outside the selection frame\n");
-                    continue;
-                }
-                for (int side = 0; side < 2; side++)
-                {
-                    var candidate = Measure(world, species, meter, occlusion, decor, side, InFrame, InWholeFrame, InSlideFrame);
-                    if (candidate != null)
-                        candidates.Add(candidate);
-                }
+                World = world, Species = species, Focus = focus, Position = position, Rotation = rotation,
+                Meter = new ShareMeter(position, rotation, world.Vertices, world.Triangles, memo),
+                Occlusion = new OcclusionMeters(world, position, rotation, memo),
+                Candidates = new SpotResult[world.Decor.Count * 2],
+            };
+        }
+
+        /// <summary>The candidate behind one decor on one side, if its decor and the ground behind it are in the frame.</summary>
+        internal static void MeasureCandidate(AttemptContext attempt, int decorIndex, int side)
+        {
+            var decor = attempt.World.Decor[decorIndex];
+            // The decor and the ground just behind it are in the frame.
+            var behind = (Flat(decor.Center) - Flat(attempt.Position)).normalized;
+            var probe = decor.Center + new Vector3(behind.x, 0f, behind.y) * (decor.GroundReach + 0.3f);
+            if (!attempt.InFrame(decor.Center) || !attempt.InFrame(probe))
+            {
+                if (side == 0 && Trace != null && InNominalFrame(attempt.Position, attempt.Rotation, decor.Center, 1f, 1f, 1f))
+                    Trace.Append($"  {decor.Prop} ({decor.Center.x:F1}, {decor.Center.z:F1}): outside the selection frame\n");
+                return;
             }
+            attempt.Candidates[decorIndex * 2 + side] = Measure(attempt.World, attempt.Species, attempt.Meter, attempt.Occlusion, decor, side,
+                attempt.InFrame, attempt.InWholeFrame, attempt.InSlideFrame);
+        }
+
+        /// <summary>The attempt's zone once every candidate is measured: the spots chosen, the gathering place, the camera.</summary>
+        internal static ZoneResult FinishAttempt(AttemptContext attempt)
+        {
+            var world = attempt.World;
+            var species = attempt.Species;
+            var position = attempt.Position;
+            var rotation = attempt.Rotation;
+            var result = new ZoneResult { Address = world.Address, Name = world.Name, Focus = attempt.Focus };
+            var candidates = attempt.Candidates.Where(c => c != null).ToList();
             result.Candidates = candidates.Count;
-            Prof.Add(Prof.ACand, a0);
 
             // Best first: the decor hides every species to 40 %, then the levels met, the Prairie theme, the smaller error.
             candidates.Sort(Order);
             var covers = new CoverMeter(position, rotation, species);
             // Two orders, the larger choice kept: best first, and fewest conflicts first (a spot that blocks many others
             // goes later), so a crowded corner still gives as many spots as it can hold.
-            long a1 = Prof.Now;
             var degree = candidates.ToDictionary(c => c, c => candidates.Count(o => o != c && Conflict(species, covers, o, c, 0.70f, 0.60f, false)));
             var byDegree = candidates.OrderBy(c => c.Tier).ThenBy(c => degree[c]).ThenByDescending(c => c.Hits).ToList();
-            Prof.Add(Prof.ADegree, a1);
-            long a2 = Prof.Now;
             var first = Choose(species, covers, candidates);
             var second = Choose(species, covers, byDegree);
-            Prof.Add(Prof.AChoose, a2);
             var chosen = result.Spots;
             chosen.AddRange(second.Count > first.Count ? second : first);
             if (Trace != null)
@@ -266,10 +325,7 @@ namespace PocketWilds.Editor.Activities
                 s.Spot.landing = s.Landing;
 
             // The gathering place, then the camera's aim and field of view (the measured shares only depend on its position).
-            long a3 = Prof.Now;
-            var gather = FindGather(world, species, chosen, InWholeFrame, out float gatherRadius);
-            Prof.Add(Prof.AGather, a3);
-            long a4 = Prof.Now;
+            var gather = FindGather(world, species, chosen, attempt.InWholeFrame, out float gatherRadius);
             result.GatherRadiusFound = gatherRadius;
             var (pitch, yaw, fov, fits) = AimAndFit(world, position, species, chosen, gather, gatherRadius);
             while (!fits && chosen.Count > 1)
@@ -281,8 +337,6 @@ namespace PocketWilds.Editor.Activities
                 (pitch, yaw, fov, fits) = AimAndFit(world, position, species, chosen, gather, gatherRadius);
             }
             result.FrameFits = fits;
-            Prof.Add(Prof.AAim, a4);
-            long a5 = Prof.Now;
 
             result.Zone = new HideSpotSet.Zone
             {
@@ -322,7 +376,6 @@ namespace PocketWilds.Editor.Activities
                         result.Overlaps++;
                 }
             }
-            Prof.Add(Prof.AStats, a5);
             if (chosen.Count < MinSpotsFor(world.Address))
                 result.Notes += $"; only {chosen.Count} spots (fewer than {MinSpotsFor(world.Address)})";
             return result;
@@ -423,7 +476,6 @@ namespace PocketWilds.Editor.Activities
 
             // The most hidden line, its start along the decor and the facing. The line may start toward this side's end of
             // the decor (a wide patch hides two animals, one at each end, 0.9 m apart at least).
-            long c0 = Prof.Now;
             float bestWorst = float.MaxValue, bestDistance = 0f, bestYaw = 0f, bestFacing = 0f, bestLateral = 0f;
             var order = Enumerable.Range(0, species.Count).ToArray();
             float width = decor.GroundHull.Max(h => Vector2.Dot(h - center, slide));
@@ -453,7 +505,6 @@ namespace PocketWilds.Editor.Activities
                     if (!fits)
                         continue;
                     float worst = 0f;
-                    Prof.Cat = Prof.MLine;
                     foreach (int i in order)
                     {
                         worst = Mathf.Max(worst, meter.Measure(species[i], p, yaw, out _));
@@ -480,7 +531,6 @@ namespace PocketWilds.Editor.Activities
                     bestLateral = lateral;
                 }
             }
-            Prof.Add(Prof.CLine, c0);
             Trace?.Append($"  {decor.Prop} ({decor.Center.x:F1}, {decor.Center.z:F1}) side {side}: worst {(bestWorst > 9f ? -1f : bestWorst):F2} at r {bestDistance:F2} lateral {bestLateral:F2}"
                           + $" facing {bestFacing:F0} (fails allowed {failAllowed}, clear {failClear}, frame {failFrame}){firstBlock}");
             if (bestWorst > MaxHiddenShare)
@@ -499,7 +549,6 @@ namespace PocketWilds.Editor.Activities
                 Theme = decor.Kind == HideDecorKind.TallGrass || decor.Kind == HideDecorKind.FlowerBush || decor.Kind == HideDecorKind.SmallTree,
             };
             var start = center + slide * bestLateral + behind * bestDistance;
-            long c1 = Prof.Now;
             var rect = new Vector4(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
             float error = 0f;
             for (int sp = 0; sp < species.Count; sp++)
@@ -513,7 +562,7 @@ namespace PocketWilds.Editor.Activities
                     if (!Fits(s, p, bestYaw, true))
                         break;
                     ts.Add(t);
-                    Prof.Cat = Prof.MSlide; shares.Add(meter.Measure(s, p, bestYaw, out _, true));
+                    shares.Add(meter.Measure(s, p, bestYaw, out _, true));
                     if (shares[shares.Count - 1] >= SlideStopShare)
                         break;
                 }
@@ -542,7 +591,7 @@ namespace PocketWilds.Editor.Activities
                         for (int i = 0; i < Bisections; i++)
                         {
                             float mid = (lo + hi) * 0.5f;
-                            Prof.Cat = Prof.MBisect; float m = meter.Measure(s, Ground(start + slide * mid), bestYaw, out _, true);
+                            float m = meter.Measure(s, Ground(start + slide * mid), bestYaw, out _, true);
                             if (Mathf.Abs(m - target) < Mathf.Abs(share - target))
                             {
                                 t = mid;
@@ -569,7 +618,7 @@ namespace PocketWilds.Editor.Activities
                     result.Measured[sp, level] = share;
                     // Out of reach: it shows more than the level even fully behind, or never peeks out that far.
                     result.Unreachable[sp, level] = (k == 0 && share > target + LevelTolerance) || (k < 0 && share < target - LevelTolerance);
-                    Prof.Cat = Prof.MBox; meter.Measure(s, placement, bestYaw, out var box, true);
+                    meter.Measure(s, placement, bestYaw, out var box, true);
                     rect = new Vector4(Mathf.Min(rect.x, box.x), Mathf.Min(rect.y, box.y), Mathf.Max(rect.z, box.z), Mathf.Max(rect.w, box.w));
                     float e = Mathf.Abs(share - target);
                     error += e;
@@ -577,7 +626,6 @@ namespace PocketWilds.Editor.Activities
                         result.Hits++;
                 }
             }
-            Prof.Add(Prof.CSlide, c1);
             result.Worst = result.MostHidden.Max();
             result.Error = error / (species.Count * HideSpotSet.ShareLevels);
             result.AnimalRect = rect;
@@ -598,19 +646,14 @@ namespace PocketWilds.Editor.Activities
                 return null;
             }
             // Its own decor hides it, never another prop in front of it or of the decor.
-            long c2 = Prof.Now;
             string hidden = occlusion.OtherPropHides(decor, species, result);
-            Prof.Add(Prof.COther, c2);
             if (hidden != null)
             {
                 Trace?.Append($" -> {hidden}\n");
                 return null;
             }
 
-            long c3 = Prof.Now;
-            bool landed = FindLanding(world, species, meter, result, StandReach(species), wholeFrame);
-            Prof.Add(Prof.CLanding, c3);
-            if (!landed)
+            if (!FindLanding(world, species, meter, result, StandReach(species), wholeFrame))
             {
                 Trace?.Append(" -> no landing\n");
                 return null;
@@ -725,7 +768,7 @@ namespace PocketWilds.Editor.Activities
                     }
                     if (!outerFree) { failHop++; continue; }
                     // Clearly seen once out: every species shows at least 80 % there.
-                    Prof.Cat = Prof.MLanding; if (species.Any(s => meter.Measure(s, q, yawToCamera, out _, true) < LandingVisible)) { failSeen++; continue; }
+                    if (species.Any(s => meter.Measure(s, q, yawToCamera, out _, true, LandingVisible) < LandingVisible)) { failSeen++; continue; }
                     found.Add((q, blocked, order));
                 }
             }
@@ -742,8 +785,7 @@ namespace PocketWilds.Editor.Activities
         }
 
         /// <summary>The hop's track on the ground is free for the body's width (its ends are checked as placements and landing).</summary>
-        private static bool HopFree(ChunkWorld world, SpeciesModel s, Vector3 from, Vector3 to) { long h0 = Prof.Now; try { return HopFreeCore(world, s, from, to); } finally { Prof.Add(Prof.HopFree, h0); } }
-        private static bool HopFreeCore(ChunkWorld world, SpeciesModel s, Vector3 from, Vector3 to)
+        private static bool HopFree(ChunkWorld world, SpeciesModel s, Vector3 from, Vector3 to)
         {
             float length = (Flat(to) - Flat(from)).magnitude;
             int steps = Mathf.Max(1, Mathf.CeilToInt(length / 0.05f));
@@ -752,7 +794,7 @@ namespace PocketWilds.Editor.Activities
             {
                 var p = Vector3.Lerp(from, to, i / (float)steps);
                 p.y = world.GroundY(p.x, p.z);
-                if (world.DiscClearance(p, radius, height) < 0f)
+                if (world.DiscOverlaps(p, radius, height))
                     return false;
             }
             return true;
@@ -867,7 +909,6 @@ namespace PocketWilds.Editor.Activities
                     _meters[decor] = meter = new ShareMeter(_position, _rotation, decor.Vertices, decor.Triangles);
                 var species = _species[_reference];
                 value = 0f;
-                Prof.Cat = Prof.MCover;
                 for (int level = 1; level < HideSpotSet.ShareLevels; level += 2)
                     value = Mathf.Max(value, 1f - meter.Measure(species, spot.Placements[_reference, level], spot.Facing, out _));
                 _cache[(decor, spot)] = value;
@@ -1143,21 +1184,23 @@ namespace PocketWilds.Editor.Activities
         /// <summary>
         /// « Another prop in front is not the hiding »: per decor, a meter of the ground and that decor alone (what its spot's
         /// share must be) and the decor's own silhouette against every other prop (whether one stands before it). Built
-        /// when first asked.
+        /// when first asked, once, by whichever thread asks first (the candidates of an attempt are measured in parallel).
         /// </summary>
         internal sealed class OcclusionMeters
         {
             private readonly ChunkWorld _world;
             private readonly Vector3 _position;
             private readonly Quaternion _rotation;
-            private readonly Dictionary<Decor, ShareMeter> _own = new Dictionary<Decor, ShareMeter>();
-            private readonly Dictionary<Decor, float> _shown = new Dictionary<Decor, float>();
+            private readonly ConcurrentDictionary<Decor, Lazy<ShareMeter>> _own = new ConcurrentDictionary<Decor, Lazy<ShareMeter>>();
+            private readonly ConcurrentDictionary<Decor, Lazy<float>> _shown = new ConcurrentDictionary<Decor, Lazy<float>>();
+            private readonly MeasureMemo _memo;
 
-            public OcclusionMeters(ChunkWorld world, Vector3 position, Quaternion rotation)
+            public OcclusionMeters(ChunkWorld world, Vector3 position, Quaternion rotation, MeasureMemo memo = null)
             {
                 _world = world;
                 _position = position;
                 _rotation = rotation;
+                _memo = memo;
             }
 
             /// <summary>Null when only the decor hides the spot's animal; else why not.</summary>
@@ -1179,29 +1222,25 @@ namespace PocketWilds.Editor.Activities
             }
 
             /// <summary>The visible share with the ground and this decor alone.</summary>
-            public float Alone(Decor decor, SpeciesModel species, Vector3 position, float yaw) { var m = Own(decor); Prof.Cat = Prof.MAlone; return m.Measure(species, position, yaw, out _, true); }
+            public float Alone(Decor decor, SpeciesModel species, Vector3 position, float yaw) => Own(decor).Measure(species, position, yaw, out _, true);
 
-            private ShareMeter Own(Decor decor)
+            private ShareMeter Own(Decor decor) => _own.GetOrAdd(decor, d => new Lazy<ShareMeter>(() => BuildOwn(d))).Value;
+
+            private ShareMeter BuildOwn(Decor decor)
             {
-                if (_own.TryGetValue(decor, out var meter))
-                    return meter;
                 var vertices = new List<Vector3>(_world.GroundVertices);
                 var triangles = new List<int>(_world.GroundTriangles);
                 int start = vertices.Count;
                 vertices.AddRange(decor.Vertices);
                 triangles.AddRange(decor.Triangles.Select(t => start + t));
-                long o0 = Prof.Now;
-                var made = _own[decor] = new ShareMeter(_position, _rotation, vertices, triangles);
-                Prof.Add(Prof.OwnCtor, o0);
-                return made;
+                return new ShareMeter(_position, _rotation, vertices, triangles, _memo);
             }
 
             /// <summary>How much of the decor's own silhouette shows past every other prop (decor or not; the ground left out).</summary>
-            public float DecorShown(Decor decor)
+            public float DecorShown(Decor decor) => _shown.GetOrAdd(decor, d => new Lazy<float>(() => MeasureShown(d))).Value;
+
+            private float MeasureShown(Decor decor)
             {
-                if (_shown.TryGetValue(decor, out float value))
-                    return value;
-                long d0 = Prof.Now;
                 var vertices = new List<Vector3>();
                 var triangles = new List<int>();
                 void Add(List<Vector3> v, List<int> t)
@@ -1215,7 +1254,7 @@ namespace PocketWilds.Editor.Activities
                         Add(other.Vertices, other.Triangles);
                 foreach (var (v, t) in _world.OtherProps)
                     Add(v, t);
-                value = 1f;
+                float value = 1f;
                 if (decor.Triangles.Count > 0)
                 {
                     var meter = new ShareMeter(_position, _rotation, vertices, triangles);
@@ -1224,11 +1263,9 @@ namespace PocketWilds.Editor.Activities
                     {
                         Name = decor.Prop, Frames = silhouette, SearchFrames = silhouette, Triangles = decor.Triangles.ToArray(),
                     };
-                    Prof.Cat = Prof.MDecorShown;
                     value = meter.Measure(model, decor.Center, 0f, out _, true);
                 }
-                Prof.Add(Prof.DecorShownT, d0);
-                return _shown[decor] = value;
+                return value;
             }
         }
     }
