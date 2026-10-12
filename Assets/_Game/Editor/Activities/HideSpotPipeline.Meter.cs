@@ -6,34 +6,6 @@ namespace PocketWilds.Editor.Activities
 {
     public static partial class HideSpotPipeline
     {
-        internal static class Prof
-        {
-            public static readonly string[] Names = { "load species", "load chunks", "zones", "save", "meter ctor", "measure line", "measure slide", "measure landing",
-                "measure alone", "measure cover", "measure decorShown", "measure other", "allowed", "worn", "clearance", "discClearance", "onIsland",
-                "cand line search", "cand slide", "cand otherProps", "cand landing", "attempt candidates", "attempt degree", "attempt choose", "attempt gather",
-                "attempt aimfit", "attempt stats", "own meter ctor", "decorShown total", "hopFree", "measure bisect", "measure box" };
-            public const int LoadSpecies = 0, LoadChunks = 1, Zones = 2, Save = 3, MeterCtor = 4, MLine = 5, MSlide = 6, MLanding = 7, MAlone = 8, MCover = 9,
-                MDecorShown = 10, MOther = 11, Allowed = 12, Worn = 13, Clearance = 14, DiscClearance = 15, OnIsland = 16, CLine = 17, CSlide = 18,
-                COther = 19, CLanding = 20, ACand = 21, ADegree = 22, AChoose = 23, AGather = 24, AAim = 25, AStats = 26, OwnCtor = 27, DecorShownT = 28,
-                HopFree = 29, MBisect = 30, MBox = 31;
-            public static readonly long[] Ticks = new long[Names.Length];
-            public static readonly long[] Count = new long[Names.Length];
-            public static int Cat = MOther;
-            public static long ChunkVisited, ChunkRastered, ChunkTicks, AnimalTicks, ProjectTicks, AnimalTris, BigVisited;
-            public static long Now => System.Diagnostics.Stopwatch.GetTimestamp();
-            public static void Add(int i, long start) { Ticks[i] += Now - start; Count[i]++; }
-            public static void Reset() { Array.Clear(Ticks, 0, Ticks.Length); Array.Clear(Count, 0, Count.Length); ChunkVisited = ChunkRastered = ChunkTicks = AnimalTicks = ProjectTicks = AnimalTris = BigVisited = 0; }
-            public static string Report()
-            {
-                var sb = new System.Text.StringBuilder("PROFILE\n");
-                for (int i = 0; i < Names.Length; i++)
-                    sb.Append($"{Names[i]}: {Ticks[i] / (double)System.Diagnostics.Stopwatch.Frequency:F2} s, {Count[i]} calls, {(Count[i] > 0 ? Ticks[i] * 1e6 / System.Diagnostics.Stopwatch.Frequency / Count[i] : 0):F1} us/call\n");
-                double f = System.Diagnostics.Stopwatch.Frequency;
-                sb.Append($"measure parts: project {ProjectTicks / f:F2} s, chunk {ChunkTicks / f:F2} s ({ChunkVisited} visited, {ChunkRastered} rastered, big {BigVisited}), animal {AnimalTicks / f:F2} s ({AnimalTris} tris)").AppendLine();
-                return sb.ToString();
-            }
-        }
-
         /// <summary>
         /// The visible share of an animal's silhouette from one camera position (doc 01 S-ACT-002: « une part de sa
         /// silhouette reste visible »). The species' LOD0 triangles, posed in its Idle bind pose, are projected from the
@@ -41,10 +13,29 @@ namespace PocketWilds.Editor.Activities
         /// the animal's nearest depth. The chunk's own triangles (ground and every prop's LOD0, the decor included) are
         /// projected onto the same grid; a silhouette cell is visible when nothing of the chunk lies in front of the animal
         /// there. Share = visible cells / silhouette cells. Only the camera's position matters (not its rotation or field of
-        /// view), so the zone camera can be re-aimed afterwards without measuring again. Editor only; buffers are reused.
+        /// view), so the zone camera can be re-aimed afterwards without measuring again. Editor only. A meter is read-only once
+        /// built: the buffers a measure works in belong to the calling thread, so the build measures from many threads at once.
         /// </summary>
         internal sealed class ShareMeter
         {
+            /// <summary>One thread's working buffers. The stamps only grow, so a stamp left by another meter never matches.</summary>
+            private sealed class Scratch
+            {
+                public readonly float[] AnimalDepth = new float[(Cells + 2) * (Cells + 2)];
+                public readonly float[] ChunkDepth = new float[(Cells + 2) * (Cells + 2)];
+                public float[] Au = Array.Empty<float>();
+                public float[] Aw = Array.Empty<float>();
+                public float[] Aiz = Array.Empty<float>();
+                public int[] Stamp = Array.Empty<int>();
+                public int StampId;
+            }
+
+            [ThreadStatic] private static Scratch _scratch;
+
+            /// <summary>The build's measures cache and this meter's key in it (its camera and triangles); null: none.</summary>
+            private readonly MeasureMemo _memo;
+            private readonly Key128 _id;
+
             public const int Cells = 40;
             private const float NearZ = 0.05f;
             private const float DepthEpsilon = 0.02f;
@@ -64,23 +55,20 @@ namespace PocketWilds.Editor.Activities
             private readonly float[] _iz;
             private readonly int[] _triangles;
             private readonly float[] _box;   // per triangle: uMin, uMax, wMin, wMax, zMin
-            private readonly List<int>[] _bins = new List<int>[Bins * Bins];
-            private readonly List<int> _big = new List<int>();
-            private readonly int[] _stamp;
-            private int _stampId;
-
-            private readonly float[] _animalDepth = new float[(Cells + 2) * (Cells + 2)];
-            private readonly float[] _chunkDepth = new float[(Cells + 2) * (Cells + 2)];
-            private float[] _au = Array.Empty<float>();
-            private float[] _aw = Array.Empty<float>();
-            private float[] _aiz = Array.Empty<float>();
+            private readonly int[][] _bins = new int[Bins * Bins][];
+            private readonly int[] _big;
+            private readonly int _triangleCount;
 
             public Vector3 Position => _position;
             public int TriangleCount => _triangles.Length / 3;
 
-            public ShareMeter(Vector3 cameraPosition, Quaternion cameraRotation, List<Vector3> vertices, List<int> triangles)
+            public ShareMeter(Vector3 cameraPosition, Quaternion cameraRotation, List<Vector3> vertices, List<int> triangles, MeasureMemo memo = null)
             {
-                long p0 = Prof.Now;
+                if (memo != null)
+                {
+                    _memo = memo;
+                    _id = Hasher.Of(h => h.Add(cameraPosition).Add(cameraRotation).Add(vertices).Add(triangles));
+                }
                 _position = cameraPosition;
                 _right = cameraRotation * Vector3.right;
                 _up = cameraRotation * Vector3.up;
@@ -120,23 +108,27 @@ namespace PocketWilds.Editor.Activities
                 }
                 _triangles = kept.ToArray();
                 _box = box.ToArray();
-                _stamp = new int[_triangles.Length / 3];
-                for (int i = 0; i < _bins.Length; i++)
-                    _bins[i] = new List<int>();
-                for (int t = 0; t < _stamp.Length; t++)
+                _triangleCount = _triangles.Length / 3;
+                var bins = new List<int>[Bins * Bins];
+                for (int i = 0; i < bins.Length; i++)
+                    bins[i] = new List<int>();
+                var big = new List<int>();
+                for (int t = 0; t < _triangleCount; t++)
                 {
                     int x0 = Bin(_box[t * 5]), x1 = Bin(_box[t * 5 + 1]);
                     int y0 = Bin(_box[t * 5 + 2]), y1 = Bin(_box[t * 5 + 3]);
                     if ((x1 - x0 + 1) * (y1 - y0 + 1) > MaxBinsPerTriangle)
                     {
-                        _big.Add(t);
+                        big.Add(t);
                         continue;
                     }
                     for (int y = y0; y <= y1; y++)
                         for (int x = x0; x <= x1; x++)
-                            _bins[y * Bins + x].Add(t);
+                            bins[y * Bins + x].Add(t);
                 }
-                Prof.Add(Prof.MeterCtor, p0);
+                for (int i = 0; i < bins.Length; i++)
+                    _bins[i] = bins[i].ToArray();
+                _big = big.ToArray();
             }
 
             private static int Bin(float v) => Mathf.Clamp((int)Mathf.Floor((v - BinMin) / BinSize), 0, Bins - 1);
@@ -159,26 +151,42 @@ namespace PocketWilds.Editor.Activities
             /// The share of the species' silhouette visible at this ground point and yaw (scale 1): the largest over its
             /// sampled frames of the hiding pose (<paramref name="allFrames"/>; else the search subset), and the frames'
             /// tangent-space box (min x, min y, max x, max y). The chunk is drawn once into the frames' common grid.
+            /// <paramref name="stopAt"/>: the caller only asks whether the share reaches it; the frames stop as soon as one
+            /// does, and the share returned is then that frame's (at least <paramref name="stopAt"/>, at most the full share).
             /// </summary>
-            public float Measure(SpeciesModel species, Vector3 position, float yaw, out Vector4 box, bool allFrames = false)
+            public float Measure(SpeciesModel species, Vector3 position, float yaw, out Vector4 box, bool allFrames = false,
+                float stopAt = float.PositiveInfinity)
             {
-                long p0 = Prof.Now;
-                try { return MeasureCore(species, position, yaw, out box, allFrames); }
-                finally { Prof.Add(Prof.Cat, p0); }
+                if (_memo == null || species.MeasureKey.IsEmpty)
+                    return MeasureNow(species, position, yaw, out box, allFrames, stopAt, out _);
+                var key = new MemoKey(_id, species.MeasureKey, position, yaw, allFrames);
+                if (_memo.TryGet(key, out var known))
+                {
+                    box = known.Box;
+                    return known.Share;
+                }
+                float share = MeasureNow(species, position, yaw, out box, allFrames, stopAt, out bool stopped);
+                if (!stopped)
+                    _memo.Add(key, new MemoValue(share, box));
+                return share;
             }
 
-            private float MeasureCore(SpeciesModel species, Vector3 position, float yaw, out Vector4 box, bool allFrames = false)
+            private float MeasureNow(SpeciesModel species, Vector3 position, float yaw, out Vector4 box, bool allFrames, float stopAt, out bool stopped)
             {
+                stopped = false;
+                var sc = _scratch ?? (_scratch = new Scratch());
                 var frames = allFrames ? species.Frames : species.SearchFrames;
                 int n = species.Frames[0].Length;
                 int total = n * frames.Length;
-                if (_au.Length < total)
+                if (sc.Au.Length < total)
                 {
-                    _au = new float[total];
-                    _aw = new float[total];
-                    _aiz = new float[total];
+                    sc.Au = new float[total];
+                    sc.Aw = new float[total];
+                    sc.Aiz = new float[total];
                 }
-                long q0 = Prof.Now;
+                if (sc.Stamp.Length < _triangleCount)
+                    sc.Stamp = new int[_triangleCount];
+                float[] au = sc.Au, aw = sc.Aw, aiz = sc.Aiz, chunkDepth = sc.ChunkDepth, animalDepth = sc.AnimalDepth;
                 float rad = yaw * Mathf.Deg2Rad, cos = Mathf.Cos(rad), sin = Mathf.Sin(rad);
                 float uMin = float.MaxValue, uMax = float.MinValue, wMin = float.MaxValue, wMax = float.MinValue, zMax = 0f;
                 for (int f = 0; f < frames.Length; f++)
@@ -193,9 +201,9 @@ namespace PocketWilds.Editor.Activities
                         float z = Mathf.Max(NearZ, Vector3.Dot(d, _forward));
                         float iz = 1f / z;
                         float u = Vector3.Dot(d, _right) * iz, w = Vector3.Dot(d, _up) * iz;
-                        _au[o + i] = u;
-                        _aw[o + i] = w;
-                        _aiz[o + i] = iz;
+                        au[o + i] = u;
+                        aw[o + i] = w;
+                        aiz[o + i] = iz;
                         uMin = Mathf.Min(uMin, u);
                         uMax = Mathf.Max(uMax, u);
                         wMin = Mathf.Min(wMin, w);
@@ -204,7 +212,6 @@ namespace PocketWilds.Editor.Activities
                     }
                 }
                 box = new Vector4(uMin, wMin, uMax, wMax);
-                long q1 = Prof.Now; Prof.ProjectTicks += q1 - q0;
                 float extent = Mathf.Max(uMax - uMin, wMax - wMin);
                 if (extent <= 1e-6f)
                     return 0f;
@@ -214,63 +221,80 @@ namespace PocketWilds.Editor.Activities
                 int rows = Mathf.Min(Cells + 1, Mathf.CeilToInt((wMax - wMin) * inv) + 1);
                 int count = cols * rows;
                 for (int i = 0; i < count; i++)
-                    _chunkDepth[i] = float.PositiveInfinity;
+                    chunkDepth[i] = float.PositiveInfinity;
 
                 // The chunk's triangles over the animal's box, nearer than its far side.
-                _stampId++;
+                int stampId = ++sc.StampId;
+                var stamp = sc.Stamp;
                 float uHi = uMin + cols * cell, wHi = wMin + rows * cell;
                 int bx0 = Bin(uMin), bx1 = Bin(uHi), by0 = Bin(wMin), by1 = Bin(wHi);
                 for (int y = by0; y <= by1; y++)
                     for (int x = bx0; x <= bx1; x++)
                         foreach (int t in _bins[y * Bins + x])
-                            ChunkTriangle(t, uMin, wMin, uHi, wHi, zMax, cols, rows, inv);
+                            ChunkTriangle(t, stamp, stampId, chunkDepth, uMin, wMin, uHi, wHi, zMax, cols, rows, inv);
                 foreach (int t in _big)
-                    ChunkTriangle(t, uMin, wMin, uHi, wHi, zMax, cols, rows, inv);
-                Prof.BigVisited += _big.Count;
-                long q2 = Prof.Now; Prof.ChunkTicks += q2 - q1;
+                    ChunkTriangle(t, stamp, stampId, chunkDepth, uMin, wMin, uHi, wHi, zMax, cols, rows, inv);
 
                 var triangles = species.Triangles;
                 float best = 0f;
                 for (int f = 0; f < frames.Length; f++)
                 {
                     for (int i = 0; i < count; i++)
-                        _animalDepth[i] = float.PositiveInfinity;
+                        animalDepth[i] = float.PositiveInfinity;
                     int o = f * n;
                     for (int t = 0; t + 2 < triangles.Length; t += 3)
                     {
                         int a = o + triangles[t], b = o + triangles[t + 1], c = o + triangles[t + 2];
-                        Raster(_animalDepth, cols, rows, uMin, wMin, inv, _au[a], _aw[a], _aiz[a], _au[b], _aw[b], _aiz[b], _au[c], _aw[c], _aiz[c]);
+                        Raster(animalDepth, cols, rows, uMin, wMin, inv, au[a], aw[a], aiz[a], au[b], aw[b], aiz[b], au[c], aw[c], aiz[c]);
                     }
                     int covered = 0, visible = 0;
                     for (int i = 0; i < count; i++)
                     {
-                        float d = _animalDepth[i];
+                        float d = animalDepth[i];
                         if (float.IsPositiveInfinity(d))
                             continue;
                         covered++;
-                        if (d < _chunkDepth[i] - DepthEpsilon)
+                        if (d < chunkDepth[i] - DepthEpsilon)
                             visible++;
                     }
                     if (covered > 0)
                         best = Mathf.Max(best, visible / (float)covered);
+                    // Every cell shows (the share is exactly 1): no later frame shows more.
+                    if (best >= 1f)
+                        break;
+                    if (best >= stopAt)
+                    {
+                        stopped = true;
+                        break;
+                    }
                 }
-                Prof.AnimalTris += triangles.Length / 3 * frames.Length;
-                Prof.AnimalTicks += Prof.Now - q2;
                 return best;
             }
 
-            private void ChunkTriangle(int t, float uMin, float wMin, float uHi, float wHi, float zMax, int cols, int rows, float inv)
+            private void ChunkTriangle(int t, int[] stamp, int stampId, float[] chunkDepth, float uMin, float wMin, float uHi, float wHi, float zMax,
+                int cols, int rows, float inv)
             {
-                if (_stamp[t] == _stampId)
+                if (stamp[t] == stampId)
                     return;
-                _stamp[t] = _stampId;
-                Prof.ChunkVisited++;
+                stamp[t] = stampId;
                 int o = t * 5;
                 if (_box[o + 4] >= zMax || _box[o + 1] < uMin || _box[o] > uHi || _box[o + 3] < wMin || _box[o + 2] > wHi)
                     return;
-                Prof.ChunkRastered++;
                 int a = _triangles[t * 3], b = _triangles[t * 3 + 1], c = _triangles[t * 3 + 2];
-                Raster(_chunkDepth, cols, rows, uMin, wMin, inv, _u[a], _w[a], _iz[a], _u[b], _w[b], _iz[b], _u[c], _w[c], _iz[c]);
+                Raster(chunkDepth, cols, rows, uMin, wMin, inv, _u[a], _w[a], _iz[a], _u[b], _w[b], _iz[b], _u[c], _w[c], _iz[c]);
+            }
+
+            /// <summary>
+            /// No cell center (k + 0.5) lies between these three grid coordinates: their span, widened by 0.01 cell each way,
+            /// stays inside one cell (most of an animal's triangles are smaller than a cell). Conservative: a triangle it lets
+            /// through is drawn exactly as before, and one it stops could not have drawn a cell, whatever precision the
+            /// coordinates are carried in; so the shares stay bit for bit the same.
+            /// </summary>
+            private static bool BetweenCenters(float a, float b, float c)
+            {
+                float lo = (a < b ? (a < c ? a : c) : (b < c ? b : c)) + 0.49f;
+                float hi = (a > b ? (a > c ? a : c) : (b > c ? b : c)) + 0.51f;
+                return lo >= 0f && hi < 1e6f && (int)lo == (int)hi;
             }
 
             /// <summary>Nearest depth of a triangle at each covered cell center (1 / z interpolated: exact in perspective).</summary>
@@ -280,6 +304,8 @@ namespace PocketWilds.Editor.Activities
                 float ax = (ua - u0) * inv, ay = (wa - w0) * inv;
                 float bx = (ub - u0) * inv, by = (wb - w0) * inv;
                 float cx = (uc - u0) * inv, cy = (wc - w0) * inv;
+                if (BetweenCenters(ax, bx, cx) || BetweenCenters(ay, by, cy))
+                    return;
                 float area = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
                 if (Mathf.Abs(area) < 1e-9f)
                     return;
