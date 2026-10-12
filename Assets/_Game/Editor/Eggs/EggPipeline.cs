@@ -320,8 +320,8 @@ namespace PocketWilds.Editor.Eggs
 
         public static readonly string[] GrasslandSpecies = { "species.rabbit", "species.squirrel", "species.hedgehog", "species.fieldmouse", "species.guineapig", "species.fawn" };
 
-        /// <summary>T51 the Forest's egg species (T52 adds the Owl and the Boar Piglet, T53 the bear cub).</summary>
-        public static readonly string[] ForestSpecies = { "species.fox", "species.badger", "species.raccoon", "species.redpanda" };
+        /// <summary>T51 the Forest's egg species, T52 the Owl and the Boar Piglet (T53 adds the bear cub).</summary>
+        public static readonly string[] ForestSpecies = { "species.fox", "species.badger", "species.raccoon", "species.redpanda", "species.owl", "species.boarpiglet" };
 
         /// <summary>T51 the species of each biome's eggs (data: a new biome adds its row).</summary>
         public static readonly System.Collections.Generic.Dictionary<string, string[]> BiomeEggSpecies =

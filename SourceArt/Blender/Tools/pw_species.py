@@ -13,6 +13,9 @@ Each step is one short call from Blender MCP (long single calls can hang the bri
     ps.place_sockets("Squirrel")
     pw_masks.apply("Squirrel"); pw_export.export_species_model("Squirrel")
 
+Birds (T52) run the whole recipe in one call, from a MediumQuadruped file opened first:
+    ps.build_bird("Owl", r".../BL_Animal_Fawn.blend"); pw_export.export_species_model("Owl")
+
 Blender space: animal faces -Y, Z up, feet on z = 0. The skeleton SK_SmallQuadruped is never edited
 here, so every AN_SmallQuadruped clip plays on every species of the family.
 """
@@ -631,6 +634,152 @@ SPECS = {
 }
 
 
+# T52 Boar Piglet (A-SP-012), the first HeavyQuadruped (pw_rig.HEAVY_QUADRUPED is fitted to it): a round barrel body, a
+# big round head with chubby cheeks, a short snout ending in a round disc with two nostril beads (nose pair), bead eyes,
+# soft triangle ears leaning forward on the ear bones, short stubby legs with rounded hooves, a little curly tail (tube
+# tail). Stripes, spots and the snout disc are vertex masks (pw_masks boarpiglet_masks). About 64 x 43 cm. Built from the
+# Badger file: start_from, then the SK_MediumQuadruped armature is swapped for pw_rig.build_armature("HeavyQuadruped").
+BOARPIGLET_FRONT_LEG = [(0.064, -0.062, 0.125), (0.065, -0.065, 0.070), (0.066, -0.067, 0.020)]
+BOARPIGLET_HIND_LEG = [(0.068, 0.128, 0.120), (0.070, 0.123, 0.070), (0.070, 0.126, 0.020)]
+# Ear base on the skull and the ear axis (26 degrees outward, 34 forward), +X side; pw_masks has the same.
+BOARPIGLET_EAR_BASE = (0.062, -0.180, 0.362)
+BOARPIGLET_EAR_AXIS = (0.363, -0.559, 0.745)
+# The curl: leaves the rump 28 degrees above horizontal, turns up and over (a little more than half a turn), tip forward.
+BOARPIGLET_TAIL = _eased_path((0, 0.198, 0.240), 0.085, [(0.0, 28), (0.024, 28), (0.068, 212), (0.085, 228)])
+
+
+def _boarpiglet_ears():
+    b = Vector(BOARPIGLET_EAR_BASE); u = Vector(BOARPIGLET_EAR_AXIS).normalized()
+    return [_ell(tuple(b + u * along), half, rot=(34, 26, 0), mirror=True)
+            for along, half in ((0.024, (0.048, 0.013, 0.040)), (0.060, (0.030, 0.011, 0.030)))]
+
+
+SPECS["BoarPiglet"] = dict(
+    armature="SK_HeavyQuadruped",
+    blockout=[
+        _ell((0, -0.195, 0.280), (0.118, 0.105, 0.110), part="head"),
+        _ell((0.054, -0.228, 0.245), (0.054, 0.060, 0.052), stiff=1.6, mirror=True, part="head"),   # chubby cheeks
+        _ell((0, -0.298, 0.246), (0.047, 0.050, 0.043), rot=(-4, 0, 0), stiff=1.6, part="head"),   # snout
+        _ell((0, -0.340, 0.250), (0.051, 0.016, 0.045), stiff=2.0, part="head"),                     # snout disc
+        _ell((0, -0.120, 0.232), (0.095, 0.060, 0.095)),                                             # neck
+        _ell((0, -0.045, 0.207), (0.114, 0.085, 0.114)),                                             # chest
+        _ell((0, 0.050, 0.200), (0.122, 0.135, 0.120)),                                              # round barrel body
+        _ell((0, 0.130, 0.207), (0.114, 0.080, 0.114)),                                              # rump
+        _ell((0.062, -0.058, 0.140), (0.048, 0.055, 0.060), mirror=True),                            # shoulders
+        _ell((0.066, 0.128, 0.140), (0.050, 0.060, 0.066), mirror=True),                             # haunches
+        _ell((0.066, -0.071, 0.016), (0.028, 0.032, 0.016), mirror=True),                            # front hooves
+        _ell((0.070, 0.122, 0.016), (0.029, 0.033, 0.016), mirror=True),                             # hind hooves
+    ] + _boarpiglet_ears() + _legs(BOARPIGLET_FRONT_LEG, (0.032, 0.029)) + _legs(BOARPIGLET_HIND_LEG, (0.034, 0.030)),
+    ear_mode="short",
+    ear_gain=0.8,
+    ear_zone=(0.345, 0.050, -0.10, 1.30, 0.10, 0.40),
+    tail_path=BOARPIGLET_TAIL,
+    tube_tail=dict(radius=[(0.0, 0.0120), (0.4, 0.0095), (1.0, 0.0085)], rings=[], cap=0.12,
+                   step=(0.065, 0.12, 0.25), edge=(0.0, 0.0, 0.0), tip=(3, 2, 1), segs=(8, 6, 4), oval=(1.0, 1.0)),
+    # Only the tube behind the rump follows the tail bones (the round back is as high as the tail: no height band); the
+    # curl hands over to Tail_02 after 2.5 to 5 cm (the third split pair is past the tip: the family has two tail bones).
+    tail_member_y=(0.216, 0.228),
+    tail_member_s=(0.010, 0.030),
+    tail_member_z=(9.0, 9.5),
+    tail_split=(0.025, 0.050, 9.0, 9.1),
+    eyes=dict(x=0.054, z=0.298, r=0.025, sink=0.35),
+    nose=dict(x=0.018, z=0.252, r=0.0105, sink=0.45, pair=True),
+    head_center=(0, -0.195, 0.280),
+    head_radii=(0.118, 0.105, 0.110),
+    hind_leg_band=(0.120, 0.080),
+    front_leg_band=(0.120, 0.080),
+    lod0_faces=1650,
+    lod1_mode="collapse",
+    lod1_tris=1300,
+    lod1_body_tris=1120,
+    lod2_tris=560,
+    lod2_body_tris=470,
+    back_probe_y=0.03,
+    sockets={
+        "SOCK_Neck": (0.0, -0.118, 0.222),
+        "SOCK_TailBase": (0.0, 0.212, 0.246),
+        "SOCK_Ear_L": (-0.062, -0.180, 0.362),
+        "SOCK_Ear_R": (0.062, -0.180, 0.362),
+    },
+)
+
+
+# T52 Owl (A-SP-010, Forest), the first Bird on SK_Bird (pw_rig.BIRD). T52 polish: one smooth egg with the head merged
+# in (a superellipse crown, slightly flattened, soft shoulders, a rounder belly at the front), no metaball seams. Sculpted
+# by offsets along the normal (surface_mesh): two large facial discs (a shallow dish and a soft raised rim, cut crisp by
+# cut_mask_shapes), short rounded wings as raised plates on the sides (soft edge, a faint crease around), a short tail fan
+# low on the back; tiny toes peek out under the belly (exact union). Big bead eyes centred in the discs, a small drop beak
+# (the nose bead, shape_beak). No individual feather. About 35 x 44 cm. Built by build_bird("Owl", <Fawn file>): the
+# surface drives the wing and tail bones (surface_parts), the toe ellipsoids the feet. The mask rule reads the same data
+# (pw_masks owl_masks, disc frames in pw_masks OWL_DISCS).
+SPECS["Owl"] = dict(
+    armature="SK_Bird",
+    trunk_bone="Body",
+    surface=dict(
+        # Egg: centre height, top and bottom, half width, front depth (belly low, face high), back depth, exponents
+        # (horizontal p, crown q_top: above 2 flattens the crown into soft shoulders).
+        # gentle: collapse weight of the smooth body (surface_collapse_weights).
+        gentle=0.985,
+        egg=dict(zc=0.218, top=0.440, bottom=0.008, a=0.162, b_belly=0.160, b_face=0.134, face_z=(0.16, 0.33),
+                 b_back=0.146, p=2.15, q_top=3.1, q_bottom=2.5),
+        # Facial discs (frames: pw_masks OWL_DISCS): offset along the normal by radius, a dish then a soft rim whose
+        # crest spans the mask A rim ring (radii 0.044 to 0.056, cut rings at 0.044, 0.0475, 0.056, 0.0595).
+        disc_profile=((0.0, -0.0055), (0.030, -0.0050), (0.044, -0.0020), (0.0475, 0.0030), (0.056, 0.0032),
+                      (0.0595, 0.0006), (0.066, -0.0008), (0.080, 0.0)),
+        # Wings, side view (y, z): top at the shoulder, tip low at the back, half width, widest at tc, thickness (thin at
+        # the shoulder), soft edge (s), faint crease; bone_edge, top_fade and lower_t place the Wing_Upper / Wing_Lower
+        # weights.
+        wing=dict(top=(-0.010, 0.262), tip=(0.094, 0.060), half=0.060, tc=0.40, thick=0.016, thin_top=0.20,
+                  edge=(0.74, 1.0), crease=0.0015, bone_edge=(0.76, 1.40), top_fade=(0.0, 0.30), lower_t=(0.45, 0.70)),
+        # Tail fan, back view (x, z): centre, half sizes (rounded square outline), thickness (thin top, full lower edge).
+        tail=dict(center=(0.0, 0.094), half=(0.050, 0.026), thick=0.012, thin_top=0.25, edge=(0.66, 1.0),
+                  bone_edge=(0.90, 1.12)),
+        # Toes: pivot of the +X foot, yaw of each toe, toe half sizes, reach from the pivot; heel: an optional pad
+        # (centre, half sizes); pad: the feathered swell of the underside over each foot ((x, y), height, (sx, sy)).
+        # The toes ride Root (root_band): AN_Bird leans tip the bird forward about y = -0.078 (LEAN_LIFT), so toes this
+        # far back stay within 2 mm of the ground through Eat and Social.
+        toes=dict(pivot=(0.050, -0.0600, 0.0095), yaws=(-26, 0, 26), half=(0.0110, 0.0150, 0.0095), reach=0.015,
+                  heel=None, pad=((0.050, -0.060), 0.013, (0.026, 0.026))),
+    ),
+    # Metaball reference of the same volumes (WORK, editable); the head and foot parts drive the skinning.
+    blockout=[
+        _ell((0, 0.004, 0.226), (0.162, 0.152, 0.212), part="trunk"),                                # egg
+        _ell((0, -0.005, 0.335), (0.154, 0.135, 0.105), part="head"),                                # head, merged
+        _ell((0.064, -0.118, 0.318), (0.064, 0.030, 0.064), rot=(0, 0, 26), mirror=True, part="head"),  # facial discs
+        _ell((0.050, -0.072, 0.009), (0.024, 0.022, 0.010), mirror=True, part="foot"),               # toes
+    ],
+    ear_mode="none",
+    # Big bead eyes centred in the discs; segs (u, v) per LOD with the pole facing out, so their outline is round.
+    eyes=dict(x=0.064, z=0.318, r=0.033, sink=0.30, segs=((16, 5), (8, 4), (8, 3))),
+    # The nose bead is the beak: shape_beak draws it into a little drop pointing down.
+    nose=dict(x=0.0, z=0.272, r=0.014, sink=0.40),
+    head_center=(0, -0.005, 0.335),
+    head_radii=(0.154, 0.135, 0.105),
+    # Part bones (apply_part_weights): wings and tail come from the surface (surface_parts); the tiny hidden feet stay on
+    # Root with the lowest body (root_band), the Leg and Foot bones carry no skin.
+    part_weights={},
+    part_strip=("Wing", "Leg", "Foot"),
+    # The lowest body follows Root, so a bow never sinks the belly into the ground.
+    root_band=(0.035, 0.110),
+    # The merged head hands over to the body along a band (surface_head_weights): low and wide at the front under the
+    # rigid discs, above the wing tops on the sides and the back; Neck takes up to half at its middle.
+    head_z=dict(front=(0.150, 0.262), back=(0.245, 0.330), neck=0.5),
+    ground_seat=0.0035,
+    lod0_tris=1530,
+    lod1_mode="collapse",
+    lod1_tris=960,
+    lod1_body_tris=540,
+    lod2_tris=420,
+    lod2_body_tris=390,
+    sockets={
+        "SOCK_HeadTop": (0.0, -0.020, 0.440),
+        "SOCK_Neck": (0.0, -0.149, 0.236),
+        "SOCK_Back": (0.0, 0.145, 0.262),
+        "SOCK_TailBase": (0.0, 0.137, 0.106),
+    },
+)
+
+
 # ---------------------------------------------------------------- helpers
 
 def armature_of(species):
@@ -702,6 +851,8 @@ def path_project(co, points):
 
 
 def _hi_mesh(species):
+    if SPECS[species].get("surface"):
+        return surface_mesh(species)  # T52 polish: an analytic body (birds)
     meta = bpy.data.objects[f"WORK_{species}_Blockout"]
     meta.hide_viewport = False
     bpy.context.view_layer.update()
@@ -792,7 +943,7 @@ def build_blockout(species):
 
     # Ears ride the shared ear bones so their animation bends them from the base.
     arm = armature_of(species)
-    for side, (base, tip) in ear_axes(arm).items():
+    for side, (base, tip) in (ear_axes(arm).items() if spec.get("ears") else ()):  # T52: the Bird has no ear bones
         axis = (tip - base).normalized()
         rot = axis.to_track_quat('Z', 'Y')
         for dist, half in spec.get("ears", []):
@@ -927,6 +1078,7 @@ def place_features(species):
         o.location = hit - normal * (r * sink)
         o.scale = (r / base_r,) * 3
         o["pw_radius"] = r
+        o["pw_normal"] = tuple(normal)  # T52 polish: eyes.segs beads face out along it
         placed[name] = tuple(round(c, 4) for c in o.location)
     bm.free(); bpy.data.meshes.remove(hi)
     return placed
@@ -986,9 +1138,13 @@ def _with_beads(body, out_name, beads, collection, lobes=None):
     inside = _inside_test(bvh)
     final = bmesh.new(); final.from_mesh(body.data)
     region_of = {}
-    for center, u, v, r, tag in beads:
+    for bead in beads:
+        center, u, v, r, tag = bead[:5]
         b = bmesh.new()
         bmesh.ops.create_uvsphere(b, u_segments=u, v_segments=v, radius=r)
+        if len(bead) > 5:
+            # T52 polish: the pole faces out (bead[5]), so the rim where the bead meets the face is one round ring.
+            bmesh.ops.rotate(b, verts=b.verts, cent=(0, 0, 0), matrix=Vector(bead[5]).to_track_quat('Z', 'Y').to_matrix())
         bmesh.ops.translate(b, verts=b.verts, vec=center)
         bmesh.ops.delete(b, geom=[f for f in b.faces if all(inside(x.co) for x in f.verts)], context='FACES')
         tmp = bpy.data.meshes.new("tmp"); b.to_mesh(tmp); b.free()
@@ -1014,6 +1170,22 @@ def _with_beads(body, out_name, beads, collection, lobes=None):
     return o, region_of
 
 
+def _nose_pair(spec, src, u, v):
+    """T52: nose=dict(pair=True) makes the nose bead one of two nostrils on a snout disc (Boar Piglet): the mirrored one."""
+    if not spec["nose"].get("pair"):
+        return []
+    loc, r = src["WORK_Nose"]
+    return [(Vector((-loc.x, loc.y, loc.z)), u, v, r, NOSE)]
+
+
+def _eye_bead(spec, src, name, level, u, v):
+    """An eye bead for LOD level: default (u, v), or spec eyes "segs" per LOD with the pole facing out (T52 polish)."""
+    segs = spec["eyes"].get("segs")
+    if not segs:
+        return (src[name][0], u, v, src[name][1], EYE)
+    return (src[name][0], segs[level][0], segs[level][1], src[name][1], EYE, Vector(bpy.data.objects[name]["pw_normal"]))
+
+
 def _bead_sources():
     return {n: (bpy.data.objects[n].location.copy(), bpy.data.objects[n].get("pw_radius", 0.011 if n == "WORK_Nose" else 0.023))
             for n in ("WORK_Eye_R", "WORK_Eye_L", "WORK_Nose")}
@@ -1022,13 +1194,23 @@ def _bead_sources():
 def build_lod0(species):
     spec = SPECS[species]
     hi = _hi_mesh(species)
-    body = _quad_body(f"WORK_{species}_BodyRemesh", hi, spec["lod0_faces"], pre_decimate=0.5)
+    if spec.get("lod0_tris"):
+        # T52 polish: an analytic surface is collapsed straight to the LOD0 budget; the collapse keeps the disc rims,
+        # wing edges and toes where a coarse quad remesh would crumple them.
+        src = bpy.data.objects.new(f"WORK_{species}_Hi", hi); bpy.data.collections["WORK"].objects.link(src)
+        body = _collapse(src, f"WORK_{species}_BodyRemesh", spec["lod0_tris"], surface_collapse_weights(species, hi))
+        bpy.data.objects.remove(src, do_unlink=True)
+        _beautify_gentle(body)
+        for v in body.data.vertices:
+            v.co.z = max(0.0, v.co.z)
+    else:
+        body = _quad_body(f"WORK_{species}_BodyRemesh", hi, spec["lod0_faces"], pre_decimate=0.5)
     bpy.data.meshes.remove(hi)
     src = _bead_sources()
-    beads = [(src["WORK_Eye_R"][0], 8, 6, src["WORK_Eye_R"][1], EYE),
-             (src["WORK_Eye_L"][0], 8, 6, src["WORK_Eye_L"][1], EYE),
+    beads = [_eye_bead(spec, src, n, 0, 8, 6) for n in ("WORK_Eye_R", "WORK_Eye_L")] + [
              (src["WORK_Nose"][0], 6, 4, src["WORK_Nose"][1], NOSE)]
-    lobes = (lobe_frames(species), 0) if spec.get("lobe_mode") == "mesh" else None
+    beads += _nose_pair(spec, src, 6, 4)
+    lobes =(lobe_frames(species), 0) if spec.get("lobe_mode") == "mesh" else None
     lod0, _ = _with_beads(body, f"SKM_{species}_LOD0", beads, "GEO", lobes)
     preview = bpy.data.objects.get(f"WORK_{species}_Lobes")
     if preview is not None:
@@ -1072,7 +1254,9 @@ def tail_weights(species, co):
     # T51 polish: tail_member_s moves the start of the tail motion past the rump (thick tube tails), so the ring where
     # the tail meets the body moves with the body and never presses into it or lifts out of it.
     m0, m1 = spec.get("tail_member_s", (0.005, 0.05))
-    member = smooth(m0, m1, s) * max(smooth(y0, y1, co.y), smooth(0.30, 0.36, co.z))
+    # T52: the height band is species data too (a round back as high as the tail, Boar Piglet, must stay off the tail).
+    z0, z1 = spec.get("tail_member_z", (0.30, 0.36))
+    member = smooth(m0, m1, s) * max(smooth(y0, y1, co.y), smooth(z0, z1, co.z))
     upper = smooth(0.08, 0.20, s)
     # A thin tail far below the tail bones (Field Mouse) takes only part of their motion; the rest follows the pelvis.
     gain = spec.get("tail_gain", 1.0)
@@ -1199,7 +1383,7 @@ def skin_lod0(species):
         elif "Head" in w and s > e1:
             w.pop("Head")
         if not w:
-            w = {"Spine": 1.0}
+            w = {spec.get("trunk_bone", "Spine"): 1.0}
         _put(vg, v, w)
 
     _select_only(obj)
@@ -1261,12 +1445,17 @@ def skin_lod0(species):
 
 # ---------------------------------------------------------------- LODs
 
-def _collapse(src, name, target_tris):
-    """Symmetric triangle collapse of a body mesh down to target_tris."""
+def _collapse(src, name, target_tris, weights=None):
+    """Symmetric triangle collapse of a body mesh down to target_tris. weights (T52 polish): per vertex 0..1, lower
+    values collapse less (1 everywhere is the plain collapse)."""
     _remove_object(name)
     me = src.data.copy(); me.name = name
     o = bpy.data.objects.new(name, me); bpy.data.collections["WORK"].objects.link(o)
     o.hide_viewport = False
+    if weights is not None:
+        g = o.vertex_groups.new(name="WORK_Collapse")
+        for i, w in enumerate(weights):
+            g.add([i], w, 'REPLACE')
     _select_only(o)
     area, region = view3d()
     with bpy.context.temp_override(area=area, region=region, object=o, active_object=o,
@@ -1274,7 +1463,11 @@ def _collapse(src, name, target_tris):
         d = o.modifiers.new("Decimate", 'DECIMATE'); d.decimate_type = 'COLLAPSE'
         d.use_symmetry = True; d.symmetry_axis = 'X'; d.use_collapse_triangulate = True
         d.ratio = target_tris / max(1, tris(src))
+        if weights is not None:
+            d.vertex_group = "WORK_Collapse"
         bpy.ops.object.modifier_apply(modifier="Decimate")
+    if weights is not None:
+        o.vertex_groups.remove(o.vertex_groups["WORK_Collapse"])
     for p in o.data.polygons:
         p.use_smooth = True
     o.hide_viewport = True; o.hide_render = True
@@ -1300,9 +1493,8 @@ def build_lods(species):
 
     src = _bead_sources()
     report = {}
-    lod1_beads = [(src["WORK_Eye_R"][0], 6, 4, src["WORK_Eye_R"][1], EYE),
-                  (src["WORK_Eye_L"][0], 6, 4, src["WORK_Eye_L"][1], EYE),
-                  (src["WORK_Nose"][0], 5, 3, src["WORK_Nose"][1], NOSE)]
+    lod1_beads = [_eye_bead(spec, src, n, 1, 6, 4) for n in ("WORK_Eye_R", "WORK_Eye_L")] + [
+                  (src["WORK_Nose"][0], 5, 3, src["WORK_Nose"][1], NOSE)] + _nose_pair(spec, src, 5, 3)
     # LOD2 eyes: slightly bigger, re-placed on the simplified surface so they never sink.
     bb = bmesh.new(); bb.from_mesh(lod2_body.data); bvh2 = BVHTree.FromBMesh(bb); bb.free()
     lod2_beads = []
@@ -1310,7 +1502,9 @@ def build_lods(species):
         loc, r = src[n]
         hit, normal, _, _ = bvh2.ray_cast(Vector((loc.x, -1.0, loc.z)), Vector((0, 1, 0)))
         rr = r * 1.13
-        lod2_beads.append((hit - normal * (rr * 0.25), 6, 3, rr, EYE))
+        segs = spec["eyes"].get("segs")
+        lod2_beads.append((hit - normal * (rr * 0.25), 6, 3, rr, EYE) if not segs else
+                          (hit - normal * (rr * 0.25), segs[2][0], segs[2][1], rr, EYE, normal))
     for level, body, beads in ((1, lod1_body, lod1_beads), (2, lod2_body, lod2_beads)):
         o, region_of = _with_beads(body, f"SKM_{species}_LOD{level}", beads, "LOD", (frames, level) if frames else None)
         o.parent = arm
@@ -1556,6 +1750,563 @@ def add_tail_tube(species, lods=(0,)):
     return report
 
 
+# ---------------------------------------------------------------- birds (T52)
+
+def _part_elements(spec, parts=None):
+    """Blockout ellipsoids (mirrored ones included) as (part, center, half, inverse rotation, side)."""
+    out = []
+    for el in spec["blockout"]:
+        if parts is not None and el.get("part") not in parts:
+            continue
+        for mirrored in ((False, True) if el["mirror"] else (False,)):
+            c = Vector(el["center"]); rot = el["rot"]; axis = el.get("axis")
+            if mirrored:
+                c.x = -c.x; rot = (rot[0], -rot[1], -rot[2]); axis = (-axis[0], axis[1], axis[2]) if axis else None
+            q = Vector(axis).to_track_quat('Y', 'Z') if axis else Euler([math.radians(a) for a in rot], 'XYZ').to_quaternion()
+            out.append((el.get("part"), c, Vector(el["half"]), q.inverted(), "L" if c.x > 0 else "R"))
+    return out
+
+
+def _part_s(co, e):
+    d = e[3] @ (co - e[1]); h = e[2]
+    return math.sqrt((d.x / h.x) ** 2 + (d.y / h.y) ** 2 + (d.z / h.z) ** 2)
+
+
+def apply_part_weights(species):
+    """After skin_lod0: bones driven by blockout parts (spec part_weights {part: (bone pattern with {} for L/R, s0, s1,
+    outside)}): membership 1 inside the part ellipsoid's normalized distance s0, 0 beyond s1; with outside > 0, only where
+    the surface stands out of the trunk ellipsoids (a wing's outer face, not the body under it). part_strip bone prefixes
+    leave the heat weights first; root_band (z0, z1) keeps the lowest body on Root. Max 3 influences."""
+    spec = SPECS[species]; rules = spec["part_weights"]
+    obj = bpy.data.objects[f"SKM_{species}_LOD0"]
+    me = obj.data; vg = obj.vertex_groups
+    regions = me.color_attributes["PW_Regions"].data
+    elems = _part_elements(spec)
+    trunk = [e for e in elems if e[0] == "trunk"]
+    strip = tuple(spec.get("part_strip", ()))
+    rb = spec.get("root_band")
+    stats = {"part": 0, "root": 0}
+    for v in me.vertices:
+        co = v.co
+        r, g, b, a = regions[v.index].color
+        if a > 0.5 or (b > 0.5 and co.z > 0.1):
+            continue
+        w = {k: x for k, x in _get(vg, v).items() if not k.startswith(strip)} or {spec["trunk_bone"]: 1.0}
+        if spec.get("head_z"):
+            w = surface_head_weights(species, co, spec["trunk_bone"])
+        if rb:
+            member, _ = tail_weights(species, co)
+            kr = (1.0 - smooth(rb[0], rb[1], co.z)) * (1.0 - member)
+            if kr > 0.0:
+                w = _blend(w, {"Root": 1.0}, kr); stats["root"] += 1
+        parts = {}
+        for e in elems:
+            rule = rules.get(e[0])
+            if not rule:
+                continue
+            m = 1.0 - smooth(rule[1], rule[2], _part_s(co, e))
+            if m > 0.0 and rule[3] > 0.0 and trunk:
+                m *= smooth(1.0, rule[3], min(_part_s(co, t) for t in trunk))
+            if m > 0.0:
+                bone = rule[0].format(e[4])
+                parts[bone] = max(parts.get(bone, 0.0), m)
+        if spec.get("surface"):
+            for bone, m in surface_parts(species, co, v.normal).items():
+                parts[bone] = max(parts.get(bone, 0.0), m)
+        if parts:
+            M = max(parts.values()); tot = sum(parts.values())
+            # T52 polish: a surface part keeps the head's share, so a head turn moves the plate edge with the skin
+            # around it instead of shearing it.
+            keep = w.get("Head", 0.0) if spec.get("surface") else 0.0
+            w = _blend({k: x for k, x in w.items() if k != "Head"} if keep else w, {k: x / tot for k, x in parts.items()}, M)
+            if keep:
+                w = {k: x * (1.0 - keep) for k, x in w.items()}; w["Head"] = w.get("Head", 0.0) + keep
+            stats["part"] += 1
+        _put(vg, v, dict(sorted(w.items(), key=lambda kv: -kv[1])[:3]))
+    counts = [len([g for g in v.groups if g.weight > 0]) for v in me.vertices]
+    stats["max_influences"] = max(counts); stats["unweighted"] = counts.count(0)
+    return stats
+
+
+def carve_grooves(species, obj):
+    """A soft crease of a few millimetres where a part meets the trunk (spec grooves: parts, depth, width (how close the
+    two blended volumes are, how far from both), zmax): the surface goes in along its normal. Beads are left alone."""
+    spec = SPECS[species]; g = spec["grooves"]
+    parts = _part_elements(spec, g["parts"]); trunk = _part_elements(spec, ("trunk",))
+    me = obj.data
+    regions = me.color_attributes["PW_Regions"].data
+    moves = []
+    for v in me.vertices:
+        r, gg, b, a = regions[v.index].color
+        if a > 0.5 or b > 0.5 or v.co.z > g["zmax"]:
+            continue
+        sw = min(_part_s(v.co, e) for e in parts); st = min(_part_s(v.co, e) for e in trunk)
+        k = math.exp(-((sw - st) / g["width"][0]) ** 2) * (1.0 - smooth(g["width"][1], g["width"][1] + 0.2, max(sw, st)))
+        k *= 1.0 - smooth(g["zmax"] - 0.03, g["zmax"], v.co.z)
+        if k > 0.02:
+            moves.append((v.index, v.co - v.normal * (g["depth"] * k)))
+    for i, co in moves:
+        me.vertices[i].co = co
+    me.update()
+    return len(moves)
+
+
+def shape_beak(obj, center):
+    """The nose bead becomes a beak: a little drop pointing down and a touch forward (rigid on Head like every bead)."""
+    me = obj.data
+    regions = me.color_attributes["PW_Regions"].data
+    c = Vector(center); count = 0
+    for v in me.vertices:
+        r, g, b, a = regions[v.index].color
+        if b > 0.5 and a < 0.5 and (v.co - c).length < 0.03:
+            d = v.co - c
+            down = max(0.0, -d.z)
+            v.co = c + Vector((d.x * 0.92, d.y - 0.45 * down, d.z * (1.55 if d.z < 0 else 0.9)))
+            count += 1
+    me.update()
+    return count
+
+
+def cut_mask_shapes(species, obj, level):
+    """Cuts the species' mask shapes (pw_masks.mask_shapes: stars, discs) into obj's surface: a fan inside the first
+    outline, rings between the outlines (each ring is where a vertex mask switches, so the edge is crisp), bridged to the
+    hole left by the body faces under the shape (eye and nose beads are never cut). Points are snapped along the shape
+    normal, so a vertex's shape coordinates match the mask rule's. New vertices get the body region. Returns (triangles
+    added, shapes skipped: the faces there do not make a simple ring)."""
+    import pw_masks
+    before = tris(obj)
+    bm = bmesh.new(); bm.from_mesh(obj.data)
+    col = bm.verts.layers.color.get("PW_Regions") or bm.verts.layers.float_color.get("PW_Regions")
+
+    def bead(f):
+        return any(v[col][3] > 0.5 or (v[col][2] > 0.5 and v.co.z > 0.1) for v in f.verts)
+    bm.verts.index_update()
+    bvh = BVHTree.FromPolygons([v.co.copy() for v in bm.verts], [[v.index for v in f.verts] for f in bm.faces if not bead(f)])
+    skipped = 0
+    shapes = pw_masks.mask_shapes(species, level)
+    # T52 polish: two shapes close together (the facial discs) are split by the plane between them first, so each hole
+    # stays on its own side and the two cuts never share a face.
+    walls = {}
+    for i, (a, oa) in enumerate(shapes):
+        for j, (b, ob) in enumerate(shapes[:i]):
+            ca, cb = Vector(a[0]), Vector(b[0])
+            ra, rb = max(p.length for p in oa[-1]), max(p.length for p in ob[-1])
+            if (ca - cb).length < ra + rb + 0.012:
+                mid = (ca + cb) / 2; w = (ca - cb).normalized()
+                near = [f for f in bm.faces if not bead(f) and (f.calc_center_median() - mid).length < ra + rb]
+                geom = list({x for f in near for x in list(f.verts) + list(f.edges)}) + near
+                bmesh.ops.bisect_plane(bm, geom=geom, dist=1e-5, plane_co=mid, plane_no=w)
+                walls.setdefault(i, []).append((mid, w)); walls.setdefault(j, []).append((mid, -w))
+    for index, (item, outlines) in enumerate(shapes):
+        c, n, t1, t2 = pw_masks.shape_frame(item[0], item[1])
+        wall = walls.get(index, [])
+
+        def snap(p2):
+            p = c + t1 * p2.x + t2 * p2.y
+            hit = bvh.ray_cast(p + n * 0.03, -n)[0]
+            return hit if hit is not None else bvh.find_nearest(p)[0]
+
+        def ang(co):
+            return math.atan2((co - c).dot(t2), (co - c).dot(t1)) % (2 * math.pi)
+        outer = max(p.length for p in outlines[-1])
+        loop = None
+
+        def plane_r(co):
+            d = co - c
+            return (d - n * d.dot(n)).length
+        # T52 polish: irregular (collapsed) faces may pinch the selection; try finer reaches and a selection by face centre,
+        # and keep only a hole that encloses the outline.
+        for reach, by_centre in [(outer + 0.004 * k, m) for k in (1, 2, 3, 4.5, 6, 8, 10) for m in (False, True)]:
+            if by_centre:
+                sel = [f for f in bm.faces if not bead(f) and plane_r(f.calc_center_median()) < reach
+                       and (f.calc_center_median() - c).dot(n) > -0.02]
+            else:
+                sel = [f for f in bm.faces if not bead(f) and any((v.co - c).length < reach and (v.co - c).dot(n) > -0.02 for v in f.verts)]
+            if wall:
+                sel = [f for f in sel if all((f.calc_center_median() - m).dot(w) > 0.0 for m, w in wall)]
+            selset = set(sel)
+            boundary = [v for v in {v for f in sel for v in f.verts} if any(f not in selset for f in v.link_faces)]
+            bset = set(boundary)
+            nxt = {}
+            for f in sel:
+                for e in f.edges:
+                    a, b = e.verts
+                    if a in bset and b in bset and sum(1 for x in e.link_faces if x in selset) == 1:
+                        nxt.setdefault(a, []).append(b); nxt.setdefault(b, []).append(a)
+            ok = bool(nxt) and all(len(x) == 2 for x in nxt.values()) and len(nxt) == len(boundary)
+            if ok:
+                loop = [boundary[0]]; prev = None
+                while True:
+                    cand = [x for x in nxt[loop[-1]] if x is not prev]
+                    if cand[0] is loop[0]:
+                        break
+                    prev = loop[-1]; loop.append(cand[0])
+                ok = len(loop) == len(boundary)
+            if ok:
+                steps = [((ang(loop[(i + 1) % len(loop)].co) - ang(loop[i].co) + math.pi) % (2 * math.pi)) - math.pi
+                         for i in range(len(loop))]
+                if all(s < 0 for s in steps):
+                    loop.reverse()
+                elif not all(s > 0 for s in steps):
+                    ok = False
+            if ok and min(plane_r(v.co) for v in loop) > outer - 0.004:
+                break
+            loop = None
+        if loop is None:
+            skipped += 1
+            continue
+        # A hole edge vertex close to the outline moves 4 mm clear of it (no sliver face in the bridge), back on the surface.
+        for v in loop:
+            d = v.co - c; dp = d - n * d.dot(n)
+            if dp.length < outer + 0.004:
+                p = c + dp * ((outer + 0.004) / max(dp.length, 1e-6)) + n * d.dot(n)
+                v.co = bvh.ray_cast(p + n * 0.03, -n)[0] or p
+        bmesh.ops.delete(bm, geom=sel, context='FACES')
+        C = bm.verts.new(snap(Vector((0.0, 0.0))))
+        rings = [[bm.verts.new(snap(p)) for p in ol] for ol in outlines]
+        for v in [C] + [v for r in rings for v in r]:
+            v[col] = (0.0, 0.0, 0.0, 0.0)
+        new = []
+        m = len(rings[0])
+        for i in range(m):
+            new.append(bm.faces.new((C, rings[0][i], rings[0][(i + 1) % m])))
+            for a, b in zip(rings[:-1], rings[1:]):
+                new.append(bm.faces.new((a[i], b[i], b[(i + 1) % m], a[(i + 1) % m])))
+
+        def ordered(vs):
+            i0 = min(range(len(vs)), key=lambda i: ang(vs[i].co))
+            vs = vs[i0:] + vs[:i0]
+            a = [ang(v.co) for v in vs]
+            for i in range(1, len(a)):
+                while a[i] < a[i - 1]:
+                    a[i] += 2 * math.pi
+            return vs + [vs[0]], a + [a[0] + 2 * math.pi]
+        A, aa = ordered(rings[-1]); B, bb = ordered(loop)
+        i = j = 0
+        bridge = []
+        while i < len(A) - 1 or j < len(B) - 1:
+            if j == len(B) - 1 or (i < len(A) - 1 and aa[i + 1] < bb[j + 1]):
+                bridge.append(bm.faces.new((A[i], A[i + 1], B[j]))); i += 1
+            else:
+                bridge.append(bm.faces.new((A[i], B[j + 1], B[j]))); j += 1
+        for f in new + bridge:
+            f.normal_update()
+            if f.normal.dot(n) < 0:
+                f.normal_flip()
+        # T52 polish: the bridge diagonals (outline to hole) turn where that gives rounder triangles, so no long sliver
+        # folds when the skin bends.
+        ring = set(A); bset = set(bridge)
+        diag = [e for f in bridge for e in f.edges if (e.verts[0] in ring) != (e.verts[1] in ring)
+                and all(x in bset for x in e.link_faces) and len(e.link_faces) == 2]
+        res = bmesh.ops.beautify_fill(bm, faces=bridge, edges=list(set(diag)), use_restrict_tag=False, method='ANGLE')
+        for f in new + [f for f in bridge if f.is_valid] + [f for f in res["geom"] if isinstance(f, bmesh.types.BMFace)]:
+            f.normal_update()
+            if f.normal.dot(n) < 0:
+                f.normal_flip()
+            f.smooth = True
+    bm.normal_update()
+    bm.to_mesh(obj.data); bm.free()
+    obj.data.update()
+    return tris(obj) - before, skipped
+
+
+def copy_weights_to_unweighted(obj, src):
+    """Vertices with no group (cut after the weight transfer) take the weights of the nearest src vertex at rest."""
+    kd = KDTree(len(src.data.vertices))
+    for v in src.data.vertices:
+        kd.insert(v.co, v.index)
+    kd.balance()
+    sg = src.vertex_groups; tg = obj.vertex_groups
+    count = 0
+    for v in obj.data.vertices:
+        if len(v.groups):
+            continue
+        _, i, _ = kd.find(v.co)
+        for g in src.data.vertices[i].groups:
+            name = sg[g.group].name
+            (tg.get(name) or tg.new(name=name)).add([v.index], g.weight, 'REPLACE')
+        count += 1
+    return count
+
+
+# ---------------------------------------------------------------- bird surface (T52 polish)
+# A species with spec["surface"] skips the metaballs: its body is one analytic egg, sculpted by offsets along the normal,
+# so it is smooth by construction (no seam where blended volumes meet). Numpy for the dense mesh, floats for one point.
+
+def _np_smooth(e0, e1, x):
+    import numpy as np
+    t = np.clip((np.asarray(x, dtype=float) - e0) / (e1 - e0), 0.0, 1.0)
+    return t * t * (3 - 2 * t)
+
+
+def egg_value(E, P):
+    """Superquadric egg of spec surface "egg" at points P (n, 3): below 1 inside, 1 on the surface."""
+    import numpy as np
+    x, y, z = P[:, 0], P[:, 1], P[:, 2]
+    dz = z - E["zc"]
+    up = dz >= 0
+    c = np.where(up, E["top"] - E["zc"], E["zc"] - E["bottom"])
+    q = np.where(up, E["q_top"], E["q_bottom"])
+    bf = E["b_belly"] + (E["b_face"] - E["b_belly"]) * _np_smooth(E["face_z"][0], E["face_z"][1], z)
+    b = np.where(y < 0, bf, E["b_back"])
+    h = (np.abs(x / E["a"]) ** E["p"] + np.abs(y / b) ** E["p"]) ** (q / E["p"])
+    return h + np.abs(dz / c) ** q
+
+
+def wing_coords(W, y, z):
+    """Side view wing coordinates (s, t): s = 1 on the wing outline (an egg outline, widest at tc), t from the top (0)
+    to the tip (1). Floats or numpy arrays."""
+    import numpy as np
+    (ty, tz), (py, pz) = W["top"], W["tip"]
+    L = math.hypot(py - ty, pz - tz); ay, az = (py - ty) / L, (pz - tz) / L
+    dy = np.asarray(y, dtype=float) - ty; dz = np.asarray(z, dtype=float) - tz
+    t = (dy * ay + dz * az) / L; v = dy * az - dz * ay
+    span = np.where(t < W["tc"], W["tc"], 1.0 - W["tc"])
+    return np.sqrt(((t - W["tc"]) / span) ** 2 + (v / W["half"]) ** 2), t
+
+
+def tail_coords(T, x, z):
+    """Back view tail fan (s, k): s = 1 on its rounded square outline, k its thickness share (thin top, full lower edge)."""
+    import numpy as np
+    (cx, cz), (hx, hz) = T["center"], T["half"]
+    x = np.asarray(x, dtype=float); z = np.asarray(z, dtype=float)
+    s = (((x - cx) / hx) ** 4 + ((z - cz) / hz) ** 4) ** 0.25
+    return s, T["thin_top"] + (1 - T["thin_top"]) * _np_smooth(cz + hz, cz - hz, z)
+
+
+def toe_shapes(species, heel=True):
+    """(centre, half sizes, yaw in radians) of the toe ellipsoids of both feet (spec surface "toes"), heel pads last."""
+    T = SPECS[species]["surface"]["toes"]; toes = []; heels = []
+    for sx in (1, -1):
+        piv = Vector(T["pivot"]); piv.x *= sx
+        for yaw in T["yaws"]:
+            a = math.radians(yaw * sx)
+            toes.append((piv + Vector((math.sin(a), -math.cos(a), 0.0)) * T["reach"], T["half"], a))
+        if T.get("heel"):
+            c, h = T["heel"]
+            heels.append((Vector((c[0] * sx, c[1], c[2])), h, 0.0))
+    return toes + (heels if heel else [])
+
+
+def surface_mesh(species):
+    """The dense analytic body of spec["surface"] (about 85k triangles): the egg (bisection along rays from its centre),
+    the facial disc profile around the pw_masks disc frames, wing and tail plates, then the toes by an exact union."""
+    import numpy as np
+    import pw_masks
+    S = SPECS[species]["surface"]; E = S["egg"]
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=S.get("subdiv", 7), radius=1.0)
+    D = np.array([v.co[:] for v in bm.verts]); D /= np.linalg.norm(D, axis=1)[:, None]
+    C = np.array((0.0, 0.0, E["zc"]))
+    lo = np.full(len(D), 0.01); hi = np.full(len(D), 0.6)
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        inside = egg_value(E, C + D * mid[:, None]) < 1.0
+        lo = np.where(inside, mid, lo); hi = np.where(inside, hi, mid)
+    P = C + D * ((lo + hi) / 2)[:, None]
+    for v, p in zip(bm.verts, P):
+        v.co = p
+    bm.normal_update()
+    N = np.array([v.normal[:] for v in bm.verts])
+    off = np.zeros(len(P))
+    prof = np.array(S["disc_profile"]); best = np.full(len(P), 9.0)
+    for c, n, _ in pw_masks.RULES[species]["discs"]["items"]:
+        c = np.array(c); n = np.array(n) / np.linalg.norm(n)
+        v = P - c; dn = v @ n
+        best = np.minimum(best, np.where(dn > -0.03, np.linalg.norm(v - dn[:, None] * n, axis=1), 9.0))
+    off += np.interp(best, prof[:, 0], prof[:, 1], right=0.0)
+    W = S["wing"]
+    s, t = wing_coords(W, P[:, 1], P[:, 2])
+    thick = W["thick"] * (W["thin_top"] + (1 - W["thin_top"]) * _np_smooth(0.0, 0.55, t))
+    off += (thick * (1 - _np_smooth(W["edge"][0], W["edge"][1], s))
+            - W["crease"] * np.exp(-((s - 1.06) / 0.07) ** 2)) * _np_smooth(0.30, 0.60, np.abs(N[:, 0]))
+    T = S["tail"]
+    s, k = tail_coords(T, P[:, 0], P[:, 2])
+    off += T["thick"] * k * (1 - _np_smooth(T["edge"][0], T["edge"][1], s)) * _np_smooth(0.2, 0.5, N[:, 1])
+    # Feathered legs: the underside swells softly down over each foot, so the toes come out of the belly.
+    pad = S["toes"].get("pad")
+    if pad:
+        (px, py), h, (sx, sy) = pad
+        for side in (1, -1):
+            off += h * np.exp(-((P[:, 0] - side * px) / sx) ** 2 - ((P[:, 1] - py) / sy) ** 2) * _np_smooth(0.2, 0.6, -N[:, 2])
+    for v, p in zip(bm.verts, P + N * off[:, None]):
+        v.co = p
+    for c, h, yaw in toe_shapes(species):
+        tb = bmesh.new()
+        bmesh.ops.create_uvsphere(tb, u_segments=24, v_segments=12, radius=1.0)
+        bmesh.ops.transform(tb, verts=tb.verts, matrix=Matrix.Translation(c) @ Matrix.Rotation(yaw, 4, 'Z')
+                            @ Matrix.Diagonal((h[0], h[1], h[2], 1.0)))
+        tmp = bpy.data.meshes.new("WORK_tmp"); tb.to_mesh(tmp); tb.free()
+        bm.from_mesh(tmp); bpy.data.meshes.remove(tmp)
+    me = bpy.data.meshes.new(f"WORK_{species}_Shells"); bm.to_mesh(me); bm.free()
+    o = bpy.data.objects.new(me.name, me); bpy.context.scene.collection.objects.link(o)
+    union = o.modifiers.new("Union", 'BOOLEAN'); union.operation = 'UNION'; union.solver = 'EXACT'; union.use_self = True
+    empty = bpy.data.collections.new("WORK_tmp_union"); union.operand_type = 'COLLECTION'; union.collection = empty
+    out = bpy.data.meshes.new_from_object(o.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    bpy.data.objects.remove(o, do_unlink=True); bpy.data.meshes.remove(me); bpy.data.collections.remove(empty)
+    return out
+
+
+def _beautify_gentle(obj, max_angle=12.0, rounds=3):
+    """After a collapse: edges between two nearly coplanar faces turn where that gives rounder triangles (no new point),
+    so the gentle body loses its long thin faces; creases (rims, wing edges, toes) are left alone."""
+    bm = bmesh.new(); bm.from_mesh(obj.data)
+    for _ in range(rounds):
+        edges = [e for e in bm.edges if len(e.link_faces) == 2 and e.calc_face_angle(9.0) < math.radians(max_angle)]
+        bmesh.ops.beautify_fill(bm, faces=list({f for e in edges for f in e.link_faces}), edges=edges, method='ANGLE')
+    bm.normal_update(); bm.to_mesh(obj.data); bm.free()
+    for p in obj.data.polygons:
+        p.use_smooth = True
+
+
+def surface_collapse_weights(species, me):
+    """Collapse weights for the dense surface: the gentle body (spec surface "gentle", a little under 1) keeps more of its
+    points than the sculpted features (discs, wing edges, toes and pads at 1), so long thin faces do not facet the
+    silhouette (the cut rebuilds the discs anyway)."""
+    import numpy as np
+    import pw_masks
+    S = SPECS[species]["surface"]
+    gentle = S.get("gentle")
+    if not gentle:
+        return None
+    P = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", P); P = P.reshape(-1, 3)
+    feat = P[:, 2] < 0.03
+    for c, n, _ in pw_masks.RULES[species]["discs"]["items"]:
+        feat |= np.linalg.norm(P - np.array(c), axis=1) < 0.08
+    s, _ = wing_coords(S["wing"], P[:, 1], P[:, 2])
+    feat |= (s > 0.65) & (s < 1.15) & (np.abs(P[:, 0]) > 0.11)
+    return np.where(feat, 1.0, gentle).tolist()
+
+
+def surface_head_weights(species, co, trunk):
+    """T52 polish, a head merged into the body: Head, Neck and trunk shares from the height (spec head_z: the band where
+    the head hands over to the body, at the front and on the sides and back, and the Neck share at its middle), the
+    facial discs rigid on Head. A head turn twists the upper body over the whole band instead of folding a narrow seam."""
+    import pw_masks
+    H = SPECS[species]["head_z"]
+    # Front share by the angle around the body (a turn twists along it, so the band shifts over a wide arc).
+    front = smooth(0.20, 0.90, -co.y / max(math.hypot(co.x, co.y), 1e-6))
+    z0 = H["back"][0] + (H["front"][0] - H["back"][0]) * front
+    z1 = H["back"][1] + (H["front"][1] - H["back"][1]) * front
+    h = smooth(z0, z1, co.z)
+    D = pw_masks.RULES[species].get("discs")
+    for c, n, _ in (D["items"] if D else ()):
+        d = co - Vector(c); n = Vector(n).normalized(); dn = d.dot(n)
+        if dn > -0.03:
+            r = (d - n * dn).length
+            h = max(h, 1.0 - smooth(D["radii"][1] + D["edge"] + 0.004, D["radii"][1] + D["edge"] + 0.020, r))
+    neck = min(1.0 - h, H["neck"] * (1.0 - abs(2.0 * h - 1.0)))
+    return {k: x for k, x in (("Head", h), ("Neck", neck), (trunk, 1.0 - h - neck)) if x > 1e-4}
+
+
+def surface_parts(species, co, n):
+    """Bone claims of the surface wings and tail at a rest point (co, normal), {bone: 0..1} with the strongest claim the
+    membership (apply_part_weights): Wing_Upper holds the plate, Wing_Lower its tip half, Tail_01 the fan."""
+    S = SPECS[species]["surface"]; out = {}
+    W = S["wing"]
+    s, t = (float(x) for x in wing_coords(W, co.y, co.z))
+    # The claim fades in from the shoulder (top_fade along t): the plate bends out from its hinge.
+    m = (1.0 - smooth(W["bone_edge"][0], W["bone_edge"][1], s)) * smooth(0.30, 0.60, abs(n.x)) * smooth(*W["top_fade"], t)
+    if m > 0.0:
+        side = "L" if co.x > 0 else "R"
+        lo = smooth(W["lower_t"][0], W["lower_t"][1], t); k = max(lo, 1.0 - lo)
+        out[f"Wing_{side}_Upper"] = m * (1.0 - lo) / k
+        out[f"Wing_{side}_Lower"] = m * lo / k
+    T = S["tail"]
+    s, _ = tail_coords(T, co.x, co.z)
+    m = (1.0 - smooth(T["bone_edge"][0], T["bone_edge"][1], float(s))) * smooth(0.2, 0.5, n.y)
+    if m > 0.0:
+        out["Tail_01"] = m
+    return out
+
+
+def snap_to_surface(species, obj):
+    """Body vertices (beads apart) go back onto the analytic surface along their normal, so the rings cut_mask_shapes
+    snapped onto the decimated faces sit exactly on the sculpted disc rims. Never below the ground. Then every body
+    vertex takes the surface's own normal (custom normals, exported): long thin faces around the cut rings shade as
+    smoothly as the surface itself."""
+    hi = _hi_mesh(species)
+    hb = bmesh.new(); hb.from_mesh(hi); hb.normal_update(); hb.faces.ensure_lookup_table(); bvh = BVHTree.FromBMesh(hb)
+    bpy.data.meshes.remove(hi)
+    me = obj.data; regions = me.color_attributes["PW_Regions"].data; moved = 0
+    for v in me.vertices:
+        r, g, b, a = regions[v.index].color
+        if a > 0.5 or (b > 0.5 and v.co.z > 0.1):
+            continue
+        n = v.normal.copy()
+        hits = [h[0] for h in (bvh.ray_cast(v.co + n * 0.008, -n, 0.016), bvh.ray_cast(v.co - n * 0.008, n, 0.016))
+                if h[0] is not None]
+        p = min(hits, key=lambda q: (q - v.co).length) if hits else bvh.find_nearest(v.co)[0]
+        if p is not None:
+            v.co = p; moved += 1
+        v.co.z = max(0.0, v.co.z)
+    me.update()
+    normals = []
+    for v in me.vertices:
+        r, g, b, a = regions[v.index].color
+        loc, _, i, _ = (None, None, None, None) if a > 0.5 or (b > 0.5 and v.co.z > 0.1) else bvh.find_nearest(v.co)
+        if loc is None:
+            normals.append(v.normal.copy()); continue
+        f = hb.faces[i]
+        w = [1.0 / max((x.co - loc).length, 1e-6) for x in f.verts]
+        normals.append(sum((x.normal * k for x, k in zip(f.verts, w)), Vector()).normalized())
+    me.normals_split_custom_set_from_vertices(normals)
+    hb.free()
+    return moved
+
+
+def build_bird(species, template_path):
+    """T52 Bird recipe, the whole file in one call (headless is fine). Open template_path (a MediumQuadruped member,
+    e.g. BL_Animal_Fawn.blend) first in its own call. Saves SourceArt/Blender/Animals/<species>/BL_Animal_<species>.blend
+    with SK_Bird (pw_rig.build_armature), LOD0-2, four sockets and the masks; then pw_export.export_species_model."""
+    import pw_rig, pw_masks
+    report = {"file": start_from(template_path, species)}
+    for name in ("SK_MediumQuadruped", "SOCK_Ear_L", "SOCK_Ear_R") + tuple(o.name for o in bpy.data.objects if o.name.startswith("WORK_Ref_")):
+        o = bpy.data.objects.get(name)
+        if o is not None:
+            bpy.data.objects.remove(o, do_unlink=True)
+    for a in [a for a in bpy.data.armatures if a.users == 0]:
+        bpy.data.armatures.remove(a)
+    pw_rig.build_armature(SPECS[species]["armature"][3:])
+    report["elements"] = build_blockout(species)
+    report["features"] = place_features(species)
+    report["lod0_body"] = build_lod0(species)
+    lod0 = bpy.data.objects[f"SKM_{species}_LOD0"]
+    nose = bpy.data.objects["WORK_Nose"].location.copy()
+    report["beak"] = shape_beak(lod0, nose)
+    if SPECS[species].get("grooves"):
+        report["grooves"] = carve_grooves(species, lod0)
+    report["cut0"] = cut_mask_shapes(species, lod0, 0)
+    if SPECS[species].get("surface"):
+        report["snap0"] = snap_to_surface(species, lod0)
+    report["skin"] = skin_lod0(species)
+    report["parts"] = apply_part_weights(species)
+    report["lods"] = build_lods(species)
+    lod1 = bpy.data.objects[f"SKM_{species}_LOD1"]; lod2 = bpy.data.objects[f"SKM_{species}_LOD2"]
+    shape_beak(lod1, nose)
+    if SPECS[species].get("grooves"):
+        carve_grooves(species, lod1)
+    report["cut1"] = cut_mask_shapes(species, lod1, 1)
+    if SPECS[species].get("surface"):
+        report["snap1"] = snap_to_surface(species, lod1)
+    report["cut1_weighted"] = copy_weights_to_unweighted(lod1, lod0)
+    for o in (lod1, lod2):   # a collapse can leave a vertex a hair under the ground
+        for v in o.data.vertices:
+            v.co.z = max(0.0, v.co.z)
+    if SPECS[species].get("surface"):
+        report["snap2"] = snap_to_surface(species, lod2)
+    seat = SPECS[species].get("ground_seat")
+    for o in ((lod1, lod2) if seat else ()):   # a collapse that lost the toe soles stands back on the ground
+        for v in o.data.vertices:
+            if v.co.z < seat:
+                v.co.z = 0.0
+    report["sockets"] = place_sockets(species)
+    report["masks"] = pw_masks.apply(species)
+    report["tris"] = {o.name: tris(o) for o in (lod0, lod1, lod2)}
+    bpy.ops.wm.save_mainfile()
+    return report
+
+
 # ---------------------------------------------------------------- sockets
 
 def place_sockets(species):
@@ -1574,9 +2325,16 @@ def place_sockets(species):
         "SOCK_Neck": (Vector((0.0, -0.080, 0.215)), "Neck"),
         "SOCK_Back": (top(0.0, spec.get("back_probe_y", 0.06)), "Spine"),
         "SOCK_TailBase": (Vector((0.0, 0.215, 0.172)), "Tail_01"),
-        "SOCK_Ear_L": (arm.data.bones["Ear_L_01"].head_local.copy(), "Ear_L_01"),
-        "SOCK_Ear_R": (arm.data.bones["Ear_R_01"].head_local.copy(), "Ear_R_01"),
     }
+    for side in ("L", "R"):
+        ear = arm.data.bones.get(f"Ear_{side}_01")
+        if ear is not None:
+            spec_sockets[f"SOCK_Ear_{side}"] = (ear.head_local.copy(), ear.name)
+    # T52: a table family (pw_rig.FAMILIES) gives the parent bones and the socket list (the Bird: four, no ears).
+    import pw_rig
+    family = pw_rig.FAMILIES.get(arm.name[3:])
+    if family is not None:
+        spec_sockets = {k: (co, family[1][k][0]) for k, (co, _) in spec_sockets.items() if k in family[1]}
     # Species whose head, neck or tail sit far from the shared bones move those sockets; the parent bone stays the
     # family's (clips and the asset validator bind by the same hierarchy).
     for name, co in spec.get("sockets", {}).items():

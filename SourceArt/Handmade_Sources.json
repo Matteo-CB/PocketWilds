@@ -36,6 +36,16 @@
       "produces": ["Assets/_Game/Art/Animals/Badger/Models/SKM_Badger.fbx (T51, LOD0-2 and sockets on SK_MediumQuadruped, bones placed by pw_rig.SPECIES_BONES)"]
     },
     {
+      "blend": "SourceArt/Blender/Animals/Owl/BL_Animal_Owl.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animals/Owl/Models/SKM_Owl.fbx (T52, LOD0-2 and four sockets on SK_Bird, pw_species.build_bird from the Fawn file; T52 polish: one analytic egg surface sculpted by pw_species.surface_mesh, facial discs, Constellation stars and belly dots cut into LOD0 and LOD1, normals from the surface)"]
+    },
+    {
+      "blend": "SourceArt/Blender/Rigs/BL_Rig_Bird.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_anim_bird.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animations/Bird/AN_Bird.fbx (T52, 11 clips: Idle_A, Idle_B, Locomotion_Hop, Happy, ReactTouch, Sleep_Enter, Sleep_Loop, Sleep_Exit, Eat_Loop, Social_Nose, Inspect)"]
+    },
+    {
       "blend": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
       "builders": ["SourceArt/Blender/Tools/pw_anim_library.py", "SourceArt/Blender/Tools/pw_anim_ground.py", "SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_export.py"],
       "produces": ["Assets/_Game/Art/Animations/SmallQuadruped/AN_SmallQuadruped.fbx (29 clips, T47 FieldHamsterGreet and FieldHamsterStash, T49 MoleDig, MoleEat, MoleWalk, PeekOut, MoleSleep_Enter, MoleSleep_Loop, MoleSleep_Exit, MoleReact and MoleHappy, T51 RaccoonWash and RedPandaStand, 2026-10-12 ground contact: PLANTED keys solved by pw_anim_ground.py, LowSleep_Enter, LowSleep_Loop and LowSleep_Exit)"]
@@ -44,6 +54,16 @@
       "blend": "SourceArt/Blender/Rigs/BL_Rig_MediumQuadruped.blend",
       "builders": ["SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_anim_medium.py", "SourceArt/Blender/Tools/pw_export.py"],
       "produces": ["Assets/_Game/Art/Animations/MediumQuadruped/AN_MediumQuadruped.fbx (23 clips, T49 PeekOut, T51 FoxCurlSleep_Enter, FoxCurlSleep_Loop, FoxCurlSleep_Exit, BadgerSleep_Enter, BadgerSleep_Loop, BadgerSleep_Exit, BadgerDig, LowEat_Loop, LowInspect and LowPeekOut)"]
+    },
+    {
+      "blend": "SourceArt/Blender/Rigs/BL_Rig_HeavyQuadruped.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_anim_heavy.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animations/HeavyQuadruped/AN_HeavyQuadruped.fbx (T52, 12 clips: Idle_A, Idle_B, Locomotion_Walk, Happy, ReactTouch, Sleep_Enter, Sleep_Loop, Sleep_Exit, Eat_Loop, Social_Nose, Inspect, PeekOut)"]
+    },
+    {
+      "blend": "SourceArt/Blender/Animals/BoarPiglet/BL_Animal_BoarPiglet.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animals/BoarPiglet/Models/SKM_BoarPiglet.fbx (T52, LOD0-2 and sockets on SK_HeavyQuadruped, started from the Badger file with its armature swapped for pw_rig.build_armature(\"HeavyQuadruped\"))"]
     },
     {
       "blend": "SourceArt/Blender/Eggs/BL_Egg_Family.blend",

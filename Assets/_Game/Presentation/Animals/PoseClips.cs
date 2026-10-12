@@ -34,7 +34,7 @@ namespace PocketWilds.Presentation
         /// <summary>Every pose with a clip, append only. Floaters (no ground to reach) are never listed.</summary>
         public static readonly Entry[] All =
         {
-            new Entry(PeekOut, "PeekOut", 1.8f, RigFamily.SmallQuadruped, RigFamily.MediumQuadruped),
+            new Entry(PeekOut, "PeekOut", 1.8f, RigFamily.SmallQuadruped, RigFamily.MediumQuadruped, RigFamily.HeavyQuadruped),
         };
 
         /// <summary>The family clip a pose plays (« AN_SmallQuadruped_PeekOut »).</summary>

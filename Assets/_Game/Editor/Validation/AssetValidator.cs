@@ -57,6 +57,9 @@ namespace PocketWilds.Editor.Validation
             ["Badger"] = new[] { 3400, 1300, 600 },
             ["Raccoon"] = new[] { 3000, 1200, 500 },
             ["RedPanda"] = new[] { 3400, 1400, 600 },
+            // T52 the first Bird and HeavyQuadruped species (A-SP-010, A-SP-012): the top of each doc range.
+            ["Owl"] = new[] { 2800, 1100, 500 },
+            ["BoarPiglet"] = new[] { 3500, 1400, 650 },
         };
 
         public static readonly int[] DefaultSmallAnimalBudget = { 3000, 1200, 500 };

@@ -23,6 +23,8 @@ namespace PocketWilds.Tests.EditMode
     /// Raccoon and Red Panda on the SmallQuadruped skeleton with the Rabbit's bind poses, their prefab scaled to their size.
     /// Rig reuse and no code exception: same bones, family controller and material, one species clip each swapped through data,
     /// six roster colors, mastery 10/20/30, secret and visitor colors, texts, voices, the Forest eggs, Codex thumbnails.
+    /// T52 the Owl (A-SP-010, SK_Bird) and the Boar Piglet (A-SP-012, SK_HeavyQuadruped): each the first species of its own
+    /// family, playing the family controller as is (its minimal library is its behavior), modelled at the doc's size.
     /// </summary>
     public class ForestSpeciesTests
     {
@@ -37,6 +39,10 @@ namespace PocketWilds.Tests.EditMode
             public string[] Secrets;
             public string Visitor;
             public float Pitch;
+            /// <summary>Sockets the species hides (the owl has no ears); every other socket is supported (doc 03).</summary>
+            public AccessorySocket[] Hidden = new AccessorySocket[0];
+            /// <summary>T52 doc 03 « silhouette mesurée » (length x height, meters) of a species modelled at its size, or 0.</summary>
+            public (float Length, float Height) Size;
             public override string ToString() => Name;
         }
 
@@ -78,6 +84,25 @@ namespace PocketWilds.Tests.EditMode
                 SpeciesClip = ("Idle_B", "RedPandaStand"),
                 Mastery = new[] { "rust", "blackberry", "goldenlantern" }, Secrets = new[] { "cherry" }, Pitch = 1.12f,
             };
+            // T52: no species clip, the family library is the species' own (SpeciesClip left empty).
+            yield return new Case
+            {
+                Name = "Owl", Family = AnimalPipeline.BirdFamily,
+                Variants = new[] { ("brown", RarityTier.Common), ("tawny", RarityTier.Common), ("grey", RarityTier.Uncommon),
+                    ("cream", RarityTier.Uncommon), ("dark", RarityTier.Rare), ("constellation", RarityTier.Epic) },
+                Lods = new[] { (2000, 2800), (800, 1100), (300, 500) },
+                Mastery = new[] { "cocoa", "periwinkle", "honeywings" }, Secrets = new[] { "fullmoon" }, Visitor = "russet_visitor", Pitch = 0.82f,
+                Hidden = new[] { AccessorySocket.EarL, AccessorySocket.EarR }, Size = (0.36f, 0.44f),
+            };
+            yield return new Case
+            {
+                Name = "BoarPiglet", Family = AnimalPipeline.HeavyFamily,
+                Variants = new[] { ("brown", RarityTier.Common), ("chestnutstripe", RarityTier.Common), ("grey", RarityTier.Uncommon),
+                    ("black", RarityTier.Uncommon), ("cream", RarityTier.Rare), ("acorn", RarityTier.Epic) },
+                Lods = new[] { (2500, 3500), (1000, 1400), (400, 650) },
+                Mastery = new[] { "walnut", "powderpink", "goldentruffle" }, Secrets = new[] { "mintstripe" }, Pitch = 0.95f,
+                Size = (0.66f, 0.42f),
+            };
         }
 
         private static readonly ContentId Forest = ContentId.FromSource("biome.forest");
@@ -100,6 +125,7 @@ namespace PocketWilds.Tests.EditMode
         }
 
         private static string Lower(Case c) => c.Name.ToLowerInvariant();
+        private static RigFamily Rig(Case c) => (RigFamily)System.Enum.Parse(typeof(RigFamily), c.Family);
         private static ContentId SpeciesId(Case c) => ContentId.FromSource("species." + Lower(c));
         private static ContentId VariantId(Case c, string variant) => ContentId.FromSource($"variant.{Lower(c)}.{variant}");
 
@@ -110,12 +136,12 @@ namespace PocketWilds.Tests.EditMode
             var id = SpeciesId(c);
             Assert.IsTrue(registry.Species.TryGet(id, out var species));
             Assert.AreEqual("PF_Animal_" + c.Name, species.VisualKey);
-            Assert.AreEqual(c.Family == AnimalPipeline.MediumFamily ? RigFamily.MediumQuadruped : RigFamily.SmallQuadruped, species.RigFamily);
+            Assert.AreEqual(Rig(c), species.RigFamily, "the family name is the RigFamily name");
             Assert.AreEqual(Forest, species.Biome);
             Assert.IsFalse(species.IsSecret);
             foreach (var socket in new[] { AccessorySocket.HeadTop, AccessorySocket.Neck, AccessorySocket.Back, AccessorySocket.TailBase,
                          AccessorySocket.EarL, AccessorySocket.EarR })
-                Assert.IsFalse(species.HidesSocket(socket), socket + ": every socket is supported (doc 03).");
+                Assert.AreEqual(c.Hidden.Contains(socket), species.HidesSocket(socket), socket + ": doc 03 « Sockets supportés ».");
             foreach (var (name, rarity) in c.Variants)
             {
                 Assert.IsTrue(registry.Variants.TryGet(VariantId(c, name), out var variant), name);
@@ -180,8 +206,11 @@ namespace PocketWilds.Tests.EditMode
         {
             string skeleton = "SK_" + c.Family;
             bool small = c.Family == AnimalPipeline.SmallFamily;
+            // The family's reference skeleton: the Rabbit for the small family, the family library (AN_<Family>.fbx, the
+            // armature only) for every other family.
             string referencePath = small ? AnimalPipeline.ModelPath("Rabbit") : AnimalPipeline.ClipsPath(c.Family);
             var reference = (ModelImporter)AssetImporter.GetAtPath(referencePath);
+            Assert.IsNotNull(reference, referencePath);
             var model = (ModelImporter)AssetImporter.GetAtPath(AnimalPipeline.ModelPath(c.Name));
             Assert.IsNotNull(model, AnimalPipeline.ModelPath(c.Name));
             var referenceBones = reference.transformPaths.Where(p => p.Contains(skeleton) && !p.Contains("/SOCK_")).OrderBy(p => p).ToArray();
@@ -230,21 +259,33 @@ namespace PocketWilds.Tests.EditMode
             var view = AssetDatabase.LoadAssetAtPath<AnimalView>(AnimalPipeline.PrefabPath(c.Name));
             Assert.IsNotNull(view);
             var family = AssetDatabase.LoadAssetAtPath<AnimatorController>(AnimalPipeline.ControllerPath(c.Family));
-            var aoc = view.Animator.runtimeAnimatorController as AnimatorOverrideController;
-            Assert.IsNotNull(aoc, "The species clip swaps a family clip through an override.");
-            Assert.AreSame(family, aoc.runtimeAnimatorController);
-            var familyClips = AssetDatabase.LoadAllAssetsAtPath(AnimalPipeline.ClipsPath(c.Family)).OfType<AnimationClip>().ToList();
-            var pairs = new List<KeyValuePair<AnimationClip, AnimationClip>>();
-            aoc.GetOverrides(pairs);
-            foreach (var pair in pairs.Where(p => p.Value != null))
-                Assert.Contains(pair.Value, familyClips, pair.Value.name + ": family clips only.");
-            Assert.AreEqual($"AN_{c.Family}_{c.SpeciesClip.Clip}", aoc[$"AN_{c.Family}_{c.SpeciesClip.State}"].name);
+            Assert.IsNotNull(family, AnimalPipeline.ControllerPath(c.Family));
+            if (c.SpeciesClip.Clip == null)
+            {
+                // T52: the first species of its family plays the family controller itself.
+                Assert.AreSame(family, view.Animator.runtimeAnimatorController, "no override: the family library is the species' own");
+            }
+            else
+            {
+                var aoc = view.Animator.runtimeAnimatorController as AnimatorOverrideController;
+                Assert.IsNotNull(aoc, "The species clip swaps a family clip through an override.");
+                Assert.AreSame(family, aoc.runtimeAnimatorController);
+                var familyClips = AssetDatabase.LoadAllAssetsAtPath(AnimalPipeline.ClipsPath(c.Family)).OfType<AnimationClip>().ToList();
+                var pairs = new List<KeyValuePair<AnimationClip, AnimationClip>>();
+                aoc.GetOverrides(pairs);
+                foreach (var pair in pairs.Where(p => p.Value != null))
+                    Assert.Contains(pair.Value, familyClips, pair.Value.name + ": family clips only.");
+                Assert.AreEqual($"AN_{c.Family}_{c.SpeciesClip.Clip}", aoc[$"AN_{c.Family}_{c.SpeciesClip.State}"].name);
+            }
 
             var master = AssetDatabase.LoadAssetAtPath<Material>(AnimalPipeline.MaterialPath);
             foreach (var r in view.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 Assert.AreSame(master, r.sharedMaterial, r.name);
             foreach (var socket in new[] { "SOCK_HeadTop", "SOCK_Neck", "SOCK_Back", "SOCK_TailBase" })
                 Assert.IsNotNull(AnimalPipeline.FindDeep(view.transform, socket), socket);
+            foreach (var (socket, name) in new[] { (AccessorySocket.EarL, "SOCK_Ear_L"), (AccessorySocket.EarR, "SOCK_Ear_R") })
+                if (!c.Hidden.Contains(socket))
+                    Assert.IsNotNull(AnimalPipeline.FindDeep(view.transform, name), name + ": exposed by AssetImportRules.FamilySockets");
         }
 
         [TestCaseSource(nameof(Species))]
@@ -265,7 +306,13 @@ namespace PocketWilds.Tests.EditMode
             }
             else
             {
-                Assert.AreEqual(1f, scale.x, 1e-5f, "medium species are modelled at their size");
+                Assert.AreEqual(1f, scale.x, 1e-5f, "medium, heavy and bird species are modelled at their size");
+            }
+            if (c.Size.Length > 0f)
+            {
+                // The doc's size is indicative: within a fifth of it (an export scale error is far off).
+                Assert.AreEqual(c.Size.Length, body.front - body.back - 0.02f, c.Size.Length * 0.2f, "length at bind pose (doc 03)");
+                Assert.AreEqual(c.Size.Height, body.height - 0.01f, c.Size.Height * 0.2f, "height at bind pose (doc 03)");
             }
             // The measured body in the catalog is the scaled one (no-collision rule).
             var catalog = AssetDatabase.LoadAssetAtPath<AnimalVisualCatalog>(AnimalPipeline.VisualCatalogPath);
@@ -290,6 +337,36 @@ namespace PocketWilds.Tests.EditMode
             Assert.AreNotEqual(Entry("Rabbit").behavior.socialGroup, Entry("Raccoon").behavior.socialGroup, "a scaled skeleton never greets a rabbit");
             Assert.Less(Entry("Badger").behavior.moveSpeed, Entry("Fox").behavior.moveSpeed);
             Assert.Greater(Entry("Raccoon").behavior.inspectWeight, Entry("Rabbit").behavior.inspectWeight, "doc 02: Inspect weighted higher");
+        }
+
+        [Test]
+        public void Behavior_NewFamiliesGreetTheirOwnFamily_AndHoldTheirOwnClips()
+        {
+            var catalog = AssetDatabase.LoadAssetAtPath<AnimalVisualCatalog>(AnimalPipeline.VisualCatalogPath);
+            AnimalVisualCatalog.Entry Entry(string name)
+            {
+                Assert.IsTrue(catalog.TryGet("PF_Animal_" + name, out var entry), name);
+                return entry;
+            }
+            var groups = new[] { 0, AnimalPipeline.MediumSocialGroup, AnimalPipeline.ScaledSmallSocialGroup, AnimalPipeline.HeavySocialGroup,
+                AnimalPipeline.BirdSocialGroup };
+            Assert.AreEqual(groups.Length, groups.Distinct().Count(), "one greeting group per skeleton");
+            Assert.AreEqual(AnimalPipeline.BirdSocialGroup, Entry("Owl").behavior.socialGroup);
+            Assert.AreEqual(AnimalPipeline.HeavySocialGroup, Entry("BoarPiglet").behavior.socialGroup);
+            Assert.Greater(Entry("Owl").behavior.sleepWeight, Entry("Rabbit").behavior.sleepWeight, "doc 03: Sleepy");
+            Assert.Greater(Entry("BoarPiglet").behavior.inspectWeight, Entry("Rabbit").behavior.inspectWeight, "doc 03: the snout first");
+            // One-shots hand over when the Animator is back in Idle: the durations are the family library's, not the small one's.
+            foreach (var (name, family) in new[] { ("Owl", AnimalPipeline.BirdFamily), ("BoarPiglet", AnimalPipeline.HeavyFamily) })
+            {
+                var b = Entry(name).behavior;
+                foreach (var (suffix, seconds) in new[] { ("Idle_B", b.idleLookSeconds), ("Inspect", b.inspectSeconds), ("ReactTouch", b.reactSeconds),
+                             ("Happy", b.happySeconds), ("Sleep_Exit", b.wakeSeconds), ("Social_Nose", b.socialSeconds) })
+                {
+                    float expected = AnimalPipeline.OneShotSeconds(family, suffix, -1f);
+                    Assert.Greater(expected, 0f, $"AN_{family}_{suffix} is in the library");
+                    Assert.AreEqual(expected, seconds, 1e-3f, $"{name} {suffix}: run the species build after the library import");
+                }
+            }
         }
 
         [TestCaseSource(nameof(Species))]
@@ -413,7 +490,7 @@ namespace PocketWilds.Tests.EditMode
         [Test]
         public void Forest_StaysComingSoonForPlayers_TheMeadowIsOpen()
         {
-            Assert.IsFalse(BiomeWizard.ForestSpec().OpenToPlayers, "the Forest waits for the Owl, the Boar Piglet (T52) and the bear cub (T53)");
+            Assert.IsFalse(BiomeWizard.ForestSpec().OpenToPlayers, "the Forest waits for the bear cub (T53)");
             Assert.IsTrue(BiomeWizard.GrasslandSpec().OpenToPlayers);
             var registry = Registry();
             Assert.IsTrue(registry.Biomes.TryGet(Forest, out var forest));

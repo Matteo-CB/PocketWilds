@@ -722,6 +722,251 @@ RULES = {
 }
 
 
+# T52 Boar Piglet (HeavyQuadruped). Ear base, axis and inner face (+X side), as in pw_species.
+BOARPIGLET_EAR_BASE = (0.062, -0.180, 0.362)
+BOARPIGLET_EAR_AXIS = (0.363, -0.559, 0.745)
+BOARPIGLET_EAR_FRONT = (-0.245, -0.829, -0.502)
+# Light stripes along each flank: angle around the body axis, degrees from the side up toward the spine.
+BOARPIGLET_STRIPES = (62.0, 34.0, 6.0)
+BOARPIGLET_SPOTS = [((0.0, -0.040, 0.320), 0.026), ((0.062, 0.005, 0.302), 0.024), ((-0.064, 0.050, 0.300), 0.024),
+                    ((0.0, 0.095, 0.316), 0.026), ((0.066, 0.125, 0.284), 0.022), ((-0.060, -0.055, 0.288), 0.022),
+                    ((-0.030, 0.160, 0.298), 0.022), ((0.094, 0.060, 0.244), 0.020), ((-0.098, 0.090, 0.234), 0.020)]
+
+
+def boarpiglet_masks(co, n, ctx):
+    """T52 Boar Piglet. Secondary = the round snout disc and the inner ears (rose beige), belly = soft underside, detail =
+    the two nostril beads only (their own tag). Mask A = snout disc and curly tail (Golden Truffle glow), mask B = three
+    light stripes along each flank, shoulder to rump, curving a little down toward the rump (Chestnut Stripe, Powder Pink,
+    Mint Stripe), mask C = small round spots over the back (Acorn, Golden Truffle)."""
+    hc = ctx["head_center"]; hr = ctx["head_radii"]
+    dh = co - hc
+    head_s = math.sqrt((dh.x / hr[0]) ** 2 + (dh.y / hr[1]) ** 2 + (dh.z / hr[2]) ** 2)
+    disc_r = (co.x / 0.051) ** 2 + ((co.z - 0.250) / 0.045) ** 2
+    disc = smoothstep(-0.30, -0.62, n.y) * smoothstep(-0.326, -0.342, co.y) * smoothstep(1.15, 0.80, disc_r)
+    side = 1.0 if co.x > 0 else -1.0
+    b = Vector((side * BOARPIGLET_EAR_BASE[0], BOARPIGLET_EAR_BASE[1], BOARPIGLET_EAR_BASE[2]))
+    u = Vector((side * BOARPIGLET_EAR_AXIS[0], BOARPIGLET_EAR_AXIS[1], BOARPIGLET_EAR_AXIS[2])).normalized()
+    t = (co - b).dot(u); radial = (co - b - u * t).length
+    front = Vector((BOARPIGLET_EAR_FRONT[0] * side, BOARPIGLET_EAR_FRONT[1], BOARPIGLET_EAR_FRONT[2]))
+    on_ear = co.z > 0.350 and 0.004 < t < 0.105 and radial < 0.056
+    inner = 0.0
+    if on_ear:
+        inner = smoothstep(0.10, 0.45, n.dot(front)) * smoothstep(0.014, 0.028, t) * smoothstep(0.040, 0.026, radial)
+    secondary = max(disc, inner)
+    tube = ctx.get("tube", 0) == 1
+    # Only the true underside: the chest and face stay the main color.
+    belly = 0.0 if tube else (smoothstep(-0.45, -0.85, n.z) * smoothstep(0.030, 0.050, co.z) * smoothstep(0.150, 0.115, co.z)
+                              * (1.0 - secondary))
+    mask_a = 1.0 if tube else disc
+    stripes = 0.0
+    if not tube and head_s > 1.15 and co.z > 0.080 and not on_ear:
+        phi = math.degrees(math.atan2(co.z - 0.200, max(abs(co.x), 1e-6)))
+        along = smoothstep(-0.115, -0.070, co.y) * smoothstep(0.200, 0.155, co.y)
+        drift = 6.0 * smoothstep(-0.08, 0.18, co.y)
+        for c in BOARPIGLET_STRIPES:
+            stripes = max(stripes, smoothstep(11.0, 5.0, abs(phi - (c - drift))))
+        stripes *= along * (1.0 - smoothstep(-0.30, -0.65, n.z))
+    mask_c = 0.0
+    if not tube and co.z > 0.20 and head_s > 1.2:
+        for c, r in ctx["spots"]:
+            mask_c = max(mask_c, smoothstep(r * 1.15, r * 0.35, (co - Vector(c)).length))
+    return secondary, belly, mask_a, stripes, 0.0, mask_c
+
+
+RULES["BoarPiglet"] = dict(fn=boarpiglet_masks, head_center=(0.0, -0.195, 0.280), head_radii=(0.118, 0.105, 0.110),
+                           spots=BOARPIGLET_SPOTS)
+
+
+# ---------------------------------------------------------------- T52 Owl (Bird family)
+# T52 polish: the body is pw_species' analytic surface (SPECS["Owl"]["surface"]); the rule reads the same wing, tail and
+# toe data through pw_species (wing_coords, tail_coords, toe_shapes). Beak: (centre, half sizes, long axis), +X side.
+OWL_BEAK = ((0, -0.135, 0.271), (0.010, 0.013, 0.011), (0, -0.42, -0.91))
+# Crisp mask shapes, cut into the mesh by pw_species.cut_mask_shapes (LOD0 and LOD1) so the vertex masks switch within a
+# thin ring: (point on the surface, outward normal, turn in degrees). Constellation stars (mask D): round five-point
+# stars only (straight sides, rounded tips), radius = tip radius, inner = valley ratio, edge = ring width. Two sit on the
+# wing plates (well inside their edge), the others on the back and the back of the head, away from the neck band.
+OWL_STARS = dict(radius=0.021, inner=0.50, edge=0.0035, items=[
+    ((0.0804, 0.1226, 0.3326), (0.435, 0.882, 0.179), 12), ((-0.0893, 0.1156, 0.3418), (-0.496, 0.839, 0.221), -14),
+    ((0.0201, 0.1443, 0.2804), (0.083, 0.995, 0.046), 20), ((-0.0334, 0.1437, 0.2133), (-0.144, 0.990, -0.004), -6),
+    ((0.1726, 0.0303, 0.1865), (0.992, 0.112, 0.059), 8), ((0.0784, 0.1283, 0.1616), (0.412, 0.905, -0.103), -18),
+    ((-0.1653, 0.0527, 0.1439), (-0.937, 0.313, -0.156), 16), ((-0.1357, 0.0609, 0.3557), (-0.851, 0.428, 0.303), -10)])
+# Facial discs (secondary) and their raised rims (mask A): frames on the base egg, turned a little to the front. radii:
+# rim inner edge, disc edge; segs per LOD (LOD1 keeps the disc edge only). pw_species.surface_mesh sculpts the dish and
+# the rim on these frames (SPECS["Owl"]["surface"]["disc_profile"]).
+OWL_DISCS = dict(radii=(0.044, 0.056), edge=0.0035, segs=(20, 12), items=[
+    ((0.064, -0.1215, 0.318), (0.197, -0.974, 0.114), 0), ((-0.064, -0.1215, 0.318), (-0.197, -0.974, 0.114), 0)])
+# Belly (oval on the round front: x half, z centre, z half) and its specks (mask C): small round dots in rows, cut like
+# the discs (radius, edge ring, segments per LOD), frames on the belly surface. LOD2 (no cut) gets a faint even tint.
+OWL_BELLY = (0.100, 0.150, 0.112)
+OWL_DOTS = dict(radius=0.0075, edge=0.0025, segs=(8, 6), items=[
+    ((-0.034, -0.1555, 0.172), (-0.165, -0.986, -0.017), 0), ((0.034, -0.1555, 0.172), (0.165, -0.986, -0.017), 0),
+    ((-0.060, -0.1442, 0.136), (-0.330, -0.923, -0.197), 0), ((0.0, -0.1537, 0.136), (0.0, -0.980, -0.197), 0),
+    ((0.060, -0.1442, 0.136), (0.330, -0.923, -0.197), 0), ((-0.034, -0.1406, 0.100), (-0.177, -0.917, -0.360), 0),
+    ((0.034, -0.1406, 0.100), (0.177, -0.917, -0.360), 0)])
+
+
+def star_outline(R, inner, tip=3):
+    """A round five-point star, counter-clockwise, first tip up (+y): straight sides, rounded tips (tip=3: two shoulder
+    points and a lowered apex; tip=1: the lowered apex only, inside the tip=3 outline)."""
+    pts = []
+    for i in range(5):
+        a = math.pi / 2 + i * 2 * math.pi / 5
+        t = Vector((R * math.cos(a), R * math.sin(a)))
+        vp = Vector((inner * R * math.cos(a - math.pi / 5), inner * R * math.sin(a - math.pi / 5)))
+        vn = Vector((inner * R * math.cos(a + math.pi / 5), inner * R * math.sin(a + math.pi / 5)))
+        if tip == 1:
+            pts.append(t * 0.94)
+        else:
+            pts += [t + (vp - t) * 0.20, t * 0.955, t + (vn - t) * 0.20]
+        pts.append(vn)
+    return pts
+
+
+def circle_outline(R, segs):
+    return [Vector((R * math.cos(2 * math.pi * i / segs), R * math.sin(2 * math.pi * i / segs))) for i in range(segs)]
+
+
+def rot2(p, deg):
+    c, s = math.cos(math.radians(deg)), math.sin(math.radians(deg))
+    return Vector((p.x * c - p.y * s, p.x * s + p.y * c))
+
+
+def poly_sdf(p, pts):
+    """Signed distance from p to a closed 2D outline (negative inside)."""
+    d = 1e9; inside = False
+    for i in range(len(pts)):
+        a = pts[i]; b = pts[(i + 1) % len(pts)]
+        e = b - a; t = max(0.0, min(1.0, (p - a).dot(e) / e.dot(e)))
+        d = min(d, (p - (a + e * t)).length)
+        if (a.y > p.y) != (b.y > p.y) and p.x < a.x + (p.y - a.y) * (b.x - a.x) / (b.y - a.y):
+            inside = not inside
+    return -d if inside else d
+
+
+def shape_frame(c, n):
+    """(center, normal, t1, t2) of a mask shape: t1 is up (or forward on a top face), t2 = n x t1."""
+    c = Vector(c); n = Vector(n).normalized()
+    ref = Vector((0, 0, 1)) if abs(n.z) < 0.85 else Vector((0, -1, 0))
+    t1 = (ref - n * ref.dot(n)).normalized()
+    return c, n, t1, n.cross(t1)
+
+
+def _shape_plane(co, item, reach):
+    c, n, t1, t2 = shape_frame(item[0], item[1])
+    v = co - c
+    if abs(v.dot(n)) > 0.025:
+        return None
+    p = Vector((v.dot(t1), v.dot(t2)))
+    return p if p.length < reach else None
+
+
+def star_mask(co, stars):
+    R = stars["radius"]; edge = stars["edge"]
+    ref = star_outline(R, stars["inner"], 3)
+    best = 0.0
+    for item in stars["items"]:
+        p = _shape_plane(co, item, R * 1.4)
+        if p is not None:
+            best = max(best, smoothstep(0.6 * edge, 0.15 * edge, poly_sdf(rot2(p, -item[2]), ref)))
+    return best
+
+
+def disc_masks(co, discs):
+    """(disc, rim): 1 inside the disc edge; the rim ring from the rim inner edge to the disc edge."""
+    r1, r2 = discs["radii"]; e = discs["edge"]
+    disc = rim = 0.0
+    for item in discs["items"]:
+        p = _shape_plane(co, item, r2 * 1.5)
+        if p is not None:
+            r = p.length
+            d = smoothstep(r2 + 0.6 * e, r2 + 0.15 * e, r)
+            disc = max(disc, d); rim = max(rim, d * smoothstep(r1 + 0.15 * e, r1 + 0.6 * e, r))
+    return disc, rim
+
+
+def mask_shapes(species, level):
+    """The shapes pw_species.cut_mask_shapes cuts on an LOD: (frame item, outlines from the inside out, same point count)."""
+    rule = RULES[species]; out = []
+    S = rule.get("stars")
+    if S:
+        R = S["radius"]; k = S["inner"]; e = S["edge"]; tip = 3 if level == 0 else 1
+        for item in S["items"]:
+            out.append((item, [[rot2(p, item[2]) for p in star_outline(R, k, tip)],
+                               [rot2(p, item[2]) for p in star_outline(R + e, (k * R + e) / (R + e), tip)]]))
+    D = rule.get("discs")
+    if D:
+        r1, r2 = D["radii"]; e = D["edge"]; segs = D["segs"][level]
+        for item in D["items"]:
+            out.append((item, [circle_outline(r, segs) for r in ((r1, r1 + e, r2, r2 + e) if level == 0 else (r2, r2 + e))]))
+    # T52 polish: round dots (the Owl's belly specks), so a mask dot never reads as a diamond around a single vertex; LOD1
+    # keeps the dot outline only (a soft edge over the bridge).
+    P = rule.get("dots")
+    if P:
+        r = P["radius"]; e = P["edge"]; segs = P["segs"][level]
+        for item in P["items"]:
+            out.append((item, [circle_outline(x, segs) for x in ((r, r + e) if level == 0 else (r,))]))
+    return out
+
+
+def dot_mask(co, dots):
+    """1 inside a round dot, 0 past its edge ring (dots: radius, edge, items as the discs)."""
+    r = dots["radius"]; e = dots["edge"]; best = 0.0
+    for item in dots["items"]:
+        p = _shape_plane(co, item, r * 2.0)
+        if p is not None:
+            best = max(best, smoothstep(r + 0.6 * e, r + 0.15 * e, p.length))
+    return best
+
+
+def _ell_s(co, center, half, rot=None, axis=None, mirror_x=False):
+    from mathutils import Euler
+    c = Vector(center)
+    if mirror_x:
+        c.x = -c.x
+        rot = (rot[0], -rot[1], -rot[2]) if rot else None
+        axis = (-axis[0], axis[1], axis[2]) if axis else None
+    q = Vector(axis).to_track_quat('Y', 'Z') if axis else Euler([math.radians(a) for a in rot], 'XYZ').to_quaternion()
+    d = q.inverted() @ (co - c)
+    return math.sqrt((d.x / half[0]) ** 2 + (d.y / half[1]) ** 2 + (d.z / half[2]) ** 2)
+
+
+def owl_masks(co, n, ctx):
+    """T52 Owl. Secondary = the two round facial discs, belly = the round cream front, detail = beak and toes. Mask A = wing
+    tips, the lower edge of the tail fan and the disc rims (the glow area: Honey Wings tips, Full Moon discs), mask B = two
+    light bands across each wing (Honey Wings), mask C = soft belly specks (Periwinkle), mask D = the Constellation's round
+    five-point stars. Discs and stars are cut into LOD0 and LOD1, so their edges are crisp."""
+    import pw_species
+    S = pw_species.SPECS["Owl"]["surface"]
+    facing = n.dot(Vector((0, -1, 0)))
+    disc, rim = disc_masks(co, OWL_DISCS)
+    beak = 1.0 - smoothstep(1.08, 1.32, _ell_s(co, OWL_BEAK[0], OWL_BEAK[1], axis=OWL_BEAK[2]))
+    toe = min(_ell_s(co, c, h, (0, 0, math.degrees(a))) for c, h, a in pw_species.toe_shapes("Owl", heel=False))
+    foot = (1.0 - smoothstep(1.05, 1.30, toe)) * smoothstep(0.034, 0.020, co.z)
+    detail = max(beak, foot)
+    # Wings: the raised plates (pw_species.surface_mesh), up to the middle of their soft edge.
+    ws, wt = (float(x) for x in pw_species.wing_coords(S["wing"], co.y, co.z))
+    wing = (1.0 - smoothstep(0.84, 0.92, ws)) * smoothstep(0.30, 0.60, abs(n.x))
+    e = math.sqrt((co.x / OWL_BELLY[0]) ** 2 + ((co.z - OWL_BELLY[1]) / OWL_BELLY[2]) ** 2)
+    belly = (1.0 - smoothstep(0.74, 1.12, e)) * smoothstep(0.05, 0.40, facing) * (1.0 - wing) * (1.0 - disc) * (1.0 - detail)
+    T = S["tail"]
+    ts, _ = pw_species.tail_coords(T, co.x, co.z)
+    tail_tip = (1.0 - smoothstep(0.80, 0.92, float(ts))) * smoothstep(0.2, 0.5, n.y) * smoothstep(T["center"][1], T["center"][1] - 0.6 * T["half"][1], co.z)
+    wing_tip = wing * smoothstep(0.62, 0.88, wt)
+    mask_a = max(wing_tip, tail_tip, rim)
+    mask_b = 0.0
+    if wing > 0.0:
+        for tb in (0.30, 0.50):
+            mask_b = max(mask_b, 1.0 - smoothstep(0.022, 0.040, abs(wt - tb)))
+        mask_b *= wing * (1.0 - wing_tip)
+    mask_c = dot_mask(co, OWL_DOTS) * (1.0 - detail) if ctx.get("lod", 0) < 2 else 0.22 * belly
+    mask_d = star_mask(co, OWL_STARS) * (1.0 - detail)
+    return disc * (1.0 - detail), belly, mask_a, mask_b, detail, mask_c, mask_d
+
+
+RULES["Owl"] = dict(fn=owl_masks, head_center=(0.0, -0.005, 0.335), head_radii=(0.154, 0.135, 0.105), spots=[],
+                    stars=OWL_STARS, discs=OWL_DISCS, dots=OWL_DOTS)
+
+
 def _lobes(species):
     try:
         import pw_species
@@ -750,7 +995,7 @@ def apply(species, armature_name=None, nose_object="WORK_Nose"):
             armature_name = "SK_SmallQuadruped"
     armature = bpy.data.objects[armature_name]
     ctx = {
-        "ears": _ear_axes(armature),
+        "ears": _ear_axes(armature) if "Ear_L_01" in armature.data.bones else {},  # T52: the Bird has no ear bones
         "head_center": Vector(rule["head_center"]),
         "nose": bpy.data.objects[nose_object].location.copy(),
         "spots": rule["spots"],
@@ -765,6 +1010,7 @@ def apply(species, armature_name=None, nose_object="WORK_Nose"):
         obj = bpy.data.objects.get(f"SKM_{species}_LOD{lod}")
         if obj is None:
             continue
+        ctx["lod"] = lod  # T52 polish: a rule may soften a detail the far LOD cannot carry
         me = obj.data
         regions = me.color_attributes["PW_Regions"]
         while me.uv_layers:
@@ -789,10 +1035,11 @@ def apply(species, armature_name=None, nose_object="WORK_Nose"):
             detail = max(b, out[4]) if len(out) > 4 and out[4] is not None else b
             regions.data[v.index].color = (sec, belly, detail, a)
             per_vertex.append((ma, mb))
-            per_vertex_c.append((out[5] if len(out) > 5 else 0.0, 0.0))
+            # T52: a seventh value is mask D (uv1.y): the Owl's Constellation stars.
+            per_vertex_c.append((out[5] if len(out) > 5 else 0.0, out[6] if len(out) > 6 else 0.0))
         for loop in me.loops:
             uv.data[loop.index].uv = per_vertex[loop.vertex_index]
-        if any(c[0] > 0.0 for c in per_vertex_c):
+        if any(c[0] > 0.0 or c[1] > 0.0 for c in per_vertex_c):
             uv2 = me.uv_layers.new(name="PW_Masks2")
             for loop in me.loops:
                 uv2.data[loop.index].uv = per_vertex_c[loop.vertex_index]

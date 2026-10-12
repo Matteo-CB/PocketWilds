@@ -16,15 +16,22 @@ namespace PocketWilds.Tests.EditMode
     /// </summary>
     public class FamilyClipGroundTests
     {
-        /// <summary>Families whose clips are checked on every species that rides them.</summary>
-        private static readonly string[] Families = { "SmallQuadruped" };
+        /// <summary>
+        /// Families whose clips are checked on every species that rides them. T52 adds the heavy family and the birds (Boar
+        /// Piglet, Owl: measured in Blender by their lanes, checked here on the imported prefabs). MediumQuadruped joins once
+        /// its clips pass.
+        /// </summary>
+        public static readonly string[] Families = { "SmallQuadruped", "HeavyQuadruped", "Bird" };
 
         private const float Tolerance = 0.002f;
         private const int SamplesPerFrame = 2;
 
-        public static IEnumerable<string> Species()
+        public static IEnumerable<string> Species() => Riders(Families);
+
+        /// <summary>The animal prefabs whose controller (or override's base) is one of these families' controllers.</summary>
+        private static IEnumerable<string> Riders(IEnumerable<string> families)
         {
-            var controllers = Families.Select(f => AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(AnimalPipeline.ControllerPath(f)))
+            var controllers = families.Select(f => AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(AnimalPipeline.ControllerPath(f)))
                 .Where(c => c != null).ToList();
             foreach (string guid in AssetDatabase.FindAssets("t:Prefab", new[] { AssetValidator.AnimalPrefabFolder }))
             {
@@ -39,10 +46,12 @@ namespace PocketWilds.Tests.EditMode
             }
         }
 
-        [Test]
-        public void EveryFamilyHasSpecies()
+        [TestCaseSource(nameof(Families))]
+        public void EveryFamilyHasSpecies(string family)
         {
-            Assert.IsNotEmpty(Species().ToList(), "No species prefab rides " + string.Join(", ", Families));
+            Assert.IsNotNull(AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(AnimalPipeline.ControllerPath(family)),
+                AnimalPipeline.ControllerPath(family) + ": build a species of the family (AnimalPipeline).");
+            Assert.IsNotEmpty(Riders(new[] { family }).ToList(), "No species prefab rides " + family);
         }
 
         [TestCaseSource(nameof(Species))]

@@ -79,8 +79,19 @@ namespace PocketWilds.Editor.Animals
             return states;
         }
 
-        /// <summary>Clip suffix of the Move state: the small family hops, the medium family walks (T46).</summary>
-        public static string MoveClip(string family) => family == "MediumQuadruped" ? "Locomotion_Walk" : "Locomotion_Hop";
+        /// <summary>
+        /// Clip suffix of the Move state: the small family hops, the medium family walks (T46); T52 the heavy family waddles
+        /// (Locomotion_Walk) and the birds hop on the ground (Locomotion_Hop).
+        /// </summary>
+        public static string MoveClip(string family) => WalkingFamilies.Contains(family) ? "Locomotion_Walk" : "Locomotion_Hop";
+
+        private static readonly HashSet<string> WalkingFamilies = new HashSet<string> { MediumFamily, HeavyFamily };
+
+        /// <summary>Every family with a library and a controller (AN_&lt;Family&gt;.fbx, AC_&lt;Family&gt;.controller).</summary>
+        public static readonly string[] Families = { SmallFamily, MediumFamily, HeavyFamily, BirdFamily };
+
+        /// <summary>One-shot states leave by exit time at this fraction of their clip, then fade (the behavior durations follow).</summary>
+        public const float OneShotExitTime = 0.92f, OneShotFade = 0.12f;
 
         private static string ClipFor(string family, string state, string clipSuffix) => state == "Move" ? MoveClip(family) : clipSuffix;
 
@@ -232,9 +243,9 @@ namespace PocketWilds.Editor.Animals
                     continue;
                 var transition = states[stateName].AddTransition(states[target]);
                 transition.hasExitTime = true;
-                transition.exitTime = 0.92f;
+                transition.exitTime = OneShotExitTime;
                 transition.hasFixedDuration = true;
-                transition.duration = 0.12f;
+                transition.duration = OneShotFade;
             }
 
             EditorUtility.SetDirty(controller);
@@ -843,6 +854,77 @@ namespace PocketWilds.Editor.Animals
             BuildRedPanda();
         }
 
+        // ---------------- T52 Forest species on their own families: Owl (Bird), Boar Piglet (HeavyQuadruped) ----------------
+        // Two new skeletons (RIG-003 SK_HeavyQuadruped, RIG-004 SK_Bird) with minimal libraries named like the family table
+        // (AN_<Family>_Idle_A ... _Inspect), so the family controller needs no override: the library is the species' own
+        // behavior (the owl's slow head turn, feather fluff, wing flutter and bow; the piglet's waddle, bounce and snout push).
+        // Heavy walks (Locomotion_Walk), the birds hop on the ground (Locomotion_Hop): see MoveClip. No flight, no perch yet.
+
+        public const string HeavyFamily = "HeavyQuadruped";
+        public const string BirdFamily = "Bird";
+
+        /// <summary>T52: each new family greets its own family only (its own Social_Nose clip): a piglet never noses a rabbit.</summary>
+        public const int HeavySocialGroup = 3, BirdSocialGroup = 4;
+
+        [MenuItem("Pocket Wilds/Animals/Build Owl (T52)", priority = 159)]
+        public static void BuildOwl()
+        {
+            // Sleepy (doc 03): dozes a little more and looks around more (its slow head turn); short ground hops.
+            BuildSpecies("Owl", BirdFamily, EnsureOwlDefinition, null, b =>
+            {
+                ApplyFamilyTiming(BirdFamily, b);
+                b.moveSpeed = 0.22f;
+                b.socialGroup = BirdSocialGroup;
+                b.sleepWeight = 0.10f;
+                b.idleLookWeight = 0.24f;
+                b.wanderWeight = 0.24f;
+            });
+        }
+
+        [MenuItem("Pocket Wilds/Animals/Build Boar Piglet (T52)", priority = 159)]
+        public static void BuildBoarPiglet()
+        {
+            // Brave, snout first (doc 03): eats and pushes the leaves more often (Eat then Inspect, its signature); a short
+            // waddle on short legs.
+            BuildSpecies("BoarPiglet", HeavyFamily, EnsureBoarPigletDefinition, null, b =>
+            {
+                ApplyFamilyTiming(HeavyFamily, b);
+                b.moveSpeed = 0.27f;
+                b.socialGroup = HeavySocialGroup;
+                b.eatWeight = 0.17f;
+                b.inspectWeight = 0.16f;
+                b.wanderWeight = 0.30f;
+            });
+        }
+
+        [MenuItem("Pocket Wilds/Animals/Build Owl and Boar Piglet (T52)", priority = 159)]
+        public static void BuildT52()
+        {
+            BuildOwl();
+            BuildBoarPiglet();
+        }
+
+        /// <summary>
+        /// T52: the one-shot durations of a family's own library (clip length x exit time + fade), so the scheduler hands over
+        /// when the Animator is back in Idle. The BehaviorProfile defaults are the SmallQuadruped library's.
+        /// </summary>
+        public static void ApplyFamilyTiming(string family, BehaviorProfile b)
+        {
+            b.idleLookSeconds = OneShotSeconds(family, "Idle_B", b.idleLookSeconds);
+            b.inspectSeconds = OneShotSeconds(family, "Inspect", b.inspectSeconds);
+            b.reactSeconds = OneShotSeconds(family, "ReactTouch", b.reactSeconds);
+            b.happySeconds = OneShotSeconds(family, "Happy", b.happySeconds);
+            b.wakeSeconds = OneShotSeconds(family, "Sleep_Exit", b.wakeSeconds);
+            b.socialSeconds = OneShotSeconds(family, "Social_Nose", b.socialSeconds);
+        }
+
+        /// <summary>How long a one-shot family clip holds its state (exit time, then the fade), or the fallback while it is missing.</summary>
+        public static float OneShotSeconds(string family, string suffix, float fallback)
+        {
+            float length = ClipSeconds(family, suffix, -1f);
+            return length > 0f ? length * OneShotExitTime + OneShotFade : fallback;
+        }
+
         /// <summary>
         /// T49 Mole, the featured species of L'Éveil des Terriers (event.burrows). Every color is secret: never in normal eggs,
         /// wishes or genetics; the event egg and track give the six event colors by id, mastery gives the last three.
@@ -1153,11 +1235,98 @@ namespace PocketWilds.Editor.Animals
             return asset;
         }
 
-        /// <summary>T51: the Forest species definitions only (palettes, variants, visitors), without models or prefabs.</summary>
+        /// <summary>
+        /// A-SP-010 Owl (SK_Bird, modelled at its size). Regions (pw_masks owl rule): primary = plumage (head, back, wings),
+        /// secondary = the sculpted face discs, belly = chest and belly, detail = beak and feet. Masks: A = wing tips and the rims
+        /// of the face discs (the glow area), B = light bands across the wings, C (uv1.x) = small specks on the belly, and the
+        /// Constellation's little round five-point stars (doc « G »). A bird has no ears: no ear socket (doc 03).
+        /// </summary>
+        internal static SpeciesDefinitionAsset EnsureOwlDefinition()
+        {
+            var asset = ForestSpecies("Owl", "species.owl", RigFamily.Bird);
+            asset.hiddenSockets = new List<AccessorySocket> { AccessorySocket.EarL, AccessorySocket.EarR };
+            asset.variants = new List<SpeciesDefinitionAsset.VariantEntry>
+            {
+                // The roster colors (doc « R + A »): a soft lighter edge on the wing tips.
+                Variant("variant.owl.brown", RarityTier.Common, Hex("8A6446"), Hex("E3CDB0"), Hex("F3E7D3"), Hex("D29A4A"), Hex("1E1414"),
+                    pattern: Hex("EAD6B8"), channel: PatternChannel.MaskA, strength: 10),
+                Variant("variant.owl.tawny", RarityTier.Common, Hex("C27A44"), Hex("F3E3C8"), Hex("F6EAD4"), Hex("D9A048"), Hex("1E1414"),
+                    pattern: Hex("F2DDBE"), channel: PatternChannel.MaskA, strength: 10),
+                Variant("variant.owl.grey", RarityTier.Uncommon, Hex("B7B5B3"), Hex("F2EFE8"), Hex("FFFFFF"), Hex("8E8C8E"), Hex("1A1618"),
+                    pattern: Hex("EEEDEA"), channel: PatternChannel.MaskA, strength: 10),
+                Variant("variant.owl.cream", RarityTier.Uncommon, Hex("EEDFC4"), Hex("FFFDF8"), Hex("FFFFFF"), Hex("C08A52"), Hex("1E1414"),
+                    pattern: Hex("FFF8EC"), channel: PatternChannel.MaskA, strength: 10),
+                Variant("variant.owl.dark", RarityTier.Rare, Hex("4A3A32"), Hex("8A7E76"), Hex("D9C8AE"), Hex("8C8A8C"), Hex("120C0C"),
+                    pattern: Hex("7A685C"), channel: PatternChannel.MaskA, strength: 10),
+                // Night blue, lilac discs, blue grey belly, light points drawn as little ROUND five-point stars (mask C) softly
+                // glowing at full strength.
+                Variant("variant.owl.constellation", RarityTier.Epic, Hex("2E3A5E"), Hex("C9B6E4"), Hex("8E9AB4"), Hex("B8A9CC"), Hex("12121A"),
+                    pattern: Hex("F4F0FF"), channel: PatternChannel.MaskD, strength: 15),
+                Variant("variant.owl.cocoa", RarityTier.Rare, Hex("7A5544"), Hex("F3E6CF"), Hex("E6D3B5"), Hex("C99A5E"), Hex("1E1414"), secret: true, mastery: 10),
+                // Periwinkle blue, lilac discs, a white speckled belly (mask C).
+                Variant("variant.owl.periwinkle", RarityTier.Epic, Hex("8E9BD8"), Hex("D4C2EC"), Hex("F8F7FF"), Hex("9A8FB8"), Hex("161420"),
+                    pattern: Hex("5E6AB8"), channel: PatternChannel.MaskC, strength: 13, secret: true, mastery: 20),
+                // Honey brown, a golden glow on the wing tips (mask A), plus the Legendary rim glow.
+                Variant("variant.owl.honeywings", RarityTier.Legendary, Hex("C8924A"), Hex("F4DDB4"), Hex("F6E8CC"), Hex("B8803E"), Hex("1E1414"),
+                    pattern: Hex("FFD978"), channel: PatternChannel.MaskA, strength: 15, secret: true, mastery: 30),
+                // Secret « Pleine lune » (hatched at night, later): pale cream, silver white discs, a soft silver glow (mask A).
+                Variant("variant.owl.fullmoon", RarityTier.Epic, Hex("F1E8D6"), Hex("F4F6FA"), Hex("FBF8F0"), Hex("D8C6A0"), Hex("1E1820"),
+                    pattern: Hex("E8EEF8"), channel: PatternChannel.MaskA, strength: 15, secret: true),
+                // T52 season visitor « Chouette rousse » (season 3, Récolte; visitor.russet_owl): warm russet plumage, pale peach
+                // discs, lighter russet wing tips (mask A). Palette only, secret: never in eggs, pities or genetics.
+                Variant("variant.owl.russet_visitor", RarityTier.Rare, Hex("B8562E"), Hex("F0D2B4"), Hex("F4E2C8"), Hex("D49A50"), Hex("1E1414"),
+                    pattern: Hex("F2C79A"), channel: PatternChannel.MaskA, strength: 12, secret: true, visitor: true),
+            };
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
+        /// <summary>
+        /// A-SP-012 Boar Piglet (SK_HeavyQuadruped, modelled at its size; no tusks, no separate snout material). Regions (pw_masks
+        /// boarpiglet rule): primary = coat, secondary = inner ears and the muzzle around the snout, belly = underside, detail =
+        /// the snout disc and hooves. Masks: A = snout tip and tail tuft (the glow area), B = the light stripes along the back
+        /// and flanks (doc « rayures par masque »), C (uv1.x) = little acorn-shaped spots on the back (doc « G »).
+        /// </summary>
+        internal static SpeciesDefinitionAsset EnsureBoarPigletDefinition()
+        {
+            var asset = ForestSpecies("BoarPiglet", "species.boarpiglet", RigFamily.HeavyQuadruped);
+            asset.variants = new List<SpeciesDefinitionAsset.VariantEntry>
+            {
+                // The plain roster colors (doc « R + A »): a deeper pink snout tip and tail tuft.
+                Variant("variant.boarpiglet.brown", RarityTier.Common, Hex("8A5E44"), Hex("E6C2B0"), Hex("E9D6BE"), Hex("C9707E"), Hex("1E1414"),
+                    pattern: Hex("B9606E"), channel: PatternChannel.MaskA, strength: 9),
+                Variant("variant.boarpiglet.chestnutstripe", RarityTier.Common, Hex("9A5A36"), Hex("E8C4B2"), Hex("F4E6CF"), Hex("D08690"), Hex("1E1414"),
+                    pattern: Hex("F2E2C4"), channel: PatternChannel.MaskB, strength: 14),
+                Variant("variant.boarpiglet.grey", RarityTier.Uncommon, Hex("9E9A98"), Hex("DCC2C2"), Hex("D6D3D0"), Hex("C48E98"), Hex("1A1618"),
+                    pattern: Hex("B07E88"), channel: PatternChannel.MaskA, strength: 9),
+                Variant("variant.boarpiglet.black", RarityTier.Uncommon, Hex("544C4C"), Hex("C9A3A6"), Hex("66605F"), Hex("B8949A"), Hex("0E0A0A"),
+                    pattern: Hex("A08088"), channel: PatternChannel.MaskA, strength: 9),
+                Variant("variant.boarpiglet.cream", RarityTier.Rare, Hex("F0E2CA"), Hex("F6D2D2"), Hex("FFFDF8"), Hex("EE9CAA"), Hex("1E1414"),
+                    pattern: Hex("E58A9A"), channel: PatternChannel.MaskA, strength: 9),
+                // Acorn brown, tender green ears and muzzle, little acorn-shaped spots (mask C).
+                Variant("variant.boarpiglet.acorn", RarityTier.Epic, Hex("8E6238"), Hex("EED8B8"), Hex("F4E8D0"), Hex("D99098"), Hex("1E1414"),
+                    pattern: Hex("E4EFC4"), channel: PatternChannel.MaskC, strength: 14),
+                Variant("variant.boarpiglet.walnut", RarityTier.Rare, Hex("6E4A32"), Hex("E0B8A8"), Hex("E6D2B8"), Hex("B86A78"), Hex("1E1414"), secret: true, mastery: 10),
+                // Powder pink, fine white stripes (mask B), pinkish cream belly.
+                Variant("variant.boarpiglet.powderpink", RarityTier.Epic, Hex("EDC2C8"), Hex("F8DCDC"), Hex("FBEFEA"), Hex("E8939F"), Hex("1E1414"),
+                    pattern: Hex("FFFFFF"), channel: PatternChannel.MaskB, strength: 13, secret: true, mastery: 20),
+                // Golden brown, a golden glow on the snout and the tail (mask A), plus the Legendary rim glow.
+                Variant("variant.boarpiglet.goldentruffle", RarityTier.Legendary, Hex("B98545"), Hex("F0D4B4"), Hex("F4E4C6"), Hex("E0A07E"), Hex("1E1414"),
+                    pattern: Hex("FFD878"), channel: PatternChannel.MaskA, strength: 15, secret: true, mastery: 30),
+                // Secret « Rayé menthe » (breeding Chestnut Stripe x Cream later): cream, pink snout, softly glowing mint stripes.
+                Variant("variant.boarpiglet.mintstripe", RarityTier.Epic, Hex("F2E8D2"), Hex("F6D6D6"), Hex("FFFDF6"), Hex("EE9CAA"), Hex("1E1414"),
+                    pattern: Hex("B4EBCF"), channel: PatternChannel.MaskB, strength: 15, secret: true),
+            };
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
+        /// <summary>T51 and T52: the Forest species definitions only (palettes, variants, visitors), without models or prefabs.</summary>
         [MenuItem("Pocket Wilds/Animals/Update Forest Species Definitions (T51)", priority = 159)]
         public static void UpdateForestDefinitions()
         {
-            foreach (var ensure in new Func<SpeciesDefinitionAsset>[] { EnsureFoxDefinition, EnsureBadgerDefinition, EnsureRaccoonDefinition, EnsureRedPandaDefinition })
+            foreach (var ensure in new Func<SpeciesDefinitionAsset>[] { EnsureFoxDefinition, EnsureBadgerDefinition, EnsureRaccoonDefinition, EnsureRedPandaDefinition,
+                         EnsureOwlDefinition, EnsureBoarPigletDefinition })
                 EnsureContentDatabase(ensure());
             AssetDatabase.SaveAssets();
         }
@@ -1195,7 +1364,7 @@ namespace PocketWilds.Editor.Animals
         {
             foreach (var ensure in new Func<SpeciesDefinitionAsset>[] { EnsureRabbitDefinition, EnsureSquirrelDefinition, EnsureHedgehogDefinition,
                 EnsureFieldMouseDefinition, EnsureGuineaPigDefinition, EnsureFawnDefinition, EnsureFieldHamsterDefinition, EnsureMoleDefinition,
-                EnsureFoxDefinition, EnsureBadgerDefinition, EnsureRaccoonDefinition, EnsureRedPandaDefinition })
+                EnsureFoxDefinition, EnsureBadgerDefinition, EnsureRaccoonDefinition, EnsureRedPandaDefinition, EnsureOwlDefinition, EnsureBoarPigletDefinition })
                 EnsureContentDatabase(ensure());
             AssetDatabase.SaveAssets();
         }

@@ -505,4 +505,86 @@ MonoBehaviour:
       fade: 0.2
       moveFade: 0.12
       reactFade: 0.06
+  - visualKey: PF_Animal_BoarPiglet
+    prefab: {fileID: 8073627834217192221, guid: 7f9ff81196370204bac4063d3ed864f1, type: 3}
+    softCapacity: 24
+    hardCapacity: 48
+    behavior:
+      idleWeight: 0.2
+      idleLookWeight: 0.18
+      wanderWeight: 0.3
+      eatWeight: 0.17
+      inspectWeight: 0.16
+      sleepWeight: 0.06
+      socialWeight: 0.09
+      idleSeconds: {x: 2.5, y: 6}
+      eatSeconds: {x: 4, y: 9}
+      sleepSeconds: {x: 10, y: 24}
+      idleLookSeconds: 4.7200003
+      inspectSeconds: 2.42
+      reactSeconds: 0.81
+      happySeconds: 1.5
+      wakeSeconds: 1.04
+      socialSeconds: 1.615
+      socialGroup: 3
+      socialRadius: 2.2
+      socialGap: 0.7555534
+      socialWaitSeconds: 3
+      interestRadius: 2.6
+      eatAtPointChance: 0.6
+      moveSpeed: 0.27
+      turnDegreesPerSecond: 300
+      wanderDistance: {x: 0.5, y: 1.6}
+      personalSpace: 0.45
+      body:
+        front: 0.37277672
+        back: -0.24869713
+        halfWidth: 0.14404036
+        height: 0.43633157
+      tierBDurationScale: 1.5
+      tierBWanderScale: 0.5
+      fade: 0.2
+      moveFade: 0.12
+      reactFade: 0.06
+  - visualKey: PF_Animal_Owl
+    prefab: {fileID: 843722691513902035, guid: 75ba2949183e3aa46a77c2951102aa65, type: 3}
+    softCapacity: 24
+    hardCapacity: 48
+    behavior:
+      idleWeight: 0.2
+      idleLookWeight: 0.24
+      wanderWeight: 0.24
+      eatWeight: 0.14
+      inspectWeight: 0.1
+      sleepWeight: 0.1
+      socialWeight: 0.09
+      idleSeconds: {x: 2.5, y: 6}
+      eatSeconds: {x: 4, y: 9}
+      sleepSeconds: {x: 10, y: 24}
+      idleLookSeconds: 4.7200003
+      inspectSeconds: 1.845
+      reactSeconds: 1.04
+      happySeconds: 1.27
+      wakeSeconds: 1.04
+      socialSeconds: 1.615
+      socialGroup: 4
+      socialRadius: 2.2
+      socialGap: 0.3457593
+      socialWaitSeconds: 3
+      interestRadius: 2.6
+      eatAtPointChance: 0.6
+      moveSpeed: 0.22
+      turnDegreesPerSecond: 300
+      wanderDistance: {x: 0.5, y: 1.6}
+      personalSpace: 0.45
+      body:
+        front: 0.16787966
+        back: -0.15581983
+        halfWidth: 0.18323466
+        height: 0.44985738
+      tierBDurationScale: 1.5
+      tierBWanderScale: 0.5
+      fade: 0.2
+      moveFade: 0.12
+      reactFade: 0.06
   cosmetics: {fileID: 11400000, guid: 8c44696691b6fc4419ff06346b73cf52, type: 2}

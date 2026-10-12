@@ -57,6 +57,77 @@ SOCKETS = {
 
 FAMILIES = {"MediumQuadruped": (MEDIUM_QUADRUPED, SOCKETS)}
 
+# T52 HeavyQuadruped (RIG-003): proportions of the Boar Piglet (A-SP-012, about 64 x 43 cm), a round barrel body (back at
+# 0.32 m), a big round head on a short neck, short stubby legs, ears on two bones leaning out and forward, a curly tail on
+# two. The quadruped bone names, parents and axes (sockets and Unity paths unchanged): positive X swings a leg forward,
+# lifts the front on Pelvis, Spine and Chest, nods Neck and Head down, folds the hock back, lifts Tail_01 and flops an ear
+# forward and down.
+HEAVY_QUADRUPED = {
+    "Root": (None, (0, 0, 0), (0, 0, 0.08), 1),
+    "Pelvis": ("Root", (0, 0.120, 0.210), (0, 0.050, 0.213), -1),
+    "Spine": ("Pelvis", (0, 0.050, 0.213), (0, -0.025, 0.215), -1),
+    "Chest": ("Spine", (0, -0.025, 0.215), (0, -0.085, 0.225), -1),
+    "Neck": ("Chest", (0, -0.085, 0.225), (0, -0.140, 0.255), 1),
+    "Head": ("Neck", (0, -0.140, 0.255), (0, -0.140, 0.375), 1),
+    "Ear_L_01": ("Head", (0.062, -0.180, 0.362), (0.0765, -0.2024, 0.3918), 1),
+    "Ear_L_02": ("Ear_L_01", (0.0765, -0.2024, 0.3918), (0.0929, -0.2275, 0.4253), 1),
+    "Ear_R_01": ("Head", (-0.062, -0.180, 0.362), (-0.0765, -0.2024, 0.3918), 1),
+    "Ear_R_02": ("Ear_R_01", (-0.0765, -0.2024, 0.3918), (-0.0929, -0.2275, 0.4253), 1),
+    "FrontLeg_L_Upper": ("Chest", (0.064, -0.062, 0.150), (0.065, -0.065, 0.088), -1),
+    "FrontLeg_L_Lower": ("FrontLeg_L_Upper", (0.065, -0.065, 0.088), (0.066, -0.067, 0.032), -1),
+    "FrontPaw_L": ("FrontLeg_L_Lower", (0.066, -0.067, 0.032), (0.066, -0.079, 0.000), -1),
+    "FrontLeg_R_Upper": ("Chest", (-0.064, -0.062, 0.150), (-0.065, -0.065, 0.088), -1),
+    "FrontLeg_R_Lower": ("FrontLeg_R_Upper", (-0.065, -0.065, 0.088), (-0.066, -0.067, 0.032), -1),
+    "FrontPaw_R": ("FrontLeg_R_Lower", (-0.066, -0.067, 0.032), (-0.066, -0.079, 0.000), -1),
+    "Tail_01": ("Pelvis", (0, 0.204, 0.243), (0, 0.231, 0.257), 1),
+    "Tail_02": ("Tail_01", (0, 0.231, 0.257), (0, 0.248, 0.283), 1),
+    "HindLeg_L_Upper": ("Pelvis", (0.068, 0.128, 0.150), (0.070, 0.118, 0.092), -1),
+    "HindLeg_L_Lower": ("HindLeg_L_Upper", (0.070, 0.118, 0.092), (0.070, 0.130, 0.034), 1),
+    "HindPaw_L": ("HindLeg_L_Lower", (0.070, 0.130, 0.034), (0.070, 0.120, 0.000), -1),
+    "HindLeg_R_Upper": ("Pelvis", (-0.068, 0.128, 0.150), (-0.070, 0.118, 0.092), -1),
+    "HindLeg_R_Lower": ("HindLeg_R_Upper", (-0.070, 0.118, 0.092), (-0.070, 0.130, 0.034), 1),
+    "HindPaw_R": ("HindLeg_R_Lower", (-0.070, 0.130, 0.034), (-0.070, 0.120, 0.000), -1),
+}
+# The quadruped sockets on the same parent bones (species place them on their mesh).
+HEAVY_SOCKETS = {
+    "SOCK_HeadTop": ("Head", (0, -0.195, 0.390)),
+    "SOCK_Neck": ("Neck", (0, -0.118, 0.222)),
+    "SOCK_Back": ("Spine", (0, 0.030, 0.320)),
+    "SOCK_TailBase": ("Tail_01", (0, 0.212, 0.246)),
+    "SOCK_Ear_L": ("Ear_L_01", (0.062, -0.180, 0.362)),
+    "SOCK_Ear_R": ("Ear_R_01", (-0.062, -0.180, 0.362)),
+}
+FAMILIES["HeavyQuadruped"] = (HEAVY_QUADRUPED, HEAVY_SOCKETS)
+
+# T52 Bird (RIG-004): proportions of the Owl (A-SP-010, about 36 x 44 cm), a round body with the head merged in. No beak,
+# feather or toe bone. Axes: positive X turns tip Body forward (a bow), nod Neck and Head down, swing the wings back,
+# swing the legs forward, lift the toes (Foot) and the tail; Head Y turns the head, Head Z tilts it; on the wings Z flaps
+# (Wing_L out with negative values, Wing_R out with positive ones). The legs hang from Root, so a bow never moves the feet.
+BIRD = {
+    "Root": (None, (0, 0, 0), (0, 0, 0.08), 1),
+    "Body": ("Root", (0, 0.000, 0.060), (0, 0.000, 0.250), 1),
+    "Neck": ("Body", (0, 0.000, 0.250), (0, -0.004, 0.292), 1),
+    "Head": ("Neck", (0, -0.004, 0.292), (0, -0.004, 0.420), 1),
+    "Wing_L_Upper": ("Body", (0.118, 0.004, 0.258), (0.148, 0.034, 0.165), 1),
+    "Wing_L_Lower": ("Wing_L_Upper", (0.148, 0.034, 0.165), (0.138, 0.090, 0.078), 1),
+    "Wing_R_Upper": ("Body", (-0.118, 0.004, 0.258), (-0.148, 0.034, 0.165), 1),
+    "Wing_R_Lower": ("Wing_R_Upper", (-0.148, 0.034, 0.165), (-0.138, 0.090, 0.078), 1),
+    "Leg_L": ("Root", (0.052, -0.030, 0.085), (0.052, -0.052, 0.024), -1),
+    "Foot_L": ("Leg_L", (0.052, -0.052, 0.024), (0.052, -0.098, 0.010), -1),
+    "Leg_R": ("Root", (-0.052, -0.030, 0.085), (-0.052, -0.052, 0.024), -1),
+    "Foot_R": ("Leg_R", (-0.052, -0.052, 0.024), (-0.052, -0.098, 0.010), -1),
+    "Tail_01": ("Body", (0, 0.118, 0.102), (0, 0.158, 0.082), 1),
+    "Tail_02": ("Tail_01", (0, 0.158, 0.082), (0, 0.192, 0.068), 1),
+}
+# Four sockets (the owl hides the ears: no Ear sockets on the family). Back sits between the wings.
+BIRD_SOCKETS = {
+    "SOCK_HeadTop": ("Head", (0, -0.020, 0.432)),
+    "SOCK_Neck": ("Neck", (0, -0.104, 0.250)),
+    "SOCK_Back": ("Body", (0, 0.112, 0.262)),
+    "SOCK_TailBase": ("Tail_01", (0, 0.134, 0.096)),
+}
+FAMILIES["Bird"] = (BIRD, BIRD_SOCKETS)
+
 # T51: bone placement per species on the same skeleton, as data. A Generic clip sets each bone's local rotation, so a
 # species may move and resize its bones but never turn them: every bone keeps the family direction and roll (the Fawn's),
 # only its head and length change. Entry: (head, length), or a length alone for a bone that starts where its parent

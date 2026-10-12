@@ -12,7 +12,7 @@ namespace PocketWilds.Editor.Import
     /// </summary>
     public sealed class AssetImportRules : AssetPostprocessor
     {
-        private const uint Version = 6;
+        private const uint Version = 7;
 
         public const string AnimalsRoot = "Assets/_Game/Art/Animals/";
         public const string AnimationsRoot = "Assets/_Game/Art/Animations/";
@@ -22,13 +22,38 @@ namespace PocketWilds.Editor.Import
         /// <summary>T49: an event's own props (decorations, monument): static props like the environment's.</summary>
         public const string EventsRoot = "Assets/_Game/Art/Events/";
 
+        /// <summary>
+        /// T52 SK_Bird sockets: socket name and its parent bone path below the armature root, as pw_rig's BIRD and
+        /// BIRD_SOCKETS tables place them (Back sits between the wings, TailBase on the first tail bone). Adjust this table only when the
+        /// bird skeleton changes; AnimalAssetTests checks every socket path against the imported bird models.
+        /// </summary>
+        public static readonly (string Socket, string Parent)[] BirdSocketParents =
+        {
+            ("SOCK_HeadTop", "Root/Body/Neck/Head"),
+            ("SOCK_Neck", "Root/Body/Neck"),
+            ("SOCK_Back", "Root/Body"),
+            ("SOCK_TailBase", "Root/Body/Tail_01"),
+        };
+
         /// <summary>Sockets exposed when GameObjects are optimized, per rig family. Paths are below the model root.</summary>
         public static readonly Dictionary<string, string[]> FamilySockets = new Dictionary<string, string[]>
         {
             ["SK_SmallQuadruped"] = QuadrupedSockets("SK_SmallQuadruped"),
             // T46: same bone names and socket parents (pw_rig), another root.
             ["SK_MediumQuadruped"] = QuadrupedSockets("SK_MediumQuadruped"),
+            // T52 RIG-003: the quadruped bone names and socket parents again (ears included).
+            ["SK_HeavyQuadruped"] = QuadrupedSockets("SK_HeavyQuadruped"),
+            // T52 RIG-004: no ears; the other four sockets on the bird's own chain (BirdSocketParents).
+            ["SK_Bird"] = Sockets("SK_Bird", BirdSocketParents),
         };
+
+        private static string[] Sockets(string root, (string Socket, string Parent)[] parents)
+        {
+            var paths = new string[parents.Length];
+            for (int i = 0; i < parents.Length; i++)
+                paths[i] = root + "/" + parents[i].Parent + "/" + parents[i].Socket;
+            return paths;
+        }
 
         private static string[] QuadrupedSockets(string root) => new[]
         {

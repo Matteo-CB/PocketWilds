@@ -438,6 +438,9 @@ namespace PocketWilds.Editor.Audio
                 new SpeciesVoice { species = "species.badger", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 0.80f },
                 new SpeciesVoice { species = "species.raccoon", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 1.05f },
                 new SpeciesVoice { species = "species.redpanda", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 1.12f },
+                // T52 (no bird or heavy bank yet): owl, a soft low hoot; boar piglet, soft little grunts.
+                new SpeciesVoice { species = "species.owl", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 0.82f },
+                new SpeciesVoice { species = "species.boarpiglet", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 0.95f },
                 // T47 companion: its own happy squeak (signature sound), the small family's sleep and eat.
                 new SpeciesVoice
                 {

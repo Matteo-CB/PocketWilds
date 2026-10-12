@@ -1,0 +1,189 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3fca47bd620ed94d97b65eda064ecb2, type: 3}
+  m_Name: DEF_Species_Owl
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.SpeciesDefinitionAsset
+  sourceId: species.owl
+  displayKey: species.owl.name
+  rigFamily: 3
+  biomeId: biome.forest
+  baseProduction: 8
+  visualKey: PF_Animal_Owl
+  secret: 0
+  companion: 0
+  hiddenSockets: 0405
+  variants:
+  - sourceId: variant.owl.brown
+    displayKey: variant.owl.brown.name
+    rarity: 0
+    primary: {r: 0.5411765, g: 0.39215687, b: 0.27450982, a: 1}
+    secondary: {r: 0.8901961, g: 0.8039216, b: 0.6901961, a: 1}
+    belly: {r: 0.9529412, g: 0.90588236, b: 0.827451, a: 1}
+    detail: {r: 0.8235294, g: 0.6039216, b: 0.2901961, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.91764706, g: 0.8392157, b: 0.72156864, a: 1}
+    patternChannel: 1
+    patternStrength: 10
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.owl.tawny
+    displayKey: variant.owl.tawny.name
+    rarity: 0
+    primary: {r: 0.7607843, g: 0.47843137, b: 0.26666668, a: 1}
+    secondary: {r: 0.9529412, g: 0.8901961, b: 0.78431374, a: 1}
+    belly: {r: 0.9647059, g: 0.91764706, b: 0.83137256, a: 1}
+    detail: {r: 0.8509804, g: 0.627451, b: 0.28235295, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.9490196, g: 0.8666667, b: 0.74509805, a: 1}
+    patternChannel: 1
+    patternStrength: 10
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.owl.grey
+    displayKey: variant.owl.grey.name
+    rarity: 1
+    primary: {r: 0.7176471, g: 0.70980394, b: 0.7019608, a: 1}
+    secondary: {r: 0.9490196, g: 0.9372549, b: 0.9098039, a: 1}
+    belly: {r: 1, g: 1, b: 1, a: 1}
+    detail: {r: 0.5568628, g: 0.54901963, b: 0.5568628, a: 1}
+    eye: {r: 0.101960786, g: 0.08627451, b: 0.09411765, a: 1}
+    pattern: {r: 0.93333334, g: 0.92941177, b: 0.91764706, a: 1}
+    patternChannel: 1
+    patternStrength: 10
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.owl.cream
+    displayKey: variant.owl.cream.name
+    rarity: 1
+    primary: {r: 0.93333334, g: 0.8745098, b: 0.76862746, a: 1}
+    secondary: {r: 1, g: 0.99215686, b: 0.972549, a: 1}
+    belly: {r: 1, g: 1, b: 1, a: 1}
+    detail: {r: 0.7529412, g: 0.5411765, b: 0.32156864, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 1, g: 0.972549, b: 0.9254902, a: 1}
+    patternChannel: 1
+    patternStrength: 10
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.owl.dark
+    displayKey: variant.owl.dark.name
+    rarity: 2
+    primary: {r: 0.2901961, g: 0.22745098, b: 0.19607843, a: 1}
+    secondary: {r: 0.5411765, g: 0.49411765, b: 0.4627451, a: 1}
+    belly: {r: 0.8509804, g: 0.78431374, b: 0.68235296, a: 1}
+    detail: {r: 0.54901963, g: 0.5411765, b: 0.54901963, a: 1}
+    eye: {r: 0.07058824, g: 0.047058824, b: 0.047058824, a: 1}
+    pattern: {r: 0.47843137, g: 0.40784314, b: 0.36078432, a: 1}
+    patternChannel: 1
+    patternStrength: 10
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.owl.constellation
+    displayKey: variant.owl.constellation.name
+    rarity: 3
+    primary: {r: 0.18039216, g: 0.22745098, b: 0.36862746, a: 1}
+    secondary: {r: 0.7882353, g: 0.7137255, b: 0.89411765, a: 1}
+    belly: {r: 0.5568628, g: 0.6039216, b: 0.7058824, a: 1}
+    detail: {r: 0.72156864, g: 0.6627451, b: 0.8, a: 1}
+    eye: {r: 0.07058824, g: 0.07058824, b: 0.101960786, a: 1}
+    pattern: {r: 0.95686275, g: 0.9411765, b: 1, a: 1}
+    patternChannel: 4
+    patternStrength: 15
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.owl.cocoa
+    displayKey: variant.owl.cocoa.name
+    rarity: 2
+    primary: {r: 0.47843137, g: 0.33333334, b: 0.26666668, a: 1}
+    secondary: {r: 0.9529412, g: 0.9019608, b: 0.8117647, a: 1}
+    belly: {r: 0.9019608, g: 0.827451, b: 0.70980394, a: 1}
+    detail: {r: 0.7882353, g: 0.6039216, b: 0.36862746, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.40690196, g: 0.27833334, b: 0.21966667, a: 1}
+    patternChannel: 0
+    patternStrength: 0
+    secret: 1
+    visitor: 0
+    masteryLevel: 10
+    moduleSlot: 0
+  - sourceId: variant.owl.periwinkle
+    displayKey: variant.owl.periwinkle.name
+    rarity: 3
+    primary: {r: 0.5568628, g: 0.60784316, b: 0.84705883, a: 1}
+    secondary: {r: 0.83137256, g: 0.7607843, b: 0.9254902, a: 1}
+    belly: {r: 0.972549, g: 0.96862745, b: 1, a: 1}
+    detail: {r: 0.6039216, g: 0.56078434, b: 0.72156864, a: 1}
+    eye: {r: 0.08627451, g: 0.078431375, b: 0.1254902, a: 1}
+    pattern: {r: 0.36862746, g: 0.41568628, b: 0.72156864, a: 1}
+    patternChannel: 3
+    patternStrength: 13
+    secret: 1
+    visitor: 0
+    masteryLevel: 20
+    moduleSlot: 0
+  - sourceId: variant.owl.honeywings
+    displayKey: variant.owl.honeywings.name
+    rarity: 4
+    primary: {r: 0.78431374, g: 0.57254905, b: 0.2901961, a: 1}
+    secondary: {r: 0.95686275, g: 0.8666667, b: 0.7058824, a: 1}
+    belly: {r: 0.9647059, g: 0.9098039, b: 0.8, a: 1}
+    detail: {r: 0.72156864, g: 0.5019608, b: 0.24313726, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 1, g: 0.8509804, b: 0.47058824, a: 1}
+    patternChannel: 1
+    patternStrength: 15
+    secret: 1
+    visitor: 0
+    masteryLevel: 30
+    moduleSlot: 0
+  - sourceId: variant.owl.fullmoon
+    displayKey: variant.owl.fullmoon.name
+    rarity: 3
+    primary: {r: 0.94509804, g: 0.9098039, b: 0.8392157, a: 1}
+    secondary: {r: 0.95686275, g: 0.9647059, b: 0.98039216, a: 1}
+    belly: {r: 0.9843137, g: 0.972549, b: 0.9411765, a: 1}
+    detail: {r: 0.84705883, g: 0.7764706, b: 0.627451, a: 1}
+    eye: {r: 0.11764706, g: 0.09411765, b: 0.1254902, a: 1}
+    pattern: {r: 0.9098039, g: 0.93333334, b: 0.972549, a: 1}
+    patternChannel: 1
+    patternStrength: 15
+    secret: 1
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.owl.russet_visitor
+    displayKey: variant.owl.russet_visitor.name
+    rarity: 2
+    primary: {r: 0.72156864, g: 0.3372549, b: 0.18039216, a: 1}
+    secondary: {r: 0.9411765, g: 0.8235294, b: 0.7058824, a: 1}
+    belly: {r: 0.95686275, g: 0.8862745, b: 0.78431374, a: 1}
+    detail: {r: 0.83137256, g: 0.6039216, b: 0.3137255, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.9490196, g: 0.78039217, b: 0.6039216, a: 1}
+    patternChannel: 1
+    patternStrength: 12
+    secret: 1
+    visitor: 1
+    masteryLevel: 0
+    moduleSlot: 0

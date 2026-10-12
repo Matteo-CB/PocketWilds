@@ -101,7 +101,7 @@ namespace PocketWilds.Tests.EditMode
             var id = SpeciesId(c);
             Assert.IsTrue(registry.Species.TryGet(id, out var species));
             Assert.AreEqual("PF_Animal_" + c.Name, species.VisualKey);
-            Assert.AreEqual(c.Family == "MediumQuadruped" ? RigFamily.MediumQuadruped : RigFamily.SmallQuadruped, species.RigFamily);
+            Assert.AreEqual((RigFamily)System.Enum.Parse(typeof(RigFamily), c.Family), species.RigFamily, "the family name is the RigFamily name");
             Assert.AreEqual(ContentId.FromSource("biome.grassland"), species.Biome);
             foreach (var (name, rarity) in c.Variants)
             {
