@@ -22,9 +22,10 @@ namespace PocketWilds.Editor.World
     /// T27 world streaming setup, all from code (doc 11: nothing hidden in one Editor state):
     /// Addressables groups N-GRP-BIOME-GRASSLAND (one bundle per chunk) and its shared kit (meshes, materials and
     /// shaders both chunks use, so no bundle duplicates them), label biome_grassland, DEF_ChunkSet_Grassland, and
-    /// SC_VerticalSlice_Grassland without a chunk in the scene file. Idempotent.
+    /// SC_VerticalSlice_Grassland without a chunk in the scene file. Idempotent. T50 (WorldContentPipeline.T50.cs): the scene names
+    /// no biome at all (every biome loads by its world profile) and World_Shared owns what several biomes use.
     /// </summary>
-    public static class WorldContentPipeline
+    public static partial class WorldContentPipeline
     {
         public const string ChunkSetPath = "Assets/_Game/Content/Biomes/DEF_ChunkSet_Grassland.asset";
         public const string ScenePath = "Assets/_Game/Scenes/SC_VerticalSlice_Grassland.unity";
@@ -65,7 +66,12 @@ namespace PocketWilds.Editor.World
             // (its ground mesh and merged prop meshes), which is exactly what a release frees.
             var shared = SharedDependencies(GrasslandChunks.Select(c => c.path).ToArray());
             // T49B: the biome's world profile (world.grassland, Biome Wizard) also lives in the kit group: never stale.
-            var stale = kit.entries.Where(e => !shared.Contains(e.AssetPath)
+            // T50: nor an entry two of the biome's bundles still use (ShareWithinBiomes: a chunk and the zone kit...).
+            var biome = BiomeContents(settings).FirstOrDefault(b => b.KitGroup == KitGroup);
+            var multi = biome != null
+                ? new HashSet<string>(BundleUsers(settings, biome).Where(p => p.Value.Count > 1).Select(p => p.Key), StringComparer.Ordinal)
+                : new HashSet<string>(StringComparer.Ordinal);
+            var stale = kit.entries.Where(e => !shared.Contains(e.AssetPath) && !multi.Contains(e.AssetPath)
                                                && !e.address.StartsWith("world.", StringComparison.Ordinal)).ToList();
             foreach (var entry in stale)
                 settings.RemoveAssetEntry(entry.guid);
@@ -147,7 +153,7 @@ namespace PocketWilds.Editor.World
             EditorUtility.SetDirty(set);
         }
 
-        /// <summary>The scene keeps its camera, light, UI and entry; the chunks now come from the streamer.</summary>
+        /// <summary>The scene keeps its camera, light, UI and entry; the chunks now come from the streamer (T50: by the profiles).</summary>
         private static void MigrateScene()
         {
             var active = EditorSceneManager.GetActiveScene();
@@ -164,7 +170,8 @@ namespace PocketWilds.Editor.World
             if (entry == null)
                 throw new InvalidOperationException("SceneEntry (VerticalSliceEntry) missing in " + ScenePath);
             var serialized = new SerializedObject(entry);
-            serialized.FindProperty("_chunkSet").objectReferenceValue = AssetDatabase.LoadAssetAtPath<WorldChunkSet>(ChunkSetPath);
+            // T50: no biome reference in the scene: the chunk set comes with the Grassland's world profile (world.grassland).
+            ClearSceneBiomeReferences(serialized);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);

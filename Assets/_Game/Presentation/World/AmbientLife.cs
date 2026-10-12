@@ -617,6 +617,7 @@ namespace PocketWilds.Presentation
                     if (flat.sqrMagnitude > 1e-4f)
                         a.Forward = Vector3.Slerp(a.Forward, flat.normalized, Mathf.Clamp01(dt * 5f));
                     a.Pitch = Mathf.Clamp(-tangent.y * 6f, -25f, 25f);
+                    SeparateInFlight(ref a, s, index);
                     // Coming down, an animal walks under the way or onto the landing spot: the bird pulls up and lands
                     // elsewhere; with no way out, it holds above the animal until it has passed.
                     if (t > 0.5f && t < 1f && (AnimalInTheWay(a.Position, s.Radius + 0.12f, out var below, out float top) || !GroundFree(ref a, s, index, a.Target)))
@@ -759,10 +760,22 @@ namespace PocketWilds.Presentation
             RebuildObstacles();
         }
 
+        private Obstacle[] _seamObstacles = System.Array.Empty<Obstacle>();
+
+        /// <summary>
+        /// T50: the props of another biome's chunks along this biome's seam (world space): a Forest bird near the Entry keeps out
+        /// of the ForestEdge's trees, and the other way round. Rebuilds the near lists (allocates: chunk transitions only).
+        /// </summary>
+        public void SetSeamObstacles(Obstacle[] volumes)
+        {
+            _seamObstacles = volumes ?? System.Array.Empty<Obstacle>();
+            RebuildObstacles();
+        }
+
         /// <summary>All active chunks' obstacles, and for each agent the ones near its home (allocates: Add/Remove only).</summary>
         private void RebuildObstacles()
         {
-            int total = _extraObstacles.Length;
+            int total = _extraObstacles.Length + _seamObstacles.Length;
             foreach (var chunk in _chunks)
                 total += chunk != null ? chunk.ObstacleCount : 0;
             if (_obstacles.Length < total)
@@ -778,6 +791,8 @@ namespace PocketWilds.Presentation
             }
             for (int i = 0; i < _extraObstacles.Length; i++)
                 _obstacles[count++] = _extraObstacles[i];
+            for (int i = 0; i < _seamObstacles.Length; i++)
+                _obstacles[count++] = _seamObstacles[i];
             var near = new List<int>();
             foreach (var s in _species)
             {
@@ -815,6 +830,34 @@ namespace PocketWilds.Presentation
                     return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// T50 nothing enters anything, in the air too: two birds whose ways cross never touch. The bird with the lower index
+        /// keeps its way (deterministic) and a standing bird keeps its spot; the other rises over it, or dips under it when
+        /// rising would enter a crown and there is room above the ground. No allocation.
+        /// </summary>
+        private void SeparateInFlight(ref Agent a, SpeciesState s, int index)
+        {
+            float gap = 2f * s.Radius + 0.01f;
+            for (int j = 0; j < s.Count; j++)
+            {
+                if (j == index)
+                    continue;
+                ref var b = ref s.Agents[j];
+                if (b.Slot >= s.ActiveSlots || (b.State == Fly && j > index))
+                    continue;
+                var d = a.Position - b.Position;
+                if (d.sqrMagnitude >= gap * gap)
+                    continue;
+                float horizontal = Mathf.Sqrt(d.x * d.x + d.z * d.z);
+                float needed = Mathf.Sqrt(Mathf.Max(0f, gap * gap - horizontal * horizontal)) + 0.002f;
+                var raised = new Vector3(a.Position.x, b.Position.y + needed, a.Position.z);
+                if (!InsideVolume(ref a, raised, s.Radius))
+                    a.Position = raised;
+                else if (b.Position.y - needed - s.Radius > a.Ground.HeightAt(a.Position.x, a.Position.z))
+                    a.Position.y = b.Position.y - needed;
+            }
         }
 
         private bool FlightClear(ref Agent a, Vector3 from, Vector3 apex, Vector3 to, float r)

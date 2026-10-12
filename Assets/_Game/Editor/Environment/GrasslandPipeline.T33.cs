@@ -99,7 +99,7 @@ namespace PocketWilds.Editor.Environment
 
         // ---------------- materials, kit, quality ----------------
 
-        private static Material EnsureFoliageMaterial()
+        internal static Material EnsureFoliageMaterial()
         {
             var shader = Shader.Find(FoliageShader) ?? throw new InvalidOperationException("Shader not found: " + FoliageShader);
             var material = AssetDatabase.LoadAssetAtPath<Material>(FoliageMaterialPath);
@@ -583,8 +583,10 @@ namespace PocketWilds.Editor.Environment
         }
 
         /// <summary>Footprint radius of a prop (m at scale 1): scatter keeps out, animals stop at this distance.</summary>
-        private static float PropRadius(string prop) => prop switch
+        internal static float PropRadius(string prop) => prop switch
         {
+            // T50: the Forest's pieces are measured on their models (ForestPipeline.PropRadius).
+            _ when prop.StartsWith("FO_", StringComparison.Ordinal) => ForestPipeline.PropRadius(prop),
             _ when prop.StartsWith("GL_Tree", StringComparison.Ordinal) => 0.42f,
             "GL_Bush_A" => 0.5f,
             "GL_Bush_B" => 0.55f,
@@ -629,9 +631,11 @@ namespace PocketWilds.Editor.Environment
             public Func<Vector3, float, bool> Excluded;
             /// <summary>T33C: the props' measured volumes; no plant, flower or pebble ever enters one.</summary>
             public List<CollisionProxies.Placed> Solids;
+            /// <summary>T50: share of the grass and flowers kept at a point (null: all). The ForestEdge thins into the Forest's moss.</summary>
+            public Func<Vector3, float> Thin;
         }
 
-        private struct ScatterPoint
+        internal struct ScatterPoint
         {
             public int Kind;
             public Vector3 Position;
@@ -753,6 +757,8 @@ namespace PocketWilds.Editor.Environment
                     float patch = Mathf.Lerp(0.42f, 1f, Noise(p.x, p.z, 0.32f, rules.Seed * 0.013f));
                     float worn = rules.Worn(p);
                     float density = patch * Mathf.Clamp01(1f - worn * 1.6f) * Mathf.Lerp(1f, 0.7f, lawn);
+                    if (rules.Thin != null)
+                        density *= rules.Thin(p);
                     if (rng.NextDouble() > density)
                         continue;
                     float clearance = Clearance(p);
@@ -810,7 +816,8 @@ namespace PocketWilds.Editor.Environment
                 if (!rules.Inside(center) || rules.Worn(center) > 0.2f || Clearance(center) < 0.25f
                     || Vector3.Distance(center, new Vector3(rules.Clear.x, 0f, rules.Clear.z)) < rules.ClearRadius + 0.9f
                     || (!rim && Vector3.Distance(new Vector3(center.x, 0f, center.z), new Vector3(rules.Lawn.x, 0f, rules.Lawn.z)) < rules.LawnRadius * 0.8f)
-                    || flowerCenters.Any(c => Vector3.Distance(c, center) < (rim ? 1.4f : 1.1f)))
+                    || flowerCenters.Any(c => Vector3.Distance(c, center) < (rim ? 1.4f : 1.1f))
+                    || (rules.Thin != null && rules.Thin(center) < 0.6f))
                     continue;
                 string species = PickSpecies();
                 int kind = Kind(species);
@@ -838,7 +845,8 @@ namespace PocketWilds.Editor.Environment
             for (int i = 0, tries = 0; i < rules.FlowerSingles && tries < 400; tries++)
             {
                 var p = new Vector3((float)(rng.NextDouble() * 13.0 - 6.5), 0f, (float)(rng.NextDouble() * 13.0 - 6.5));
-                if (Vector3.Distance(new Vector3(p.x, 0f, p.z), new Vector3(rules.Lawn.x, 0f, rules.Lawn.z)) < rules.LawnRadius * 0.7f || rules.Worn(p) > 0.2f)
+                if (Vector3.Distance(new Vector3(p.x, 0f, p.z), new Vector3(rules.Lawn.x, 0f, rules.Lawn.z)) < rules.LawnRadius * 0.7f || rules.Worn(p) > 0.2f
+                    || (rules.Thin != null && rules.Thin(p) < 0.6f))
                     continue;
                 if (Place(Kind(PickSpecies()), p, 1.15f + (float)rng.NextDouble() * 0.3f, rng.NextDouble(), 0.08f))
                     i++;
@@ -903,7 +911,7 @@ namespace PocketWilds.Editor.Environment
             return points;
         }
 
-        private static ScatterData SaveScatter(string path, ScatterKit kit, List<ScatterPoint> points)
+        internal static ScatterData SaveScatter(string path, ScatterKit kit, List<ScatterPoint> points)
         {
             var data = AssetDatabase.LoadAssetAtPath<ScatterData>(path);
             if (data == null)
@@ -939,14 +947,14 @@ namespace PocketWilds.Editor.Environment
         }
 
         /// <summary>A point above the ground mesh: life anchors sit on the grass (birds) or at a flight height.</summary>
-        private static Vector3 OnGround(Mesh ground, float x, float height, float z)
+        internal static Vector3 OnGround(Mesh ground, float x, float height, float z)
         {
             float y = new GroundSampler(ground).TrySample(x, z, out float h, out _) ? h : 0f;
             return new Vector3(x, y + height, z);
         }
 
         /// <summary>Height and normal of a ground mesh under a point (chunk space), brute force over a coarse grid.</summary>
-        private sealed class GroundSampler
+        internal sealed class GroundSampler
         {
             private readonly Vector3[] _vertices;
             private readonly int[] _triangles;

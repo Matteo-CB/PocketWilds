@@ -27,25 +27,27 @@ namespace PocketWilds.Editor.Environment
         private const float WaterScanStep = 0.05f;
 
         /// <summary>Props of the chunks built so far, world space: the next chunk settles against them at its seams.</summary>
-        private static readonly Dictionary<string, List<(string prop, Vector3 position, float yaw, float scale)>> BuiltProps =
+        internal static readonly Dictionary<string, List<(string prop, Vector3 position, float yaw, float scale)>> BuiltProps =
             new Dictionary<string, List<(string prop, Vector3 position, float yaw, float scale)>>();
 
-        private static List<CollisionProxies.Placed> PlaceLayout(IEnumerable<Placement> layout, Dictionary<string, GameObject> prefabs, Vector3 offset = default) =>
+        internal static List<CollisionProxies.Placed> PlaceLayout(IEnumerable<Placement> layout, Dictionary<string, GameObject> prefabs, Vector3 offset = default) =>
             layout.Select(p => CollisionProxies.Place(CollisionProxies.Measure(prefabs[p.Prop]), p.Position + offset, p.Yaw, p.Scale)).ToList();
 
         /// <summary>Who stays put when two props overlap: landmarks, then rim pieces, trees, bushes, the rest.</summary>
         private static int SettlePriority(string prop) =>
-            prop.StartsWith("GL_Landmark", StringComparison.Ordinal) ? 5
-            : prop.StartsWith("GL_Edge", StringComparison.Ordinal) || prop == "GL_StreamStones" ? 4
-            : prop.StartsWith("GL_Tree", StringComparison.Ordinal) ? 3
-            : prop.StartsWith("GL_Bush", StringComparison.Ordinal) || prop.StartsWith("GL_RockHero", StringComparison.Ordinal) ? 2
+            prop.StartsWith("GL_Landmark", StringComparison.Ordinal) || prop.StartsWith("FO_Landmark", StringComparison.Ordinal) ? 5
+            : prop.StartsWith("GL_Edge", StringComparison.Ordinal) || prop == "GL_StreamStones" || prop == "FO_TinyBridge" || prop == "FO_SteppingStones" ? 4
+            : prop.StartsWith("GL_Tree", StringComparison.Ordinal) || prop.StartsWith("FO_Tree", StringComparison.Ordinal) ? 3
+            : prop.StartsWith("GL_Bush", StringComparison.Ordinal) || prop.StartsWith("GL_RockHero", StringComparison.Ordinal)
+              || prop.StartsWith("FO_Bush", StringComparison.Ordinal) || prop == "FO_MossRock_Hero" || prop == "FO_Stump" || prop == "FO_HollowLog"
+              || prop == "FO_RootArch" ? 2
             : 1;
 
         /// <summary>
         /// Pushes overlapping props apart (the lesser one moves, along the shortest way out) until no volume enters
         /// another, this chunk's and the neighbours' at the seams. Returns one line per moved prop.
         /// </summary>
-        private static List<string> SettleProps(string chunkName, Vector3 origin, List<Placement> layout, Dictionary<string, GameObject> prefabs,
+        internal static List<string> SettleProps(string chunkName, Vector3 origin, List<Placement> layout, Dictionary<string, GameObject> prefabs,
             Func<float, float, float, float> groundY = null)
         {
             var neighbours = new List<CollisionProxies.Placed>();
@@ -55,9 +57,10 @@ namespace PocketWilds.Editor.Environment
                     continue;
                 foreach (var p in entry.Value)
                 {
-                    if (Mathf.Abs(p.position.x - origin.x) > 10f)
+                    // T50: another biome's props are known only to its own build (the Forest settles against the ForestEdge).
+                    if (Mathf.Abs(p.position.x - origin.x) > 10f || !prefabs.TryGetValue(p.prop, out var neighbour))
                         continue;
-                    neighbours.Add(CollisionProxies.Place(CollisionProxies.Measure(prefabs[p.prop]), p.position - origin, p.yaw, p.scale));
+                    neighbours.Add(CollisionProxies.Place(CollisionProxies.Measure(neighbour), p.position - origin, p.yaw, p.scale));
                 }
             }
 
@@ -132,7 +135,7 @@ namespace PocketWilds.Editor.Environment
         }
 
         /// <summary>The chunk's obstacles (props' bands, water) and ground heights, chunk space.</summary>
-        private static (Obstacle[] obstacles, GroundHeightField ground) BuildCollision(List<Placement> layout, Dictionary<string, GameObject> prefabs,
+        internal static (Obstacle[] obstacles, GroundHeightField ground) BuildCollision(List<Placement> layout, Dictionary<string, GameObject> prefabs,
             Mesh groundMesh, Mesh waterMesh)
         {
             var obstacles = new List<Obstacle>();
@@ -148,7 +151,7 @@ namespace PocketWilds.Editor.Environment
         public const float SpawnClearance = 0.45f;
 
         /// <summary>Moves spawn points out of every obstacle (props, water, steep ground) and back onto the ground.</summary>
-        private static void ClearSpawns(IEnumerable<Transform> spawns, Obstacle[] obstacles, GroundHeightField field)
+        internal static void ClearSpawns(IEnumerable<Transform> spawns, Obstacle[] obstacles, GroundHeightField field)
         {
             foreach (var spawn in spawns)
             {
@@ -329,7 +332,7 @@ namespace PocketWilds.Editor.Environment
         {
             var volumes = BuiltPropVolumes();
             var report = new List<string>();
-            foreach (var (address, path, origin, _) in World.WorldContentPipeline.GrasslandChunks)
+            foreach (var (address, path, origin) in StripWorldChunks)
             {
                 var chunk = UnityEditor.AssetDatabase.LoadAssetAtPath<WorldChunk>(path);
                 var data = chunk != null ? chunk.Scatter : null;
@@ -375,11 +378,18 @@ namespace PocketWilds.Editor.Environment
             return report.Count == 0 ? "no scatter inside a prop" : "scatter removed inside props: " + string.Join(", ", report);
         }
 
-        /// <summary>The props of every built Grassland chunk prefab, measured again from their instances (world space).</summary>
+        /// <summary>
+        /// T50: every chunk of the world strip in order, the Grassland's then the Forest's (ForestPipeline.ChunkEntries): the
+        /// seam at x 105 is checked like any other (props never enter each other, scatter never grows inside a neighbour's prop).
+        /// </summary>
+        public static IEnumerable<(string address, string path, Vector3 origin)> StripWorldChunks =>
+            World.WorldContentPipeline.GrasslandChunks.Select(c => (c.address, c.path, c.origin)).Concat(ForestPipeline.ChunkEntries);
+
+        /// <summary>The props of every built chunk prefab of the strip (Grassland and Forest), measured again from their instances (world space).</summary>
         public static List<PropVolume> BuiltPropVolumes()
         {
             var result = new List<PropVolume>();
-            foreach (var (address, path, origin, _) in World.WorldContentPipeline.GrasslandChunks)
+            foreach (var (address, path, origin) in StripWorldChunks)
             {
                 var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (prefab == null)

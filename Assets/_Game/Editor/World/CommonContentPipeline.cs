@@ -53,7 +53,10 @@ namespace PocketWilds.Editor.World
         [MenuItem("Pocket Wilds/World/Setup Common Content (T34C)", priority = 182)]
         public static void SetupMenu() => Debug.Log("[CommonContent] " + Setup());
 
-        public static string Setup()
+        public static string Setup() => Setup(true);
+
+        /// <param name="analyze">False when a caller runs the duplicate analysis itself afterwards (T50 LoadBiomesByProfile).</param>
+        public static string Setup(bool analyze)
         {
             var settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
             settings.AddLabel(BootLabel);
@@ -77,15 +80,22 @@ namespace PocketWilds.Editor.World
             ResaveScenes();
             AssetDatabase.SaveAssets();
             return $"Bootstrap: {boot.entries.Count} entries ({string.Join(", ", worldShaders.Select(Path.GetFileName))}); " +
-                   $"CommonAnimals: {animals.entries.Count} entries; {warmup}; " + WorldContentPipeline.Analyze(settings);
+                   $"CommonAnimals: {animals.entries.Count} entries; {warmup}" + (analyze ? "; " + WorldContentPipeline.Analyze(settings) : ".");
         }
 
-        /// <summary>Shaders the world chunks depend on (the world masters).</summary>
+        /// <summary>
+        /// Shaders the world content depends on (the world masters): the Grassland chunks, and (T50) every biome's Addressables
+        /// content (chunks, world profile with its moods' skies, weather and life kits, zone and scatter kits), since the scene no
+        /// longer holds any biome asset. Owned by Bootstrap, so no biome bundle copies them and their warmup is the group's.
+        /// </summary>
         public static List<string> WorldShaders()
         {
+            var roots = new SortedSet<string>(WorldContentPipeline.GrasslandChunks.Select(c => c.path), StringComparer.Ordinal);
+            foreach (var biome in WorldContentPipeline.BiomeContents(AddressableAssetSettingsDefaultObject.GetSettings(false)))
+                roots.UnionWith(biome.Roots);
             var shaders = new SortedSet<string>(StringComparer.Ordinal);
-            foreach (var chunk in WorldContentPipeline.GrasslandChunks)
-                foreach (var dependency in AssetDatabase.GetDependencies(chunk.path, true))
+            foreach (var root in roots)
+                foreach (var dependency in AssetDatabase.GetDependencies(root, true))
                     if (dependency.StartsWith("Assets/", StringComparison.Ordinal) && dependency.EndsWith(".shader", StringComparison.Ordinal))
                         shaders.Add(dependency);
             return shaders.ToList();

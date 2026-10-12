@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using PocketWilds.Core;
@@ -10,44 +11,54 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 namespace PocketWilds.Presentation
 {
     /// <summary>
-    /// Root of SC_VerticalSlice_Grassland. Receives the GameContext from the bootstrap, streams the grassland
+    /// Root of SC_VerticalSlice_Grassland. Receives the GameContext from the bootstrap, streams the world's
     /// chunks (the pinned start chunk is ready before Enter), applies lighting and quality, frames the camera and
     /// runs the playable refuge loop (RefugeController). The only Update of the scene.
+    /// T50: the world is one strip of several biomes, each loaded by its world profile (BiomeWorldProfile, world.{key},
+    /// Addressable in the biome's kit group), the Grassland included: the scene keeps only what no biome owns (world quality,
+    /// season looks, sun, camera, UI), so no biome asset is copied into the player or into two bundles (World_Shared owns
+    /// what several biomes use). The profiles load together behind the loading screen, in world order west to east (the first
+    /// hosts the refuge). One streamer carries every chunk set; the camera focus's place on the strip (BiomeRegions) blends
+    /// the light and the weather, switches the audio beds and the hatch's camera biome at the start of a biome, and each
+    /// biome's chunks feed its own ambient life (the Forest's fireflies come out every evening).
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class VerticalSliceEntry : MonoBehaviour, ISceneEntry, ISceneEntryPreparation, IRefugeTapHandler, IAmbientLifeListener
     {
-        [Tooltip("Chunks of the biome, streamed through Addressables. The pinned one hosts the refuge.")]
-        [SerializeField] private WorldChunkSet _chunkSet;
+        [Tooltip("T50: the biomes of the strip by key, west to east (the first hosts the refuge): each one's BiomeWorldProfile loads from " +
+                 "world.{key} (Addressable in its kit group). A key without a profile, or whose chunk prefabs are not all made, is skipped.")]
+        [SerializeField] private string[] _biomeKeys = { "grassland", "forest" };
+        [Tooltip("T50: biome profiles wired directly (captures, test scenes), used before the keys (a key they already give is skipped). Optional.")]
+        [SerializeField] private BiomeWorldProfile[] _biomes = Array.Empty<BiomeWorldProfile>();
         [Tooltip("Ground footprint of the camera is clamped to this distance for rays above the horizon (m).")]
         [SerializeField] private float _footprintMaxDistance = 30f;
-        [SerializeField] private LightingProfile _lighting;
-        [Tooltip("Morning and evening moods blended with the day profile over the local time (T33). Optional.")]
-        [SerializeField] private LightingProfile _morning;
-        [SerializeField] private LightingProfile _evening;
-        [Tooltip("Night mood, only when an event asks for it (T33B). Optional.")]
-        [SerializeField] private LightingProfile _night;
-        [Tooltip("Light rain, rainbow and Magnifique sun rays of the biome (T33B). Optional.")]
-        [SerializeField] private WeatherKit _weatherKit;
         [Tooltip("World densities per quality tier (scatter, ambient life, clouds, height fog).")]
         [SerializeField] private WorldQualityProfile _worldQuality;
-        [Tooltip("Butterflies, bees and birds of the biome, spawned at the chunks' VFX anchors (T33). Optional.")]
-        [SerializeField] private AmbientLifeKit _ambientLife;
         [Tooltip("T48B: the season looks (DEF_SeasonLooks): palette rows, light, weather rules, drift and fireflies. Optional.")]
         [SerializeField] private SeasonLookSet _seasonLooks;
         [SerializeField] private Light _sun;
         [SerializeField] private RefugeCameraRig _cameraRig;
         [Tooltip("Pan limits around the egg spawn (half size, m). Keeps the island edge from filling the screen.")]
         [SerializeField] private Vector2 _panHalfSize = new Vector2(3.5f, 4f);
-        [Tooltip("T34B: music and ambience of the biome (BiomeAudioSet address, group Audio_Grassland). Empty: silent beds.")]
-        [SerializeField] private string _biomeAudioKey = "audio.grassland";
+
+        [Header("Fallback: the first biome wired directly (test scenes only; the shipped scene leaves these empty, T50)")]
+        [Tooltip("Used only when set: these fields then stand for the first key's biome, whose profile is not loaded.")]
+        [SerializeField] private WorldChunkSet _chunkSet;
+        [SerializeField] private LightingProfile _lighting;
+        [SerializeField] private LightingProfile _morning;
+        [SerializeField] private LightingProfile _evening;
+        [SerializeField] private LightingProfile _night;
+        [SerializeField] private WeatherKit _weatherKit;
+        [SerializeField] private AmbientLifeKit _ambientLife;
+        [Tooltip("BiomeAudioSet address of the fallback biome. Empty: silent beds.")]
+        [SerializeField] private string _biomeAudioKey = string.Empty;
+        [Tooltip("ZoneKit address of the fallback biome. Empty: no hedge.")]
+        [SerializeField] private string _zoneKitKey = string.Empty;
 
         [Header("Refuge loop")]
         [Tooltip("T34C: hatch staging (egg prefab, feedback effects) in the Addressables group CommonAnimals.")]
         [SerializeField] private string _hatchConfigKey = "animals.hatch";
         [SerializeField] private string _eggId = "egg.grassland.basic";
-        [Tooltip("T35A: hedge and sign of the next zone (ZoneKit address, group Biome_Grassland_Kit). Empty: no hedge.")]
-        [SerializeField] private string _zoneKitKey = "zones.grassland";
         [Tooltip("HUD component implementing IRefugeHud (UI assembly).")]
         [SerializeField] private MonoBehaviour _hud;
         [Tooltip("Offline return screen implementing IOfflineReturnView (UI assembly).")]
@@ -104,7 +115,6 @@ namespace PocketWilds.Presentation
         private WorldChunk _startChunk;
         private Action<int, ChunkStreamState> _onChunkState;
         private Action<QualityState> _onQuality;
-        private AsyncOperationHandle<BiomeAudioSet> _biomeAudio;
         private AsyncOperationHandle<HatchPresentationConfig> _hatch;
         private AsyncOperationHandle<ZoneKit> _zoneKit;
         private RefugeZones _zones;
@@ -116,14 +126,73 @@ namespace PocketWilds.Presentation
         private JournalScreenPresenter _journalPresenter;
         private JournalCaptureLayer _journalCaptures;
         private WishBubbleLayer _bubbles;
+        /// <summary>T50: every biome of the strip, west to east (the first hosts the refuge).</summary>
+        private readonly List<BiomeWorldProfile> _profiles = new List<BiomeWorldProfile>();
+        private readonly List<AsyncOperationHandle<BiomeWorldProfile>> _profileHandles = new List<AsyncOperationHandle<BiomeWorldProfile>>();
+        private AsyncOperationHandle<BiomeAudioSet>[] _audio = Array.Empty<AsyncOperationHandle<BiomeAudioSet>>();
+        /// <summary>T50: the runtime profile standing for the fallback fields (test scenes), destroyed on Exit.</summary>
+        private BiomeWorldProfile _fallback;
+        /// <summary>T50: edit-mode tools only (captures read <see cref="Lighting"/> without a boot): the project's first profile.</summary>
+        [NonSerialized] private BiomeWorldProfile _editorProfile;
+        private AmbientLife[] _lives = Array.Empty<AmbientLife>();
+        private BiomeRegions _regions;
+        private int _cameraBiome;
 
         public bool HasContext => _context != null;
-        public WorldChunkSet ChunkSet => _chunkSet;
+
+        /// <summary>T50: the biomes of the strip by x (null before PrepareAsync).</summary>
+        public BiomeRegions Regions => _regions;
+
+        /// <summary>T50: biomes on the strip, west to east: every profile with its chunks (1 before PrepareAsync).</summary>
+        public int BiomeCount => Math.Max(1, _profiles.Count);
+
+        /// <summary>T50: the biome the camera is in (hysteresis at each start): its audio beds play, the hatch weighs it.</summary>
+        public int CameraBiome => _cameraBiome;
+
+        /// <summary>T50: the world profile of a biome of the strip (0: the first, hosting the refuge); null out of range.</summary>
+        public BiomeWorldProfile GetBiomeProfile(int biome) => biome >= 0 && biome < _profiles.Count ? _profiles[biome] : null;
+
+        /// <summary>T50: the ambient life of a biome (null when it has none). Biome 0 is <see cref="Life"/>.</summary>
+        public AmbientLife GetLife(int biome) => biome >= 0 && biome < _lives.Length ? _lives[biome] : null;
+
+        /// <summary>T50: the audio beds of a biome once loaded (null when missing).</summary>
+        public BiomeAudioSet GetBiomeAudio(int biome) =>
+            biome >= 0 && biome < _audio.Length && _audio[biome].IsValid() && _audio[biome].Status == AsyncOperationStatus.Succeeded
+                ? _audio[biome].Result
+                : null;
+
+        /// <summary>The first biome's chunks (its profile's; edit-mode tools read the project's profile before any boot).</summary>
+        public WorldChunkSet ChunkSet
+        {
+            get
+            {
+                if (_profiles.Count > 0)
+                    return _profiles[0].chunkSet;
+                if (_chunkSet != null)
+                    return _chunkSet;
+                var profile = EditorProfile();
+                return profile != null ? profile.chunkSet : null;
+            }
+        }
+
         public WorldStreamer Streamer => _streamer;
         /// <summary>The pinned chunk instance once prepared (streamed, not part of the scene file).</summary>
         public WorldChunk StartChunk => _startChunk;
         public RefugeCameraRig CameraRig => _cameraRig;
-        public LightingProfile Lighting => _lighting;
+
+        /// <summary>The first biome's day mood (its profile's; edit-mode captures read the project's profile before any boot).</summary>
+        public LightingProfile Lighting
+        {
+            get
+            {
+                if (_profiles.Count > 0)
+                    return _profiles[0].day;
+                if (_lighting != null)
+                    return _lighting;
+                var profile = EditorProfile();
+                return profile != null ? profile.day : null;
+            }
+        }
         public ScatterRenderer Scatter => _scatter;
         public AmbientLife Life => _life;
         public WorldAtmosphere Atmosphere => _atmosphere;
@@ -171,32 +240,49 @@ namespace PocketWilds.Presentation
         /// <summary>Hatch staging once loaded (null before PrepareAsync or when it failed).</summary>
         public HatchPresentationConfig HatchConfig => _hatch.IsValid() && _hatch.Status == AsyncOperationStatus.Succeeded ? _hatch.Result : null;
 
-        /// <summary>The biome's beds once loaded (null before PrepareAsync or when the key is empty or failed).</summary>
-        public BiomeAudioSet BiomeAudio => _biomeAudio.IsValid() && _biomeAudio.Status == AsyncOperationStatus.Succeeded ? _biomeAudio.Result : null;
+        /// <summary>The first biome's beds once loaded (null before PrepareAsync or when the key is empty or failed).</summary>
+        public BiomeAudioSet BiomeAudio => GetBiomeAudio(0);
 
-        /// <summary>Loads the pinned start chunk (and starts the neighbours' preload) behind the loading screen.</summary>
+        /// <summary>
+        /// T50: every biome's profile first (they load together), then the pinned start chunk (and the neighbours' preload)
+        /// behind the loading screen. The hatch staging starts before (no biome owns it); the first biome's zone kit and every
+        /// biome's beds load while the start chunk streams.
+        /// </summary>
         public async Task PrepareAsync(GameContext context, CancellationToken cancellationToken)
         {
-            if (_chunkSet == null)
-            {
-                GameLog.Warning(LogCategory.Presentation, "VerticalSliceEntry has no chunk set: no world.");
-                return;
-            }
             _streamer?.Dispose();
-            // T34B: the biome's music and ambience load beside the start chunk (small asset; the clips stream).
-            if (!string.IsNullOrEmpty(_biomeAudioKey) && !_biomeAudio.IsValid())
-                _biomeAudio = Addressables.LoadAssetAsync<BiomeAudioSet>(_biomeAudioKey);
+            _streamer = null;
             if (!string.IsNullOrEmpty(_hatchConfigKey) && !_hatch.IsValid())
                 _hatch = Addressables.LoadAssetAsync<HatchPresentationConfig>(_hatchConfigKey);
-            if (!string.IsNullOrEmpty(_zoneKitKey) && !_zoneKit.IsValid())
-                _zoneKit = Addressables.LoadAssetAsync<ZoneKit>(_zoneKitKey);
+            await LoadBiomesAsync(cancellationToken);
+            if (_profiles.Count == 0)
+            {
+                GameLog.Warning(LogCategory.Presentation, "VerticalSliceEntry has no biome (no world.{key} profile, no fallback chunk set): no world.");
+                return;
+            }
+            var first = _profiles[0];
+            if (!_zoneKit.IsValid())
+                _zoneKit = await LoadIfPresentAsync<ZoneKit>(first.zoneKitKey, cancellationToken);
+            var sets = new List<WorldChunkSet>(_profiles.Count);
+            foreach (var profile in _profiles)
+                sets.Add(profile.chunkSet);
+            _regions = BiomeRegions.FromChunkSets(sets);
+            _cameraBiome = 0;
             // T34: each world part follows its own dimension of the adaptive quality state.
             var quality = context.Quality.State;
-            _streamer = new WorldStreamer(_chunkSet, new AddressablesChunkSource(), context.Palettes, quality.Ground);
+            _streamer = new WorldStreamer(sets, new AddressablesChunkSource(), context.Palettes, quality.Ground);
             var ground = WorldQuality(quality.Ground);
             _scatter = new ScatterRenderer(context.Palettes, ground.scatterDensity);
             _scatter.SetDistanceFade(ground.scatterFadeStart, ground.scatterFadeEnd);
-            _life = _ambientLife != null ? new AmbientLife(_ambientLife, context.Palettes, WorldQuality(quality.Life).ambientLifeDensity, _seasonLooks) : null;
+            float lifeDensity = WorldQuality(quality.Life).ambientLifeDensity;
+            _life = first.ambientLife != null ? new AmbientLife(first.ambientLife, context.Palettes, lifeDensity, _seasonLooks) : null;
+            _lives = new AmbientLife[sets.Count];
+            _lives[0] = _life;
+            // A biome without its own kit still gets the season fireflies (the Forest's evenings).
+            for (int b = 1; b < sets.Count; b++)
+                _lives[b] = _profiles[b].ambientLife != null || _seasonLooks != null
+                    ? new AmbientLife(_profiles[b].ambientLife, context.Palettes, lifeDensity, _seasonLooks)
+                    : null;
             while (!_streamer.PinnedSettled)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -205,7 +291,7 @@ namespace PocketWilds.Presentation
             }
             for (int i = 0; i < _streamer.Count; i++)
             {
-                if (_streamer.GetEntry(i).pinned && _streamer.GetState(i) == ChunkStreamState.Active)
+                if (_streamer.IsPinned(i) && _streamer.GetState(i) == ChunkStreamState.Active)
                 {
                     _startChunk = _streamer.GetChunk(i);
                     break;
@@ -218,22 +304,279 @@ namespace PocketWilds.Presentation
                 if (_streamer.GetState(i) == ChunkStreamState.Active)
                 {
                     _scatter.Add(_streamer.GetChunk(i));
-                    _life?.Add(_streamer.GetChunk(i));
+                    LifeOf(i)?.Add(_streamer.GetChunk(i));
                 }
             }
             _onChunkState = OnChunkState;
             _streamer.StateChanged += _onChunkState;
-            while ((_biomeAudio.IsValid() && !_biomeAudio.IsDone) || (_hatch.IsValid() && !_hatch.IsDone) || (_zoneKit.IsValid() && !_zoneKit.IsDone))
+            while ((_hatch.IsValid() && !_hatch.IsDone) || (_zoneKit.IsValid() && !_zoneKit.IsDone) || AudioLoading())
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 await Task.Yield();
             }
             if (_hatch.IsValid() && _hatch.Status != AsyncOperationStatus.Succeeded)
                 GameLog.Error(LogCategory.Presentation, "Hatch staging did not load: " + _hatchConfigKey);
-            if (_biomeAudio.IsValid() && _biomeAudio.Status != AsyncOperationStatus.Succeeded)
-                GameLog.Warning(LogCategory.Presentation, "Biome audio did not load: " + _biomeAudioKey);
+            if (_audio.Length > 0 && _audio[0].IsValid() && _audio[0].Status != AsyncOperationStatus.Succeeded)
+                GameLog.Warning(LogCategory.Presentation, "Biome audio did not load: " + first.audioKey);
             if (_zoneKit.IsValid() && _zoneKit.Status != AsyncOperationStatus.Succeeded)
-                GameLog.Warning(LogCategory.Presentation, "Zone kit did not load: " + _zoneKitKey);
+                GameLog.Warning(LogCategory.Presentation, "Zone kit did not load: " + first.zoneKitKey);
+        }
+
+        /// <summary>
+        /// T50: every biome's profile, then sorted west to east: the direct references first, then the fallback fields (test
+        /// scenes) standing for the first key, then world.{key} for every other key, all loading at once and completed without
+        /// waiting a frame (small assets; the chunks stream with the camera). Only a biome with its chunks joins the strip; then
+        /// every biome's beds start loading (awaited with the other loads). A key Addressables do not know is skipped quietly:
+        /// a biome joins once its wizard ran.
+        /// </summary>
+        private async Task LoadBiomesAsync(CancellationToken cancellationToken)
+        {
+            ReleaseBiomes();
+            foreach (var profile in _biomes)
+                if (profile != null && Joinable(profile) && !HasBiome(profile.key))
+                    _profiles.Add(profile);
+            string firstKey = FirstKey();
+            if (_chunkSet != null && !HasBiome(firstKey))
+            {
+                _fallback = FallbackProfile(firstKey);
+                _profiles.Add(_fallback);
+            }
+            var keys = new List<string>(_biomeKeys.Length);
+            foreach (var key in _biomeKeys)
+            {
+                if (string.IsNullOrEmpty(key) || HasBiome(key) || keys.Contains(key))
+                    continue;
+                var handle = await LoadIfPresentAsync<BiomeWorldProfile>(BiomeWorldProfile.AddressOf(key), cancellationToken);
+                if (!handle.IsValid())
+                    continue;
+                _profileHandles.Add(handle);
+                keys.Add(key);
+            }
+            // Small assets whose kit bundle the first chunk needs anyway: finished at once, so the boot loses no frame waiting.
+            foreach (var handle in _profileHandles)
+                if (handle.IsValid() && !handle.IsDone)
+                    handle.WaitForCompletion();
+            cancellationToken.ThrowIfCancellationRequested();
+            for (int i = 0; i < _profileHandles.Count; i++)
+            {
+                var handle = _profileHandles[i];
+                if (handle.Status == AsyncOperationStatus.Succeeded && handle.Result != null && Joinable(handle.Result) && !HasBiome(handle.Result.key))
+                    _profiles.Add(handle.Result);
+                else
+                    GameLog.Warning(LogCategory.Presentation, "Biome " + keys[i] + " left off the strip: profile failed, or chunk prefabs missing (rerun its wizard).");
+            }
+            SortWestToEast(_profiles);
+            _audio = new AsyncOperationHandle<BiomeAudioSet>[_profiles.Count];
+            for (int i = 0; i < _profiles.Count; i++)
+                _audio[i] = await LoadIfPresentAsync<BiomeAudioSet>(_profiles[i].audioKey, cancellationToken);
+        }
+
+        /// <summary>
+        /// T50: a biome joins the strip with its chunk set: the one hosting the refuge (a pinned arrival) as it is, any other once
+        /// every chunk has its prefab (no load of a missing address).
+        /// </summary>
+        private static bool Joinable(BiomeWorldProfile profile)
+        {
+            var set = profile.chunkSet;
+            if (set == null || set.Count == 0)
+                return false;
+            bool ready = true;
+            for (int i = 0; i < set.Count; i++)
+            {
+                var entry = set.Get(i);
+                if (entry.pinned)
+                    return true;
+                if (entry.prefab == null || !entry.prefab.RuntimeKeyIsValid())
+                    ready = false;
+            }
+            return ready;
+        }
+
+        /// <summary>T50: world order, west to east by each chunk set's west edge (stable: equal edges keep the load order).</summary>
+        private static void SortWestToEast(List<BiomeWorldProfile> profiles)
+        {
+            for (int i = 1; i < profiles.Count; i++)
+            {
+                var profile = profiles[i];
+                float edge = BiomeRegions.WestEdge(profile.chunkSet, float.MaxValue);
+                int j = i - 1;
+                while (j >= 0 && BiomeRegions.WestEdge(profiles[j].chunkSet, float.MaxValue) > edge)
+                {
+                    profiles[j + 1] = profiles[j];
+                    j--;
+                }
+                profiles[j + 1] = profile;
+            }
+        }
+
+        /// <summary>T50: the fallback fields (test scenes) as a runtime profile of the first key's biome.</summary>
+        private BiomeWorldProfile FallbackProfile(string key)
+        {
+            var profile = ScriptableObject.CreateInstance<BiomeWorldProfile>();
+            profile.name = "DEF_World_Fallback";
+            profile.hideFlags = HideFlags.DontSave;
+            profile.key = key;
+            profile.biomeId = string.IsNullOrEmpty(key) ? string.Empty : "biome." + key;
+            profile.chunkSet = _chunkSet;
+            profile.morning = _morning;
+            profile.day = _lighting;
+            profile.evening = _evening;
+            profile.night = _night;
+            profile.weatherKit = _weatherKit;
+            profile.ambientLife = _ambientLife;
+            profile.zoneKitKey = _zoneKitKey;
+            profile.audioKey = _biomeAudioKey;
+            profile.basicEggId = _eggId;
+            return profile;
+        }
+
+        /// <summary>T50: the first biome's key (the world's first, hosting the refuge).</summary>
+        private string FirstKey()
+        {
+            foreach (var key in _biomeKeys)
+                if (!string.IsNullOrEmpty(key))
+                    return key;
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// T50, edit-mode tools only (captures apply <see cref="Lighting"/> without a boot): the first key's profile from the project
+        /// (a direct reference first, then the shipped DEF_World_*). Null in play mode, where the profiles load by key.
+        /// </summary>
+        private BiomeWorldProfile EditorProfile()
+        {
+#if UNITY_EDITOR
+            if (Application.isPlaying)
+                return null;
+            if (_editorProfile != null)
+                return _editorProfile;
+            string key = FirstKey();
+            foreach (var profile in _biomes)
+                if (profile != null && profile.key == key)
+                    return _editorProfile = profile;
+            BiomeWorldProfile other = null;
+            foreach (string guid in UnityEditor.AssetDatabase.FindAssets("t:" + nameof(BiomeWorldProfile)))
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                var profile = UnityEditor.AssetDatabase.LoadAssetAtPath<BiomeWorldProfile>(path);
+                if (profile == null || profile.key != key)
+                    continue;
+                if (path.StartsWith("Assets/_Game/Content/Biomes/", StringComparison.Ordinal))
+                    return _editorProfile = profile;
+                other = other != null ? other : profile;
+            }
+            return _editorProfile = other;
+#else
+            return null;
+#endif
+        }
+
+        private bool HasBiome(string key)
+        {
+            if (string.IsNullOrEmpty(key))
+                return false;
+            foreach (var profile in _profiles)
+                if (string.Equals(profile.key, key, StringComparison.Ordinal))
+                    return true;
+            return false;
+        }
+
+        private bool AudioLoading()
+        {
+            foreach (var handle in _audio)
+                if (handle.IsValid() && !handle.IsDone)
+                    return true;
+            return false;
+        }
+
+        /// <summary>T50: the biomes' beds and profiles leave memory (Exit, or a new PrepareAsync); the fallback profile is destroyed.</summary>
+        private void ReleaseBiomes()
+        {
+            foreach (var handle in _audio)
+                if (handle.IsValid())
+                    Addressables.Release(handle);
+            _audio = Array.Empty<AsyncOperationHandle<BiomeAudioSet>>();
+            foreach (var handle in _profileHandles)
+                if (handle.IsValid())
+                    Addressables.Release(handle);
+            _profileHandles.Clear();
+            _profiles.Clear();
+            if (_fallback != null)
+            {
+                if (Application.isPlaying)
+                    Destroy(_fallback);
+                else
+                    DestroyImmediate(_fallback);
+            }
+            _fallback = null;
+        }
+
+        /// <summary>Starts loading an address only when Addressables know it (no error logged for a biome not made yet).</summary>
+        private static async Task<AsyncOperationHandle<T>> LoadIfPresentAsync<T>(string address, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(address))
+                return default;
+            var locate = Addressables.LoadResourceLocationsAsync(address, typeof(T));
+            while (!locate.IsDone)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Task.Yield();
+            }
+            bool found = locate.Status == AsyncOperationStatus.Succeeded && locate.Result != null && locate.Result.Count > 0;
+            Addressables.Release(locate);
+            return found ? Addressables.LoadAssetAsync<T>(address) : default;
+        }
+
+        /// <summary>
+        /// T50 no-collision rule across a biome seam: when a chunk along a seam (the ForestEdge, the Entry) comes or goes, each
+        /// biome's life gets the props of the other biomes' active chunks touching its own. Allocates, on those transitions only.
+        /// </summary>
+        private void RefreshSeamObstacles(int changed)
+        {
+            if (_lives.Length < 2 || _streamer == null || !TouchesOtherSet(changed))
+                return;
+            var volumes = new List<Obstacle>();
+            for (int b = 0; b < _lives.Length; b++)
+            {
+                if (_lives[b] == null)
+                    continue;
+                volumes.Clear();
+                for (int i = 0; i < _streamer.Count; i++)
+                {
+                    if (_streamer.SetIndexOf(i) == b || _streamer.GetState(i) != ChunkStreamState.Active || !Touches(i, b))
+                        continue;
+                    volumes.AddRange(_streamer.GetChunk(i).GetWorldObstacles());
+                }
+                _lives[b].SetSeamObstacles(volumes.ToArray());
+            }
+        }
+
+        /// <summary>T50: a chunk square within 0.5 m of a chunk of the given set.</summary>
+        private bool Touches(int chunk, int set)
+        {
+            var area = _streamer.GetArea(chunk);
+            for (int j = 0; j < _streamer.Count; j++)
+                if (_streamer.SetIndexOf(j) == set && WorldStreamer.Distance(area, _streamer.GetArea(j)) <= 0.5f)
+                    return true;
+            return false;
+        }
+
+        private bool TouchesOtherSet(int chunk)
+        {
+            int own = _streamer.SetIndexOf(chunk);
+            for (int set = 0; set < _streamer.SetCount; set++)
+                if (set != own && Touches(chunk, set))
+                    return true;
+            return false;
+        }
+
+        /// <summary>T50: the ambient life of the biome a chunk belongs to.</summary>
+        private AmbientLife LifeOf(int chunkIndex)
+        {
+            if (_streamer == null)
+                return null;
+            int biome = _streamer.SetIndexOf(chunkIndex);
+            return biome < _lives.Length ? _lives[biome] : null;
         }
 
         public void Enter(GameContext context)
@@ -241,12 +584,21 @@ namespace PocketWilds.Presentation
             _context = context;
             var quality = context.Quality.State;
             var camera = _cameraRig != null ? _cameraRig.Camera : Camera.main;
-            if (_lighting != null)
+            // T50: the first biome's moods and weather, then every other biome's, blended by the camera's place.
+            var first = _profiles.Count > 0 ? _profiles[0] : null;
+            var day = first != null ? first.day : null;
+            if (day != null)
             {
-                _lighting.Apply(_sun, camera, quality);
-                _atmosphere = new WorldAtmosphere(_morning, _lighting, _evening, _sun, camera, WorldQuality(quality.Weather), _night);
+                day.Apply(_sun, camera, quality);
+                _atmosphere = new WorldAtmosphere(first.morning, day, first.evening, _sun, camera, WorldQuality(quality.Weather), first.night);
+                for (int b = 1; b < _profiles.Count; b++)
+                    _atmosphere.AddBiome(_profiles[b].morning, _profiles[b].day, _profiles[b].evening, _profiles[b].night);
                 _atmosphere.Tick(Time.unscaledTime);
-                _weather = _weatherKit != null ? new WeatherSystem(_weatherKit, _atmosphere, WorldQuality(quality.Weather)) : null;
+                _weather = first.weatherKit != null ? new WeatherSystem(first.weatherKit, _atmosphere, WorldQuality(quality.Weather), quality.Weather) : null;
+                if (_weather != null)
+                    for (int b = 1; b < _profiles.Count; b++)
+                        _weather.AddBiome(_profiles[b].weatherKit);
+                UpdateRegion();
             }
             else
                 PresentationQuality.Apply(quality);
@@ -279,11 +631,12 @@ namespace PocketWilds.Presentation
                 if (input != null)
                     input.SetTapHandler(this);
                 // No-collision rule: insects fly around the animals, birds fly off when one comes near.
-                _life?.SetAnimals(_refuge.Scheduler);
+                foreach (var life in _lives)
+                    life?.SetAnimals(_refuge.Scheduler);
                 if (context.Progression != null && _streamer != null)
                 {
                     // T35A: animals walk across every open zone; the next one is closed by a hedge and a sign.
-                    _zones = new RefugeZones(context, _streamer, _chunkSet, ZoneKit, _refuge, _scatter, _life, _cameraRig, transform);
+                    _zones = new RefugeZones(context, _streamer, ChunkSet, ZoneKit, _refuge, _scatter, _life, _cameraRig, transform);
                     _zones.CameraRangeChanged += UpdateCameraBounds;
                     UpdateCameraBounds();
                 }
@@ -310,7 +663,8 @@ namespace PocketWilds.Presentation
                         _bubbles.ReduceMotion = context.State.Settings.ReduceMotion;
                         _refuge.Bubbles = _bubbles;
                         _dailyPresenter.Bubbles = _bubbles;
-                        _life?.SetBubbles(_bubbles);
+                        foreach (var life in _lives)
+                            life?.SetBubbles(_bubbles);
                     }
                 }
                 if (context.Activities != null)
@@ -376,7 +730,8 @@ namespace PocketWilds.Presentation
             }
             if (_activityPresenter != null)
                 _activityPresenter.RefugeBeds = beds;
-            _life?.SetListener(this);
+            foreach (var life in _lives)
+                life?.SetListener(this);
             GameLog.Info(LogCategory.Presentation, "Vertical slice entered.");
         }
 
@@ -406,9 +761,11 @@ namespace PocketWilds.Presentation
                 _scatter.SetDistanceFade(ground.scatterFadeStart, ground.scatterFadeEnd);
             }
             _streamer?.SetQuality(quality.Ground);
-            _life?.SetDensity(WorldQuality(quality.Life).ambientLifeDensity);
+            float lifeDensity = WorldQuality(quality.Life).ambientLifeDensity;
+            foreach (var life in _lives)
+                life?.SetDensity(lifeDensity);
             var weather = WorldQuality(quality.Weather);
-            _weather?.SetQuality(weather);
+            _weather?.SetQuality(weather, quality.Weather);
             _atmosphere?.SetQuality(weather);
             _seasons?.SetQuality(weather);
             var camera = _cameraRig != null ? _cameraRig.Camera : Camera.main;
@@ -418,16 +775,16 @@ namespace PocketWilds.Presentation
 
         public void Exit()
         {
-            // T34B: beds stop before their clips are released with the biome.
+            // T34B: beds stop before their clips are released with the biome (at the end, with the profiles).
             _context?.Audio.StopBeds();
-            if (_biomeAudio.IsValid())
-                Addressables.Release(_biomeAudio);
-            _biomeAudio = default;
             if (_context != null && _onQuality != null)
                 _context.Quality.StateChanged -= _onQuality;
             _onQuality = null;
-            _life?.SetAnimals(null);
-            _life?.SetListener(null);
+            foreach (var life in _lives)
+            {
+                life?.SetAnimals(null);
+                life?.SetListener(null);
+            }
             if (_refuge != null)
             {
                 _refuge.Daily = null;
@@ -449,7 +806,8 @@ namespace PocketWilds.Presentation
             _albumPresenter?.Dispose();
             _albumPresenter = null;
             _activityPresenter = null;
-            _life?.SetBubbles(null);
+            foreach (var life in _lives)
+                life?.SetBubbles(null);
             _bubbles?.Dispose();
             _bubbles = null;
             _dailyPresenter?.Dispose();
@@ -473,8 +831,12 @@ namespace PocketWilds.Presentation
             }
             _scatter?.Clear();
             _scatter = null;
-            _life?.Clear();
+            foreach (var life in _lives)
+                life?.Clear();
+            _lives = Array.Empty<AmbientLife>();
             _life = null;
+            _regions = null;
+            _cameraBiome = 0;
             _seasons?.Dispose();
             _seasons = null;
             _atmosphere = null;
@@ -488,6 +850,8 @@ namespace PocketWilds.Presentation
                 Addressables.Release(_zoneKit);
             _zoneKit = default;
             _hatch = default;
+            // T50: every biome's beds (stopped above) and profiles leave with the scene, after the streamer let go of their chunks.
+            ReleaseBiomes();
         }
 
         public void OnTap(Vector2 screenPosition)
@@ -500,12 +864,15 @@ namespace PocketWilds.Presentation
             _refuge?.OnTap(screenPosition);
             // Butterflies and birds near the tapped ground flee: the meadow reacts to the finger.
             var camera = _cameraRig != null ? _cameraRig.Camera : null;
-            if (_life == null || camera == null || _startChunk == null || _startChunk.EggSpawn == null)
+            if (_lives.Length == 0 || camera == null || _startChunk == null || _startChunk.EggSpawn == null)
                 return;
             var ray = camera.ScreenPointToRay(screenPosition);
             var ground = new Plane(Vector3.up, _startChunk.EggSpawn.position);
-            if (ground.Raycast(ray, out float distance))
-                _life.Startle(ray.GetPoint(distance), 1.8f);
+            if (!ground.Raycast(ray, out float distance))
+                return;
+            var point = ray.GetPoint(distance);
+            foreach (var life in _lives)
+                life?.Startle(point, 1.8f);
         }
 
         /// <summary>
@@ -527,7 +894,8 @@ namespace PocketWilds.Presentation
             }
             else if (_streamer != null && _streamer.TryGetBounds(out var world))
             {
-                float margin = _chunkSet.HalfSize - _panHalfSize.x;
+                var set = ChunkSet;
+                float margin = (set != null ? set.HalfSize : 7f) - _panHalfSize.x;
                 minX = Mathf.Min(minX, world.xMin + margin);
                 maxX = Mathf.Max(maxX, world.xMax - margin);
             }
@@ -542,16 +910,19 @@ namespace PocketWilds.Presentation
             if (_scatter == null)
                 return;
             var chunk = _streamer.GetChunk(index);
+            var life = LifeOf(index);
             if (state == ChunkStreamState.Active)
             {
                 _scatter.Add(chunk);
-                _life?.Add(chunk);
+                life?.Add(chunk);
             }
             else if (chunk != null)
             {
                 _scatter.Remove(chunk);
-                _life?.Remove(chunk);
+                life?.Remove(chunk);
             }
+            if (state == ChunkStreamState.Active || chunk != null)
+                RefreshSeamObstacles(index);
         }
 
         private Rect Footprint()
@@ -589,15 +960,19 @@ namespace PocketWilds.Presentation
             _albumPresenter?.Tick(Time.unscaledDeltaTime);
             _profilePresenter?.Tick(Time.unscaledDeltaTime);
             _journalCaptures?.Tick(Time.unscaledTime);
+            UpdateRegion();
             _weather?.Tick(Time.unscaledTime);
             _atmosphere?.Tick(Time.unscaledTime);
             _seasons?.Tick(Time.unscaledTime);
             var camera = _cameraRig != null ? _cameraRig.Camera : null;
             _scatter?.Render(camera);
-            if (_life != null)
+            for (int b = 0; b < _lives.Length; b++)
             {
-                _life.Tick(Time.deltaTime, Time.time);
-                _life.Render(camera, Time.time);
+                var life = _lives[b];
+                if (life == null)
+                    continue;
+                life.Tick(Time.deltaTime, Time.time);
+                life.Render(camera, Time.time);
             }
             if (_weather != null && _cameraRig != null)
                 _weather.Render(camera, _refuge != null ? _refuge.ViewFocus : _cameraRig.Focus);
@@ -605,6 +980,49 @@ namespace PocketWilds.Presentation
                 _seasons.Render(camera, _refuge != null ? _refuge.ViewFocus : _cameraRig.Focus);
             if (_context != null)
                 UpdateAmbienceMix();
+        }
+
+        /// <summary>
+        /// T50: the camera focus's place on the strip: light and weather blend across each biome start (x 100 to 110 for the
+        /// Forest), the camera's biome switches past the start with the hysteresis, and the biomes after the first light their
+        /// fireflies every evening. No allocation.
+        /// </summary>
+        private void UpdateRegion()
+        {
+            if (_regions == null || _regions.Count < 2 || _cameraRig == null)
+                return;
+            float x = _refuge != null ? _refuge.ViewFocus.x : _cameraRig.Focus.x;
+            _regions.Resolve(x, out int from, out int to, out float t);
+            _atmosphere?.SetRegion(from, to, t);
+            _weather?.SetRegion(from, to, t);
+            int biome = _regions.CameraBiome(x, _cameraBiome);
+            if (biome != _cameraBiome)
+                EnterBiome(biome);
+            if (_atmosphere == null)
+                return;
+            float evening = _atmosphere.Night ? 1f : EveningWeight(_atmosphere.Hour);
+            for (int b = 1; b < _lives.Length; b++)
+                _lives[b]?.SetFireflies(evening);
+        }
+
+        /// <summary>T50: the camera crossed into another biome: the hatch weighs it (a biome visit) and its beds cross-fade in.</summary>
+        private void EnterBiome(int biome)
+        {
+            _cameraBiome = biome;
+            if (_context == null)
+                return;
+            var profile = GetBiomeProfile(biome);
+            var id = biome == 0 && _context.Progression != null ? _context.Progression.FirstBiome
+                : profile != null && !string.IsNullOrEmpty(profile.biomeId) ? ContentId.FromSource(profile.biomeId) : ContentId.None;
+            if (id.IsValid)
+                _context.Hatch?.SetCameraBiome(id);
+            var beds = GetBiomeAudio(biome);
+            if (beds == null)
+                return;
+            _context.Audio.SetBeds(beds.music, beds.ambience, beds.fadeSeconds);
+            _context.Audio.SetAmbienceLayers(beds.ambienceEvening, beds.rain);
+            if (_activityPresenter != null)
+                _activityPresenter.RefugeBeds = beds;
         }
 
         /// <summary>

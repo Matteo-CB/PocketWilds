@@ -2,7 +2,7 @@
 Pocket Wilds audio build (T34B).
 
     python pw_audio_build.py sfx|ambience|music|all     render masters (48 kHz 24-bit) and runtime clips
-    python pw_audio_build.py sfx|music <names...>       render only these catalog entries (T37)
+    python pw_audio_build.py sfx|ambience|music <names...>  render only these catalog entries (T37)
     python pw_audio_build.py review <out.png> [names]   waveform and spectrogram sheet of the runtime clips
     python pw_audio_build.py report                     levels, peaks, lengths, loop seams (JSON on stdout)
 
@@ -50,13 +50,19 @@ def render_sfx(names=None):
     return out
 
 
-def render_ambience():
+def render_ambience(names=None):
     from pw_audio_ambience import grassland_day, grassland_evening, rain_light
+    from pw_audio_forest import forest_day, forest_evening
     out = {}
     # Day under the feedback; evening a little quieter still; rain as loud as the day bed it replaces.
     for name, recipe, target in (('AMB_Grassland_Day', grassland_day, AMBIENCE_LUFS),
                                  ('AMB_Grassland_Evening', grassland_evening, AMBIENCE_LUFS - 2.0),
-                                 ('AMB_Rain_Light', rain_light, AMBIENCE_LUFS)):
+                                 ('AMB_Rain_Light', rain_light, AMBIENCE_LUFS),
+                                 # T50: the Forest beds sit at the Grassland levels (day -27, evening -29 LUFS).
+                                 ('AMB_Forest_Day', forest_day, AMBIENCE_LUFS),
+                                 ('AMB_Forest_Evening', forest_evening, AMBIENCE_LUFS - 2.0)):
+        if names and name not in names:
+            continue
         x = normalize_integrated(recipe(), target)
         write_wav(MASTERS / 'Ambience' / (name + '.wav'), x, 24)
         write_wav(RUNTIME / 'Ambience' / (name + '.wav'), x, 16)
@@ -68,9 +74,11 @@ def render_ambience():
 def render_music(names=None):
     """The refuge theme and, from T37, the three activity musics (pw_audio_music.MUSIC), all at the same level so the
     cross-fade between the refuge and an activity keeps its loudness."""
+    from pw_audio_forest import forest_variation
     from pw_audio_music import MUSIC
     out = {}
-    for name, recipe in MUSIC.items():
+    # T50: the Forest variation of the theme, at the same level as the theme.
+    for name, recipe in {**MUSIC, 'MUS_ForestVariation': forest_variation}.items():
         if names and name not in names:
             continue
         x = normalize_integrated(recipe(), MUSIC_LUFS)
@@ -156,14 +164,14 @@ def review(out_png, names=None):
 
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else 'all'
-    only = sys.argv[2:] if cmd in ('sfx', 'music') else None
+    only = sys.argv[2:] if cmd in ('sfx', 'music', 'ambience') else None
     for folder in ('SFX', 'Ambience', 'Music'):
         (MASTERS / folder).mkdir(parents=True, exist_ok=True)
         (RUNTIME / folder).mkdir(parents=True, exist_ok=True)
     if cmd in ('sfx', 'all'):
         print(json.dumps(render_sfx(only), indent=1))
     if cmd in ('ambience', 'all'):
-        print(json.dumps(render_ambience(), indent=1))
+        print(json.dumps(render_ambience(only), indent=1))
     if cmd in ('music', 'all'):
         print(json.dumps(render_music(only), indent=1))
     if cmd == 'report':

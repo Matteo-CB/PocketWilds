@@ -1,3 +1,4 @@
+using System;
 using PocketWilds.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -10,6 +11,9 @@ namespace PocketWilds.Presentation
     /// streaks fall around the camera focus, then a rainbow shows in daylight. Everything is drawn from a few meshes:
     /// the rain is one instanced draw whose drops move in the vertex shader. No GameObject, no allocation per frame.
     /// The tier scales the number of drops (Fluide -60 %, Équilibrée -30 %).
+    /// T50: one kit per biome of the world strip (<see cref="AddBiome"/>). The first kit keeps the shower schedule; the
+    /// camera's region (<see cref="SetRegion"/>) blends the drop count and the sun rays of two kits and picks the meshes of
+    /// the one that dominates. A kit can bring its rays down to Équilibrée and keep them to some x ranges (the Forest).
     /// </summary>
     public sealed class WeatherSystem
     {
@@ -30,13 +34,21 @@ namespace PocketWilds.Presentation
 
         private const int RayCount = 5;
 
+        /// <summary>T50: the rays fade over this distance past each end of a kit's ray area (m).</summary>
+        public const float RayAreaFade = 2f;
+
         private readonly WeatherKit _kit;
+        private WeatherKit[] _kits;
+        private RenderParams[] _kitRain;
+        private RenderParams[] _kitRays;
+        private RenderParams[] _kitRainbow;
+        private int _from;
+        private int _to;
+        private float _blend;
+        private QualityTier _tier = QualityTier.High;
         private readonly WorldAtmosphere _atmosphere;
-        private readonly Matrix4x4[] _drops;
+        private Matrix4x4[] _drops;
         private readonly Matrix4x4[] _rays = new Matrix4x4[RayCount];
-        private RenderParams _rainParams;
-        private RenderParams _rayParams;
-        private RenderParams _rainbowParams;
         private float _intensity = 1f;
         private bool _sunRays;
         private Phase _phase = Phase.Clear;
@@ -49,22 +61,108 @@ namespace PocketWilds.Presentation
         private bool _rainAllowed = true;
         private bool _rainbowAllowed = true;
 
-        public WeatherSystem(WeatherKit kit, WorldAtmosphere atmosphere, in WorldQualityProfile.Tier quality)
+        /// <param name="tier">T50: the weather tier, for kits whose rays start below Magnifique (<see cref="WeatherKit.sunRaysFrom"/>).</param>
+        public WeatherSystem(WeatherKit kit, WorldAtmosphere atmosphere, in WorldQualityProfile.Tier quality, QualityTier tier = QualityTier.High)
         {
             _kit = kit;
             _atmosphere = atmosphere;
-            int drops = kit != null ? kit.maxDrops : 0;
-            _drops = new Matrix4x4[drops];
-            for (int i = 0; i < drops; i++)
-                _drops[i] = Matrix4x4.Translate(new Vector3(Next(), Next(), Next()));
-            if (kit != null)
-            {
-                _rainParams = new RenderParams(kit.rainMaterial) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
-                _rayParams = new RenderParams(kit.rayMaterial) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
-                _rainbowParams = new RenderParams(kit.rainbowMaterial) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
-            }
-            SetQuality(quality);
+            _drops = new Matrix4x4[0];
+            _kits = new WeatherKit[0];
+            _kitRain = new RenderParams[0];
+            _kitRays = new RenderParams[0];
+            _kitRainbow = new RenderParams[0];
+            AddBiome(kit);
+            SetQuality(quality, tier);
         }
+
+        /// <summary>T50: kits (biomes) known; the constructor's is the first.</summary>
+        public int BiomeCount => _kits.Length;
+
+        /// <summary>T50: the kit of a biome (null when it has none: the first kit's look stands in).</summary>
+        public WeatherKit KitOf(int biome) => biome >= 0 && biome < _kits.Length ? _kits[biome] : null;
+
+        /// <summary>T50: the share of the sun rays drawn by the last <see cref="Render"/> (0 none to 1 full).</summary>
+        public float LastRayAlpha { get; private set; }
+
+        /// <summary>
+        /// T50: the weather look of another biome of the strip; returns its index. A null kit borrows the first kit's look.
+        /// Allocates (the drops grow to the largest kit): call at scene start.
+        /// </summary>
+        public int AddBiome(WeatherKit kit)
+        {
+            int index = _kits.Length;
+            Array.Resize(ref _kits, index + 1);
+            Array.Resize(ref _kitRain, index + 1);
+            Array.Resize(ref _kitRays, index + 1);
+            Array.Resize(ref _kitRainbow, index + 1);
+            _kits[index] = kit;
+            if (kit == null)
+                return index;
+            _kitRain[index] = new RenderParams(kit.rainMaterial) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
+            _kitRays[index] = new RenderParams(kit.rayMaterial) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
+            _kitRainbow[index] = new RenderParams(kit.rainbowMaterial) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false };
+            int drops = _drops.Length;
+            if (kit.maxDrops > drops)
+            {
+                Array.Resize(ref _drops, kit.maxDrops);
+                for (int i = drops; i < _drops.Length; i++)
+                    _drops[i] = Matrix4x4.Translate(new Vector3(Next(), Next(), Next()));
+            }
+            return index;
+        }
+
+        /// <summary>T50: the camera's place on the strip (BiomeRegions.Resolve). No allocation.</summary>
+        public void SetRegion(int from, int to, float t)
+        {
+            int last = Math.Max(0, _kits.Length - 1);
+            _from = Mathf.Clamp(from, 0, last);
+            _to = Mathf.Clamp(to, 0, last);
+            _blend = _from == _to ? 0f : Mathf.Clamp01(t);
+        }
+
+        public int RegionFrom => _from;
+        public int RegionTo => _to;
+        public float RegionBlend => _blend;
+
+        /// <summary>
+        /// T50: share of a kit's rays at a world x: 1 inside one of its areas (or everywhere without areas), fading to 0 over
+        /// <see cref="RayAreaFade"/> past each end. No allocation.
+        /// </summary>
+        public static float RayAreaWeight(Vector2[] areas, float x)
+        {
+            if (areas == null || areas.Length == 0)
+                return 1f;
+            float best = 0f;
+            for (int i = 0; i < areas.Length; i++)
+            {
+                float min = Mathf.Min(areas[i].x, areas[i].y), max = Mathf.Max(areas[i].x, areas[i].y);
+                float outside = x < min ? min - x : x > max ? x - max : 0f;
+                best = Mathf.Max(best, 1f - Mathf.SmoothStep(0f, 1f, outside / RayAreaFade));
+            }
+            return best;
+        }
+
+        /// <summary>T50: whether a kit shows rays at this tier (DEF_WorldQuality's switch, or the kit's own lower tier).</summary>
+        public static bool RaysOn(WeatherKit kit, bool qualityRays, QualityTier tier) =>
+            kit != null && kit.rayMesh != null && kit.rayMaterial != null
+            && (qualityRays || (kit.sunRaysFrom < QualityTier.High && tier >= kit.sunRaysFrom));
+
+        /// <summary>T50: rays of one biome's kit at x (0, or the area fade; a biome without a kit uses the first kit's rays).</summary>
+        public float RayShare(int biome, float x)
+        {
+            var kit = KitOrFirst(biome);
+            return RaysOn(kit, _sunRays, _tier) ? RayAreaWeight(kit.sunRayAreas, x) : 0f;
+        }
+
+        private WeatherKit KitOrFirst(int biome) => biome >= 0 && biome < _kits.Length && _kits[biome] != null ? _kits[biome] : _kit;
+
+        /// <summary>The kit whose meshes stand for the region now: the dominant one, the first kit when it has none.</summary>
+        private int LookKit()
+        {
+            int k = _blend >= 0.5f ? _to : _from;
+            return k < _kits.Length && _kits[k] != null ? k : 0;
+        }
+
 
         public Phase Current => _phase;
         /// <summary>0 dry to 1 full shower.</summary>
@@ -84,6 +182,15 @@ namespace PocketWilds.Presentation
             _intensity = Mathf.Clamp01(quality.weather);
             _sunRays = quality.sunRays;
         }
+
+        /// <summary>T50: the tier as well, for kits whose rays start below Magnifique.</summary>
+        public void SetQuality(in WorldQualityProfile.Tier quality, QualityTier tier)
+        {
+            SetQuality(quality);
+            _tier = tier;
+        }
+
+        public QualityTier Tier => _tier;
 
         public float ShowerFrequency => _showerFrequency;
         public bool RainAllowed => _rainAllowed;
@@ -183,64 +290,82 @@ namespace PocketWilds.Presentation
         {
             LastDrops = 0;
             LastDraws = 0;
+            LastRayAlpha = 0f;
             if (_kit == null || camera == null)
                 return;
-            int drops = Mathf.CeilToInt(_drops.Length * _intensity * Rain - 0.0001f);
-            if (drops > 0 && _kit.rainMesh != null && _kit.rainMaterial != null)
+            int look = LookKit();
+            var kit = _kits[look];
+            // T50: the drop count follows the region; the meshes are the dominant kit's.
+            int share = Mathf.Min(_drops.Length, Mathf.RoundToInt(Mathf.Lerp(KitOrFirst(_from).maxDrops, KitOrFirst(_to).maxDrops, _blend)));
+            int drops = Mathf.CeilToInt(share * _intensity * Rain - 0.0001f);
+            if (drops > 0 && kit.rainMesh != null && kit.rainMaterial != null)
             {
                 // The rain box sits between the focus and the camera: drops pass in front of the scene, where they read.
-                var box = _kit.rainBox;
+                var box = kit.rainBox;
                 var center = Vector3.Lerp(focus, camera.transform.position, 0.3f);
                 center.y = focus.y + box.y * 0.35f;
                 Shader.SetGlobalVector(RainBoxId, new Vector4(center.x, center.y, center.z, box.y));
                 Shader.SetGlobalVector(RainSizeId, new Vector4(box.x, 0f, box.z, 0f));
                 Shader.SetGlobalFloat(RainAlphaId, Mathf.SmoothStep(0f, 1f, Rain));
-                _rainParams.worldBounds = new Bounds(center, box + Vector3.one);
-                _rainParams.camera = camera;
-                Graphics.RenderMeshInstanced(_rainParams, _kit.rainMesh, 0, _drops, drops);
+                ref var rain = ref _kitRain[look];
+                rain.worldBounds = new Bounds(center, box + Vector3.one);
+                rain.camera = camera;
+                Graphics.RenderMeshInstanced(rain, kit.rainMesh, 0, _drops, drops);
                 LastDrops = drops;
                 LastDraws++;
             }
-            if (Rainbow > 0.001f && _kit.rainbowMesh != null && _kit.rainbowMaterial != null)
+            if (Rainbow > 0.001f && kit.rainbowMesh != null && kit.rainbowMaterial != null)
             {
                 // Opposite the sun, pulled toward where the camera looks so the arc stays in view; facing the camera.
                 var antiSolar = RenderSettings.sun != null ? RenderSettings.sun.transform.forward : Vector3.forward;
                 antiSolar.y = 0f;
-                var look = camera.transform.forward;
-                look.y = 0f;
+                var view = camera.transform.forward;
+                view.y = 0f;
                 if (antiSolar.sqrMagnitude < 1e-4f)
                     antiSolar = Vector3.forward;
-                if (look.sqrMagnitude < 1e-4f)
-                    look = antiSolar;
-                var toward = Vector3.Slerp(look.normalized, antiSolar.normalized, 0.3f).normalized;
-                var center = focus + toward * _kit.rainbowDistance + Vector3.down * (_kit.rainbowRadius * 0.18f);
+                if (view.sqrMagnitude < 1e-4f)
+                    view = antiSolar;
+                var toward = Vector3.Slerp(view.normalized, antiSolar.normalized, 0.3f).normalized;
+                var center = focus + toward * kit.rainbowDistance + Vector3.down * (kit.rainbowRadius * 0.18f);
                 var facing = center - camera.transform.position;
                 facing.y = 0f;
                 var matrix = Matrix4x4.TRS(center, Quaternion.LookRotation(facing.sqrMagnitude > 1e-4f ? facing : toward, Vector3.up),
-                    Vector3.one * _kit.rainbowRadius);
+                    Vector3.one * kit.rainbowRadius);
                 Shader.SetGlobalFloat(RainbowAlphaId, Rainbow);
-                _rainbowParams.worldBounds = new Bounds(center, Vector3.one * (_kit.rainbowRadius * 2.2f));
-                _rainbowParams.camera = camera;
-                Graphics.RenderMesh(_rainbowParams, _kit.rainbowMesh, 0, matrix);
+                ref var rainbow = ref _kitRainbow[look];
+                rainbow.worldBounds = new Bounds(center, Vector3.one * (kit.rainbowRadius * 2.2f));
+                rainbow.camera = camera;
+                Graphics.RenderMesh(rainbow, kit.rainbowMesh, 0, matrix);
                 LastDraws++;
             }
             bool night = _atmosphere != null && _atmosphere.Night;
-            if (_sunRays && !night && Rain < 0.1f && _kit.rayMesh != null && _kit.rayMaterial != null)
+            if (night || Rain >= 0.1f)
+                return;
+            // T50: each side of the region shows its rays where its kit wants them; the meshes come from the side showing more.
+            float fromRays = RayShare(_from, focus.x);
+            float toRays = _to != _from ? RayShare(_to, focus.x) : fromRays;
+            float alpha = Mathf.Lerp(fromRays, toRays, _blend);
+            int rayKit = toRays * _blend > fromRays * (1f - _blend) ? _to : _from;
+            if (_kits[rayKit] == null)
+                rayKit = 0;
+            var rays = _kits[rayKit];
+            if (alpha <= 0.001f || rays == null || rays.rayMesh == null || rays.rayMaterial == null)
+                return;
+            // A few long soft rays standing in the far half of the frame, slanted toward the sun.
+            for (int i = 0; i < RayCount; i++)
             {
-                // A few long soft rays standing in the far half of the frame, slanted toward the sun.
-                for (int i = 0; i < RayCount; i++)
-                {
-                    float x = (i - (RayCount - 1) * 0.5f) * 3.1f + Mathf.Sin(i * 2.3f) * 0.8f;
-                    float z = 3.5f + (i % 2) * 1.8f;
-                    var foot = focus + new Vector3(x, -0.4f, z);
-                    _rays[i] = Matrix4x4.TRS(foot, Quaternion.identity, new Vector3(2.2f + (i % 3) * 0.7f, 8f + (i % 2) * 2.5f, 1f));
-                }
-                Shader.SetGlobalFloat(SunRaysAlphaId, 1f - Rain * 10f);
-                _rayParams.worldBounds = new Bounds(focus + Vector3.up * 5f, new Vector3(30f, 24f, 30f));
-                _rayParams.camera = camera;
-                Graphics.RenderMeshInstanced(_rayParams, _kit.rayMesh, 0, _rays, RayCount);
-                LastDraws++;
+                float x = (i - (RayCount - 1) * 0.5f) * 3.1f + Mathf.Sin(i * 2.3f) * 0.8f;
+                float z = rays.rayDepth + (i % 2) * 1.8f;
+                var foot = focus + new Vector3(x, -0.4f, z);
+                _rays[i] = Matrix4x4.TRS(foot, Quaternion.identity, new Vector3(2.2f + (i % 3) * 0.7f, 8f + (i % 2) * 2.5f, 1f));
             }
+            Shader.SetGlobalFloat(SunRaysAlphaId, (1f - Rain * 10f) * alpha);
+            ref var rayParams = ref _kitRays[rayKit];
+            rayParams.worldBounds = new Bounds(focus + Vector3.up * 5f, new Vector3(30f, 24f, 30f));
+            rayParams.camera = camera;
+            Graphics.RenderMeshInstanced(rayParams, rays.rayMesh, 0, _rays, RayCount);
+            LastRayAlpha = alpha;
+            LastDraws++;
         }
 
         private void Enter(Phase phase, float time, float length)

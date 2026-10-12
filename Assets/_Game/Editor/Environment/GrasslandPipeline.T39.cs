@@ -396,7 +396,7 @@ namespace PocketWilds.Editor.Environment
             return SaveShape(mesh);
         }
 
-        private static Mesh SaveBakedMesh(string folder, string name, Mesh source)
+        internal static Mesh SaveBakedMesh(string folder, string name, Mesh source)
         {
             Directory.CreateDirectory(folder);
             string path = $"{folder}/{name}.asset";
@@ -536,7 +536,7 @@ namespace PocketWilds.Editor.Environment
         /// The placements' shape meshes in chunk space, one mesh. Foliage: uv1 = (the piece's base, 1) for SH_FoliageWind;
         /// environment: uv.y = the piece's brightness (0 to 1 for levels 0 to 15, like SH_EnvironmentOpaque's merged props).
         /// </summary>
-        private static Mesh Merge(List<Placement> pieces, Dictionary<string, GameObject> prefabs, bool foliage, System.Random rng)
+        internal static Mesh Merge(List<Placement> pieces, Dictionary<string, GameObject> prefabs, bool foliage, System.Random rng)
         {
             var vertices = new List<Vector3>();
             var normals = new List<Vector3>();

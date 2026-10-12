@@ -6,8 +6,8 @@ namespace PocketWilds.Presentation
     /// T49B everything the refuge scene needs to show one biome (Biome Wizard, ED-004): its chunk set, the four lighting moods,
     /// the weather and ambient life kits, and the Addressables keys of its zone kit, audio beds and basic egg. One per biome
     /// (DEF_World_Grassland, DEF_World_Forest), Addressable under « world.{key} » in the biome's kit group with the label
-    /// biome_{key}, so a biome's assets load only with it. The vertical slice still wires the Grassland's fields directly;
-    /// the biome switch (T50) reads these profiles.
+    /// biome_{key}, so a biome's assets load only with it. T50: the vertical slice loads every biome, the Grassland included,
+    /// by its profile at the scene entry (the scene holds no biome asset; World_Shared owns what several biomes use).
     /// </summary>
     [CreateAssetMenu(menuName = "Pocket Wilds/World/Biome World Profile", fileName = "DEF_World_New")]
     public sealed class BiomeWorldProfile : ScriptableObject

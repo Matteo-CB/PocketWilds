@@ -162,15 +162,14 @@ namespace PocketWilds.Editor.Lighting
             EditorUtility.SetDirty(night);
         }
 
-        /// <summary>Sets the moods, the world quality and the ambient life kit on the scene entry (SetupScene, BuildMoods).</summary>
+        /// <summary>
+        /// Sets the world quality on the scene entry (SetupScene, BuildMoods). T50: the moods, weather and ambient life kits are the
+        /// Grassland's world profile's (DEF_World_Grassland, loaded by key): the scene's fallback biome fields stay empty.
+        /// </summary>
         private static void WireMoods(SerializedObject entry)
         {
-            entry.FindProperty("_morning").objectReferenceValue = AssetDatabase.LoadAssetAtPath<LightingProfile>(MorningProfilePath);
-            entry.FindProperty("_evening").objectReferenceValue = AssetDatabase.LoadAssetAtPath<LightingProfile>(EveningProfilePath);
-            entry.FindProperty("_night").objectReferenceValue = AssetDatabase.LoadAssetAtPath<LightingProfile>(NightProfilePath);
-            entry.FindProperty("_weatherKit").objectReferenceValue = AssetDatabase.LoadAssetAtPath<WeatherKit>(GrasslandPipeline.WeatherKitPath);
             entry.FindProperty("_worldQuality").objectReferenceValue = AssetDatabase.LoadAssetAtPath<WorldQualityProfile>(GrasslandPipeline.WorldQualityPath);
-            entry.FindProperty("_ambientLife").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AmbientLifeKit>(GrasslandPipeline.LifeKitPath);
+            PocketWilds.Editor.World.WorldContentPipeline.ClearSceneBiomeReferences(entry);
         }
 
         public static void WireMoodsInScene()

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using PocketWilds.Content;
 using PocketWilds.Editor.UI;
@@ -13,7 +14,7 @@ using Object = UnityEngine.Object;
 namespace PocketWilds.Editor.Environment
 {
     /// <summary>
-    /// T48B the season looks (DEF_SeasonLooks), built from the Grassland base palettes (DEF_Palettes_Grassland) with hand-tuned
+    /// T48B the season looks (DEF_SeasonLooks), built from the Grassland base palettes (DEF_Palettes_Grassland, T50: and the Forest's) with hand-tuned
     /// transforms per palette class, never by a generator: ground, grass (and its tips), crowns (trees, bushes, leaves, clover,
     /// roots) and the flowers' greens change; rocks, pebbles, wood, hay, stone, water, windmill, well, fences, mushrooms and life
     /// never do, and inside a changed palette only its green colors move (bark, petals, fruit and paths keep theirs). Soleil is
@@ -52,6 +53,10 @@ namespace PocketWilds.Editor.Environment
             var firefly = EnsureMaterial(FireflyMaterialPath, "PocketWilds/Firefly");
             var palettes = AssetDatabase.LoadAssetAtPath<PaletteSetAsset>(GrasslandPipeline.PalettesPath)
                            ?? throw new InvalidOperationException("Missing " + GrasslandPipeline.PalettesPath);
+            // T50: the Forest's vegetation rows change with the seasons too (trees, birch, bushes, ferns, the ground's moss), once
+            // the Biome Wizard has made DEF_Palettes_Forest; its rocks, logs, mushrooms, water and life never do.
+            var forest = AssetDatabase.LoadAssetAtPath<PaletteSetAsset>(ForestPipeline.PalettesPath);
+            var sets = forest != null ? new[] { palettes, forest } : new[] { palettes };
             var set = AssetDatabase.LoadAssetAtPath<SeasonLookSet>(LooksPath);
             if (set == null)
             {
@@ -71,10 +76,10 @@ namespace PocketWilds.Editor.Environment
             var report = new StringBuilder();
             set.looks = new[]
             {
-                Awakening(Rows(palettes, RefugeSeason.Awakening, report)),
+                Awakening(Rows(sets, RefugeSeason.Awakening, report)),
                 Sun(),
-                Harvest(Rows(palettes, RefugeSeason.Harvest, report)),
-                Frost(Rows(palettes, RefugeSeason.Frost, report)),
+                Harvest(Rows(sets, RefugeSeason.Harvest, report)),
+                Frost(Rows(sets, RefugeSeason.Frost, report)),
             };
             EditorUtility.SetDirty(set);
             AssetDatabase.SaveAssets();
@@ -124,10 +129,10 @@ namespace PocketWilds.Editor.Environment
 
         // ---------------- palette transforms ----------------
 
-        private static SeasonLookSet.PaletteRow[] Rows(PaletteSetAsset set, RefugeSeason season, StringBuilder report)
+        private static SeasonLookSet.PaletteRow[] Rows(PaletteSetAsset[] sets, RefugeSeason season, StringBuilder report)
         {
             var rows = new List<SeasonLookSet.PaletteRow>();
-            foreach (var entry in set.palettes)
+            foreach (var entry in sets.SelectMany(s => s.palettes))
             {
                 if (entry == null || string.IsNullOrEmpty(entry.sourceId))
                     continue;

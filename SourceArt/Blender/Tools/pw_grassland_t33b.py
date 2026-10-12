@@ -7,6 +7,7 @@ with to_blender(); world-space patterns use the Unity world x (origin - Blender 
 
 Usage inside Blender, after pw_grassland.py and pw_grassland_t33.py in the same namespace:
     ns["build_grounds_t33b"]()     # GL_Ground_Core_B (rejoined) + GL_Ground_<Chunk> for the six new chunks
+                                   # (T50: then pw_forest_ground.build_forest_edge_t50() for GL_Ground_ForestEdge)
     ns["build_water_t33b"]()       # GL_Stream_A (stream + waterfall), GL_Stream_B (pond)
     ns["build_landmarks_t33b"]()   # GL_Landmark_OldTree_LOD0-2, GL_Landmark_Windmill_LOD0-2 + _Sails_LOD0-2
     ns["build_props_t33b"]()       # GL_Fence_B, GL_WellTiny, GL_Edge_A/B, GL_StreamStones
@@ -36,7 +37,9 @@ STRIP = {
     "GL_Ground_Hill": (56.0, ("-X", "+X"), 67, 18, 104, 4.0, {"hill": ((0.4, 2.4), 4.8, 1.25)}),
     "GL_Ground_WindmillRise": (70.0, ("-X", "+X"), 71, 18, 104, 4.0, {"hill": ((0.9, 2.6), 4.4, 0.7)}),
     "GL_Ground_PondEdge": (84.0, ("-X", "+X"), 73, 24, 128, 4.0, {"pond": True}),
-    "GL_Ground_ForestEdge": (98.0, ("+X",), 79, 16, 96, 4.0, {"forest": True}),
+    # T50: the Forest continues east of ForestEdge, joined at x 105 (FO_Ground_Entry, pw_forest_ground.py). Only the
+    # east half changed (square contour, flat seam); pw_forest_ground.build_forest_edge_t50 repaints its east third.
+    "GL_Ground_ForestEdge": (98.0, ("-X", "+X"), 79, 16, 96, 4.0, {"forest": True}),
 }
 
 def to_blender(x, z):
@@ -218,9 +221,10 @@ def build_ground_t33b(name, collections):
         dark = smoothstep(0.35, 0.85, wave_noise(Vector((wx * 0.3, wz * 0.3, 2.0)), PATCH_SEED + 2))
         if features.get("forest"):
             dark = min(1.0, dark * 0.6 + 0.45 * smoothstep(-2.0, 5.0, -co.x))
-        # The worn path starts past the egg clearing, continues from chunk to chunk and fades out at the far east end.
+        # The worn path starts past the egg clearing and continues from chunk to chunk into the Forest (T50: it used to
+        # fade out past x 100, where the island ended).
         worn = 0.62 * (1.0 - smoothstep(0.32, 0.8, abs(wz + path_y(wx))))
-        worn *= smoothstep(3.0, 6.0, wx) * (1.0 - smoothstep(CHUNK * 7.0 + 2.0, CHUNK * 7.0 + 5.5, wx))
+        worn *= smoothstep(3.0, 6.0, wx)
         if features.get("clearing"):
             # The start island keeps its soft worn clearing where the egg waits (T15 strength).
             worn = max(worn, 0.5 * (1.0 - smoothstep(0.7, 1.35, math.hypot(co.x, co.y + 0.6))))

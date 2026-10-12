@@ -57,6 +57,9 @@ namespace PocketWilds.Presentation
     /// Preloads the next chunk asynchronously (instanced inactive, palettes bound), activates it within budget
     /// before it can enter the frame, releases it once out of the window for an anti-thrash delay. At most one
     /// load start, one activation and one release per tick; every transition has a ProfilerMarker.
+    /// T50: one streamer for the whole world strip, fed by several chunk sets (the Grassland's, then the Forest's...): their
+    /// slots follow each other in set order, the window is the first set's, and only the first set's chunks may be pinned
+    /// (the world's first arrival; a later biome's arrival streams with the camera).
     /// A plain class ticked by the scene entry; nothing allocates per tick.
     /// </summary>
     public sealed class WorldStreamer : IDisposable
@@ -70,12 +73,19 @@ namespace PocketWilds.Presentation
             public WorldChunk Chunk;
             public float LastNear;
 
+            /// <summary>T50: index of the chunk set (biome) the slot comes from.</summary>
+            public byte Set;
+
+            /// <summary>T50: pinned in its set and from the world's first set.</summary>
+            public bool Pinned;
+
             /// <summary>T35A: an open zone. Loaded and never released (its ground and obstacles stay for the animals),
             /// shown or hidden by distance like any chunk.</summary>
             public bool Resident;
         }
 
         private readonly Slot[] _slots;
+        private readonly int _setCount;
         private readonly IChunkSource _source;
         private readonly StreamingWindow _window;
         private readonly Transform _root;
@@ -89,23 +99,50 @@ namespace PocketWilds.Presentation
         public event Action<int, ChunkStreamState> StateChanged;
 
         public WorldStreamer(WorldChunkSet set, IChunkSource source, PaletteTable palettes, QualityTier tier, Transform parent = null)
+            : this(new[] { set }, source, palettes, tier, parent)
         {
+        }
+
+        /// <summary>
+        /// T50: the chunks of several sets on one strip, in set order (the world's first biome first). Null sets are skipped
+        /// but keep their index (<see cref="SetIndexOf"/> matches the list).
+        /// </summary>
+        public WorldStreamer(System.Collections.Generic.IReadOnlyList<WorldChunkSet> sets, IChunkSource source, PaletteTable palettes,
+            QualityTier tier, Transform parent = null)
+        {
+            if (sets == null || sets.Count == 0 || sets[0] == null)
+                throw new ArgumentException("The world's first chunk set is required.", nameof(sets));
+            if (sets.Count > byte.MaxValue)
+                throw new ArgumentException("Too many chunk sets.", nameof(sets));
             _source = source ?? throw new ArgumentNullException(nameof(source));
             _palettes = palettes;
             _tier = tier;
-            _window = set.Window;
-            _slots = new Slot[set.Count];
-            float half = set.HalfSize;
-            for (int i = 0; i < _slots.Length; i++)
+            _window = sets[0].Window;
+            _setCount = sets.Count;
+            int total = 0;
+            for (int s = 0; s < sets.Count; s++)
+                total += sets[s] != null ? sets[s].Count : 0;
+            _slots = new Slot[total];
+            int at = 0;
+            for (int s = 0; s < sets.Count; s++)
             {
-                var entry = set.Get(i);
-                _slots[i] = new Slot
+                var set = sets[s];
+                if (set == null)
+                    continue;
+                float half = set.HalfSize;
+                for (int i = 0; i < set.Count; i++)
                 {
-                    Entry = entry,
-                    Area = new Rect(entry.origin.x - half, entry.origin.z - half, half * 2f, half * 2f),
-                    State = ChunkStreamState.Unloaded,
-                    LastNear = float.NegativeInfinity,
-                };
+                    var entry = set.Get(i);
+                    _slots[at++] = new Slot
+                    {
+                        Entry = entry,
+                        Area = new Rect(entry.origin.x - half, entry.origin.z - half, half * 2f, half * 2f),
+                        State = ChunkStreamState.Unloaded,
+                        LastNear = float.NegativeInfinity,
+                        Set = (byte)s,
+                        Pinned = entry.pinned && s == 0,
+                    };
+                }
             }
             _root = new GameObject("WorldChunks").transform;
             _root.SetParent(parent, false);
@@ -123,6 +160,15 @@ namespace PocketWilds.Presentation
         public WorldChunkSet.Entry GetEntry(int index) => _slots[index].Entry;
         public Rect GetArea(int index) => _slots[index].Area;
 
+        /// <summary>T50: number of chunk sets (biomes) the streamer was built from.</summary>
+        public int SetCount => _setCount;
+
+        /// <summary>T50: the chunk set (biome, in the streamer's set order) a chunk comes from.</summary>
+        public int SetIndexOf(int index) => _slots[index].Set;
+
+        /// <summary>T50: always loaded and active (pinned in the world's first set only).</summary>
+        public bool IsPinned(int index) => index >= 0 && index < _slots.Length && _slots[index].Pinned;
+
         /// <summary>
         /// T35A: keeps a chunk loaded whatever the camera does (an open zone: animals walk on it), or lets it stream
         /// again. Activation still follows the camera, so a resident chunk out of sight is staged, not drawn.
@@ -133,7 +179,7 @@ namespace PocketWilds.Presentation
                 _slots[index].Resident = resident;
         }
 
-        public bool IsResident(int index) => index >= 0 && index < _slots.Length && (_slots[index].Resident || _slots[index].Entry.pinned);
+        public bool IsResident(int index) => index >= 0 && index < _slots.Length && (_slots[index].Resident || _slots[index].Pinned);
 
         /// <summary>Loaded (staged or active): its data can be read.</summary>
         public bool IsLoaded(int index) =>
@@ -157,7 +203,7 @@ namespace PocketWilds.Presentation
                 for (int i = 0; i < _slots.Length; i++)
                 {
                     var s = _slots[i];
-                    if (s.Entry.pinned && s.State != ChunkStreamState.Active && s.State != ChunkStreamState.Failed)
+                    if (s.Pinned && s.State != ChunkStreamState.Active && s.State != ChunkStreamState.Failed)
                         return false;
                 }
                 return true;
@@ -221,7 +267,7 @@ namespace PocketWilds.Presentation
                 for (int i = 0; i < _slots.Length; i++)
                 {
                     ref var s = ref _slots[i];
-                    bool pinned = s.Entry.pinned;
+                    bool pinned = s.Pinned;
                     bool kept = pinned || s.Resident;
                     float distance = Distance(footprint, s.Area);
                     if (kept || distance <= _window.releaseDistance)

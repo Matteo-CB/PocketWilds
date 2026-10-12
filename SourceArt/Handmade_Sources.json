@@ -45,7 +45,17 @@
     },
     {
       "blend": "SourceArt/Blender/Environment/Grassland/BL_Biome_Grassland_Magnifique.blend",
-      "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_grassland_t33.py", "SourceArt/Blender/Tools/pw_grassland_t33b.py", "SourceArt/Blender/Tools/pw_grassland_t33b_props.py", "SourceArt/Blender/Tools/pw_grassland_t35a_props.py", "SourceArt/Blender/Tools/pw_export.py"]
+      "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_grassland_t33.py", "SourceArt/Blender/Tools/pw_grassland_t33b.py", "SourceArt/Blender/Tools/pw_grassland_t33b_props.py", "SourceArt/Blender/Tools/pw_grassland_t35a_props.py", "SourceArt/Blender/Tools/pw_forest_ground.py", "SourceArt/Blender/Tools/pw_export.py"]
+    },
+    {
+      "blend": "SourceArt/Blender/Environment/Forest/BL_Biome_Forest_Ground.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_grassland_t33.py", "SourceArt/Blender/Tools/pw_grassland_t33b.py", "SourceArt/Blender/Tools/pw_forest_ground.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Environment/Forest/Models/FO_Grounds.fbx", "Assets/_Game/Art/Environment/Forest/Models/FO_Water.fbx", "Assets/_Game/Art/Environment/Forest/Models/FO_Props.fbx", "Assets/_Game/Art/Environment/Forest/Models/FO_Scatter.fbx"]
+    },
+    {
+      "blend": "SourceArt/Blender/Environment/Forest/BL_Biome_Forest_Magnifique.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_grassland.py", "SourceArt/Blender/Tools/pw_forest.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Environment/Forest/Models/FO_Vegetation.fbx (FO_Tree_A/B/C/D_LOD0-2, FO_Landmark_AncientTree_LOD0-2, FO_Landmark_GiantStump_LOD0-2, FO_Bush_A/B/C, FO_Fern_A/B, FO_Mushroom_A/B/C)"]
     },
     {
       "blend": "SourceArt/Blender/Activities/BL_Activity_Grooming.blend",
@@ -283,6 +293,11 @@
       "final": "Assets/_Game/Art/Environment/Grassland/Baked/",
       "from": "the Prairie FBX meshes, baked and combined in Unity",
       "builders": ["Assets/_Game/Editor/Environment/GrasslandPipeline.cs", "Assets/_Game/Editor/Environment/GrasslandPipeline.T33.cs", "Assets/_Game/Editor/Environment/GrasslandPipeline.T33B.Kit.cs", "Assets/_Game/Editor/Environment/GrasslandPipeline.T39.cs", "Assets/_Game/Editor/Environment/ZonePipeline.cs"]
+    },
+    {
+      "final": "Assets/_Game/Art/Environment/Forest/Baked/",
+      "from": "the Forest FBX meshes (FO_Vegetation, FO_Props, FO_Scatter, FO_Grounds, FO_Water), baked as standalone kit meshes and merged ferns and mushrooms per chunk in Unity",
+      "builders": ["Assets/_Game/Editor/Environment/ForestPipeline.cs", "Assets/_Game/Editor/Environment/ForestPipeline.Chunks.cs", "Assets/_Game/Editor/Environment/GrasslandPipeline.T39.cs"]
     },
     {
       "final": "Assets/_Game/Art/Eggs/Textures/T_EggMask_Common.png",

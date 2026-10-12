@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5ba7f6ba7dd07d479d9c60e839ff35a, type: 3}
+  m_Name: DEF_AmbientLife_Forest
+  m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.AmbientLifeKit
+  material: {fileID: 2100000, guid: cf9cfffef3fb53147837be3917e7a1cc, type: 2}
+  species:
+  - id: life.wren
+    mesh: {fileID: 4300000, guid: a036c97059b79a74d9bbc011becf80a6, type: 2}
+    paletteId: 740643957
+    behaviour: 2
+    anchorPrefix: VFX_Birds
+    perAnchor: 2
+    spawnChance: 1
+    scale: 1.25
+    flap: {x: 20, y: 1, z: 0.1}
+    flapGrounded: {x: 0, y: 0, z: -1.85}
+    shoulder: {x: 0.034, y: 0.082}
+  - id: life.butterfly_amber
+    mesh: {fileID: 4300000, guid: 6e46a1edb52702749bb92163abaf529d, type: 2}
+    paletteId: 897488925
+    behaviour: 0
+    anchorPrefix: VFX_ButterflyGlade
+    perAnchor: 2
+    spawnChance: 1
+    scale: 2.3
+    flap: {x: 15, y: 0.95, z: 0.35}
+    flapGrounded: {x: 15, y: 0.95, z: 0.35}
+    shoulder: {x: 0.004, y: 0}
+  - id: life.butterfly_cream
+    mesh: {fileID: 4300000, guid: 6e46a1edb52702749bb92163abaf529d, type: 2}
+    paletteId: 687853708
+    behaviour: 0
+    anchorPrefix: VFX_ButterflyGlade
+    perAnchor: 1
+    spawnChance: 0.7
+    scale: 2.2
+    flap: {x: 13, y: 0.9, z: 0.3}
+    flapGrounded: {x: 13, y: 0.9, z: 0.3}
+    shoulder: {x: 0.004, y: 0}

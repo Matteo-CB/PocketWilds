@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using PocketWilds.Content;
+using PocketWilds.Core;
 using PocketWilds.Editor.Animals;
 using PocketWilds.Editor.Audio;
 using PocketWilds.Editor.Cosmetics;
@@ -48,7 +49,8 @@ namespace PocketWilds.Editor.Production
     /// script). From a <see cref="BiomeSpec"/> it creates or updates, idempotently: DEF_Biome_{Name} with its zones (opening
     /// order: the save bit is the position, so existing zones can only be followed by new ones), DEF_Palettes_{Name} (seed rows,
     /// registered), Art/Lighting/{Name}/LP_{Name}_{Morning,Day,Evening,Night} (copied from the Grassland's, then tinted by the
-    /// spec's mood), DEF_ChunkSet_{Name} (one entry per zone, chunk.{key}.{chunk}, every 14 m along +x, the arrival pinned,
+    /// spec's mood), DEF_ChunkSet_{Name} (one entry per zone, chunk.{key}.{chunk}, every 14 m along +x from the spec's OriginX, T50: only the
+    /// world's first arrival pinned,
     /// prefab references filled once the chunk prefabs exist), DEF_BiomeAudio_{Name} (group Audio_{Name}, audio.{key}), the
     /// Addressables groups Biome_{Name}_Chunks (pack separately), _Kit and _Zones (pack together) and the label biome_{key},
     /// DEF_World_{Name} (world.{key} in the kit group), the fr and en texts biome.{key}.name and zone.{key}.{chunk}.name, and the
@@ -117,6 +119,18 @@ namespace PocketWilds.Editor.Production
             public MoodSpec Mood = new MoodSpec();
             public string BasicEggId = string.Empty;
 
+            /// <summary>
+            /// T50: world x of the biome's first chunk on the strip (Grassland 0, Forest 112); its chunks follow every 14 m.
+            /// Only the biome at the world's origin pins its arrival (the refuge); a later arrival streams with the camera.
+            /// </summary>
+            public float OriginX;
+
+            /// <summary>T50: lowest tier with the sun rays in the biome's weather kit (High: Magnifique, as DEF_WorldQuality).</summary>
+            public QualityTier SunRaysFrom = QualityTier.High;
+
+            /// <summary>T50: zones (chunk names) where the sun rays stand; empty: everywhere.</summary>
+            public readonly List<string> SunRayZones = new List<string>();
+
             public string SourceId => "biome." + Key;
             public string DisplayKey => SourceId + ".name";
         }
@@ -177,7 +191,7 @@ namespace PocketWilds.Editor.Production
         {
             var spec = new BiomeSpec
             {
-                Name = "Grassland", Key = "grassland", Prefix = "GL", Order = 0, BasicEggId = "egg.grassland.basic",
+                Name = "Grassland", Key = "grassland", Prefix = "GL", Order = 0, BasicEggId = "egg.grassland.basic", OriginX = 0f,
                 English = UiText("biome.grassland.name", 1), French = UiText("biome.grassland.name", 2),
             };
             foreach (var (chunk, art, role) in new[]
@@ -204,9 +218,11 @@ namespace PocketWilds.Editor.Production
             {
                 Name = "Forest", Key = "forest", Prefix = "FO", Order = 1, BasicEggId = "egg.forest.basic",
                 English = "Forest", French = "Forêt",
+                // T50: the strip goes on east of the Grassland's ForestEdge (98): Entry at 112, the region from x = 105.
+                OriginX = 112f, SunRaysFrom = QualityTier.Medium,
                 Mood = new MoodSpec
                 {
-                    Sun = Hex("FFD08A"), Ambient = Hex("7F9C6A"), Sky = Hex("B9D6C4"), Fog = Hex("DCCFAE"), Strength = 0.32f,
+                    Sun = Hex("FFDCA0"), Ambient = Hex("A6C488"), Sky = Hex("C0DCCB"), Fog = Hex("ECE6CE"), Strength = 0.3f,
                 },
             };
             // Zone names are used inside sentences (« Ouvrir {zone} »), with their article like the Prairie's.
@@ -217,15 +233,26 @@ namespace PocketWilds.Editor.Production
             spec.Zones.Add(new ZoneSpec("brook", "Brook", BiomeZoneRole.Expansion, "the Brook", "le Ruisselet"));
             spec.Zones.Add(new ZoneSpec("mushroomcorner", "MushroomCorner", BiomeZoneRole.Expansion, "the Mushroom Corner", "le Coin des champignons"));
             spec.Zones.Add(new ZoneSpec("laketransition", "LakeTransition", BiomeZoneRole.Passage, "the Way Toward the Lake", "le Chemin vers le lac"));
-            // Seed rows (base, R, G, B, A, occlusion, accent): deep leaf greens, warm bark, moss, amber touches.
-            spec.Palettes.Add(("palette.forest.tree", new[] { "5E4636", "3F7A4A", "5E9A52", "D9A441", "8FB86A", "2A2620", "FFE2A8" }));
-            spec.Palettes.Add(("palette.forest.bush", new[] { "4F8A4C", "3F7A4A", "7DAE5C", "E3B45A", "A8CC7A", "26301F", "FFE2A8" }));
-            spec.Palettes.Add(("palette.forest.ground", new[] { "6E5A3E", "5C8A45", "8A6A48", "A9C77A", "C9B48A", "2E2A20", "F2D9A0" }));
-            spec.Palettes.Add(("palette.forest.rock", new[] { "8C8778", "6E9A52", "A39E8E", "C9C2A8", "B8C79A", "3A382E", "F2E6C8" }));
-            spec.Palettes.Add(("palette.forest.log", new[] { "5A4030", "6E9A52", "7A5A40", "D9A441", "A88A64", "2A2018", "FFE2A8" }));
+            // Rows (base, R, G, B, A, occlusion, accent): deeper leaf greens, warm bark, light moss, amber touches; cozy and luminous,
+            // never dark (T50 art pass: a light moss floor with warm litter and a light tan path, soft occlusion). The wizard adds
+            // missing rows only; ForestPipeline.TunePalettes writes these values over DEF_Palettes_Forest on every build.
+            spec.Palettes.Add(("palette.forest.tree", new[] { "7A5A42", "4C8C50", "6EAE5A", "E2AE4E", "A0CC78", "3A3428", "FFE6B4" }));
+            spec.Palettes.Add(("palette.forest.bush", new[] { "5A9A54", "4A8A4E", "8ABE64", "EBC066", "B4D688", "32422A", "FFE6B4" }));
+            spec.Palettes.Add(("palette.forest.ground", new[] { "78A656", "6AB24E", "AE8A5C", "8FB878", "E2CFA0", "4C5E36", "B8CC7C" }));
+            spec.Palettes.Add(("palette.forest.rock", new[] { "9A9586", "7AAE58", "B0AB9A", "D2CCB2", "C0D2A0", "4A473C", "F2E6C8" }));
+            spec.Palettes.Add(("palette.forest.log", new[] { "6E4E38", "78AA58", "8E6C4C", "E0AC48", "B4966C", "3A2C22", "FFE2A8" }));
             spec.Palettes.Add(("palette.forest.mushroom", new[] { "E8DCC4", "C8643E", "F2E6D0", "D9A441", "F7F0E0", "5A4034", "FFFFFF" }));
-            spec.Palettes.Add(("palette.forest.fern", new[] { "4C8248", "3A6E40", "6FA35A", "9CC46E", "B8D88A", "22301E", "E8F2C8" }));
+            spec.Palettes.Add(("palette.forest.fern", new[] { "5A9C50", "4A8A48", "86BE62", "ACD07A", "C8E29A", "2E4428", "EEF6D0" }));
             spec.Palettes.Add(("palette.forest.water", new[] { "6FA8A0", "8CC4B8", "C8E6DC", "4E8A80", "E8F4EE", "2E4A46", "FFFFFF" }));
+            // T50 rows the Forest's pieces need (pw_forest.py, ForestPipeline): FO_Tree_D's light bark with dark marks, the canopy
+            // wren (column 6: a yellow-breasted variant), the Clearing's two butterfly colorways (column 6: the second variant).
+            spec.Palettes.Add(("palette.forest.birch", new[] { "E6DDC8", "58984F", "92C462", "E6C05A", "4A423A", "3A3428", "FFF2CC" }));
+            spec.Palettes.Add(("palette.forest.life_bird", new[] { "7A5E48", "EBD3A8", "5E4636", "E8B64E", "7A5E48", "4A3A2E", "F2D27A" }));
+            spec.Palettes.Add(("palette.forest.life_butterfly_amber", new[] { "4A3A2A", "F2B45A", "B86A3E", "4A3A2A", "4A3A2A", "35291E", "F7DDA8" }));
+            spec.Palettes.Add(("palette.forest.life_butterfly_cream", new[] { "3E3540", "F4F0D8", "B8D88A", "3E3540", "3E3540", "2E2830", "E6F0B8" }));
+            // T50: sun shafts through the canopy at the woodland edge and in the Clearing (Équilibrée and up).
+            spec.SunRayZones.Add("entry");
+            spec.SunRayZones.Add("clearing");
             return spec;
         }
 
@@ -234,14 +261,66 @@ namespace PocketWilds.Editor.Production
         [MenuItem("Pocket Wilds/Content/Migrate Grassland Biome (T49B)", priority = 151)]
         public static void MigrateGrasslandMenu() => Debug.Log("[BiomeWizard] " + MigrateGrassland());
 
-        /// <summary>The Prairie through the wizard: every existing asset adopted (nothing rebuilt), DEF_World_Grassland made.</summary>
         /// <summary>
-        /// The biome the vertical slice scene wires directly (chunk set, moods, kits on VerticalSliceEntry): its world profile stays
-        /// out of Addressables, which would duplicate those assets, until the biome switch (T50) loads every biome by its profile.
+        /// The Prairie through the wizard: every existing asset adopted (nothing rebuilt), DEF_World_Grassland made. T50: like every
+        /// biome, its profile is Addressable (world.grassland in Biome_Grassland_Kit): the scene loads it by key.
         /// </summary>
-        public const string SceneBiomeKey = "grassland";
-
         public static string MigrateGrassland() => CreateOrUpdate(GrasslandSpec());
+
+        /// <summary>
+        /// T50 (decision 8): every shipped biome's world profile Addressable as world.{key} in its kit group with its label, the
+        /// Grassland included, so the scene entry loads each biome by key and holds no biome asset. Idempotent; profiles not made yet
+        /// are listed.
+        /// </summary>
+        public static string EnsureWorldEntries()
+        {
+            var settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
+            var done = new List<string>();
+            var missing = new List<string>();
+            foreach (var biome in ContentWizard.Database().biomes.Where(b => b != null))
+            {
+                if (RootOf(biome) != DefaultRoot || string.IsNullOrEmpty(biome.key))
+                    continue;
+                var paths = new BiomePaths(NameOf(biome), DefaultRoot);
+                if (!File.Exists(paths.World))
+                {
+                    missing.Add(Path.GetFileNameWithoutExtension(paths.World));
+                    continue;
+                }
+                string label = Label(biome.key);
+                settings.AddLabel(label);
+                var kit = EnsureGroup(settings, paths.KitGroup, BundledAssetGroupSchema.BundlePackingMode.PackTogether);
+                EnsureEntry(settings, kit, paths.World, BiomeWorldProfile.AddressOf(biome.key), label);
+                done.Add(BiomeWorldProfile.AddressOf(biome.key));
+            }
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssets();
+            return $"profils : {string.Join(", ", done)}" + (missing.Count == 0 ? "." : $" ; à faire : {string.Join(", ", missing)}.");
+        }
+
+        [MenuItem("Pocket Wilds/Content/Create Forest Biome (T50)", priority = 152)]
+        public static void CreateForestMenu() => Debug.Log("[BiomeWizard] " + CreateOrUpdate(ForestSpec()));
+
+        /// <summary>T50: where a zone's chunk stands on the strip: the spec's origin plus 14 m per zone along +x.</summary>
+        public static Vector3 ChunkOrigin(BiomeSpec spec, int zone) => new Vector3(spec.OriginX + zone * ChunkSpacing, 0f, 0f);
+
+        /// <summary>T50: only the biome at the world's origin pins its arrival (the world's first arrival, the refuge).</summary>
+        public static bool PinsArrival(BiomeSpec spec) => Mathf.Abs(spec.OriginX) < 0.01f;
+
+        /// <summary>T50: the world x ranges of the spec's sun ray zones (each zone's chunk square, west to east edge).</summary>
+        public static Vector2[] SunRayAreas(BiomeSpec spec)
+        {
+            var areas = new List<Vector2>();
+            foreach (var chunk in spec.SunRayZones)
+            {
+                int at = spec.Zones.FindIndex(z => z.Chunk == chunk);
+                if (at < 0)
+                    continue;
+                float x = ChunkOrigin(spec, at).x;
+                areas.Add(new Vector2(x - ChunkHalfSize, x + ChunkHalfSize));
+            }
+            return areas.ToArray();
+        }
 
         // ---------------------------------------------------------------- create or update
 
@@ -361,6 +440,7 @@ namespace PocketWilds.Editor.Production
                 EnsureEntry(settings, zones, paths.ZoneKit, ZonesAddress(spec.Key), label);
 
             var audio = EnsureAudio(spec, paths, settings, made);
+            EnsureKits(spec, paths, root, made);
             var world = LoadOrCreate<BiomeWorldProfile>(paths.World, made);
             world.biomeId = spec.SourceId;
             world.key = spec.Key;
@@ -376,16 +456,9 @@ namespace PocketWilds.Editor.Production
             world.basicEggId = spec.BasicEggId;
             EditorUtility.SetDirty(world);
             AssetDatabase.SaveAssets();
-            if (spec.Key == SceneBiomeKey)
-            {
-                // The vertical slice wires this biome's chunk set, moods and kits directly: an Addressable profile would copy them
-                // into the kit bundle (CommonContentTests duplicates). It joins Addressables with the biome switch (T50).
-                var stale = settings.FindAssetEntry(AssetDatabase.AssetPathToGUID(paths.World));
-                if (stale != null)
-                    settings.RemoveAssetEntry(stale.guid);
-            }
-            else
-                EnsureEntry(settings, kit, paths.World, BiomeWorldProfile.AddressOf(spec.Key), label);
+            // T50 (decision 8): every biome, the Grassland included, is loaded by its profile; World_Shared (WorldContentPipeline)
+            // owns what several biomes' bundles use, so the kit bundle copies nothing.
+            EnsureEntry(settings, kit, paths.World, BiomeWorldProfile.AddressOf(spec.Key), label);
 
             // Texts, then the content database.
             foreach (var table in database.localization.Where(t => t != null))
@@ -455,7 +528,7 @@ namespace PocketWilds.Editor.Production
         }
 
         /// <summary>Pulls a seeded profile toward the biome's mood (sun and glow, ambient, sky and clouds, fog); intensities kept.</summary>
-        private static void Tint(LightingProfile p, MoodSpec mood, float k)
+        internal static void Tint(LightingProfile p, MoodSpec mood, float k)
         {
             if (k <= 0f)
                 return;
@@ -486,14 +559,15 @@ namespace PocketWilds.Editor.Production
                 int at = entries.FindIndex(e => e.id == id);
                 if (at < 0)
                 {
-                    entries.Add(new WorldChunkSet.Entry
-                    {
-                        id = id, origin = new Vector3(i * ChunkSpacing, 0f, 0f), pinned = zone.Role == BiomeZoneRole.Arrival,
-                    });
+                    entries.Add(new WorldChunkSet.Entry { id = id });
                     at = entries.Count - 1;
                 }
                 string prefab = paths.ChunkPrefab(zone.Art);
                 var entry = entries[at];
+                // T50: the place on the strip and the pin are the spec's (a set made before the strip is moved into place).
+                entry.origin = ChunkOrigin(spec, i);
+                entry.pinned = zone.Role == BiomeZoneRole.Arrival && PinsArrival(spec);
+                entries[at] = entry;
                 if (string.IsNullOrEmpty(entry.prefab?.AssetGUID) && File.Exists(prefab))
                 {
                     entry.prefab = new AssetReferenceGameObject(AssetDatabase.AssetPathToGUID(prefab));
@@ -506,18 +580,59 @@ namespace PocketWilds.Editor.Production
             return set;
         }
 
+        /// <summary>
+        /// T50: the biome's weather and ambient life kits, when missing, as copies of the Grassland's (shared meshes and materials,
+        /// no new texture): the weather kit takes the spec's sun ray tier and zones; the life kit is the Grassland's species list,
+        /// spawning at the biome chunks' anchors of the same names. Existing kits are adopted and never overwritten.
+        /// </summary>
+        private static void EnsureKits(BiomeSpec spec, BiomePaths paths, string root, List<string> made)
+        {
+            var grassland = new BiomePaths("Grassland", root);
+            var fallback = new BiomePaths("Grassland", DefaultRoot);
+            // The seed biome's own kits are its pipeline's (GrasslandPipeline): never copied from themselves.
+            if (paths.Weather == grassland.Weather || paths.Weather == fallback.Weather)
+                return;
+            if (!File.Exists(paths.Weather))
+            {
+                var source = AssetDatabase.LoadAssetAtPath<WeatherKit>(grassland.Weather) ?? AssetDatabase.LoadAssetAtPath<WeatherKit>(fallback.Weather);
+                var kit = source != null ? UnityEngine.Object.Instantiate(source) : ScriptableObject.CreateInstance<WeatherKit>();
+                kit.sunRaysFrom = spec.SunRaysFrom;
+                kit.sunRayAreas = SunRayAreas(spec);
+                EnsureFolder(Path.GetDirectoryName(paths.Weather)?.Replace('\\', '/'));
+                AssetDatabase.CreateAsset(kit, paths.Weather);
+                made.Add(paths.Weather);
+            }
+            if (!File.Exists(paths.AmbientLife))
+            {
+                var source = AssetDatabase.LoadAssetAtPath<AmbientLifeKit>(grassland.AmbientLife) ?? AssetDatabase.LoadAssetAtPath<AmbientLifeKit>(fallback.AmbientLife);
+                var kit = source != null ? UnityEngine.Object.Instantiate(source) : ScriptableObject.CreateInstance<AmbientLifeKit>();
+                EnsureFolder(Path.GetDirectoryName(paths.AmbientLife)?.Replace('\\', '/'));
+                AssetDatabase.CreateAsset(kit, paths.AmbientLife);
+                made.Add(paths.AmbientLife);
+            }
+            AssetDatabase.SaveAssets();
+        }
+
         private static BiomeAudioSet EnsureAudio(BiomeSpec spec, BiomePaths paths, AddressableAssetSettings settings, List<string> made)
         {
             EnsureFolder(Path.GetDirectoryName(paths.Audio)?.Replace('\\', '/'));
             var beds = LoadOrCreate<BiomeAudioSet>(paths.Audio, made);
             var grassland = AssetDatabase.LoadAssetAtPath<BiomeAudioSet>(AudioPipeline.GrasslandBedsPath);
-            // The biome's own ambience once its master exists (AMB_{Name}_Day/Evening), the Prairie's beds until then.
+            // The biome's own music and ambience once their masters exist (MUS_{Name}Variation, AMB_{Name}_Day/Evening), the
+            // Prairie's beds until then; a borrowed Prairie clip gives way to the biome's own when it comes (never the biome's own art).
             AudioClip Own(string mood) => AssetDatabase.LoadAssetAtPath<AudioClip>($"{AudioPipeline.AmbienceFolder}/AMB_{spec.Name}_{mood}.wav");
+            var ownMusic = AssetDatabase.LoadAssetAtPath<AudioClip>($"{AudioPipeline.MusicFolder}/MUS_{spec.Name}Variation.wav");
             bool changed = false;
-            if (beds.music == null) { beds.music = grassland != null ? grassland.music : null; changed = true; }
-            if (beds.ambience == null) { beds.ambience = Own("Day") ?? (grassland != null ? grassland.ambience : null); changed = true; }
-            if (beds.ambienceEvening == null) { beds.ambienceEvening = Own("Evening") ?? (grassland != null ? grassland.ambienceEvening : null); changed = true; }
-            if (beds.rain == null) { beds.rain = grassland != null ? grassland.rain : null; changed = true; }
+            AudioClip Pick(AudioClip current, AudioClip own, AudioClip borrowed)
+            {
+                var clip = current == null ? own ?? borrowed : own != null && current == borrowed ? own : current;
+                changed |= clip != current;
+                return clip;
+            }
+            beds.music = Pick(beds.music, ownMusic, grassland != null ? grassland.music : null);
+            beds.ambience = Pick(beds.ambience, Own("Day"), grassland != null ? grassland.ambience : null);
+            beds.ambienceEvening = Pick(beds.ambienceEvening, Own("Evening"), grassland != null ? grassland.ambienceEvening : null);
+            beds.rain = Pick(beds.rain, null, grassland != null ? grassland.rain : null);
             if (changed)
                 EditorUtility.SetDirty(beds);
             AssetDatabase.SaveAssets();
@@ -587,8 +702,10 @@ namespace PocketWilds.Editor.Production
                         continue;
                     }
                     var entry = set.Get(at);
-                    if (entry.pinned != (zone.role == BiomeZoneRole.Arrival))
-                        setProblems.Add(id + (entry.pinned ? " épinglé (seule l'arrivée l'est)" : " : l'arrivée reste épinglée"));
+                    // T50: only the arrival at the world's origin is pinned (a later biome's arrival streams with the camera).
+                    bool pin = zone.role == BiomeZoneRole.Arrival && Mathf.Abs(entry.origin.x) < 0.01f;
+                    if (entry.pinned != pin)
+                        setProblems.Add(id + (entry.pinned ? " épinglé (seule l'arrivée à l'origine du monde l'est)" : " : l'arrivée reste épinglée"));
                     string guid = entry.prefab?.AssetGUID;
                     string prefabPath = string.IsNullOrEmpty(guid) ? null : AssetDatabase.GUIDToAssetPath(guid);
                     if (string.IsNullOrEmpty(prefabPath) || !File.Exists(prefabPath))
@@ -655,12 +772,8 @@ namespace PocketWilds.Editor.Production
                 if (world.zoneKitKey != ZonesAddress(key) || world.audioKey != AudioAddress(key) || string.IsNullOrEmpty(world.basicEggId))
                     worldProblems.Add("clés (zones, audio, œuf)");
                 var worldEntry = settings?.FindAssetEntry(AssetDatabase.AssetPathToGUID(paths.World));
-                if (key == SceneBiomeKey)
-                {
-                    if (worldEntry != null)
-                        worldProblems.Add("hors Addressables tant que la scène le référence (doublons)");
-                }
-                else if (worldEntry == null || worldEntry.address != BiomeWorldProfile.AddressOf(key) || worldEntry.parentGroup == null || worldEntry.parentGroup.Name != paths.KitGroup)
+                // T50: every biome, the Grassland included, loads by its profile (the scene holds no biome asset).
+                if (worldEntry == null || worldEntry.address != BiomeWorldProfile.AddressOf(key) || worldEntry.parentGroup == null || worldEntry.parentGroup.Name != paths.KitGroup)
                     worldProblems.Add($"adresse {BiomeWorldProfile.AddressOf(key)} dans {paths.KitGroup}");
             }
             findings.Add(new WizardFinding("Profil du monde", worldProblems.Count == 0,

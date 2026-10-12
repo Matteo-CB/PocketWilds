@@ -169,6 +169,12 @@ namespace PocketWilds.Tests.PlayMode
             var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
             Assert.IsNotNull(entry);
             Assert.IsNotNull(entry.StartChunk, "SC_VerticalSlice_Grassland must stream its start chunk before Enter.");
+            // T50 decision 8: the Grassland, like every biome, came from its world profile (world.grassland), not the scene's fields.
+            var grassland = entry.GetBiomeProfile(0);
+            Assert.IsNotNull(grassland, "The first biome's profile loaded.");
+            Assert.AreEqual("DEF_World_Grassland", grassland.name, "Loaded by key from Addressables, not the fallback fields.");
+            Assert.AreSame(grassland.chunkSet, entry.ChunkSet);
+            Assert.AreSame(grassland.day, entry.Lighting);
             Assert.IsTrue(bootstrap.Context.Palettes.TryGetRow(ContentId.FromSource("palette.grassland.ground"), out int row));
             var ground = entry.StartChunk.transform.Find("Ground").GetComponent<MeshRenderer>();
             Assert.AreEqual(row, EnvironmentVisualPacking.PaletteRow(ground.GetShaderUserValue()));

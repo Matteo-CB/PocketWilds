@@ -1,3 +1,5 @@
+using System;
+using PocketWilds.Core;
 using UnityEngine;
 
 namespace PocketWilds.Presentation
@@ -26,6 +28,12 @@ namespace PocketWilds.Presentation
         [Header("Sun rays (Magnifique)")]
         public Mesh rayMesh;
         public Material rayMaterial;
+        [Tooltip("T50: lowest tier with the rays. High follows DEF_WorldQuality (Magnifique); the Forest's shafts start at Medium (Équilibrée).")]
+        public QualityTier sunRaysFrom = QualityTier.High;
+        [Tooltip("T50: world x ranges (min, max) where the rays stand, faded over 2 m past each end (the Forest: Entry and Clearing). Empty: everywhere.")]
+        public Vector2[] sunRayAreas = Array.Empty<Vector2>();
+        [Tooltip("T50: how far past the camera focus the rays stand (m, away from the camera). The Forest's stand behind the landmarks' trunks so they stay solid.")]
+        [Min(0f)] public float rayDepth = 3.5f;
 
         [Header("Schedule (minutes of play, seconds)")]
         [Tooltip("Minutes between two showers: a random value in this range.")]

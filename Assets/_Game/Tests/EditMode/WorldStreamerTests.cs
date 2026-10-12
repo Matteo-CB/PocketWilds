@@ -306,14 +306,15 @@ namespace PocketWilds.Tests.EditMode
             Assert.IsTrue(set.Get(0).pinned && !set.Get(1).pinned);
             Assert.AreEqual(set.Get(0).origin + new Vector3(14f, 0f, 0f), set.Get(1).origin, "The meadow is the next chunk east.");
 
-            // Shared kit dependencies have one owner: the kit group, or the Bootstrap group for the world master shaders
-            // every biome shares (T34C).
+            // Shared kit dependencies have one owner: the kit group, the Bootstrap group for the world master shaders every biome
+            // shares (T34C), or World_Shared for what the Forest uses too (T50).
             foreach (var path in WorldContentPipeline.SharedDependencies(WorldContentPipeline.GrasslandChunks.Select(c => c.path).ToArray()))
             {
                 var asset = settings.FindAssetEntry(AssetDatabase.AssetPathToGUID(path));
                 Assert.IsNotNull(asset, path + " is shared by both chunks but owned by no bundle.");
                 string owner = path.EndsWith(".shader", StringComparison.Ordinal) ? CommonContentPipeline.BootstrapGroup : WorldContentPipeline.KitGroup;
-                Assert.AreEqual(owner, asset.parentGroup.Name, path);
+                if (asset.parentGroup.Name != WorldContentPipeline.SharedGroup)
+                    Assert.AreEqual(owner, asset.parentGroup.Name, path);
                 Assert.IsFalse(path.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase), "Kit FBX would drag the URP Lit material: " + path);
             }
         }

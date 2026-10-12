@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d4b180101ffb7f4fa8312920b0b9fbe, type: 3}
+  m_Name: DEF_ScatterKit_Forest
+  m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.ScatterKit
+  material: {fileID: 2100000, guid: 4d269dbcd9d3bb248b40df1f4512b796, type: 2}
+  kinds:
+  - id: grass.tuft_s
+    mesh: {fileID: 4300000, guid: 76b8fddd17eeda64596d21d3a4caeafa, type: 2}
+    paletteId: 2586096231
+    windScale: 1
+    minDensity: 0
+  - id: grass.tuft_m
+    mesh: {fileID: 4300000, guid: 3239a2868b7f85045a2de1167cc1ee94, type: 2}
+    paletteId: 2586096231
+    windScale: 1
+    minDensity: 0
+  - id: grass.tuft_l
+    mesh: {fileID: 4300000, guid: d4b7e73025f034a4b96c7d1e9987e9f7, type: 2}
+    paletteId: 2586096231
+    windScale: 1
+    minDensity: 0
+  - id: grass.wisp_m
+    mesh: {fileID: 4300000, guid: af4d8cbdc0673df44ba9e4c326459893, type: 2}
+    paletteId: 2586096231
+    windScale: 1.2
+    minDensity: 0
+  - id: flower.daisy_white
+    mesh: {fileID: 4300000, guid: 6832f93379026a842a50d9fcd1f92bdb, type: 2}
+    paletteId: 1034890894
+    windScale: 0.7
+    minDensity: 0.55
+  - id: flower.bell_blue
+    mesh: {fileID: 4300000, guid: 1fa94c707769a434d915358c9a543ec4, type: 2}
+    paletteId: 633984671
+    windScale: 0.7
+    minDensity: 0.55
+  - id: flower.buttercup
+    mesh: {fileID: 4300000, guid: 9b67027ed903bd7489a89954787a108c, type: 2}
+    paletteId: 2647159389
+    windScale: 0.6
+    minDensity: 0.55
+  - id: moss.tuft
+    mesh: {fileID: 4300000, guid: f056de819ea5ba843b69c10c0ae35f6e, type: 2}
+    paletteId: 3370485390
+    windScale: 0.25
+    minDensity: 0
+  - id: detail.clover
+    mesh: {fileID: 4300000, guid: 82f524127ac75aa40aac2c87f09008f9, type: 2}
+    paletteId: 3370485390
+    windScale: 0.3
+    minDensity: 0
+  - id: detail.leaf_a
+    mesh: {fileID: 4300000, guid: a847e005e6b02b8409e68079289b6453, type: 2}
+    paletteId: 2431141639
+    windScale: 0.1
+    minDensity: 0
+  - id: detail.leaf_b
+    mesh: {fileID: 4300000, guid: 4774a3717186b514d9b985e4a8a50e6c, type: 2}
+    paletteId: 2431141639
+    windScale: 0.1
+    minDensity: 0
+  - id: detail.twig
+    mesh: {fileID: 4300000, guid: 551ec648626482146822cf50ccf17f50, type: 2}
+    paletteId: 225386637
+    windScale: 0
+    minDensity: 0.3
+  - id: detail.acorn
+    mesh: {fileID: 4300000, guid: ce12948d9522c6a4c8db3202d258ede1, type: 2}
+    paletteId: 225386637
+    windScale: 0
+    minDensity: 0.4
+  - id: detail.pinecone
+    mesh: {fileID: 4300000, guid: 5edb71b9e2b2f0d43a87da242abe770a, type: 2}
+    paletteId: 225386637
+    windScale: 0
+    minDensity: 0.4
+  - id: detail.pebble_a
+    mesh: {fileID: 4300000, guid: 8e9aef4a376f2c644970c0e9c8f6e9af, type: 2}
+    paletteId: 913761580
+    windScale: 0
+    minDensity: 0.3

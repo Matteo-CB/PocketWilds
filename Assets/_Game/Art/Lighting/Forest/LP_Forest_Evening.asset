@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 619820d4be078d74da7782c2399b0d97, type: 3}
+  m_Name: LP_Forest_Evening
+  m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.LightingProfile
+  sunColor: {r: 1, g: 0.82980394, b: 0.61647063, a: 1}
+  sunIntensity: 1.281
+  sunAngles: {x: 24, y: -62}
+  shadowStrength: 0.5104
+  ambientTop: {r: 0.6619608, g: 0.6917647, b: 0.7282353, a: 1}
+  ambientEquator: {r: 0.75803924, g: 0.7137255, b: 0.5882353, a: 1}
+  ambientBottom: {r: 0.45333335, g: 0.4556863, b: 0.36313727, a: 1}
+  sky: {fileID: 2100000, guid: ed1635fe1678a0346a2e9e6fbc5b5d95, type: 2}
+  skyTop: {r: 0.53607845, g: 0.662353, b: 0.81529415, a: 1}
+  skyHorizon: {r: 0.92588234, g: 0.8380392, b: 0.70000005, a: 1}
+  skyBottom: {r: 0.8572549, g: 0.78039217, b: 0.6890196, a: 1}
+  fog: 1
+  fogColor: {r: 0.9579608, g: 0.87764704, b: 0.7847843, a: 1}
+  fogStart: 26
+  fogEnd: 64
+  sunGlowTint: {r: 1, g: 0.7529412, b: 0.50666666, a: 1}
+  sunGlow: 0.6
+  cloudLight: {r: 1, g: 0.8847059, b: 0.7372549, a: 1}
+  cloudShade: {r: 0.7721569, g: 0.71725494, b: 0.7603922, a: 1}
+  cloudCoverage: 0.42
+  stars: 0
+  heightFogStrength: 0.28
+  heightFogBase: 0
+  heightFogFalloff: 0.5
+  heightFogStart: 12
+  heightFogRange: 24
+  windStrength: 0.3
+  windYaw: 50
+  windSpeed: 1.4
+  windWaveFrequency: 0.32
+  gustStrength: 0.4
+  gustFrequency: 0.5
+  flutter: 0.03

@@ -162,6 +162,7 @@ namespace PocketWilds.Editor.Validation
             issues.AddRange(ValidateEggModels());
             issues.AddRange(ValidateEggPrefab());
             issues.AddRange(ValidateEnvironment());
+            issues.AddRange(ValidateForest());
             issues.AddRange(ValidateHideSpots());
             issues.AddRange(ValidateBiomes());
             issues.AddRange(ValidateDecorations());

@@ -61,6 +61,12 @@ namespace PocketWilds.Presentation
         private readonly ContentId _biome;
         private readonly ZoneDefinition[] _zones;
         private readonly int[] _chunkIndex;
+
+        /// <summary>T50: the zones of the biomes further east on the strip (the Forest...), per biome in world order.</summary>
+        private readonly ZoneDefinition[][] _farZones;
+
+        /// <summary>T50: x of each far zone's chunk (NaN when the streamer has no such chunk).</summary>
+        private readonly float[][] _farX;
         private readonly float _half;
         private readonly Action<ZoneOpening> _onOpened;
 
@@ -104,6 +110,7 @@ namespace PocketWilds.Presentation
             _chunkIndex = new int[_zones.Length];
             for (int i = 0; i < _zones.Length; i++)
                 _chunkIndex[i] = streamer != null ? streamer.IndexOf(_zones[i].ChunkAddress) : -1;
+            FarZones(_progression.Config.Zones, _biome, streamer, out _farZones, out _farX);
             _boundary = kit != null ? new ZoneBoundary(kit, context.Palettes, root) : null;
             _onOpened = OnZoneOpened;
             _progression.Zones.Opened += _onOpened;
@@ -149,11 +156,67 @@ namespace PocketWilds.Presentation
         /// <summary>x of the east edge of the last open zone (the hedge's seam).</summary>
         public float SeamX => ZoneOrigin(Math.Max(1, OpenZones) - 1).x + _half;
 
-        /// <summary>Camera limits along x: from the arrival zone to a glimpse past the next zone's hedge.</summary>
+        /// <summary>
+        /// Camera limits along x: from the arrival zone to a glimpse past the next zone's hedge. T50: once every zone of the
+        /// refuge's biome is open (its passage too), the camera carries on over the open zones of the biomes further east on
+        /// the strip (the Forest, opened through a save until its species come), up to a glimpse past the last open one.
+        /// </summary>
         public void GetCameraRange(out float minX, out float maxX)
         {
             minX = ZoneOrigin(0).x - WestReach + 2f;
             maxX = OpenZones < _zones.Length ? SeamX + CameraPastSeam : ZoneOrigin(_zones.Length - 1).x + _half - 2f;
+            if (OpenZones < _zones.Length)
+                return;
+            for (int b = 0; b < _farZones.Length; b++)
+            {
+                var zones = _farZones[b];
+                int open = 0;
+                while (open < zones.Length && !float.IsNaN(_farX[b][open]) && _progression.Zones.IsOpen(zones[open]))
+                    open++;
+                if (open == 0)
+                    return;
+                if (open < zones.Length)
+                {
+                    maxX = Mathf.Max(maxX, _farX[b][open - 1] + _half + CameraPastSeam);
+                    return;
+                }
+                maxX = Mathf.Max(maxX, _farX[b][open - 1] + _half - 2f);
+            }
+        }
+
+        /// <summary>T50: far biomes in world order (by their arrival chunk's x), each with its zones in opening order.</summary>
+        private static void FarZones(ZoneDefinition[] all, ContentId refugeBiome, WorldStreamer streamer, out ZoneDefinition[][] zones, out float[][] xs)
+        {
+            var byBiome = new Dictionary<ContentId, List<ZoneDefinition>>();
+            foreach (var zone in all)
+            {
+                if (zone.Biome == refugeBiome)
+                    continue;
+                if (!byBiome.TryGetValue(zone.Biome, out var list))
+                    byBiome[zone.Biome] = list = new List<ZoneDefinition>();
+                list.Add(zone);
+            }
+            var biomes = new List<(float x, ZoneDefinition[] zones, float[] xs)>();
+            foreach (var list in byBiome.Values)
+            {
+                list.Sort((a, b) => a.Index.CompareTo(b.Index));
+                var row = new float[list.Count];
+                for (int i = 0; i < row.Length; i++)
+                {
+                    int index = streamer != null ? streamer.IndexOf(list[i].ChunkAddress) : -1;
+                    row[i] = index >= 0 ? streamer.GetEntry(index).origin.x : float.NaN;
+                }
+                if (row.Length > 0 && !float.IsNaN(row[0]))
+                    biomes.Add((row[0], list.ToArray(), row));
+            }
+            biomes.Sort((a, b) => a.x.CompareTo(b.x));
+            zones = new ZoneDefinition[biomes.Count][];
+            xs = new float[biomes.Count][];
+            for (int i = 0; i < biomes.Count; i++)
+            {
+                zones[i] = biomes[i].zones;
+                xs[i] = biomes[i].xs;
+            }
         }
 
         /// <summary>A chunk changed state: an open zone that finished loading joins the walk area.</summary>
@@ -366,7 +429,11 @@ namespace PocketWilds.Presentation
         private void OnZoneOpened(ZoneOpening opening)
         {
             if (opening.Zone.Biome != _biome)
+            {
+                // T50: a zone further east on the strip opened: the camera may reach it now.
+                CameraRangeChanged?.Invoke();
                 return;
+            }
             bool reduce = _context.State.Settings.ReduceMotion;
             var at = _boundary != null && _boundary.HasSign ? _boundary.SignPosition : new Vector3(SeamX, 0f, ZoneOrigin(0).z);
             // The color comes back over the new zone in a wave from the old hedge to the next one.

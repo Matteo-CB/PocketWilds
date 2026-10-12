@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 1
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: c1d4a5d2563989448a07fa32cbf05634, type: 2}
+  m_SkyboxMaterial: {fileID: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -2440,23 +2440,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ff0a53ee0fb1404499c167aaa26f285, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.VerticalSliceEntry
-  _chunkSet: {fileID: 11400000, guid: 32611da0d3e9e1340b34b290504f0a44, type: 2}
+  _biomeKeys:
+  - grassland
+  - forest
+  _biomes: []
   _footprintMaxDistance: 30
-  _lighting: {fileID: 11400000, guid: e6b808eddc8554b48a9297bdee490304, type: 2}
-  _morning: {fileID: 11400000, guid: e396f98deb5596d4fa69234e53314ea0, type: 2}
-  _evening: {fileID: 11400000, guid: d0fd2488d30f3fd44a29bde05bbb1d33, type: 2}
-  _night: {fileID: 11400000, guid: 652e43702e40eb8449c3dd4936b7f881, type: 2}
-  _weatherKit: {fileID: 11400000, guid: 0f0e8960d9ce10f4d95b908c16bb2a37, type: 2}
   _worldQuality: {fileID: 11400000, guid: 190e55fe1a13dc74784520574d05bde4, type: 2}
-  _ambientLife: {fileID: 11400000, guid: aabb896cf548ac345a0adc83125fade0, type: 2}
   _seasonLooks: {fileID: 11400000, guid: 4bb27d597f86ce741854f9623ea7188e, type: 2}
   _sun: {fileID: 332162227}
   _cameraRig: {fileID: 644260269}
   _panHalfSize: {x: 3.5, y: 4}
-  _biomeAudioKey: audio.grassland
+  _chunkSet: {fileID: 0}
+  _lighting: {fileID: 0}
+  _morning: {fileID: 0}
+  _evening: {fileID: 0}
+  _night: {fileID: 0}
+  _weatherKit: {fileID: 0}
+  _ambientLife: {fileID: 0}
+  _biomeAudioKey: 
+  _zoneKitKey: 
   _hatchConfigKey: animals.hatch
   _eggId: egg.grassland.basic
-  _zoneKitKey: zones.grassland
   _hud: {fileID: 1747568190}
   _offlineReturn: {fileID: 377599667}
   _codex: {fileID: 467057313}

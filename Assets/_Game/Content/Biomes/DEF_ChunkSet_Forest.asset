@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c71d441ddb45fe948bd96727915d686f, type: 3}
+  m_Name: DEF_ChunkSet_Forest
+  m_EditorClassIdentifier: Game.Presentation::PocketWilds.Presentation.WorldChunkSet
+  _chunks:
+  - id: chunk.forest.entry
+    prefab:
+      m_AssetGUID: 78c3910634c1b7747b0f198c466e134c
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    origin: {x: 112, y: 0, z: 0}
+    pinned: 0
+  - id: chunk.forest.deepforest
+    prefab:
+      m_AssetGUID: 77ad11ea1e7d1b846b006a5e8a5c761d
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    origin: {x: 126, y: 0, z: 0}
+    pinned: 0
+  - id: chunk.forest.clearing
+    prefab:
+      m_AssetGUID: d2f3106dea85ed747a51e79ad90c769a
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    origin: {x: 140, y: 0, z: 0}
+    pinned: 0
+  - id: chunk.forest.hollow
+    prefab:
+      m_AssetGUID: 3d9d7f759daa90344861854478d48320
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    origin: {x: 154, y: 0, z: 0}
+    pinned: 0
+  - id: chunk.forest.brook
+    prefab:
+      m_AssetGUID: d096aa1d59380204a94cb282ab01221f
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    origin: {x: 168, y: 0, z: 0}
+    pinned: 0
+  - id: chunk.forest.mushroomcorner
+    prefab:
+      m_AssetGUID: d3a5a25ba6343d240bb8bb57f6184172
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    origin: {x: 182, y: 0, z: 0}
+    pinned: 0
+  - id: chunk.forest.laketransition
+    prefab:
+      m_AssetGUID: c6b693b69322c864e92fe24c16f27fc5
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    origin: {x: 196, y: 0, z: 0}
+    pinned: 0
+  _halfSize: 7
+  _window:
+    preloadDistance: 4
+    activateDistance: 1
+    deactivateDistance: 2
+    releaseDistance: 6
+    releaseDelay: 4

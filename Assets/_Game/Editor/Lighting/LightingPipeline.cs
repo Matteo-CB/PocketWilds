@@ -251,14 +251,16 @@ namespace PocketWilds.Editor.Lighting
                 sun.name = "Sun";
 
             var so = new SerializedObject(entry);
-            so.FindProperty("_lighting").objectReferenceValue = profile;
+            // T50: the moods are the Grassland's world profile's (world.grassland, loaded by key): the scene names no biome.
             so.FindProperty("_sun").objectReferenceValue = sun;
             so.FindProperty("_cameraRig").objectReferenceValue = rig;
             WireMoods(so);
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            // Bake the Medium reference into the saved scene so the editor view matches the game.
+            // Bake the Medium reference into the saved scene so the editor view matches the game (colors and fog only: the sky
+            // material is the biome's, set by its profile on Enter, T50).
             profile.Apply(sun, rig.Camera, QualityTier.Medium);
+            RenderSettings.skybox = null;
             // The start chunk is streamed (T27): frame the egg spawn read from the chunk prefab.
             rig.SnapTo(PocketWilds.Editor.World.WorldContentPipeline.StartEggSpawn());
             EditorSceneManager.MarkSceneDirty(scene);

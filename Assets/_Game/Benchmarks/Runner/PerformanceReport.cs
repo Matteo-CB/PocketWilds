@@ -19,6 +19,8 @@ namespace PocketWilds.Benchmarks
         public bool shop;
         /// <summary>T33B: the camera travels the whole strip of chunks east and back (streaming, water, landmarks).</summary>
         public bool stripTravel;
+        /// <summary>T50 P9: a save with the Forest open; the camera travels from the meadow into the Forest Clearing and back.</summary>
+        public bool biomeTravel;
         /// <summary>T33B: a light shower is forced for the whole measure.</summary>
         public bool rain;
         /// <summary>T34: every adaptive quality step from the boot tier down to Low and back up, one every 1.2 s.</summary>
@@ -119,6 +121,8 @@ namespace PocketWilds.Benchmarks
 
         public StreamingResult streaming;
         public ShopResult shop;
+        /// <summary>T50 P9: the Grassland to Forest transition (band frames, camera biome switches, the Forest's memory).</summary>
+        public BiomeTravelResult biomeTravel;
 
         /// <summary>
         /// T34B audio (every scenario, beds playing, output muted): main-thread audio update (AudioManager.Update, ms per
@@ -201,6 +205,37 @@ namespace PocketWilds.Benchmarks
         public int bundlesBefore;
         public int bundlesLoaded;
         public int bundlesAfter;
+    }
+
+    /// <summary>
+    /// T50 P9 « Prairie vers Forêt »: the camera crosses the Grassland to Forest band (x 100 to 110) both ways. The streaming
+    /// part (loads, releases, transition frames, mesh memory out / in / out) is in <see cref="ScenarioResult.streaming"/>.
+    /// </summary>
+    [Serializable]
+    public struct BiomeTravelResult
+    {
+        public bool valid;
+        /// <summary>Biomes on the world strip (2 once the Forest is made).</summary>
+        public int biomes;
+        /// <summary>Farthest focus x reached: 140 (the Clearing) when the camera range covers the open Forest.</summary>
+        public float reachX;
+        /// <summary>Camera biome changes (2 for one trip there and back: no flicker at the start).</summary>
+        public int cameraBiomeSwitches;
+        /// <summary>Frames with the focus in the blend band, and their worst and mean CPU time.</summary>
+        public int bandFrames;
+        public float bandFrameMaxMs;
+        public float bandFrameMeanMs;
+        /// <summary>Chunk loads and releases of the Forest's chunks, and the most Forest chunks loaded at once.</summary>
+        public int forestLoads;
+        public int forestReleases;
+        public int forestChunksPeak;
+        /// <summary>Mesh memory and asset count at the meadow (Forest out), in the Clearing, then back at the meadow.</summary>
+        public float meshMemoryBeforeMb;
+        public float meshMemoryForestMb;
+        public float meshMemoryAfterMb;
+        public long assetCountBefore;
+        public long assetCountForest;
+        public long assetCountAfter;
     }
 
     /// <summary>Machine-readable baseline (Performance Test Matrix: JSON per version).</summary>

@@ -72,7 +72,7 @@ namespace PocketWilds.Editor.Environment
 
         // ---------------- Materials and palettes ----------------
 
-        private static Material EnsureMaterial(string path, string shaderName, string name)
+        internal static Material EnsureMaterial(string path, string shaderName, string name)
         {
             var shader = Shader.Find(shaderName) ?? throw new InvalidOperationException("Shader not found: " + shaderName);
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -219,10 +219,13 @@ namespace PocketWilds.Editor.Environment
         /// Standalone copy of a kit mesh that several chunks share (trees, rocks). The Addressables kit bundle owns
         /// it explicitly; the FBX itself stays out of bundles because its model prefab drags the URP Lit material.
         /// </summary>
-        internal static Mesh KitMesh(Mesh source)
+        internal static Mesh KitMesh(Mesh source) => KitMesh(source, KitMeshFolder);
+
+        /// <summary>T50: the same standalone copy in another biome's kit folder (the Forest's Baked/Kit).</summary>
+        internal static Mesh KitMesh(Mesh source, string folder)
         {
-            Directory.CreateDirectory(KitMeshFolder);
-            string path = $"{KitMeshFolder}/{source.name}.asset";
+            Directory.CreateDirectory(folder);
+            string path = $"{folder}/{source.name}.asset";
             var copy = AssetDatabase.LoadAssetAtPath<Mesh>(path);
             if (copy == null)
             {
@@ -240,7 +243,7 @@ namespace PocketWilds.Editor.Environment
         }
 
         /// <summary>Read/Write off (asset validator baseline): the player keeps no CPU copy of the vertices.</summary>
-        private static void MakeRuntimeOnly(Mesh mesh)
+        internal static void MakeRuntimeOnly(Mesh mesh)
         {
             var serialized = new SerializedObject(mesh);
             var readable = serialized.FindProperty("m_IsReadable");
@@ -299,7 +302,7 @@ namespace PocketWilds.Editor.Environment
             Debug.Log($"[GrasslandPipeline] {rewired} kit renderers on standalone meshes, {baked} baked meshes without Read/Write.");
         }
 
-        private static MeshRenderer AddRenderer(GameObject go, Mesh mesh, Material material, ShadowCastingMode shadows)
+        internal static MeshRenderer AddRenderer(GameObject go, Mesh mesh, Material material, ShadowCastingMode shadows)
         {
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = go.AddComponent<MeshRenderer>();
@@ -315,7 +318,7 @@ namespace PocketWilds.Editor.Environment
 
         // ---------------- Chunk composition ----------------
 
-        private struct Placement
+        internal struct Placement
         {
             public string Prop;
             public Vector3 Position;
@@ -326,7 +329,7 @@ namespace PocketWilds.Editor.Environment
         }
 
         /// <summary>Superellipse footprint of GL_Ground_Core_A (power 4, half size 7 m).</summary>
-        private static bool InsideIsland(Vector3 p, float margin, float power = 4f)
+        internal static bool InsideIsland(Vector3 p, float margin, float power = 4f)
         {
             float half = 7f - margin;
             return Mathf.Pow(Mathf.Abs(p.x) / half, power) + Mathf.Pow(Mathf.Abs(p.z) / half, power) <= 1f;
@@ -876,14 +879,14 @@ namespace PocketWilds.Editor.Environment
             }
         }
 
-        private static Transform Child(Transform parent, string name)
+        internal static Transform Child(Transform parent, string name)
         {
             var t = new GameObject(name).transform;
             t.SetParent(parent, false);
             return t;
         }
 
-        private static Transform Point(Transform parent, string name, Vector3 localPosition)
+        internal static Transform Point(Transform parent, string name, Vector3 localPosition)
         {
             var t = Child(parent, name);
             t.localPosition = localPosition;

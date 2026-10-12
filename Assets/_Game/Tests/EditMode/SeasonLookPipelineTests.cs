@@ -48,6 +48,11 @@ namespace PocketWilds.Tests.EditMode
                 Assert.Ignore("Run Pocket Wilds/World/Build Season Looks (T48B) first.");
             var palettes = AssetDatabase.LoadAssetAtPath<PaletteSetAsset>(GrasslandPipeline.PalettesPath);
             var baseColors = palettes.palettes.Where(e => e != null).ToDictionary(e => e.sourceId, e => e.ToRuntime().Colors);
+            // T50: the Forest's vegetation rows join the looks once DEF_Palettes_Forest exists.
+            var forest = AssetDatabase.LoadAssetAtPath<PaletteSetAsset>(ForestPipeline.PalettesPath);
+            if (forest != null)
+                foreach (var entry in forest.palettes.Where(e => e != null))
+                    baseColors[entry.sourceId] = entry.ToRuntime().Colors;
             foreach (var season in new[] { RefugeSeason.Awakening, RefugeSeason.Sun, RefugeSeason.Harvest, RefugeSeason.Frost })
                 Assert.IsNotNull(set.Get(season), "Missing look " + season);
             Assert.AreEqual(0, set.Get(RefugeSeason.Sun).palettes.Length, "Soleil is the validated look.");
@@ -61,7 +66,7 @@ namespace PocketWilds.Tests.EditMode
                 {
                     string name = row.paletteId.Substring(row.paletteId.LastIndexOf('.') + 1);
                     Assert.IsFalse(FixedWords.Any(name.Contains), $"{look.season} changes {row.paletteId}, which never changes.");
-                    Assert.IsTrue(baseColors.TryGetValue(row.paletteId, out var source), row.paletteId + " is not a Grassland palette.");
+                    Assert.IsTrue(baseColors.TryGetValue(row.paletteId, out var source), row.paletteId + " is not a Grassland or Forest palette.");
                     Assert.AreEqual(PaletteTable.Columns, row.colors.Length);
                     for (int c = 0; c < source.Length; c++)
                     {

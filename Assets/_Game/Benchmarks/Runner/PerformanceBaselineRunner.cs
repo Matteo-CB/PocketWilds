@@ -86,6 +86,10 @@ namespace PocketWilds.Benchmarks
             {
                 species = 3, stripTravel = true, measureSeconds = 34f,
             },
+            new PerformanceScenario("P9", "Prairie vers Forêt: the camera travels from the meadow into the Forest Clearing and back, Forest open, 20 animals", 20, QualityTier.Medium)
+            {
+                species = 3, biomeTravel = true, measureSeconds = 48f,
+            },
             new PerformanceScenario("R1", "Light rain over the refuge, 20 animals", 20, QualityTier.Medium) { species = 3, rain = true },
             new PerformanceScenario("R1-High", "Light rain over the refuge, 20 animals, High tier", 20, QualityTier.High) { species = 3, rain = true },
             new PerformanceScenario("Q1", "Adaptive quality: every step from Magnifique down to Fluide and back, 20 animals", 20, QualityTier.High)
@@ -193,7 +197,7 @@ namespace PocketWilds.Benchmarks
                     continue;
                 }
                 string saveDir = Path.Combine(Application.temporaryCachePath, "pw-benchmark", scenario.id);
-                PrepareSave(saveDir, scenario.rabbits, scenario.species);
+                PrepareSave(saveDir, scenario.rabbits, scenario.species, scenario.biomeTravel, scenario.streaming || scenario.stripTravel);
                 yield return Boot(saveDir, scenario.tier);
                 var entry = Object.FindAnyObjectByType<VerticalSliceEntry>();
                 var bootstrap = Object.FindAnyObjectByType<GameBootstrap>();
@@ -218,6 +222,9 @@ namespace PocketWilds.Benchmarks
                 IEnumerator burst = scenario.hatchBurst ? HatchBurst(entry.Refuge, bootstrap.Context) : probe != null ? probe.Travel() : shopProbe?.Run();
                 if (scenario.stripTravel && entry.CameraRig != null)
                     burst = StripTravel(entry.CameraRig, 7f);
+                var biomeProbe = scenario.biomeTravel && entry.Streamer != null && entry.CameraRig != null ? new BiomeTravelProbe(entry) : null;
+                if (biomeProbe != null)
+                    burst = biomeProbe.Travel();
                 if (scenario.rain)
                     entry.Weather?.Force(1f, 0f);
                 var ladder = scenario.qualityLadder ? new QualityLadderProbe(bootstrap.Context.Quality, scenario.tier) : null;
@@ -280,8 +287,9 @@ namespace PocketWilds.Benchmarks
                     }
                     if (bootstrap.Audio != null)
                         audioPeak = Mathf.Max(audioPeak, bootstrap.Audio.ActiveVoices);
-                    sampler.SampleWorld(entry.Scatter != null ? entry.Scatter.LastInstances : 0, entry.Life != null ? entry.Life.LastInstances : 0);
+                    sampler.SampleWorld(entry.Scatter != null ? entry.Scatter.LastInstances : 0, LifeInstances(entry));
                     probe?.AfterSample(sampler.LastCpuMs);
+                    biomeProbe?.AfterSample(sampler.LastCpuMs);
                     shopProbe?.AfterSample(sampler.LastCpuMs);
                     if (burst != null && !burst.MoveNext())
                         burst = null;
@@ -330,6 +338,22 @@ namespace PocketWilds.Benchmarks
                               $"mesh {result.streaming.meshMemoryReleasedMb:F2} / {result.streaming.meshMemoryLoadedMb:F2} / {result.streaming.meshMemoryReleasedAgainMb:F2} MB, " +
                               $"meadow meshes {result.streaming.meadowMeshesBefore} / {result.streaming.meadowMeshesLoaded} / {result.streaming.meadowMeshesAfter}, " +
                               $"bundles {result.streaming.bundlesBefore} / {result.streaming.bundlesLoaded} / {result.streaming.bundlesAfter}");
+                }
+                if (biomeProbe != null)
+                {
+                    result.streaming = biomeProbe.Streaming();
+                    result.biomeTravel = biomeProbe.Finish();
+                    biomeProbe.Dispose();
+                    var travel = result.biomeTravel;
+                    Debug.Log($"[Benchmark] {scenario.id} biome travel: {travel.biomes} biomes, reach x {travel.reachX:F1}, camera switches {travel.cameraBiomeSwitches}, " +
+                              $"band frames {travel.bandFrames} (max {travel.bandFrameMaxMs:F2} ms, mean {travel.bandFrameMeanMs:F2}), " +
+                              $"forest loads {travel.forestLoads}, releases {travel.forestReleases}, peak {travel.forestChunksPeak}, " +
+                              $"late {result.streaming.lateActivations}, failures {result.streaming.failures}, transition frames {result.streaming.transitionFrames} " +
+                              $"(max {result.streaming.transitionFrameMaxMs:F2} ms), tick max {result.streaming.streamerTickMaxMs:F2} ms, " +
+                              $"mesh {travel.meshMemoryBeforeMb:F2} / {travel.meshMemoryForestMb:F2} / {travel.meshMemoryAfterMb:F2} MB, " +
+                              $"assets {travel.assetCountBefore} / {travel.assetCountForest} / {travel.assetCountAfter}");
+                    if (travel.biomes < 2 || travel.reachX < BiomeTravelProbe.Clearing - 0.5f)
+                        Debug.LogWarning($"[Benchmark] {scenario.id}: the camera did not reach the Forest Clearing (biomes {travel.biomes}, reach {travel.reachX:F1}).");
                 }
                 report.scenarios.Add(result);
                 Debug.Log($"[Benchmark] {scenario.id} {scenario.label} ({scenario.tier}): visible {result.visibleAnimals}, " +
@@ -494,12 +518,35 @@ namespace PocketWilds.Benchmarks
                 if (clearance < -AnimalScheduler.ContactTolerance - 1e-4f)
                     overlaps++;
             }
-            if (entry.Life == null)
-                return;
-            float lifeClearance = entry.Life.MinClearance();
-            life = Mathf.Min(life, lifeClearance);
-            if (lifeClearance < -0.005f)
-                overlaps++;
+            // T50: every biome's ambient life (the Forest's fireflies and birds too).
+            for (int b = 0; b < entry.BiomeCount; b++)
+            {
+                var lives = entry.GetLife(b);
+                if (lives == null)
+                    continue;
+                float lifeClearance = lives.MinClearance();
+                life = Mathf.Min(life, lifeClearance);
+                if (lifeClearance < -0.005f)
+                {
+                    overlaps++;
+                    // Only on a fault (allocates): who entered what, and where the camera was.
+                    lives.MinClearance(out string closest);
+                    Debug.LogWarning($"[Benchmark] life overlap biome {b}: {lifeClearance * 100f:F1} cm, {closest}, camera x {entry.CameraRig.Focus.x:F1}");
+                }
+            }
+        }
+
+        /// <summary>T50: instances drawn by every biome's ambient life.</summary>
+        private static int LifeInstances(VerticalSliceEntry entry)
+        {
+            int count = 0;
+            for (int b = 0; b < entry.BiomeCount; b++)
+            {
+                var life = entry.GetLife(b);
+                if (life != null)
+                    count += life.LastInstances;
+            }
+            return count;
         }
 
         private static IEnumerator StripTravel(RefugeCameraRig rig, float speed)
@@ -529,7 +576,7 @@ namespace PocketWilds.Benchmarks
         /// A real save: N animals cycling the grassland species (1 to 3) and each species' six variants, all
         /// seen, Light for the hatch burst.
         /// </summary>
-        private static void PrepareSave(string directory, int rabbits, int speciesCount)
+        private static void PrepareSave(string directory, int rabbits, int speciesCount, bool openStrip = false, bool openGrassland = false)
         {
             if (Directory.Exists(directory))
                 Directory.Delete(directory, true);
@@ -561,6 +608,24 @@ namespace PocketWilds.Benchmarks
             state.Codex.SeenSpecies.UnionWith(state.Collection.DiscoveredSpecies);
             state.Codex.SeenVariants.UnionWith(state.Collection.DiscoveredVariants);
             state.Wallet.Light = BigValue.FromMantissaExponent(1.0, 12);
+            if (openStrip)
+            {
+                // T50 P9: every Grassland zone (its passage too) and the Forest with all its zones, as the gate will once the
+                // Forest's species come: the camera range reaches the Clearing.
+                var grassland = ContentId.FromSource("biome.grassland");
+                var forest = ContentId.FromSource("biome.forest");
+                state.World.Biomes.RemoveAll(b => b.Biome == grassland || b.Biome == forest);
+                state.World.Biomes.Add(new BiomeProgress { Biome = grassland, Unlocked = true, Expansions = 6, ZonesOpened = 0xFFu });
+                state.World.Biomes.Add(new BiomeProgress { Biome = forest, Unlocked = true, Expansions = 5, ZonesOpened = 0x7Fu });
+            }
+            else if (openGrassland)
+            {
+                // W1 and W2 travel the Grassland strip: since T35A the camera only pans over open zones (and a glimpse past the
+                // next hedge), so every Grassland zone is open or the camera never reaches the meadow or the far chunks.
+                var grassland = ContentId.FromSource("biome.grassland");
+                state.World.Biomes.RemoveAll(b => b.Biome == grassland);
+                state.World.Biomes.Add(new BiomeProgress { Biome = grassland, Unlocked = true, Expansions = 6, ZonesOpened = 0xFFu });
+            }
             service.FlushNow();
         }
 
@@ -750,9 +815,14 @@ namespace PocketWilds.Benchmarks
             private bool Step(float x)
             {
                 var focus = _rig.Focus;
+                float before = focus.x;
                 focus.x = Mathf.MoveTowards(focus.x, x, Speed * Time.unscaledDeltaTime);
                 _rig.SnapTo(focus);
-                return Mathf.Abs(focus.x - x) < 0.001f;
+                // The camera range stops short (zones closed): done where it is, never an endless wait.
+                bool clamped = Mathf.Abs(_rig.Focus.x - before) < 1e-5f && Mathf.Abs(_rig.Focus.x - x) > 0.001f;
+                if (clamped)
+                    Debug.LogWarning($"[Benchmark] streaming probe: the camera range stops at x {_rig.Focus.x:F1} (wanted {x:F1}).");
+                return clamped || Mathf.Abs(_rig.Focus.x - x) < 0.001f;
             }
 
             /// <summary>Stepped once per sampled frame (no nested iterators: the runner calls MoveNext itself).</summary>
@@ -852,6 +922,159 @@ namespace PocketWilds.Benchmarks
                 _result.releases = stats.releases - _before.releases;
                 _result.failures = stats.failures - _before.failures;
                 _result.lateActivations = stats.lateActivations - _before.lateActivations;
+                return _result;
+            }
+
+            public void Dispose()
+            {
+                _streamer.StateChanged -= _onState;
+                _tick.Dispose();
+                _mesh.Dispose();
+                _assets.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// T50 P9 « Prairie vers Forêt »: from the meadow (x 14) the camera travels east like a finger drag (7 m/s, as W2) through
+        /// the Grassland to Forest band into the Clearing (x 140), rests while the Forest settles, and comes back, then waits for
+        /// the releases. It records transition frames, the band frames, camera biome switches, the Forest's loads, releases and
+        /// peak, and mesh memory out / in / out, with allocation-free recorders. A camera range that stops short (Forest not
+        /// made or not open) ends the leg where it stops: the reach is reported.
+        /// </summary>
+        private sealed class BiomeTravelProbe : IDisposable
+        {
+            public const float Speed = 7f;
+            public const float Meadow = 14f;
+            public const float Clearing = 140f;
+            private const float BandWest = 100f;
+            private const float BandEast = 110f;
+            private readonly VerticalSliceEntry _entry;
+            private readonly WorldStreamer _streamer;
+            private readonly RefugeCameraRig _rig;
+            private readonly Action<int, ChunkStreamState> _onState;
+            private readonly WorldStreamerStats _before;
+            private ProfilerRecorder _tick, _mesh, _assets;
+            private StreamingResult _streaming;
+            private BiomeTravelResult _result;
+            private bool _transition;
+            private int _lastBiome;
+            private double _bandSum;
+            private int _blocked;
+
+            public BiomeTravelProbe(VerticalSliceEntry entry)
+            {
+                _entry = entry;
+                _streamer = entry.Streamer;
+                _rig = entry.CameraRig;
+                _onState = OnState;
+                _streamer.StateChanged += _onState;
+                _tick = ProfilerRecorder.StartNew(ProfilerCategory.Scripts, "WorldStreamer.Tick", 1);
+                _mesh = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "Mesh Memory", 1);
+                _assets = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "Asset Count", 1);
+                _rig.SnapTo(new Vector3(Meadow, 0f, _rig.Focus.z));
+                _before = _streamer.Stats;
+                _lastBiome = entry.CameraBiome;
+                _streaming.valid = true;
+                _result.valid = true;
+                _result.biomes = entry.BiomeCount;
+                _result.reachX = _rig.Focus.x;
+            }
+
+            private float MeshMb => _mesh.Valid ? _mesh.LastValue / (1024f * 1024f) : 0f;
+            private long Assets => _assets.Valid ? _assets.LastValue : 0;
+
+            private void OnState(int index, ChunkStreamState state)
+            {
+                _transition = true;
+                if (_streamer.SetIndexOf(index) < 1)
+                    return;
+                if (state == ChunkStreamState.Loading)
+                    _result.forestLoads++;
+                else if (state == ChunkStreamState.Unloaded)
+                    _result.forestReleases++;
+            }
+
+            /// <summary>One frame of the leg toward x; true once there, or once the camera range has held the focus for 3 frames.</summary>
+            private bool Step(float x)
+            {
+                var focus = _rig.Focus;
+                float from = focus.x;
+                focus.x = Mathf.MoveTowards(focus.x, x, Speed * Time.unscaledDeltaTime);
+                _rig.SnapTo(focus);
+                float now = _rig.Focus.x;
+                _result.reachX = Mathf.Max(_result.reachX, now);
+                _blocked = Mathf.Abs(now - from) < 1e-4f ? _blocked + 1 : 0;
+                return Mathf.Abs(now - x) < 0.001f || _blocked >= 3;
+            }
+
+            /// <summary>Stepped once per sampled frame (no nested iterators: the runner calls MoveNext itself).</summary>
+            public IEnumerator Travel()
+            {
+                float t = 0f;
+                while ((t += Time.unscaledDeltaTime) < 1f)
+                    yield return null;
+                _result.meshMemoryBeforeMb = _streaming.meshMemoryReleasedMb = MeshMb;
+                _result.assetCountBefore = _streaming.assetCountReleased = Assets;
+                _blocked = 0;
+                while (!Step(Clearing))
+                    yield return null;
+                for (t = 0f; (t += Time.unscaledDeltaTime) < 3f;)
+                    yield return null;
+                _result.meshMemoryForestMb = _streaming.meshMemoryLoadedMb = MeshMb;
+                _result.assetCountForest = _streaming.assetCountLoaded = Assets;
+                _blocked = 0;
+                while (!Step(Meadow))
+                    yield return null;
+                for (t = 0f; (t += Time.unscaledDeltaTime) < 6f;)
+                    yield return null;
+                _result.meshMemoryAfterMb = _streaming.meshMemoryReleasedAgainMb = _streaming.meshMemoryReleasedFinalMb = MeshMb;
+                _result.assetCountAfter = _streaming.assetCountReleasedAgain = Assets;
+            }
+
+            public void AfterSample(float cpuMs)
+            {
+                if (_tick.Valid)
+                    _streaming.streamerTickMaxMs = Mathf.Max(_streaming.streamerTickMaxMs, _tick.LastValue * 1e-6f);
+                float x = _rig.Focus.x;
+                if (x >= BandWest && x <= BandEast)
+                {
+                    _result.bandFrames++;
+                    _result.bandFrameMaxMs = Mathf.Max(_result.bandFrameMaxMs, cpuMs);
+                    _bandSum += cpuMs;
+                }
+                int biome = _entry.CameraBiome;
+                if (biome != _lastBiome)
+                {
+                    _result.cameraBiomeSwitches++;
+                    _lastBiome = biome;
+                }
+                int forest = 0;
+                for (int i = 0; i < _streamer.Count; i++)
+                    if (_streamer.SetIndexOf(i) >= 1 && _streamer.IsLoaded(i))
+                        forest++;
+                _result.forestChunksPeak = Mathf.Max(_result.forestChunksPeak, forest);
+                if (!_transition)
+                    return;
+                _transition = false;
+                _streaming.transitionFrames++;
+                _streaming.transitionFrameMaxMs = Mathf.Max(_streaming.transitionFrameMaxMs, cpuMs);
+            }
+
+            public StreamingResult Streaming()
+            {
+                var stats = _streamer.Stats;
+                _streaming.loads = stats.loads - _before.loads;
+                _streaming.activations = stats.activations - _before.activations;
+                _streaming.deactivations = stats.deactivations - _before.deactivations;
+                _streaming.releases = stats.releases - _before.releases;
+                _streaming.failures = stats.failures - _before.failures;
+                _streaming.lateActivations = stats.lateActivations - _before.lateActivations;
+                return _streaming;
+            }
+
+            public BiomeTravelResult Finish()
+            {
+                _result.bandFrameMeanMs = _result.bandFrames > 0 ? (float)(_bandSum / _result.bandFrames) : 0f;
                 return _result;
             }
 

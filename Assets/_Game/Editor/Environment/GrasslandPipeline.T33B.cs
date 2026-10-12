@@ -33,6 +33,8 @@ namespace PocketWilds.Editor.Environment
             public string Ground;
             public string Water;
             public bool EastIsland;
+            /// <summary>T50: share of the grass and flowers kept at a chunk point (null: all), see ScatterRules.Thin.</summary>
+            public Func<Vector3, float> Thin;
             public int Seed;
             public int FlowerPatches = 30;
             public int FlowerSingles = 36;
@@ -103,8 +105,9 @@ namespace PocketWilds.Editor.Environment
             },
             new StripChunk
             {
+                // T50: open to the east, the Forest's Entry joins it at x 105; its east third thins into the forest moss.
                 Name = "ForestEdge", Address = "chunk.grassland.forestedge", OriginX = 98f, Ground = "GL_Ground_ForestEdge",
-                EastIsland = true, Seed = 3308, FlowerPatches = 20, FlowerSingles = 24, Layout = ForestLayout,
+                Thin = ForestEdgeThin, Seed = 3308, FlowerPatches = 20, FlowerSingles = 24, Layout = ForestLayout,
                 AnimalSpawns = new[] { new Vector3(-3.0f, 0f, -1.8f), new Vector3(0.6f, 0f, -2.8f), new Vector3(-4.2f, 0f, 1.8f) },
                 Anchors = new[]
                 {
@@ -307,13 +310,21 @@ namespace PocketWilds.Editor.Environment
             Prop("GL_Edge_A", -2.8f, -6.95f, 0f, 1.0f), Prop("GL_Edge_B", 2.2f, -6.95f, 0f, 1.0f), Prop("GL_Edge_B", 1.6f, 6.95f, 180f, 1.0f),
         };
 
+        /// <summary>
+        /// T50: the ForestEdge's grass and flowers thin out over its east third (world x 100.3 to 105), where the ground's
+        /// paint turns into the Forest's moss (pw_forest_ground.build_forest_edge_t50): a fifth of the grass is left at the seam.
+        /// </summary>
+        public static float ForestEdgeThin(Vector3 chunkPoint) =>
+            1f - 0.8f * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(100.3f, 105f, 98f + chunkPoint.x));
+
         private static List<Placement> ForestLayout() => new List<Placement>
         {
-            // The meadow thickens into the forest's edge toward the east end of the island.
-            Prop("GL_Tree_A", 1.6f, 4.8f, 20f, 1.05f), Prop("GL_Tree_B", 3.8f, 3.2f, 140f, 1.0f), Prop("GL_Tree_A", 4.9f, 0.4f, 260f, 0.95f),
+            // The meadow thickens into the forest's edge; T50: the path runs on east into the Forest (x 105), so the oak that
+            // stood on it moved to the north-east corner and the small bush beside it stepped off its edge.
+            Prop("GL_Tree_A", 1.6f, 4.8f, 20f, 1.05f), Prop("GL_Tree_B", 3.8f, 3.2f, 140f, 1.0f), Prop("GL_Tree_A", 6.1f, 6.0f, 260f, 0.95f),
             Prop("GL_Tree_B", 3.4f, -3.4f, 60f, 0.95f), Prop("GL_Tree_C", -0.8f, 5.6f, 330f, 0.95f), Prop("GL_Tree_C", 5.6f, -1.8f, 100f, 0.9f),
             Prop("GL_Tree_A", -3.6f, 4.6f, 200f, 0.9f, secondary: true), Prop("GL_Tree_B", 1.2f, -5.0f, 300f, 0.85f),
-            Prop("GL_Bush_A", 2.0f, 1.8f, 20f, 1.0f), Prop("GL_Bush_C", 4.4f, -0.9f, 80f, 1.0f), Prop("GL_Bush_A", -1.8f, 3.0f, 160f, 0.85f),
+            Prop("GL_Bush_A", 2.0f, 1.8f, 20f, 1.0f), Prop("GL_Bush_C", 4.7f, -1.3f, 80f, 1.0f), Prop("GL_Bush_A", -1.8f, 3.0f, 160f, 0.85f),
             Prop("GL_Stump", 0.4f, 0.6f, 0f, 1.0f), Prop("GL_Log", 2.2f, -1.6f, 70f, 1.0f), Prop("GL_Log", -2.6f, 1.6f, 10f, 0.85f, secondary: true),
             Prop("GL_Rock_M", -4.2f, -2.6f, 30f, 0.9f), Prop("GL_RockHero_A", 5.0f, 4.8f, 200f, 0.6f),
             Prop("GL_Edge_B", -3.0f, -6.95f, 0f, 1.0f), Prop("GL_Edge_B", 0.6f, 6.95f, 180f, 1.0f),
@@ -326,7 +337,7 @@ namespace PocketWilds.Editor.Environment
         /// radius), 2 cm into it. On a slope or a crest the whole base then touches the ground and nothing floats (T34E:
         /// the windmill on its rise stood 4 cm above the ground at the rim; charte « fait main », signe 20).
         /// </summary>
-        private static float GroundUnder(GroundSampler sampler, float x, float z, float radius)
+        internal static float GroundUnder(GroundSampler sampler, float x, float z, float radius)
         {
             float lowest = float.MaxValue;
             if (sampler.TrySample(x, z, out float h, out _))
@@ -341,7 +352,7 @@ namespace PocketWilds.Editor.Environment
         }
 
         /// <summary>The part of a prop's footprint that rests on the ground (its trunk, base or body).</summary>
-        private static float FootprintRadius(Placement p) => PropRadius(p.Prop) * p.Scale * 0.9f;
+        internal static float FootprintRadius(Placement p) => PropRadius(p.Prop) * p.Scale * 0.9f;
 
         private static string BuildStripChunk(StripChunk def, Dictionary<string, GameObject> prefabs, ScatterKit kit, Material waterMaterial)
         {
@@ -414,7 +425,7 @@ namespace PocketWilds.Editor.Environment
                     : p => Mathf.Abs(p.x) < 6.95f && Mathf.Abs(p.z) < 6.9f,
                 Excluded = InWater,
                 Clear = new Vector3(0f, 0f, -100f), ClearRadius = 0f, Lawn = Vector3.zero, LawnRadius = 0f,
-                FlowerPatches = def.FlowerPatches, RimPatches = 0, FlowerSingles = def.FlowerSingles,
+                FlowerPatches = def.FlowerPatches, RimPatches = 0, FlowerSingles = def.FlowerSingles, Thin = def.Thin,
             };
             var centers = new List<Vector3>();
             var scatter = SaveScatter(def.ScatterPath, kit, GenerateScatter(kit, layout.Where(p => p.Prop != "GL_StreamStones").ToList(), rules, centers));

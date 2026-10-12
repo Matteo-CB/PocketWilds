@@ -263,6 +263,8 @@ namespace PocketWilds.Presentation
     /// Lighting moods over the day (doc 07): morning, day and evening profiles blended from the device's local time,
     /// softened (no black night: late hours stay on a warm evening). Checked once per second, re-applied only when
     /// the clock moved a minute (a few RenderSettings writes and shader globals, no allocation).
+    /// T50: one mood set per biome of the world strip (<see cref="AddBiome"/>); the camera's region (<see cref="SetRegion"/>)
+    /// blends two sets, re-applied as soon as the blend moves (still no allocation).
     /// </summary>
     public sealed class WorldAtmosphere
     {
@@ -274,7 +276,13 @@ namespace PocketWilds.Presentation
             LightingMood.Day, LightingMood.Day, LightingMood.Evening, LightingMood.Evening,
         };
 
-        private readonly AtmosphereState[] _moods = new AtmosphereState[4];
+        private const int MoodCount = 4;
+
+        // Four moods per biome: biome b's mood m at b * MoodCount + m. Grown by AddBiome only (scene start).
+        private AtmosphereState[] _moods = new AtmosphereState[MoodCount];
+        private int _from;
+        private int _to;
+        private float _blend;
         private readonly Light _sun;
         private readonly Camera _camera;
         private WorldQualityProfile.Tier _quality;
@@ -305,6 +313,58 @@ namespace PocketWilds.Presentation
         public float Rain => _rain;
         public bool Night => _night;
         public bool HasNight { get; }
+
+        /// <summary>T50: mood sets (biomes) known; 1 until <see cref="AddBiome"/>.</summary>
+        public int BiomeCount => _moods.Length / MoodCount;
+
+        /// <summary>T50: the two biomes blended now and the share of the second (0 to 1).</summary>
+        public int RegionFrom => _from;
+        public int RegionTo => _to;
+        public float RegionBlend => _blend;
+
+        /// <summary>
+        /// T50: the four moods of another biome of the strip (missing moods fall back like the constructor's; a missing day
+        /// takes the first biome's moods). Returns its index. Allocates: call at scene start.
+        /// </summary>
+        public int AddBiome(LightingProfile morning, LightingProfile day, LightingProfile evening, LightingProfile night)
+        {
+            int index = BiomeCount;
+            var moods = new AtmosphereState[_moods.Length + MoodCount];
+            Array.Copy(_moods, moods, _moods.Length);
+            int at = index * MoodCount;
+            if (day == null)
+                Array.Copy(_moods, 0, moods, at, MoodCount);
+            else
+            {
+                moods[at + (int)LightingMood.Morning] = AtmosphereState.From(morning != null ? morning : day);
+                moods[at + (int)LightingMood.Day] = AtmosphereState.From(day);
+                moods[at + (int)LightingMood.Evening] = AtmosphereState.From(evening != null ? evening : day);
+                moods[at + (int)LightingMood.Night] = AtmosphereState.From(night != null ? night : evening != null ? evening : day);
+            }
+            _moods = moods;
+            _dirty = true;
+            _nextApply = float.NegativeInfinity;
+            return index;
+        }
+
+        /// <summary>
+        /// T50: the camera's place on the strip (BiomeRegions.Resolve): biome <paramref name="from"/> blended toward
+        /// <paramref name="to"/> by <paramref name="t"/>. A visible move re-applies on the next tick (not a second later).
+        /// </summary>
+        public void SetRegion(int from, int to, float t)
+        {
+            int count = BiomeCount;
+            from = Mathf.Clamp(from, 0, count - 1);
+            to = Mathf.Clamp(to, 0, count - 1);
+            t = from == to ? 0f : Mathf.Clamp01(t);
+            if (from == _from && to == _to && Mathf.Abs(t - _blend) < 0.004f && !(t == 0f && _blend > 0f) && !(t == 1f && _blend < 1f))
+                return;
+            _from = from;
+            _to = to;
+            _blend = t;
+            _dirty = true;
+            _nextApply = float.NegativeInfinity;
+        }
 
         /// <summary>WeatherSystem: 0 dry to 1 full shower. Re-applied on the next tick when it moved noticeably.</summary>
         public void SetRain(float rain)
@@ -374,13 +434,24 @@ namespace PocketWilds.Presentation
         {
             using var marker = GameProfilerMarkers.AtmosphereApply.Auto();
             Hour = Mathf.Repeat(hour, 24f);
-            Resolve(Hour, out var a, out var b, out float t);
-            var state = _night ? _moods[(int)LightingMood.Night] : AtmosphereState.Lerp(_moods[(int)a], _moods[(int)b], Mathf.SmoothStep(0f, 1f, t));
+            var state = MoodOf(_from, Hour);
+            if (_to != _from && _blend > 0f)
+                state = AtmosphereState.Lerp(state, MoodOf(_to, Hour), _blend);
             state = AtmosphereState.Seasonal(state, _season, Hour);
             state = AtmosphereState.Rainy(state, _rain);
             state.ApplyScene(_sun, _camera);
             state.ApplyShaderGlobals(_quality);
             _dirty = false;
+        }
+
+        /// <summary>One biome's light at an hour: the night mood when an event asks for it, else its two moods around the hour.</summary>
+        private AtmosphereState MoodOf(int biome, float hour)
+        {
+            int at = biome * MoodCount;
+            if (_night)
+                return _moods[at + (int)LightingMood.Night];
+            Resolve(hour, out var a, out var b, out float t);
+            return AtmosphereState.Lerp(_moods[at + (int)a], _moods[at + (int)b], Mathf.SmoothStep(0f, 1f, t));
         }
 
         /// <summary>The two moods around an hour and the blend between them.</summary>

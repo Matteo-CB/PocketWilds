@@ -15,12 +15,30 @@ MonoBehaviour:
   m_GroupName: Bootstrap
   m_GUID: 08c55e3117c13644bb70ff306579c384
   m_SerializeEntries:
+  - m_GUID: 35da566af2976e2478844d8ac558c32e
+    m_Address: shader.world.sh_ambientlife
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - boot
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 42ec3c348eac72849bfd7b6b6c6540e0
     m_Address: warmup.world
     m_ReadOnly: 0
     m_SerializedLabels:
     - boot
     - warmup
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 61552dffd164d5e46801e1b317d1305a
+    m_Address: shader.world.sh_rainbow
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - boot
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 73a80aa985c64f1479067a6d490f69cf
+    m_Address: shader.world.sh_rainlite
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - boot
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 7647a8af95eb8a14e8cb0274a4af1e29
     m_Address: shader.world.sh_waterlite
@@ -36,11 +54,23 @@ MonoBehaviour:
     - biome_grassland
     - boot
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b998182caeb522d44a6409508e83e873
+    m_Address: shader.world.sh_skygradient
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - boot
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: d1ce4ebf8cebe284a872a01c7fb32ad9
     m_Address: shader.world.sh_environmentopaque
     m_ReadOnly: 0
     m_SerializedLabels:
     - biome_grassland
+    - boot
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d20eda00e7bfec044b8775c68a15cc39
+    m_Address: shader.world.sh_sunrays
+    m_ReadOnly: 0
+    m_SerializedLabels:
     - boot
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: fee4cb3939692394ebe8a588d6ebaeba

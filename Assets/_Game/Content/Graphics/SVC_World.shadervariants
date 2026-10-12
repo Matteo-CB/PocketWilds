@@ -41,8 +41,29 @@ ShaderVariantCollection:
         passType: 13
       - keywords: FOG_LINEAR INSTANCING_ON _MAIN_LIGHT_SHADOWS_CASCADE _SHADOWS_SOFT
         passType: 13
+  - first: {fileID: 4800000, guid: 35da566af2976e2478844d8ac558c32e, type: 3}
+    second:
+      variants:
+      - keywords: FOG_LINEAR INSTANCING_ON
+        passType: 13
+      - keywords: FOG_LINEAR INSTANCING_ON _MAIN_LIGHT_SHADOWS
+        passType: 13
+      - keywords: FOG_LINEAR INSTANCING_ON _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT
+        passType: 13
+      - keywords: FOG_LINEAR INSTANCING_ON _MAIN_LIGHT_SHADOWS_CASCADE _SHADOWS_SOFT
+        passType: 13
   - first: {fileID: 4800000, guid: 7647a8af95eb8a14e8cb0274a4af1e29, type: 3}
     second:
       variants:
       - keywords: FOG_LINEAR _MAIN_LIGHT_SHADOWS _SHADOWS_SOFT
+        passType: 13
+  - first: {fileID: 4800000, guid: d20eda00e7bfec044b8775c68a15cc39, type: 3}
+    second:
+      variants:
+      - keywords: INSTANCING_ON
+        passType: 13
+  - first: {fileID: 4800000, guid: 73a80aa985c64f1479067a6d490f69cf, type: 3}
+    second:
+      variants:
+      - keywords: INSTANCING_ON
         passType: 13
