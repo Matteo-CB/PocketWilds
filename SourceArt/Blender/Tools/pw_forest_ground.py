@@ -82,7 +82,7 @@ BROOK_HALF = 0.5
 # the Grassland ground row: DEF_Palettes_Grassland (palette.grassland.ground).
 PALETTES = {
     "fo.tree": ("7A5A42", "4C8C50", "6EAE5A", "E2AE4E", "A0CC78", "3A3428", "FFE6B4"),
-    "fo.ground": ("78A656", "6AB24E", "AE8A5C", "8FB878", "E2CFA0", "4C5E36", "B8CC7C"),
+    "fo.ground": ("74A464", "3F9A68", "C08A50", "8FB878", "E0C99A", "2F4A3C", "9CC48C"),
     "fo.rock": ("9A9586", "7AAE58", "B0AB9A", "D2CCB2", "C0D2A0", "4A473C", "F2E6C8"),
     "fo.log": ("6E4E38", "78AA58", "8E6C4C", "E0AC48", "B4966C", "3A2C22", "FFE2A8"),
     "fo.fern": ("5A9C50", "4A8A48", "86BE62", "ACD07A", "C8E29A", "2E4428", "EEF6D0"),
@@ -260,7 +260,7 @@ def forest_field(wx, wz):
     patch = smoothstep(1.0 - cover - 0.22, 1.0 - cover + 0.22, mossn)
     moss = max(patch * inside, carpet, min(1.0, grass * 1.6) * inside)
     # Leaf litter drifts: more under the canopy, pooled at the bottom of the hollow, little in the clearing.
-    lcover = 0.10 + 0.26 * deep - 0.4 * clear + 0.5 * hol * hol
+    lcover = 0.18 + 0.34 * deep - 0.4 * clear + 0.5 * hol * hol  # warm amber litter: part of the Forest identity
     litter = smoothstep(1.0 - lcover - 0.16, 1.0 - lcover + 0.16, littern) * 0.85 * (1.0 - 0.45 * patch)
     # Between the moss carpets the floor is leaf litter; warm bare soil shows only in small spots (cozy, never dark).
     soiln = 0.5 + 0.5 * fnoise(FO_SEED + 5, wx * 0.8, wz * 0.8, 8.0)

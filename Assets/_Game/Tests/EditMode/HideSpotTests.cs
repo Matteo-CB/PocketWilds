@@ -49,7 +49,8 @@ namespace PocketWilds.Tests.EditMode
                 _chunks[entry.address] = AssetDatabase.LoadAssetAtPath<WorldChunk>(entry.path);
             var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath);
             var catalog = AssetDatabase.LoadAssetAtPath<AnimalVisualCatalog>(AnimalPipeline.VisualCatalogPath);
-            foreach (var species in database.species.Where(s => s != null))
+            // The spots' biome only (T51: other biomes get their own spots).
+            foreach (var species in database.species.Where(s => s != null && s.biomeId == HideSpotPipeline.SpotsBiome))
                 if (catalog.TryGet(species.visualKey, out var visual))
                     _bodies[ContentId.FromSource(species.sourceId).Value] = visual.behavior.body;
         }

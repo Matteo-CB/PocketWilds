@@ -1,0 +1,174 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3fca47bd620ed94d97b65eda064ecb2, type: 3}
+  m_Name: DEF_Species_RedPanda
+  m_EditorClassIdentifier: Game.Content::PocketWilds.Content.SpeciesDefinitionAsset
+  sourceId: species.redpanda
+  displayKey: species.redpanda.name
+  rigFamily: 0
+  biomeId: biome.forest
+  baseProduction: 8
+  visualKey: PF_Animal_RedPanda
+  secret: 0
+  companion: 0
+  hiddenSockets: 
+  variants:
+  - sourceId: variant.redpanda.classic
+    displayKey: variant.redpanda.classic.name
+    rarity: 0
+    primary: {r: 0.78431374, g: 0.38039216, b: 0.22745098, a: 1}
+    secondary: {r: 0.9843137, g: 0.9647059, b: 0.93333334, a: 1}
+    belly: {r: 0.24313726, g: 0.17254902, b: 0.14901961, a: 1}
+    detail: {r: 0.16470589, g: 0.11764706, b: 0.10980392, a: 1}
+    eye: {r: 0.101960786, g: 0.07058824, b: 0.0627451, a: 1}
+    pattern: {r: 0.9372549, g: 0.84313726, b: 0.7058824, a: 1}
+    patternChannel: 2
+    patternStrength: 14
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.redpanda.golden
+    displayKey: variant.redpanda.golden.name
+    rarity: 0
+    primary: {r: 0.8509804, g: 0.5411765, b: 0.24313726, a: 1}
+    secondary: {r: 0.9843137, g: 0.9647059, b: 0.93333334, a: 1}
+    belly: {r: 0.3529412, g: 0.24313726, b: 0.18039216, a: 1}
+    detail: {r: 0.16470589, g: 0.11764706, b: 0.10980392, a: 1}
+    eye: {r: 0.101960786, g: 0.07058824, b: 0.0627451, a: 1}
+    pattern: {r: 0.9490196, g: 0.79607844, b: 0.44705883, a: 1}
+    patternChannel: 2
+    patternStrength: 14
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.redpanda.cream
+    displayKey: variant.redpanda.cream.name
+    rarity: 1
+    primary: {r: 0.9372549, g: 0.8666667, b: 0.7411765, a: 1}
+    secondary: {r: 1, g: 0.99215686, b: 0.972549, a: 1}
+    belly: {r: 0.65882355, g: 0.47058824, b: 0.29803923, a: 1}
+    detail: {r: 0.22745098, g: 0.16470589, b: 0.14117648, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.7254902, g: 0.5254902, b: 0.32156864, a: 1}
+    patternChannel: 2
+    patternStrength: 14
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.redpanda.dark
+    displayKey: variant.redpanda.dark.name
+    rarity: 1
+    primary: {r: 0.49411765, g: 0.22745098, b: 0.17254902, a: 1}
+    secondary: {r: 0.94509804, g: 0.87058824, b: 0.7764706, a: 1}
+    belly: {r: 0.16470589, g: 0.1254902, b: 0.1254902, a: 1}
+    detail: {r: 0.101960786, g: 0.078431375, b: 0.078431375, a: 1}
+    eye: {r: 0.07058824, g: 0.047058824, b: 0.047058824, a: 1}
+    pattern: {r: 0.5411765, g: 0.3529412, b: 0.2509804, a: 1}
+    patternChannel: 2
+    patternStrength: 14
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.redpanda.snow
+    displayKey: variant.redpanda.snow.name
+    rarity: 2
+    primary: {r: 0.9647059, g: 0.9411765, b: 0.9019608, a: 1}
+    secondary: {r: 0.9843137, g: 0.9019608, b: 0.89411765, a: 1}
+    belly: {r: 0.7882353, g: 0.7764706, b: 0.76862746, a: 1}
+    detail: {r: 0.2901961, g: 0.22745098, b: 0.22745098, a: 1}
+    eye: {r: 0.11764706, g: 0.078431375, b: 0.078431375, a: 1}
+    pattern: {r: 0.8352941, g: 0.8392157, b: 0.85490197, a: 1}
+    patternChannel: 2
+    patternStrength: 13
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.redpanda.bamboo
+    displayKey: variant.redpanda.bamboo.name
+    rarity: 3
+    primary: {r: 0.6156863, g: 0.72156864, b: 0.47843137, a: 1}
+    secondary: {r: 0.93333334, g: 0.93333334, b: 0.8156863, a: 1}
+    belly: {r: 0.2901961, g: 0.36862746, b: 0.22745098, a: 1}
+    detail: {r: 0.16470589, g: 0.16470589, b: 0.1254902, a: 1}
+    eye: {r: 0.078431375, g: 0.078431375, b: 0.0627451, a: 1}
+    pattern: {r: 0.8901961, g: 0.92156863, b: 0.7607843, a: 1}
+    patternChannel: 2
+    patternStrength: 14
+    secret: 0
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0
+  - sourceId: variant.redpanda.rust
+    displayKey: variant.redpanda.rust.name
+    rarity: 2
+    primary: {r: 0.7058824, g: 0.33333334, b: 0.18039216, a: 1}
+    secondary: {r: 0.9647059, g: 0.90588236, b: 0.8235294, a: 1}
+    belly: {r: 0.3529412, g: 0.21960784, b: 0.15686275, a: 1}
+    detail: {r: 0.16470589, g: 0.11764706, b: 0.10980392, a: 1}
+    eye: {r: 0.101960786, g: 0.07058824, b: 0.0627451, a: 1}
+    pattern: {r: 0.9411765, g: 0.8509804, b: 0.7372549, a: 1}
+    patternChannel: 2
+    patternStrength: 13
+    secret: 1
+    visitor: 0
+    masteryLevel: 10
+    moduleSlot: 0
+  - sourceId: variant.redpanda.blackberry
+    displayKey: variant.redpanda.blackberry.name
+    rarity: 3
+    primary: {r: 0.36862746, g: 0.22745098, b: 0.32156864, a: 1}
+    secondary: {r: 0.94509804, g: 0.89411765, b: 0.9254902, a: 1}
+    belly: {r: 0.22745098, g: 0.14901961, b: 0.20392157, a: 1}
+    detail: {r: 0.11764706, g: 0.078431375, b: 0.09411765, a: 1}
+    eye: {r: 0.078431375, g: 0.05490196, b: 0.07058824, a: 1}
+    pattern: {r: 0.76862746, g: 0.6039216, b: 0.79607844, a: 1}
+    patternChannel: 2
+    patternStrength: 15
+    secret: 1
+    visitor: 0
+    masteryLevel: 20
+    moduleSlot: 0
+  - sourceId: variant.redpanda.goldenlantern
+    displayKey: variant.redpanda.goldenlantern.name
+    rarity: 4
+    primary: {r: 0.8862745, g: 0.56078434, b: 0.22745098, a: 1}
+    secondary: {r: 0.9843137, g: 0.95686275, b: 0.9019608, a: 1}
+    belly: {r: 0.36862746, g: 0.22745098, b: 0.14901961, a: 1}
+    detail: {r: 0.16470589, g: 0.11764706, b: 0.10980392, a: 1}
+    eye: {r: 0.101960786, g: 0.07058824, b: 0.0627451, a: 1}
+    pattern: {r: 1, g: 0.87058824, b: 0.52156866, a: 1}
+    patternChannel: 1
+    patternStrength: 15
+    secret: 1
+    visitor: 0
+    masteryLevel: 30
+    moduleSlot: 0
+  - sourceId: variant.redpanda.cherry
+    displayKey: variant.redpanda.cherry.name
+    rarity: 3
+    primary: {r: 0.7882353, g: 0.2784314, b: 0.3529412, a: 1}
+    secondary: {r: 0.972549, g: 0.88235295, b: 0.88235295, a: 1}
+    belly: {r: 0.3529412, g: 0.16470589, b: 0.2, a: 1}
+    detail: {r: 0.16470589, g: 0.101960786, b: 0.11764706, a: 1}
+    eye: {r: 0.101960786, g: 0.0627451, b: 0.07058824, a: 1}
+    pattern: {r: 1, g: 0.7607843, b: 0.8235294, a: 1}
+    patternChannel: 1
+    patternStrength: 15
+    secret: 1
+    visitor: 0
+    masteryLevel: 0
+    moduleSlot: 0

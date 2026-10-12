@@ -432,6 +432,12 @@ namespace PocketWilds.Editor.Audio
                 new SpeciesVoice { species = "species.fawn", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 0.90f },
                 // T49 Mole: the small bank, lower (a soft burrow voice).
                 new SpeciesVoice { species = "species.mole", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 0.85f },
+                // T51 Forest species (no medium bank yet): the small bank with each species' pitch. Fox: bright little yips;
+                // badger: low grunts; raccoon: chirps; red panda: soft whistles.
+                new SpeciesVoice { species = "species.fox", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 1.05f },
+                new SpeciesVoice { species = "species.badger", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 0.80f },
+                new SpeciesVoice { species = "species.raccoon", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 1.05f },
+                new SpeciesVoice { species = "species.redpanda", happy = smallHappy, sleep = smallSleep, eat = smallEat, pitch = 1.12f },
                 // T47 companion: its own happy squeak (signature sound), the small family's sleep and eat.
                 new SpeciesVoice
                 {

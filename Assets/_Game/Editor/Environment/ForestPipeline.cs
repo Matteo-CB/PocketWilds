@@ -47,6 +47,8 @@ namespace PocketWilds.Editor.Environment
         public const string PaletteBirch = "palette.forest.birch";
         public const string PaletteBush = "palette.forest.bush";
         public const string PaletteGround = "palette.forest.ground";
+        /// <summary>T51 the Forest's own grass (deep emerald): the tufts never borrow the Grassland's yellow-green.</summary>
+        public const string PaletteGrass = "palette.forest.grass";
         public const string PaletteRock = "palette.forest.rock";
         public const string PaletteLog = "palette.forest.log";
         public const string PaletteMushroom = "palette.forest.mushroom";
@@ -306,10 +308,10 @@ namespace PocketWilds.Editor.Environment
             }
             var kinds = new (string id, Mesh mesh, string palette, float wind, float minDensity)[]
             {
-                ("grass.tuft_s", Shared("grass.tuft_s"), GrasslandPipeline.PaletteGrass, 1.0f, 0f),
-                ("grass.tuft_m", Shared("grass.tuft_m"), GrasslandPipeline.PaletteGrass, 1.0f, 0f),
-                ("grass.tuft_l", Shared("grass.tuft_l"), GrasslandPipeline.PaletteGrass, 1.0f, 0f),
-                ("grass.wisp_m", Shared("grass.wisp_m"), GrasslandPipeline.PaletteGrass, 1.2f, 0f),
+                ("grass.tuft_s", Shared("grass.tuft_s"), PaletteGrass, 1.0f, 0f),
+                ("grass.tuft_m", Shared("grass.tuft_m"), PaletteGrass, 1.0f, 0f),
+                ("grass.tuft_l", Shared("grass.tuft_l"), PaletteGrass, 1.0f, 0f),
+                ("grass.wisp_m", Shared("grass.wisp_m"), PaletteGrass, 1.2f, 0f),
                 ("flower.daisy_white", Shared("flower.daisy_white"), GrasslandPipeline.FlowerPalettes[0], 0.7f, 0.55f),
                 ("flower.bell_blue", Shared("flower.bell_blue"), GrasslandPipeline.FlowerPalettes[3], 0.7f, 0.55f),
                 ("flower.buttercup", Shared("flower.buttercup"), GrasslandPipeline.FlowerPalettes[1], 0.6f, 0.55f),

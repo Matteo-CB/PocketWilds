@@ -52,6 +52,11 @@ namespace PocketWilds.Editor.Validation
             ["Hedgehog"] = new[] { 3000, 1200, 500 },
             // T46: the first medium animal (Manifest « moyen »: 2.5k to 4k triangles at LOD0).
             ["Fawn"] = new[] { 4000, 1600, 800 },
+            // T51 Forest species (A-SP-007 to A-SP-011): the top of each doc range.
+            ["Fox"] = new[] { 3800, 1500, 650 },
+            ["Badger"] = new[] { 3400, 1300, 600 },
+            ["Raccoon"] = new[] { 3000, 1200, 500 },
+            ["RedPanda"] = new[] { 3400, 1400, 600 },
         };
 
         public static readonly int[] DefaultSmallAnimalBudget = { 3000, 1200, 500 };

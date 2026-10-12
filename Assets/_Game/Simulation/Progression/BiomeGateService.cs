@@ -133,9 +133,14 @@ namespace PocketWilds.Simulation
             return false;
         }
 
-        /// <summary>The biome has species in this version's content.</summary>
+        /// <summary>
+        /// The biome has species in this version's content and, T51, its definition is open to players (a biome being made, like
+        /// the Forest until its last species, stays « Bientôt »). A content without biome definitions (tests) keeps the species rule.
+        /// </summary>
         public bool IsContentAvailable(ContentId biome)
         {
+            if (_content.Biomes.TryGet(biome, out var definition) && !definition.OpenToPlayers)
+                return false;
             var species = _content.Species;
             for (int i = 0; i < species.Count; i++)
                 if (species[i].Biome == biome)

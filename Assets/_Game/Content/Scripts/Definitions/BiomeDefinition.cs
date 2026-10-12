@@ -45,9 +45,11 @@ namespace PocketWilds.Content
         {
         }
 
-        public BiomeDefinition(ContentId id, string displayKey, int order, string key, string prefix, IReadOnlyList<BiomeZone>? zones)
+        public BiomeDefinition(ContentId id, string displayKey, int order, string key, string prefix, IReadOnlyList<BiomeZone>? zones,
+            bool openToPlayers = true)
         {
             Id = id;
+            OpenToPlayers = openToPlayers;
             DisplayKey = displayKey;
             Order = order;
             Key = key ?? string.Empty;
@@ -71,5 +73,12 @@ namespace PocketWilds.Content
 
         /// <summary>T49B the zones in opening order: the arrival first, then the expansions, the passage (if any) last.</summary>
         public IReadOnlyList<BiomeZone> Zones { get; }
+
+        /// <summary>
+        /// T51 the biome is open to players in this version: false keeps its gate « Bientôt » (Coming soon) while its content is
+        /// still being made (the Forest until its last species lands), even with species in the content. Tests, captures and
+        /// benchmarks still open it through saves. Biome Wizard spec data (Grassland true, Forest false for now).
+        /// </summary>
+        public bool OpenToPlayers { get; }
     }
 }

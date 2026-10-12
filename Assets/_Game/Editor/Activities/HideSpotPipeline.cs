@@ -180,9 +180,13 @@ namespace PocketWilds.Editor.Activities
         {
             var watch = Stopwatch.StartNew();
             var report = new StringBuilder();
+            Prof.Reset();
+            long b0 = Prof.Now;
             var species = LoadSpecies(report);
+            Prof.Add(Prof.LoadSpecies, b0);
             if (species.Count == 0)
                 return "No species with a visual prefab: run the animal pipeline first. " + report;
+            long b1 = Prof.Now;
             var set = AssetDatabase.LoadAssetAtPath<WorldChunkSet>(WorldContentPipeline.ChunkSetPath);
             var ids = new HashSet<string>();
             if (set != null)
@@ -208,6 +212,8 @@ namespace PocketWilds.Editor.Activities
             foreach (var world in worlds)
                 world.AddNeighbourObstacles(worlds);
 
+            Prof.Add(Prof.LoadChunks, b1);
+            long b2 = Prof.Now;
             var zones = new List<HideSpotSet.Zone>();
             var spots = new List<HideSpotSet.Spot>();
             var placements = new List<Vector3>();
@@ -252,6 +258,8 @@ namespace PocketWilds.Editor.Activities
             {
                 EditorUtility.ClearProgressBar();
             }
+            Prof.Add(Prof.Zones, b2);
+            long b3 = Prof.Now;
 
             var asset = AssetDatabase.LoadAssetAtPath<HideSpotSet>(AssetPath);
             if (asset == null)
@@ -264,6 +272,7 @@ namespace PocketWilds.Editor.Activities
             EditorUtility.SetDirty(asset);
             AssetDatabase.SaveAssets();
             string addressables = EnsureAddressables(asset);
+            Prof.Add(Prof.Save, b3);
 
             report.Insert(0, $"{AssetPath}: {zones.Count} zones, {spots.Count} spots, {species.Count} species " +
                              $"({string.Join(", ", species.Select(s => $"{s.Name} {s.Pose}, {s.Height:F2} m"))}); " +
@@ -275,6 +284,7 @@ namespace PocketWilds.Editor.Activities
                              $"most hidden above {MaxHiddenShare * 100f:F0} %: {over40}, overlaps: {overlaps} (must be 0); {addressables}; " +
                              $"{watch.Elapsed.TotalSeconds:F0} s.\n");
             report.Append(string.Join("\n", lines));
+            report.Append("\n" + Prof.Report());
             return report.ToString();
         }
 
@@ -530,7 +540,14 @@ namespace PocketWilds.Editor.Activities
             public float HideHeight => Mathf.Max(HideBody.height, Body.height);
         }
 
-        /// <summary>Every species of the content catalog with a visual prefab, in catalog order.</summary>
+        /// <summary>The biome these spots belong to (the Grassland strip); its species are the ones measured.</summary>
+        public const string SpotsBiome = "biome.grassland";
+
+        /// <summary>
+        /// Every species of the spots' biome with a visual prefab, in catalog order. T51: the Forest's species (fox, badger...)
+        /// are bigger than the Grassland's flower bushes and would strike spots; the Forest is closed to players for now and will
+        /// get its own spots; an unmeasured species uses the spots' reference placement in the stage.
+        /// </summary>
         internal static List<SpeciesModel> LoadSpecies(StringBuilder report)
         {
             var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(AnimalPipeline.ContentDatabasePath);
@@ -543,7 +560,7 @@ namespace PocketWilds.Editor.Activities
             }
             foreach (var definition in database.species)
             {
-                if (definition == null)
+                if (definition == null || definition.biomeId != SpotsBiome)
                     continue;
                 var entry = catalog.entries.FirstOrDefault(e => e != null && e.visualKey == definition.visualKey);
                 if (entry == null || entry.prefab == null)
@@ -970,7 +987,8 @@ namespace PocketWilds.Editor.Activities
             /// The chunk-space point is on the island at least <paramref name="margin"/> from its outer edge (the strip's back and
             /// front edges and its two rounded ends; the seams between chunks are no edge): ground all around it.
             /// </summary>
-            public bool OnIsland(Vector3 p, float margin)
+            public bool OnIsland(Vector3 p, float margin) { long p0 = Prof.Now; try { return OnIslandCore(p, margin); } finally { Prof.Add(Prof.OnIsland, p0); } }
+            private bool OnIslandCore(Vector3 p, float margin)
             {
                 float x = p.x + Origin.x, z = p.z + Origin.z;
                 if (!StripGround(x, z))
@@ -1023,7 +1041,8 @@ namespace PocketWilds.Editor.Activities
             }
 
             /// <summary>The worn path's paint (ground vertex color B) at a point, nearest vertex (GrasslandPipeline.WornMask).</summary>
-            public float Worn(float x, float z)
+            public float Worn(float x, float z) { long p0 = Prof.Now; try { return WornCore(x, z); } finally { Prof.Add(Prof.Worn, p0); } }
+            private float WornCore(float x, float z)
             {
                 if (_groundColors.Length == 0)
                     return 0f;
@@ -1050,7 +1069,8 @@ namespace PocketWilds.Editor.Activities
             /// Where an animal may stand to hide: inside the chunk (away from the seams' hedge), on the ground's top, off the
             /// worn path (« jamais sur les chemins »), off the egg's place and the walk area's heart.
             /// </summary>
-            public bool Allowed(Vector3 p, float reach, bool hiding)
+            public bool Allowed(Vector3 p, float reach, bool hiding) { long p0 = Prof.Now; try { return AllowedCore(p, reach, hiding); } finally { Prof.Add(Prof.Allowed, p0); } }
+            private bool AllowedCore(Vector3 p, float reach, bool hiding)
             {
                 // A hidden animal keeps away from the seams (the next zone's hedge); a landing or the gathering only stays
                 // on this chunk's ground.
@@ -1075,7 +1095,8 @@ namespace PocketWilds.Editor.Activities
             }
 
             /// <summary>Free space between a body capsule and the obstacles it could touch at its height (negative: inside).</summary>
-            public float Clearance(BodyShape body, Vector3 position, float yaw, float scale, float height = -1f)
+            public float Clearance(BodyShape body, Vector3 position, float yaw, float scale, float height = -1f) { long p0 = Prof.Now; try { return ClearanceCore(body, position, yaw, scale, height); } finally { Prof.Add(Prof.Clearance, p0); } }
+            private float ClearanceCore(BodyShape body, Vector3 position, float yaw, float scale, float height)
             {
                 body.Segment(position, yaw, scale, out var a, out var b);
                 float radius = body.halfWidth * scale;
@@ -1116,7 +1137,8 @@ namespace PocketWilds.Editor.Activities
             }
 
             /// <summary>Free space around a disc on the ground (an animal in any heading, the gathering place).</summary>
-            public float DiscClearance(Vector3 position, float radius, float height)
+            public float DiscClearance(Vector3 position, float radius, float height) { long p0 = Prof.Now; try { return DiscClearanceCore(position, radius, height); } finally { Prof.Add(Prof.DiscClearance, p0); } }
+            private float DiscClearanceCore(Vector3 position, float radius, float height)
             {
                 var p = CollisionMath.Flat(position);
                 float best = float.MaxValue;

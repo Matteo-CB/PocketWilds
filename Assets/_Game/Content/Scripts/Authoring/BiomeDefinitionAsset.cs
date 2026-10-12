@@ -36,6 +36,9 @@ namespace PocketWilds.Content
         [Tooltip("T49B zones in opening order (the zone's save bit is its position).")]
         public List<ZoneRow> zones = new List<ZoneRow>();
 
+        [Tooltip("T51 open to players in this version; off: the gate stays « Bientôt » until the biome is complete (Biome Wizard spec).")]
+        public bool openToPlayers = true;
+
         public BiomeDefinition ToRuntime()
         {
             var rows = new BiomeZone[zones.Count];
@@ -46,7 +49,7 @@ namespace PocketWilds.Content
                 int index = row != null && row.role == BiomeZoneRole.Expansion ? ++expansion : 0;
                 rows[i] = new BiomeZone(row?.chunk ?? string.Empty, row?.role ?? BiomeZoneRole.Expansion, index);
             }
-            return new BiomeDefinition(ContentId.FromSource(sourceId), displayKey, order, key, prefix, rows);
+            return new BiomeDefinition(ContentId.FromSource(sourceId), displayKey, order, key, prefix, rows, openToPlayers);
         }
     }
 }

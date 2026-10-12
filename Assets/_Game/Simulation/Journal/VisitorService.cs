@@ -43,6 +43,7 @@ namespace PocketWilds.Simulation
         private readonly ContentRegistry _content;
         private readonly IGameClock _clock;
         private readonly bool[] _available = new bool[VisitorData.Count];
+        private readonly ContentId[] _biome = new ContentId[VisitorData.Count];
         private readonly int[] _candidates = new int[VisitorData.Count];
 
         // Today's schedule (cached until the local day changes).
@@ -66,6 +67,7 @@ namespace PocketWilds.Simulation
             {
                 ref readonly var row = ref VisitorData.Row(i);
                 _available[i] = content.Species.TryGetIndex(row.Species, out _) && content.Variants.TryGetIndex(row.Variant, out _);
+                _biome[i] = _available[i] ? content.Species.Get(row.Species).Biome : default;
             }
         }
 
@@ -80,6 +82,12 @@ namespace PocketWilds.Simulation
 
         /// <summary>T48B the active month map (Remote Config « events.refuge_seasons »): a visitor comes in its season; null: the default map.</summary>
         public SeasonConfig? Seasons { get; set; }
+
+        /// <summary>
+        /// T51 the player's open biomes: a visitor comes only once its species' biome is open for the player (the golden fox
+        /// waits for the Forest). Null: every biome counts as open (tests).
+        /// </summary>
+        public BiomeProgressStore? Biomes { get; set; }
 
         /// <summary>Gives IsOpen (refuge level 8 and day 3); null: <see cref="ForceOpen"/> decides.</summary>
         public RefugeLevelService? Refuge { get; set; }
@@ -199,17 +207,23 @@ namespace PocketWilds.Simulation
         /// <summary>The visitor exists in the game (its species and its seasonal variant are in the content).</summary>
         public bool IsAvailable(int visitor) => (uint)visitor < (uint)_available.Length && _available[visitor];
 
-        /// <summary>The visitors that may come in this season (1 to 4) into <paramref name="into"/>: the season's, else every one that exists.</summary>
+        /// <summary>T51: the visitor exists and its species' biome is open for the player (<see cref="Biomes"/>). Allocation-free.</summary>
+        public bool CanCome(int visitor) => IsAvailable(visitor) && (Biomes == null || Biomes.IsUnlocked(_biome[visitor]));
+
+        /// <summary>
+        /// The visitors that may come in this season (1 to 4) into <paramref name="into"/>: the season's, else every one that can
+        /// come (T51: only visitors whose species' biome is open for the player).
+        /// </summary>
         public int Candidates(int season, int[] into)
         {
             int n = 0;
             for (int i = 0; i < VisitorData.Count; i++)
-                if (_available[i] && VisitorData.Row(i).Season == season)
+                if (CanCome(i) && VisitorData.Row(i).Season == season)
                     into[n++] = i;
             if (n > 0)
                 return n;
             for (int i = 0; i < VisitorData.Count; i++)
-                if (_available[i])
+                if (CanCome(i))
                     into[n++] = i;
             return n;
         }

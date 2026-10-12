@@ -292,6 +292,8 @@ namespace PocketWilds.Bootstrap
                     Refuge = _progression.Refuge, Rewards = _daily.Context.Granter, Albums = _albums, Mastery = _mastery, Economy = _economy,
                     Essence = _progression.Essence, Achievements = _achievements, AchievementHooks = _achievementHooks,
                     TicketsOpen = () => daily.Config.ActivitiesAvailable && activities.AnyShipped,
+                    // T51: a visitor waits for its species' biome to be open for the player.
+                    Biomes = _progression.Store,
                 };
                 _journalHooks = new JournalHooks(_journal, _save.State, _clock, _content, _hatch, _mastery, _progression, _activities, _daily,
                     _expeditions, _garden, _albums, _achievements, _profileItems, _visitors);

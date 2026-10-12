@@ -333,6 +333,123 @@ def mole_masks(co, n, ctx):
     return secondary, belly, mask_a, mask_b, None, mask_c
 
 
+def _tube_rings(species, co, ctx):
+    """T51 ringed tube tails: (on the tail 0..1, in a ring 0..1) from the arc length on tail_path. The ring edges are a near
+    step: the tube's loops sit in pairs around every edge (pw_species.tube_loops), so each LOD shows crisp rings."""
+    path = ctx["tail_path"]
+    if not path:
+        return 0.0, 0.0
+    import pw_species
+    cfg = pw_species.SPECS[species]["tube_tail"]
+    s, d, total = _path_project(co, path)
+    f = s / total
+    r_max = max(r for _, r in cfg["radius"])
+    on = smoothstep(r_max * 1.45 + 0.004, r_max * 1.15 + 0.002, d) * smoothstep(0.08, 0.15, f)
+    if ctx.get("tube"):
+        # T51 polish: the tube's own vertices are always on the tail. The low tails leave the rump at 10 to 15 % of their
+        # length, inside the fade above, and their underside took the belly color there.
+        on = 1.0
+    ring = 0.0
+    for a, b in cfg["rings"]:
+        ring = max(ring, smoothstep(a - 0.003, a + 0.003, f) * (1.0 - smoothstep(b - 0.003, b + 0.003, f)))
+    return on, ring * on
+
+
+def _face_frame(co, ctx):
+    """Head-relative helpers shared by the T51 face rules: (ellipsoid distance to the head, front-facing weight)."""
+    hc = ctx["head_center"]; hr = ctx["head_radii"]
+    dh = co - hc
+    head_s = math.sqrt((dh.x / hr[0]) ** 2 + (dh.y / hr[1]) ** 2 + (dh.z / hr[2]) ** 2)
+    front = smoothstep(hc.y + 0.030, hc.y - 0.012, co.y)
+    return head_s, front
+
+
+RACCOON_EARS = (0.066, -0.094, 0.300)
+
+
+def raccoon_masks(co, n, ctx):
+    """T51 Raccoon. Secondary = inner ears and little hands and feet (cream pink), belly = white brows, muzzle, lower cheeks,
+    throat and underside, detail (fifth value) = the dark face mask: a rounded patch around each eye sweeping out and down
+    to the cheek, joined across the bridge (every variant shows it in its detail color, like the nose bead). Mask A and
+    mask B = the tail rings and the dark tip (« anneaux (B) », « lueur sur les anneaux (A) »)."""
+    on, ring = _tube_rings("Raccoon", co, ctx)
+    head_s, front = _face_frame(co, ctx)
+    nose = ctx["nose"]
+    facing = n.dot(Vector((0, -1, 0)))
+    ear_c = Vector((RACCOON_EARS[0] if co.x > 0 else -RACCOON_EARS[0], RACCOON_EARS[1], RACCOON_EARS[2]))
+    on_ear = co.z > 0.274 and (co - ear_c).length < 0.044 and abs(co.x) > 0.030
+    inner = smoothstep(0.10, 0.45, facing) * smoothstep(0.030, 0.018, (co - ear_c).length) if on_ear else 0.0
+    paws = smoothstep(0.022, 0.010, co.z) * (1.0 - on)
+    secondary = max(inner, paws)
+
+    patch = brow = 0.0
+    if head_s < 1.4 and front > 0.0 and not on_ear:
+        cu, su = math.cos(math.radians(-24)), math.sin(math.radians(-24))
+        for e, _ in ctx["eyes"]:
+            if co.x * e.x <= 0:
+                continue
+            dx = abs(co.x) - abs(e.x); dz = co.z - e.z
+            # Long axis out and down; inward it rises and reaches the bridge, where both patches meet: one bandit mask.
+            u = dx * cu + dz * su - 0.007
+            v = -dx * su + dz * cu + 0.002
+            patch = max(patch, smoothstep(1.12, 0.86, math.sqrt((u / 0.049) ** 2 + (v / 0.028) ** 2)))
+            brow = max(brow, smoothstep(1.15, 0.80, math.sqrt(((dx + 0.002) / 0.032) ** 2 + ((dz - 0.034) / 0.013) ** 2)))
+        patch *= front
+        brow *= front * (1.0 - patch)
+    eye_z = ctx["eyes"][0][0].z if ctx["eyes"] else nose.z + 0.03
+    muzzle = smoothstep(0.052, 0.032, (co - nose).length) * smoothstep(eye_z - 0.006, eye_z - 0.018, co.z)
+    cheek = front * smoothstep(eye_z - 0.022, eye_z - 0.040, co.z) * (1.0 - smoothstep(1.15, 1.35, head_s))
+    throat = smoothstep(0.30, 0.70, facing) * smoothstep(0.180, 0.150, co.z) * smoothstep(-0.07, -0.10, co.y)
+    under = smoothstep(-0.25, -0.65, n.z)
+    belly = max(muzzle, cheek, brow, throat, under) * (1.0 - patch) * (1.0 - on) * (1.0 - paws) * (0.0 if on_ear else 1.0)
+    return secondary, belly, ring, ring, patch * (1.0 - on)
+
+
+REDPANDA_EARS = ((0.060, -0.092, 0.270), (0.071, -0.090, 0.296))
+
+
+def redpanda_masks(co, n, ctx):
+    """T51 Red Panda. Secondary = the white face (round muzzle, a big cheek patch under each eye, a dot above each eye; the
+    red tear track from the inner eye corner to the mouth stays coat color) and the ears' fronts. Belly = the dark legs,
+    underside and chest. Mask A = tail rings and ear tips (glow), mask B = tail rings (« anneaux »), mask C (uv1.x) = two
+    small light dots on each cheek."""
+    on, ring = _tube_rings("RedPanda", co, ctx)
+    head_s, front = _face_frame(co, ctx)
+    nose = ctx["nose"]
+    facing = n.dot(Vector((0, -1, 0)))
+    sx = 1.0 if co.x > 0 else -1.0
+    base = Vector((sx * REDPANDA_EARS[0][0], REDPANDA_EARS[0][1], REDPANDA_EARS[0][2]))
+    tip = Vector((sx * REDPANDA_EARS[1][0], REDPANDA_EARS[1][1], REDPANDA_EARS[1][2]))
+    ear_d = min((co - base).length, (co - tip).length)
+    on_ear = co.z > 0.250 and ear_d < 0.042 and abs(co.x) > 0.030
+    ear_front = smoothstep(-0.05, 0.35, facing) if on_ear else 0.0
+    ear_tip = smoothstep(0.290, 0.306, co.z) if on_ear else 0.0
+
+    face = dots = 0.0
+    if head_s < 1.4 and not on_ear and ctx["eyes"]:
+        e = ctx["eyes"][0][0]
+        ex, ez = abs(e.x), e.z
+        ax, az = abs(co.x), co.z
+        muzzle = smoothstep(0.050, 0.033, (co - nose).length) * smoothstep(ez - 0.004, ez - 0.016, az)
+        cheek = smoothstep(1.15, 0.85, math.sqrt(((ax - 0.060) / 0.032) ** 2 + ((az - (ez - 0.030)) / 0.027) ** 2))
+        brow = smoothstep(1.15, 0.80, math.sqrt(((ax - ex * 0.80) / 0.013) ** 2 + ((az - (ez + 0.031)) / 0.011) ** 2))
+        # Tear track: distance to the segment from below the inner eye corner to the mouth corner, in the face plane.
+        p0 = Vector((ex * 0.55, ez - 0.014)); p1 = Vector((0.026, nose.z - 0.022))
+        q = Vector((ax, az)); seg = p1 - p0
+        t = max(0.0, min(1.0, (q - p0).dot(seg) / seg.length_squared))
+        track = smoothstep(0.0090, 0.0050, (q - (p0 + seg * t)).length)
+        face = max(muzzle, cheek, brow) * (1.0 - track) * front
+        for cx, cz in ((0.052, ez - 0.034), (0.068, ez - 0.022)):
+            dots = max(dots, smoothstep(0.0095, 0.0050, math.sqrt((ax - cx) ** 2 + (az - cz) ** 2)))
+        dots *= front
+    secondary = max(face, ear_front)
+    legs = smoothstep(0.080, 0.054, co.z)
+    under = smoothstep(-0.25, -0.65, n.z)
+    chest = smoothstep(0.30, 0.70, facing) * smoothstep(0.185, 0.160, co.z) * smoothstep(-0.05, -0.08, co.y) * smoothstep(1.0, 1.15, head_s)
+    belly = max(legs, under, chest) * (1.0 - on) * (1.0 - face)
+    return secondary, belly, max(ring, ear_tip), ring, None, dots
+
+
 def _fawn_spots():
     """Fawn spots: two rows each side of the spine and one lower row on the flanks, rump to shoulder."""
     spots = []
@@ -388,6 +505,134 @@ def fawn_masks(co, n, ctx):
     return inner, belly, mask_a, mask_b, hooves
 
 
+# T51 Fox and Badger (MediumQuadruped).
+FOX_EAR_BASE = (0.048, -0.176, 0.376)   # same as pw_species
+FOX_EAR_AXIS = (0.403, 0.139, 0.904)
+FOX_EAR_LEN = 0.122
+
+FOX_LEAVES = (((0.066, -0.012, 0.218), 0.030), ((0.068, 0.052, 0.206), 0.032), ((0.062, 0.104, 0.226), 0.026))
+
+
+def fox_masks(co, n, ctx):
+    """T51 Fox. Secondary = inner ears (rosy cream), belly = white cheeks, chin, chest ruff, underside and the tail tip,
+    detail = dark socks and the backs of the ear tips (with the nose). Mask A = tail tip and ear tips (white tip on Red,
+    the glow of Firefly, Ember, Bilberry, Golden visitor), mask B = the cross over the shoulders and the face above the
+    white cheeks (Cross, Mist), mask C = stylized leaves on the flanks and the tail tip (Gold Leaf)."""
+    sx = 1.0 if co.x > 0 else -1.0
+    base = Vector((sx * FOX_EAR_BASE[0], FOX_EAR_BASE[1], FOX_EAR_BASE[2]))
+    axis = Vector((sx * FOX_EAR_AXIS[0], FOX_EAR_AXIS[1], FOX_EAR_AXIS[2])).normalized()
+    rel = co - base
+    along = rel.dot(axis); te = along / FOX_EAR_LEN
+    radial = (rel - axis * along).length
+    on_ear = co.z > 0.360 and radial < 0.060 and -0.05 < te < 1.2 and abs(co.x) > 0.022
+    facing = n.dot(Vector((0, -1, 0)))
+    inner = smoothstep(0.10, 0.45, facing) * smoothstep(0.10, 0.28, te) * (1.0 - smoothstep(0.86, 0.98, te)) if on_ear else 0.0
+    ear_tip = smoothstep(0.50, 0.70, te) * (1.0 - inner * 0.9) if on_ear else 0.0
+
+    s, d, total = _path_project(co, ctx["tail_path"])
+    tail = smoothstep(0.010, 0.050, s) * smoothstep(0.125, 0.150, co.y) if d < 0.11 else 0.0
+    tip = smoothstep(0.66 * total, 0.84 * total, s) * tail
+
+    socks = smoothstep(0.096, 0.064, co.z) if co.y < 0.02 else smoothstep(0.070, 0.044, co.z)
+    socks *= 1.0 - tail
+
+    hc = ctx["head_center"]; hr = ctx["head_radii"]
+    dh = co - hc
+    head_s = math.sqrt((dh.x / hr[0]) ** 2 + (dh.y / hr[1]) ** 2 + (dh.z / hr[2]) ** 2)
+    nose = ctx["nose"]
+    belly = 0.0
+    if not on_ear:
+        # White cheeks and upper lip below a line from the nose rising to the eye level at the ruff sides.
+        line = nose.z + 0.002 + 0.38 * abs(co.x)
+        cheeks = smoothstep(line + 0.008, line - 0.008, co.z) * smoothstep(-0.150, -0.185, co.y) * (1.0 - smoothstep(1.30, 1.45, head_s))
+        chin = smoothstep(0.30, 0.70, max(facing, 0.8 * n.dot(Vector((0, 0, -1))))) * smoothstep(nose.z, nose.z - 0.030, co.z) * (1.0 - smoothstep(1.05, 1.25, head_s))
+        ruff = smoothstep(0.25, 0.60, facing) * smoothstep(-0.070, -0.110, co.y) * (1.0 - smoothstep(0.262, 0.292, co.z)) * smoothstep(0.85, 1.05, head_s) * smoothstep(0.120, 0.150, co.z) * smoothstep(0.062, 0.040, abs(co.x))
+        under = smoothstep(-0.30, -0.70, n.z) * smoothstep(0.110, 0.130, co.z) * (1.0 - tail)
+        belly = max(cheeks, chin, ruff, under, tip) * (1.0 - socks)
+
+    mask_a = max(tip, smoothstep(0.55, 0.78, te) if on_ear else 0.0)
+
+    mask_b = 0.0
+    if not on_ear and co.z > 0.150 and tail < 0.5:
+        spine = smoothstep(0.024, 0.012, abs(co.x)) * smoothstep(-0.135, -0.110, co.y) * (1.0 - smoothstep(0.050, 0.075, co.y)) * smoothstep(0.30, 0.60, n.z)
+        band = smoothstep(0.028, 0.014, abs(co.y + 0.062)) * smoothstep(0.160, 0.195, co.z)
+        mask_b = max(spine, band) * (1.0 - belly) * (1.0 - socks)
+    if not on_ear and co.y < -0.140:
+        # Face: forehead, around the eyes and the top of the muzzle (above the white cheeks), fading behind the eyes.
+        face = (1.0 - smoothstep(1.05, 1.25, head_s)) * smoothstep(-0.165, -0.205, co.y) * smoothstep(-0.35, 0.10, facing + 0.3 * n.z)
+        mask_b = max(mask_b, face * (1.0 - belly))
+
+    mask_c = tip
+    if not on_ear and tail < 0.5 and n.x * sx > 0.2:
+        lean = Vector((0.0, 0.819, 0.574))
+        for c, half in FOX_LEAVES:
+            cc = Vector((sx * c[0], c[1], c[2]))
+            r = co - cc
+            u = r.dot(lean); v = (r - lean * u); v.x = 0.0
+            leaf = smoothstep(1.0, 0.62, math.sqrt((u / half) ** 2 + (v.length / (half * 0.42)) ** 2))
+            mask_c = max(mask_c, leaf * (1.0 - belly))
+    return inner, belly, mask_a, mask_b, max(socks, ear_tip), mask_c
+
+
+BADGER_EARS = ((0.068, -0.206, 0.256), (-0.068, -0.206, 0.256))
+
+
+def badger_masks(co, n, ctx):
+    """T51 Badger. Secondary = white blaze from the nose over the forehead and crown, white cheeks and ear rims, belly =
+    lighter underside and chest, detail = the two dark face stripes from the nose over the eyes to the ears, the dark
+    paws and the nose. Mask A = paws and muzzle tip (Amber), mask B = the pale blaze, a little wider (Sage, Licorice),
+    mask C = small round back spots (Sage)."""
+    nose = ctx["nose"]
+    hc = ctx["head_center"]; hr = ctx["head_radii"]
+    dh = co - hc
+    head_s = math.sqrt((dh.x / hr[0]) ** 2 + (dh.y / hr[1]) ** 2 + (dh.z / hr[2]) ** 2)
+    ear_c = Vector(BADGER_EARS[0] if co.x > 0 else BADGER_EARS[1])
+    on_ear = (co - ear_c).length < 0.030 and co.z > 0.238 and abs(co.x) > 0.050
+    face = (1.0 - smoothstep(1.15, 1.35, head_s)) * smoothstep(-0.130, -0.170, co.y)
+    # Lateral bands, narrow at the nose and wider over the eyes: blaze |x| < wc, stripe wc..ws, cheeks beyond.
+    k = smoothstep(nose.y, nose.y + 0.090, co.y)   # 0 at the nose, 1 behind the eyes
+    wc = 0.007 + 0.011 * k
+    ws = 0.034 + 0.044 * k
+    low = nose.z - 0.004 + 0.030 * k        # the stripe's lower edge rises a little toward the ears
+    ax = abs(co.x)
+    top = smoothstep(low - 0.006, low + 0.006, co.z)
+    blaze = smoothstep(wc + 0.004, wc - 0.004, ax) * top
+    stripe = smoothstep(wc - 0.003, wc + 0.004, ax) * smoothstep(ws + 0.005, ws - 0.004, ax) * top
+    cheek = 1.0 - stripe - blaze
+    paws = smoothstep(0.046, 0.026, co.z)
+    secondary = 0.0; detail = 0.0
+    if on_ear:
+        secondary = smoothstep(0.016, 0.026, (co - ear_c).length)   # light ear rims, darker ear centers
+        detail = smoothstep(0.020, 0.012, (co - ear_c).length)
+    elif face > 0.0:
+        secondary = face * max(blaze, cheek)
+        detail = face * stripe
+        # The white blaze runs back over the crown and fades on the neck.
+    crown = smoothstep(0.020, 0.010, abs(co.x)) * smoothstep(-0.11, -0.17, co.y) * (1.0 - face) * smoothstep(0.30, 0.6, n.z) if co.z > 0.25 else 0.0
+    secondary = max(secondary, crown)
+
+    facing = n.dot(Vector((0, -1, 0)))
+    under = smoothstep(-0.25, -0.65, n.z) * smoothstep(0.070, 0.095, co.z)
+    chest = smoothstep(0.30, 0.65, facing) * (1.0 - smoothstep(0.15, 0.20, co.z)) * smoothstep(-0.13, -0.17, co.y) * (1.0 - face) * smoothstep(0.085, 0.11, co.z)
+    belly = max(under, chest) * (1.0 - secondary) * (1.0 - detail) * (1.0 - paws)
+
+    muzzle = smoothstep(0.036, 0.020, (co - nose).length)
+    mask_a = max(paws, muzzle)
+    mask_b = face * smoothstep(wc + 0.010, wc + 0.002, ax) * top if face > 0.0 else 0.0
+    mask_b = max(mask_b, crown)
+    mask_c = 0.0
+    if co.z > 0.20 and not on_ear and face < 0.5:
+        for c, r in ctx["spots"]:
+            mask_c = max(mask_c, smoothstep(r * 1.15, r * 0.35, (co - Vector(c)).length))
+        mask_c *= smoothstep(0.35, 0.65, n.z)
+    return secondary, belly, mask_a, mask_b, max(detail, paws), mask_c
+
+
+BADGER_SPOTS = [((0.0, -0.040, 0.294), 0.020), ((0.045, 0.010, 0.290), 0.018), ((-0.045, 0.045, 0.290), 0.018),
+                ((0.0, 0.100, 0.296), 0.020), ((0.050, 0.140, 0.282), 0.016), ((-0.048, -0.075, 0.276), 0.016),
+                ((-0.036, 0.170, 0.282), 0.016)]
+
+
 RULES = {
     "Rabbit": dict(
         fn=rabbit_masks,
@@ -437,11 +682,36 @@ RULES = {
         spots=[((0.0, -0.040, 0.180), 0.046), ((0.050, 0.025, 0.185), 0.040), ((-0.052, 0.060, 0.180), 0.042),
                ((0.0, 0.110, 0.176), 0.046), ((0.046, 0.130, 0.160), 0.036), ((-0.040, -0.015, 0.178), 0.036)],
     ),
+    # T51 Forest, SmallQuadruped: rings on the tube tails, faces by head-relative shapes (no spots).
+    "Raccoon": dict(
+        fn=raccoon_masks,
+        head_center=(0.0, -0.112, 0.222),
+        head_radii=(0.100, 0.090, 0.088),
+        spots=[],
+    ),
+    "RedPanda": dict(
+        fn=redpanda_masks,
+        head_center=(0.0, -0.106, 0.208),
+        head_radii=(0.090, 0.080, 0.080),
+        spots=[],
+    ),
     "Fawn": dict(
         fn=fawn_masks,
         head_center=(0.0, -0.175, 0.468),
         head_radii=(0.074, 0.084, 0.071),
         spots=_fawn_spots(),
+    ),
+    "Fox": dict(
+        fn=fox_masks,
+        head_center=(0.0, -0.188, 0.320),
+        head_radii=(0.090, 0.083, 0.080),
+        spots=[],
+    ),
+    "Badger": dict(
+        fn=badger_masks,
+        head_center=(0.0, -0.230, 0.218),
+        head_radii=(0.080, 0.086, 0.064),
+        spots=BADGER_SPOTS,
     ),
     "Squirrel": dict(
         fn=squirrel_masks,
@@ -501,10 +771,12 @@ def apply(species, armature_name=None, nose_object="WORK_Nose"):
             me.uv_layers.remove(me.uv_layers[0])
         uv = me.uv_layers.new(name="PW_Masks")
         part_attr = me.attributes.get("PW_Part")
+        tube_attr = me.attributes.get("PW_TailTube")
         per_vertex = []
         per_vertex_c = []
         for v in me.vertices:
             ctx["part"] = part_attr.data[v.index].value if part_attr is not None else 0
+            ctx["tube"] = tube_attr.data[v.index].value if tube_attr is not None else 0
             r, g, b, a = regions.data[v.index].color
             if a > 0.5 or b > 0.5:
                 # Eyes and nose keep their own tags and no pattern (T49: a rule may put the nose bead on mask A).

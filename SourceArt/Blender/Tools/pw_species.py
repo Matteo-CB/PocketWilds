@@ -89,6 +89,60 @@ def _legs(points, radii):
     """A leg chain on both sides."""
     return _chain(points, radii) + _chain([(-x, y, z) for x, y, z in points], radii)
 
+
+# T51 Fox (A-SP-007) and Badger (A-SP-009), MediumQuadruped members placed on SK_MediumQuadruped by
+# pw_rig.SPECIES_BONES (heads and lengths only, the family bone directions).
+FOX_TAIL = [(0, 0.140, 0.215), (0, 0.205, 0.212), (0, 0.270, 0.218), (0, 0.330, 0.238), (0, 0.376, 0.272),
+            (0, 0.402, 0.315)]
+FOX_FRONT_LEG = [(0.042, -0.074, 0.165), (0.044, -0.080, 0.092), (0.045, -0.086, 0.040), (0.045, -0.092, 0.016)]
+FOX_HIND_LEG = [(0.048, 0.100, 0.165), (0.051, 0.084, 0.110), (0.053, 0.112, 0.055), (0.053, 0.108, 0.016)]
+# Fox ear: base on the skull and the upright ear axis (24 degrees outward, 8 back), +X side (pw_masks has the same).
+FOX_EAR_BASE = (0.048, -0.176, 0.376)
+FOX_EAR_AXIS = (0.403, 0.139, 0.904)
+
+BADGER_TAIL = [(0, 0.228, 0.196), (0, 0.262, 0.184), (0, 0.290, 0.170)]
+BADGER_FRONT_LEG = [(0.072, -0.098, 0.118), (0.073, -0.104, 0.056), (0.074, -0.108, 0.018)]
+BADGER_HIND_LEG = [(0.076, 0.136, 0.112), (0.078, 0.138, 0.056), (0.078, 0.134, 0.018)]
+
+
+def _fox_ears():
+    """Tall soft triangle ears off the family ear bones' axis: a wide base, a narrower middle, a rounded tip (flat
+    side forward). They turn as one piece with Ear_01 (ear_mode short, ear_zone)."""
+    b = Vector(FOX_EAR_BASE); u = Vector(FOX_EAR_AXIS).normalized()
+    return [_ell(tuple(b + u * along), half, rot=(-8, 24, 6), mirror=True)
+            for along, half in ((0.026, (0.044, 0.019, 0.040)), (0.062, (0.030, 0.016, 0.034)), (0.094, (0.017, 0.013, 0.025)))]
+
+
+def _eased_path(start, length, knots, step=0.005):
+    """T51 polish: a tail centre line in the mid plane from its heading along the arc. knots: (arc length in metres, angle
+    above horizontal in degrees, pointing back), eased between knots, so the bend stays gentle and a thick tube never
+    folds on the inside of a curve. Points every step, from start (inside the rump) to the tip. The tube is built along
+    it, and the tail weights and ring masks project onto the same polyline, so every LOD's rings fall on the same arc
+    lengths."""
+    def angle(s):
+        for (s0, a0), (s1, a1) in zip(knots[:-1], knots[1:]):
+            if s <= s1:
+                t = max(0.0, min(1.0, (s - s0) / (s1 - s0)))
+                return math.radians(a0 + (a1 - a0) * (1.0 - math.cos(math.pi * t)) * 0.5)
+        return math.radians(knots[-1][1])
+    y, z = start[1], start[2]
+    out = [tuple(start)]
+    n = int(round(length / step)); sub = 8
+    for i in range(n):
+        for k in range(sub):
+            a = angle((i + (k + 0.5) / sub) * step)
+            y += math.cos(a) * step / sub; z += math.sin(a) * step / sub
+        out.append((0.0, round(y, 5), round(z, 5)))
+    return out
+
+
+# T51 ringed tails (tube_tail), held low (T51 polish): each leaves the rump 16 to 18 degrees above horizontal, arches
+# gently back and down and lifts its round tip a little. The Raccoon's droops lower; the Red Panda's, thicker, stays a
+# little higher and longer. The far half also follows Root (tail_root), so the clips that tip the pelvis back or lower
+# the body (RaccoonWash, RedPandaStand, Sleep) never bring it to the ground.
+RACCOON_TAIL = _eased_path((0, 0.170, 0.143), 0.228, [(0.0, 16), (0.035, 16), (0.145, -40), (0.228, 3)])
+REDPANDA_TAIL = _eased_path((0, 0.170, 0.147), 0.232, [(0.0, 18), (0.040, 18), (0.150, -34), (0.232, 5)])
+
 SPECS = {
     # Fawn (A-SP-006), the first MediumQuadruped: a big gentle head with large leaf ears on the ear bones, bead
     # eyes, a short muzzle, slender legs with simple hooves, a small white tail tuft. The whole spec sits on
@@ -132,6 +186,93 @@ SPECS = {
             "SOCK_TailBase": (0.0, 0.205, 0.356),
             "SOCK_Ear_L": (-0.040, -0.120, 0.530),
             "SOCK_Ear_R": (0.040, -0.120, 0.530),
+        },
+    ),
+    # Fox (T51, A-SP-007): soft triangular face with white cheek ruffs, big upright ears turning with the ear bones, a
+    # compact chest with a ruff, short legs with dark socks, a huge plume on the three tail bones. About 75 x 48 cm.
+    "Fox": dict(
+        armature="SK_MediumQuadruped",
+        blockout=[
+            _ell((0, -0.188, 0.320), (0.090, 0.083, 0.080), part="head"),
+            _ell((0.052, -0.208, 0.288), (0.052, 0.047, 0.044), stiff=1.6, mirror=True, part="head"),   # cheek ruffs
+            _ell((0.086, -0.184, 0.274), (0.027, 0.030, 0.025), stiff=1.5, mirror=True, part="head"),   # ruff tufts
+            _ell((0, -0.262, 0.290), (0.031, 0.056, 0.030), rot=(-10, 0, 0), stiff=1.5, part="head"),  # muzzle
+            _ell((0, -0.128, 0.254), (0.054, 0.052, 0.064), rot=(28, 0, 0)),                              # neck
+            _ell((0, -0.120, 0.214), (0.054, 0.040, 0.062), stiff=1.6),                                   # chest ruff
+            _ell((0, -0.068, 0.202), (0.074, 0.068, 0.081)),                                              # chest
+            _ell((0, 0.020, 0.200), (0.072, 0.110, 0.078)),                                               # body
+            _ell((0, 0.096, 0.204), (0.074, 0.066, 0.077)),                                               # rump
+            _ell((0.046, 0.094, 0.168), (0.036, 0.052, 0.060), mirror=True),                              # haunches
+            _ell((0.045, -0.098, 0.019), (0.024, 0.032, 0.019), mirror=True),                             # front paws
+            _ell((0.053, 0.102, 0.019), (0.024, 0.034, 0.019), mirror=True),                              # hind paws
+            # The plume: low behind the rump, wide in the middle, the tip curling up (one solid volume).
+            _ell((0, 0.172, 0.214), (0.040, 0.046, 0.040), axis=(0, 1.0, -0.04)),
+            _ell((0, 0.236, 0.214), (0.058, 0.060, 0.056), axis=(0, 1.0, 0.04)),
+            _ell((0, 0.296, 0.226), (0.070, 0.062, 0.066), axis=(0, 0.96, 0.26)),
+            _ell((0, 0.348, 0.252), (0.064, 0.056, 0.060), axis=(0, 0.80, 0.60)),
+            _ell((0, 0.384, 0.292), (0.046, 0.046, 0.044), axis=(0, 0.55, 0.84)),
+        ] + _fox_ears() + _legs(FOX_FRONT_LEG, (0.029, 0.025, 0.023)) + _legs(FOX_HIND_LEG, (0.033, 0.026, 0.023)),
+        ear_mode="short",
+        ear_gain=0.7,
+        ear_zone=(0.362, 0.080, -0.30, 1.45, 0.0, 0.30),
+        tail_path=FOX_TAIL,
+        tail_member_y=(0.125, 0.150),
+        tail_split=(0.07, 0.13, 0.17, 0.23),
+        eyes=dict(x=0.040, z=0.330, r=0.022, sink=0.35),
+        nose=dict(x=0.0, z=0.296, r=0.013, sink=0.60),
+        head_center=(0, -0.188, 0.320),
+        head_radii=(0.090, 0.083, 0.080),
+        hind_leg_band=(0.150, 0.105),
+        front_leg_band=(0.150, 0.105),
+        lod0_faces=1650,
+        lod1_mode="collapse",
+        lod1_tris=1300,
+        lod2_tris=560,
+        back_probe_y=0.03,
+        sockets={
+            "SOCK_Neck": (0.0, -0.120, 0.258),
+            "SOCK_TailBase": (0.0, 0.150, 0.222),
+            "SOCK_Ear_L": (-0.048, -0.176, 0.378),
+            "SOCK_Ear_R": (0.048, -0.176, 0.378),
+        },
+    ),
+    # Badger (T51, A-SP-009): a low heavy rounded body, a long tapered head flowing from the shoulders with the face
+    # stripes painted by pw_masks, small round ears on the head, short thick legs, a short tail. About 69 x 29 cm.
+    "Badger": dict(
+        armature="SK_MediumQuadruped",
+        blockout=[
+            _ell((0, -0.230, 0.218), (0.080, 0.086, 0.064), part="head"),
+            _ell((0.050, -0.250, 0.200), (0.044, 0.048, 0.040), stiff=1.6, mirror=True, part="head"),   # cheeks
+            _ell((0, -0.322, 0.199), (0.028, 0.068, 0.026), rot=(-3, 0, 0), stiff=1.5, part="head"),   # tapered snout
+            _ell((0.068, -0.206, 0.256), (0.022, 0.011, 0.017), rot=(-10, 45, 30), stiff=2.0, mirror=True, part="head"),  # ears
+            _ell((0, -0.160, 0.196), (0.086, 0.068, 0.074)),                                              # thick neck
+            _ell((0, -0.092, 0.180), (0.098, 0.090, 0.090)),                                              # chest
+            _ell((0, 0.035, 0.182), (0.106, 0.165, 0.094)),                                               # low heavy body
+            _ell((0, 0.158, 0.184), (0.104, 0.092, 0.096)),                                               # rump
+            _ell((0.068, 0.140, 0.128), (0.046, 0.058, 0.058), mirror=True),                              # haunches
+            _ell((0.074, -0.120, 0.017), (0.030, 0.041, 0.017), mirror=True),                             # front paws
+            _ell((0.078, 0.126, 0.017), (0.031, 0.042, 0.017), mirror=True),                              # hind paws
+            _ell((0, 0.256, 0.180), (0.030, 0.046, 0.025), rot=(-15, 0, 0), stiff=1.6),                   # short tail
+        ] + _legs(BADGER_FRONT_LEG, (0.035, 0.031)) + _legs(BADGER_HIND_LEG, (0.037, 0.032)),
+        ear_mode="none",
+        tail_path=BADGER_TAIL,
+        tail_member_y=(0.225, 0.245),
+        eyes=dict(x=0.038, z=0.230, r=0.019, sink=0.35),
+        nose=dict(x=0.0, z=0.202, r=0.017, sink=0.45),
+        head_center=(0, -0.230, 0.218),
+        head_radii=(0.080, 0.086, 0.064),
+        hind_leg_band=(0.115, 0.080),
+        front_leg_band=(0.115, 0.080),
+        lod0_faces=1640,
+        lod1_mode="collapse",
+        lod1_tris=1150,
+        lod2_tris=480,
+        back_probe_y=0.03,
+        sockets={
+            "SOCK_Neck": (0.0, -0.150, 0.222),
+            "SOCK_TailBase": (0.0, 0.236, 0.196),
+            "SOCK_Ear_L": (-0.066, -0.206, 0.252),
+            "SOCK_Ear_R": (0.066, -0.206, 0.252),
         },
     ),
     # Field Mouse (A-SP-004): the smallest of the meadow. Big round head, large round ears that belong to the
@@ -293,6 +434,116 @@ SPECS = {
         },
         # Star Nose rosette: 11 round lobes around the nose bead (lobe count, peak and valley radius in nose radii).
         star_nose=dict(lobes=11, peak=2.30, valley=1.70, inner=0.95),
+    ),
+    # Raccoon (T51, A-SP-008, Forest): a round chubby body a little higher at the rump, a big round head with fluffy cheek
+    # ruffs, a short muzzle with a small tip, small round ears on the head, short legs with little hands, a fat bushy ringed
+    # tail held low behind (tube_tail: clean loops on the ring edges, so the rings stay crisp on LOD1). The dark face mask, the
+    # brows and the rings are vertex masks (pw_masks raccoon_masks). Modelled on the Rabbit bones; the prefab is scaled up
+    # uniformly to its size (about 62 x 38 cm).
+    "Raccoon": dict(
+        blockout=[
+            _ell((0, -0.112, 0.222), (0.100, 0.090, 0.088), part="head"),
+            # Fluffy cheek ruffs, wider than the skull and tilted down and out: the raccoon's face shape.
+            _ell((0.074, -0.100, 0.210), (0.048, 0.038, 0.036), rot=(0, 10, 0), stiff=1.2, mirror=True, part="head"),
+            _ell((0, -0.188, 0.192), (0.034, 0.044, 0.030), rot=(-8, 0, 0), stiff=1.5, part="head"),  # short muzzle
+            _ell((0, -0.224, 0.196), (0.017, 0.016, 0.015), stiff=1.5, part="head"),  # small nose tip
+            _ell((0.066, -0.094, 0.300), (0.034, 0.013, 0.032), rot=(-4, 14, 22), stiff=2.2, mirror=True, part="head"),  # round ears
+            _ell((0, -0.035, 0.135), (0.080, 0.074, 0.084)),                         # chest
+            _ell((0, 0.045, 0.135), (0.090, 0.106, 0.090)),                          # round body
+            _ell((0, 0.115, 0.141), (0.088, 0.076, 0.088)),                          # rump, a little higher
+            _ell((0.060, 0.112, 0.092), (0.038, 0.052, 0.050), mirror=True),        # haunches
+            _ell((0.064, 0.100, 0.042), (0.026, 0.030, 0.036), mirror=True),        # short hind legs
+            _ell((0.064, 0.082, 0.014), (0.025, 0.042, 0.014), mirror=True),        # hind feet
+            _ell((0.050, -0.058, 0.060), (0.024, 0.025, 0.048), mirror=True),       # short front legs
+            _ell((0.052, -0.076, 0.014), (0.024, 0.030, 0.014), mirror=True),       # little hands
+        ],
+        tail_path=RACCOON_TAIL,
+        tail_member_y=(0.176, 0.204),
+        # radius: (fraction of the length, radius) for a soft swell; rings: dark bands as fractions (the last one runs into
+        # the round tip); step / edge / tip loops per LOD; segs around per LOD; oval: side and up half-size factors.
+        # T51 polish: thick and bushy (10 cm across at its fullest, a little wider than tall), blunt round tip.
+        tube_tail=dict(radius=[(0.0, 0.034), (0.25, 0.046), (0.58, 0.050), (1.0, 0.045)],
+                       rings=[(0.27, 0.37), (0.47, 0.57), (0.67, 0.77), (0.87, 1.01)], cap=0.16,
+                       step=(0.045, 0.085, 0.15), edge=(0.012, 0.016, 0.0), tip=(4, 2, 1), segs=(14, 8, 6), oval=(1.04, 0.95)),
+        # The tail motion fades in over 5 cm from where it leaves the rump (tail_member_s, arc lengths in metres), so its
+        # root never moves against the body; Root takes 40 % of the far half, so RaccoonWash and Sleep keep it off the ground.
+        tail_member_s=(0.020, 0.075),
+        tail_root=(0.10, 0.20, 0.40),
+        eyes=dict(x=0.044, z=0.230, r=0.019, sink=0.35),
+        nose=dict(x=0.0, z=0.198, r=0.013, sink=0.45),
+        head_center=(0, -0.112, 0.222),
+        head_radii=(0.100, 0.090, 0.088),
+        ear_mode="none",
+        hind_leg_band=(0.100, 0.060),
+        front_leg_band=(0.100, 0.060),
+        leg_band_bones=("Upper", "Lower"),
+        lod0_faces=1060,
+        lod1_mode="collapse",
+        lod1_tris=1080,
+        lod1_body_tris=740,
+        lod2_tris=440,
+        lod2_body_tris=290,
+        back_probe_y=0.050,
+        sockets={
+            "SOCK_Neck": (0.0, -0.066, 0.160),
+            "SOCK_TailBase": (0.0, 0.196, 0.160),
+            "SOCK_Ear_L": (-0.066, -0.094, 0.324),
+            "SOCK_Ear_R": (0.066, -0.094, 0.324),
+        },
+    ),
+    # Red Panda (T51, A-SP-011, Forest): a round face with white cheek patches, a short round muzzle, small soft triangle
+    # ears, a plush body slightly hunched (the rump higher than the shoulders), sturdy short legs, a very thick ringed tail,
+    # about as wide as the thigh, held low and sweeping back (tube_tail). Face marks, dark legs and rings are vertex masks
+    # (pw_masks redpanda_masks).
+    # Modelled on the Rabbit bones; the prefab is scaled up uniformly to its size (about 66 x 40 cm).
+    "RedPanda": dict(
+        blockout=[
+            _ell((0, -0.106, 0.208), (0.090, 0.080, 0.080), part="head"),
+            _ell((0.058, -0.118, 0.186), (0.048, 0.044, 0.042), stiff=1.6, mirror=True, part="head"),  # round cheeks
+            _ell((0, -0.176, 0.180), (0.034, 0.036, 0.028), stiff=1.5, part="head"),  # short round muzzle
+            _ell((0, -0.205, 0.184), (0.017, 0.014, 0.014), stiff=1.5, part="head"),  # nose tip
+            _ell((0.060, -0.092, 0.270), (0.033, 0.011, 0.026), rot=(-8, 16, 20), stiff=2.2, mirror=True, part="head"),  # ear base
+            _ell((0.071, -0.090, 0.296), (0.017, 0.010, 0.019), rot=(-8, 16, 20), stiff=2.2, mirror=True, part="head"),  # ear tip
+            _ell((0, -0.040, 0.136), (0.086, 0.080, 0.088)),                         # chest
+            _ell((0, 0.048, 0.142), (0.100, 0.114, 0.098)),                          # plush body
+            _ell((0, 0.120, 0.150), (0.094, 0.080, 0.094)),                          # rump, higher: the soft hunch
+            _ell((0.064, 0.115, 0.096), (0.042, 0.056, 0.056), mirror=True),        # haunches
+            _ell((0.066, 0.098, 0.044), (0.030, 0.034, 0.040), mirror=True),        # sturdy hind legs
+            _ell((0.068, 0.080, 0.015), (0.027, 0.045, 0.015), mirror=True),        # hind feet
+            _ell((0.052, -0.055, 0.060), (0.028, 0.028, 0.050), mirror=True),       # sturdy front legs
+            _ell((0.054, -0.074, 0.015), (0.027, 0.032, 0.015), mirror=True),       # front paws
+        ],
+        tail_path=REDPANDA_TAIL,
+        tail_member_y=(0.176, 0.204),
+        # T51 polish: 11 cm across at its fullest, like the thigh seen from the side, nearly even to the round tip.
+        tube_tail=dict(radius=[(0.0, 0.038), (0.22, 0.050), (0.55, 0.056), (1.0, 0.049)],
+                       rings=[(0.24, 0.33), (0.43, 0.52), (0.62, 0.71), (0.81, 0.89)], cap=0.16,
+                       step=(0.045, 0.085, 0.15), edge=(0.012, 0.016, 0.0), tip=(4, 2, 1), segs=(14, 10, 6), oval=(1.04, 0.95)),
+        # The tail motion fades in over 5 cm from where it leaves the rump (tail_member_s), so its root never moves against
+        # the body; Root takes 40 % of the far half, so RedPandaStand and Sleep keep it off the ground.
+        tail_member_s=(0.030, 0.085),
+        tail_root=(0.10, 0.20, 0.40),
+        eyes=dict(x=0.040, z=0.218, r=0.019, sink=0.35),
+        nose=dict(x=0.0, z=0.186, r=0.013, sink=0.45),
+        head_center=(0, -0.106, 0.208),
+        head_radii=(0.090, 0.080, 0.080),
+        ear_mode="none",
+        hind_leg_band=(0.100, 0.060),
+        front_leg_band=(0.100, 0.060),
+        leg_band_bones=("Upper", "Lower"),
+        lod0_faces=1150,
+        lod1_mode="collapse",
+        lod1_tris=1200,
+        lod1_body_tris=830,
+        lod2_tris=500,
+        lod2_body_tris=330,
+        back_probe_y=0.050,
+        sockets={
+            "SOCK_Neck": (0.0, -0.066, 0.156),
+            "SOCK_TailBase": (0.0, 0.198, 0.162),
+            "SOCK_Ear_L": (-0.064, -0.091, 0.296),
+            "SOCK_Ear_R": (0.064, -0.091, 0.296),
+        },
     ),
     # Squirrel (A-SP-002): slightly narrower face than Rabbit, compact body, front paws tucked close to
     # the chest, small tufted ears on the Ear_01 bones, very large curled tail as one solid volume.
@@ -818,13 +1069,29 @@ def tail_weights(species, co):
     if d > 0.13:
         return 0.0, None
     y0, y1 = spec.get("tail_member_y", (0.17, 0.22))
-    member = smooth(0.005, 0.05, s) * max(smooth(y0, y1, co.y), smooth(0.30, 0.36, co.z))
+    # T51 polish: tail_member_s moves the start of the tail motion past the rump (thick tube tails), so the ring where
+    # the tail meets the body moves with the body and never presses into it or lifts out of it.
+    m0, m1 = spec.get("tail_member_s", (0.005, 0.05))
+    member = smooth(m0, m1, s) * max(smooth(y0, y1, co.y), smooth(0.30, 0.36, co.z))
     upper = smooth(0.08, 0.20, s)
     # A thin tail far below the tail bones (Field Mouse) takes only part of their motion; the rest follows the pelvis.
     gain = spec.get("tail_gain", 1.0)
     weights = {"Tail_01": (1.0 - upper) * gain, "Tail_02": upper * gain}
+    split = spec.get("tail_split")
+    if split:
+        # T51: a long plume (Fox) hands over along its arc length to Tail_02, then Tail_03 (arc lengths are species data).
+        t2 = smooth(split[0], split[1], s); t3 = smooth(split[2], split[3], s)
+        weights = {"Tail_01": (1.0 - t2) * gain, "Tail_02": (t2 - t3) * gain, "Tail_03": t3 * gain}
     if gain < 1.0:
         weights["Pelvis"] = 1.0 - gain
+    root = spec.get("tail_root")
+    if root:
+        # T51 polish: a low heavy tail (Raccoon, Red Panda) hands a share of its far part to Root (arc lengths s0, s1 and
+        # the share are species data). The base keeps the full tail motion; the far part keeps the flicks and sways at a
+        # softer amplitude and stays near its rest height when a clip tips the pelvis back or lowers the body.
+        k = root[2] * smooth(root[0], root[1], s)
+        weights = {b: x * (1.0 - k) for b, x in weights.items()}
+        weights["Root"] = weights.get("Root", 0.0) + k
     return member, weights
 
 
@@ -837,11 +1104,14 @@ def _ear_weights(species, arm, co):
     p, t = intersect_point_line(co, base, tip)
     radial = (co - p).length
     if spec["ear_mode"] == "short":
-        if co.z < 0.37 or radial > 0.05 or t < -0.15 or t > 0.65:
+        # T51: the ear zone (lowest z, radius around the ear bones, t range, blend range) is species data; the defaults
+        # are the Squirrel's. The Fox's tall upright ears stand off its ear bones' axis.
+        z0, r0, ta, tb, b0, b1 = spec.get("ear_zone", (0.37, 0.05, -0.15, 0.65, -0.15, 0.10))
+        if co.z < z0 or radial > r0 or t < ta or t > tb:
             return None
         # Small ears turn as one piece with a damped share of the family ear motion. The blend starts
         # inside the skull so the ear base bends over 5 cm instead of folding.
-        ear = spec.get("ear_gain", 1.0) * smooth(-0.15, 0.10, t)
+        ear = spec.get("ear_gain", 1.0) * smooth(b0, b1, t)
         return {"Head": 1.0 - ear, f"Ear_{side}_01": ear}
     if co.z < 0.38 or radial > 0.075 or t < -0.12 or t > 1.25:
         return None
@@ -941,6 +1211,24 @@ def skin_lod0(species):
             vg.active_index = g.index
             bpy.ops.object.vertex_group_smooth(group_select_mode='ACTIVE', factor=0.35, repeat=2, expand=0.0)
         bpy.ops.object.mode_set(mode='OBJECT')
+
+    # T51 polish: a tube tail (add_tail_tube) is a shell of its own, so heat weights give its root whichever bone is
+    # nearest (Spine on the Red Panda) while the rump around it follows Pelvis, and a clip that bends the back pushed the
+    # root out through the body. Its body share now copies the nearest body vertex, so the ring where the tail meets the
+    # body moves exactly with it; the tail rule below then blends in the tail bones along the tail.
+    tube_attr = me.attributes.get("PW_TailTube")
+    tube_ids = [v.index for v in me.vertices if tube_attr.data[v.index].value == 1] if tube_attr is not None else []
+    if tube_ids:
+        tubeset = set(tube_ids)
+        body_ids = [v.index for v in me.vertices if v.index not in tubeset]
+        kd = KDTree(len(body_ids))
+        for i, k in enumerate(body_ids):
+            kd.insert(me.vertices[k].co, i)
+        kd.balance()
+        snap = {k: _get(vg, me.vertices[k]) for k in body_ids}
+        for k in tube_ids:
+            _, i, _ = kd.find(me.vertices[k].co)
+            _put(vg, me.vertices[k], snap[body_ids[i]])
 
     stats = {"ear": 0, "tail": 0}
     for v in me.vertices:
@@ -1139,6 +1427,132 @@ def build_star_nose(species="Mole"):
         g = o.vertex_groups.new(name="Head")
         g.add(list(range(len(me.vertices))), 1.0, 'REPLACE')
         report[name] = tris(o)
+    return report
+
+
+# ---------------------------------------------------------------- tube tails (T51)
+
+def tube_profile(cfg, f):
+    """Tail radius at fraction f of its length: a soft swell through the radius points, then a round tip over the cap."""
+    cap = cfg["cap"]; pts = cfg["radius"]
+    g = min(f, 1.0 - cap)
+    r = pts[-1][1]
+    for (f0, r0), (f1, r1) in zip(pts[:-1], pts[1:]):
+        if g <= f1:
+            r = r0 + (r1 - r0) * smooth(f0, f1, g)
+            break
+    if f > 1.0 - cap:
+        u = min(1.0, (f - (1.0 - cap)) / cap)
+        r *= math.sqrt(max(0.0, 1.0 - u * u))
+    return r
+
+
+def tube_loops(cfg, level):
+    """Loop fractions along the tail: an even run, a pair of loops around every ring edge (the color turns between them,
+    so the rings stay crisp at every LOD; a single loop when edge is 0), and a round tip."""
+    cap = cfg["cap"]; step = cfg["step"][level]; d = cfg["edge"][level]
+    fixed = []
+    for a, b in cfg["rings"]:
+        for e in (a, b):
+            if e < 1.0:
+                fixed += [e - d, e + d] if d > 0 else [e]
+    tip = cfg["tip"][level]
+    capf = [1.0 - cap + cap * math.sin(k / (tip + 1) * math.pi / 2) for k in range(1, tip + 1)]
+    n = max(1, int(round((1.0 - cap) / step)))
+    even = [(1.0 - cap) * k / n for k in range(n + 1)] + capf
+    keep = [f for f in even if all(abs(f - x) > step * 0.45 for x in fixed)]
+    return sorted(set(round(f, 5) for f in keep + fixed))
+
+
+def _add_tail_tube(bm, species, level):
+    """Adds the tube along tail_path to a bmesh (outward normals, closed base, round tip). Returns the new vertices."""
+    spec = SPECS[species]; cfg = spec["tube_tail"]
+    pts = [Vector(p) for p in spec["tail_path"]]
+    seglen = [(b - a).length for a, b in zip(pts[:-1], pts[1:])]
+    total = sum(seglen)
+    dirs = [(b - a).normalized() for a, b in zip(pts[:-1], pts[1:])]
+    vt = [dirs[0]] + [(dirs[i - 1] + dirs[i]).normalized() for i in range(1, len(dirs))] + [dirs[-1]]
+
+    def at(s):
+        run = 0.0
+        for i, length in enumerate(seglen):
+            if s <= run + length or i == len(seglen) - 1:
+                t = min(1.0, max(0.0, (s - run) / length)) if length > 0 else 0.0
+                return pts[i].lerp(pts[i + 1], t), vt[i].lerp(vt[i + 1], t).normalized()
+            run += length
+
+    segs = cfg["segs"][level]; ox, oz = cfg.get("oval", (1.0, 1.0))
+    side = Vector((1.0, 0.0, 0.0))
+    loops, new = [], []
+    for f in tube_loops(cfg, level):
+        c, t = at(f * total)
+        w = t.cross(side).normalized()
+        u = w.cross(t).normalized()
+        r = tube_profile(cfg, f)
+        ring = [bm.verts.new(c + u * (math.cos(2 * math.pi * i / segs) * r * ox) + w * (math.sin(2 * math.pi * i / segs) * r * oz))
+                for i in range(segs)]
+        loops.append(ring); new += ring
+    tip = bm.verts.new(at(total)[0]); base = bm.verts.new(at(0.0)[0])
+    new += [tip, base]
+    faces = []
+    for r0, r1 in zip(loops[:-1], loops[1:]):
+        for i in range(segs):
+            j = (i + 1) % segs
+            faces.append(bm.faces.new((r0[i], r0[j], r1[j], r1[i])))
+    for i in range(segs):
+        j = (i + 1) % segs
+        faces.append(bm.faces.new((loops[-1][i], loops[-1][j], tip)))
+        faces.append(bm.faces.new((loops[0][j], loops[0][i], base)))
+    for f in faces:
+        f.smooth = True
+    return new
+
+
+def add_tail_tube(species, lods=(0,)):
+    """T51 ringed tails: appends the tube to SKM_<species>_LOD<n>, removes its faces buried in the body and tags its
+    vertices (PW_TailTube = 1). Run on LOD0 after build_lod0 (skin_lod0 weights it by the tail rule), then on LOD1 and LOD2
+    after build_lods: they take the weights of the nearest LOD0 tube vertex."""
+    report = {}
+    lod0 = bpy.data.objects[f"SKM_{species}_LOD0"]
+    for level in lods:
+        o = bpy.data.objects[f"SKM_{species}_LOD{level}"]
+        me = o.data
+        bb = bmesh.new(); bb.from_mesh(me); bvh = BVHTree.FromBMesh(bb); bb.free()
+        inside = _inside_test(bvh)
+        bm = bmesh.new(); bm.from_mesh(me)
+        # Layers first: adding a layer later invalidates the new vertices' Python references.
+        tag = bm.verts.layers.int.get("PW_TailTube") or bm.verts.layers.int.new("PW_TailTube")
+        col = bm.verts.layers.color.get("PW_Regions") or bm.verts.layers.float_color.get("PW_Regions")
+        dl = bm.verts.layers.deform.verify()
+        new = _add_tail_tube(bm, species, level)
+        newset = set(new)
+        buried = [f for f in bm.faces if all(v in newset for v in f.verts) and all(inside(v.co) for v in f.verts)]
+        bmesh.ops.delete(bm, geom=buried, context='FACES')
+        new = [v for v in new if v.is_valid]
+        # The LOD collapse can leave a foot a millimetre or two below the ground: back onto it (nothing enters anything).
+        for v in bm.verts:
+            if v.co.z < 0.0:
+                v.co.z = 0.0
+        for v in new:
+            v[tag] = 1
+            if col is not None:
+                v[col] = (0.0, 0.0, 0.0, 0.0)
+        if level > 0:
+            src = lod0.data
+            tube = src.attributes["PW_TailTube"].data
+            idx = [v.index for v in src.vertices if tube[v.index].value == 1]
+            kd = KDTree(len(idx))
+            for i, k in enumerate(idx):
+                kd.insert(src.vertices[k].co, i)
+            kd.balance()
+            for v in new:
+                _, i, _ = kd.find(v.co)
+                for g in src.vertices[idx[i]].groups:
+                    name = lod0.vertex_groups[g.group].name
+                    if g.weight > 0.0 and name in o.vertex_groups:
+                        v[dl][o.vertex_groups[name].index] = g.weight
+        bm.to_mesh(me); bm.free(); me.update()
+        report[o.name] = dict(tube_verts=len(new), tris=tris(o))
     return report
 
 

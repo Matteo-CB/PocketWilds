@@ -26,14 +26,24 @@
       "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_export.py"]
     },
     {
+      "blend": "SourceArt/Blender/Animals/Fox/BL_Animal_Fox.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animals/Fox/Models/SKM_Fox.fbx (T51, LOD0-2 and sockets on SK_MediumQuadruped, bones placed by pw_rig.SPECIES_BONES)"]
+    },
+    {
+      "blend": "SourceArt/Blender/Animals/Badger/BL_Animal_Badger.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animals/Badger/Models/SKM_Badger.fbx (T51, LOD0-2 and sockets on SK_MediumQuadruped, bones placed by pw_rig.SPECIES_BONES)"]
+    },
+    {
       "blend": "SourceArt/Blender/Rigs/BL_Rig_SmallQuadruped.blend",
-      "builders": ["SourceArt/Blender/Tools/pw_anim_library.py", "SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_export.py"],
-      "produces": ["Assets/_Game/Art/Animations/SmallQuadruped/AN_SmallQuadruped.fbx (24 clips, T47 FieldHamsterGreet and FieldHamsterStash, T49 MoleDig, MoleEat, MoleWalk, PeekOut, MoleSleep_Enter, MoleSleep_Loop, MoleSleep_Exit, MoleReact and MoleHappy)"]
+      "builders": ["SourceArt/Blender/Tools/pw_anim_library.py", "SourceArt/Blender/Tools/pw_anim_ground.py", "SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animations/SmallQuadruped/AN_SmallQuadruped.fbx (29 clips, T47 FieldHamsterGreet and FieldHamsterStash, T49 MoleDig, MoleEat, MoleWalk, PeekOut, MoleSleep_Enter, MoleSleep_Loop, MoleSleep_Exit, MoleReact and MoleHappy, T51 RaccoonWash and RedPandaStand, 2026-10-12 ground contact: PLANTED keys solved by pw_anim_ground.py, LowSleep_Enter, LowSleep_Loop and LowSleep_Exit)"]
     },
     {
       "blend": "SourceArt/Blender/Rigs/BL_Rig_MediumQuadruped.blend",
       "builders": ["SourceArt/Blender/Tools/pw_rig.py", "SourceArt/Blender/Tools/pw_anim_medium.py", "SourceArt/Blender/Tools/pw_export.py"],
-      "produces": ["Assets/_Game/Art/Animations/MediumQuadruped/AN_MediumQuadruped.fbx (13 clips, T49 PeekOut)"]
+      "produces": ["Assets/_Game/Art/Animations/MediumQuadruped/AN_MediumQuadruped.fbx (23 clips, T49 PeekOut, T51 FoxCurlSleep_Enter, FoxCurlSleep_Loop, FoxCurlSleep_Exit, BadgerSleep_Enter, BadgerSleep_Loop, BadgerSleep_Exit, BadgerDig, LowEat_Loop, LowInspect and LowPeekOut)"]
     },
     {
       "blend": "SourceArt/Blender/Eggs/BL_Egg_Family.blend",
@@ -86,6 +96,16 @@
       "blend": "SourceArt/Blender/Animals/Mole/BL_Animal_Mole.blend",
       "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_export.py"],
       "produces": ["Assets/_Game/Art/Animals/Mole/Models/SKM_Mole.fbx (LOD0-2, sockets, variant module SKM_Mole_MOD_StarNose LOD0-1 built by pw_species.build_star_nose)", "PF_Animal_Mole and its definition (Editor/Animals/AnimalPipeline.cs)"]
+    },
+    {
+      "blend": "SourceArt/Blender/Animals/Raccoon/BL_Animal_Raccoon.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animals/Raccoon/Models/SKM_Raccoon.fbx (LOD0-2, sockets, ringed tube tail built by pw_species.add_tail_tube; started from BL_Animal_Rabbit.blend)", "PF_Animal_Raccoon and its definition (Editor/Animals/AnimalPipeline.cs)"]
+    },
+    {
+      "blend": "SourceArt/Blender/Animals/RedPanda/BL_Animal_RedPanda.blend",
+      "builders": ["SourceArt/Blender/Tools/pw_species.py", "SourceArt/Blender/Tools/pw_masks.py", "SourceArt/Blender/Tools/pw_export.py"],
+      "produces": ["Assets/_Game/Art/Animals/RedPanda/Models/SKM_RedPanda.fbx (LOD0-2, sockets, ringed tube tail built by pw_species.add_tail_tube; started from BL_Animal_Rabbit.blend)", "PF_Animal_RedPanda and its definition (Editor/Animals/AnimalPipeline.cs)"]
     },
     {
       "blend": "SourceArt/Blender/Accessories/BL_Accessories.blend",

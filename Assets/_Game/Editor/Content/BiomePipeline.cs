@@ -26,6 +26,7 @@ namespace PocketWilds.Editor.Content
             grassland.sourceId = "biome.grassland";
             grassland.displayKey = "biome.grassland.name";
             grassland.order = 0;
+            grassland.openToPlayers = true;
             EditorUtility.SetDirty(grassland);
 
             var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseAsset>(ContentDatabasePath)

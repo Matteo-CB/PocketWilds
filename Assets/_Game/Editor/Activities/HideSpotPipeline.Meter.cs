@@ -6,6 +6,34 @@ namespace PocketWilds.Editor.Activities
 {
     public static partial class HideSpotPipeline
     {
+        internal static class Prof
+        {
+            public static readonly string[] Names = { "load species", "load chunks", "zones", "save", "meter ctor", "measure line", "measure slide", "measure landing",
+                "measure alone", "measure cover", "measure decorShown", "measure other", "allowed", "worn", "clearance", "discClearance", "onIsland",
+                "cand line search", "cand slide", "cand otherProps", "cand landing", "attempt candidates", "attempt degree", "attempt choose", "attempt gather",
+                "attempt aimfit", "attempt stats", "own meter ctor", "decorShown total", "hopFree", "measure bisect", "measure box" };
+            public const int LoadSpecies = 0, LoadChunks = 1, Zones = 2, Save = 3, MeterCtor = 4, MLine = 5, MSlide = 6, MLanding = 7, MAlone = 8, MCover = 9,
+                MDecorShown = 10, MOther = 11, Allowed = 12, Worn = 13, Clearance = 14, DiscClearance = 15, OnIsland = 16, CLine = 17, CSlide = 18,
+                COther = 19, CLanding = 20, ACand = 21, ADegree = 22, AChoose = 23, AGather = 24, AAim = 25, AStats = 26, OwnCtor = 27, DecorShownT = 28,
+                HopFree = 29, MBisect = 30, MBox = 31;
+            public static readonly long[] Ticks = new long[Names.Length];
+            public static readonly long[] Count = new long[Names.Length];
+            public static int Cat = MOther;
+            public static long ChunkVisited, ChunkRastered, ChunkTicks, AnimalTicks, ProjectTicks, AnimalTris, BigVisited;
+            public static long Now => System.Diagnostics.Stopwatch.GetTimestamp();
+            public static void Add(int i, long start) { Ticks[i] += Now - start; Count[i]++; }
+            public static void Reset() { Array.Clear(Ticks, 0, Ticks.Length); Array.Clear(Count, 0, Count.Length); ChunkVisited = ChunkRastered = ChunkTicks = AnimalTicks = ProjectTicks = AnimalTris = BigVisited = 0; }
+            public static string Report()
+            {
+                var sb = new System.Text.StringBuilder("PROFILE\n");
+                for (int i = 0; i < Names.Length; i++)
+                    sb.Append($"{Names[i]}: {Ticks[i] / (double)System.Diagnostics.Stopwatch.Frequency:F2} s, {Count[i]} calls, {(Count[i] > 0 ? Ticks[i] * 1e6 / System.Diagnostics.Stopwatch.Frequency / Count[i] : 0):F1} us/call\n");
+                double f = System.Diagnostics.Stopwatch.Frequency;
+                sb.Append($"measure parts: project {ProjectTicks / f:F2} s, chunk {ChunkTicks / f:F2} s ({ChunkVisited} visited, {ChunkRastered} rastered, big {BigVisited}), animal {AnimalTicks / f:F2} s ({AnimalTris} tris)").AppendLine();
+                return sb.ToString();
+            }
+        }
+
         /// <summary>
         /// The visible share of an animal's silhouette from one camera position (doc 01 S-ACT-002: « une part de sa
         /// silhouette reste visible »). The species' LOD0 triangles, posed in its Idle bind pose, are projected from the
@@ -52,6 +80,7 @@ namespace PocketWilds.Editor.Activities
 
             public ShareMeter(Vector3 cameraPosition, Quaternion cameraRotation, List<Vector3> vertices, List<int> triangles)
             {
+                long p0 = Prof.Now;
                 _position = cameraPosition;
                 _right = cameraRotation * Vector3.right;
                 _up = cameraRotation * Vector3.up;
@@ -107,6 +136,7 @@ namespace PocketWilds.Editor.Activities
                         for (int x = x0; x <= x1; x++)
                             _bins[y * Bins + x].Add(t);
                 }
+                Prof.Add(Prof.MeterCtor, p0);
             }
 
             private static int Bin(float v) => Mathf.Clamp((int)Mathf.Floor((v - BinMin) / BinSize), 0, Bins - 1);
@@ -132,6 +162,13 @@ namespace PocketWilds.Editor.Activities
             /// </summary>
             public float Measure(SpeciesModel species, Vector3 position, float yaw, out Vector4 box, bool allFrames = false)
             {
+                long p0 = Prof.Now;
+                try { return MeasureCore(species, position, yaw, out box, allFrames); }
+                finally { Prof.Add(Prof.Cat, p0); }
+            }
+
+            private float MeasureCore(SpeciesModel species, Vector3 position, float yaw, out Vector4 box, bool allFrames = false)
+            {
                 var frames = allFrames ? species.Frames : species.SearchFrames;
                 int n = species.Frames[0].Length;
                 int total = n * frames.Length;
@@ -141,6 +178,7 @@ namespace PocketWilds.Editor.Activities
                     _aw = new float[total];
                     _aiz = new float[total];
                 }
+                long q0 = Prof.Now;
                 float rad = yaw * Mathf.Deg2Rad, cos = Mathf.Cos(rad), sin = Mathf.Sin(rad);
                 float uMin = float.MaxValue, uMax = float.MinValue, wMin = float.MaxValue, wMax = float.MinValue, zMax = 0f;
                 for (int f = 0; f < frames.Length; f++)
@@ -166,6 +204,7 @@ namespace PocketWilds.Editor.Activities
                     }
                 }
                 box = new Vector4(uMin, wMin, uMax, wMax);
+                long q1 = Prof.Now; Prof.ProjectTicks += q1 - q0;
                 float extent = Mathf.Max(uMax - uMin, wMax - wMin);
                 if (extent <= 1e-6f)
                     return 0f;
@@ -187,6 +226,8 @@ namespace PocketWilds.Editor.Activities
                             ChunkTriangle(t, uMin, wMin, uHi, wHi, zMax, cols, rows, inv);
                 foreach (int t in _big)
                     ChunkTriangle(t, uMin, wMin, uHi, wHi, zMax, cols, rows, inv);
+                Prof.BigVisited += _big.Count;
+                long q2 = Prof.Now; Prof.ChunkTicks += q2 - q1;
 
                 var triangles = species.Triangles;
                 float best = 0f;
@@ -213,6 +254,8 @@ namespace PocketWilds.Editor.Activities
                     if (covered > 0)
                         best = Mathf.Max(best, visible / (float)covered);
                 }
+                Prof.AnimalTris += triangles.Length / 3 * frames.Length;
+                Prof.AnimalTicks += Prof.Now - q2;
                 return best;
             }
 
@@ -221,9 +264,11 @@ namespace PocketWilds.Editor.Activities
                 if (_stamp[t] == _stampId)
                     return;
                 _stamp[t] = _stampId;
+                Prof.ChunkVisited++;
                 int o = t * 5;
                 if (_box[o + 4] >= zMax || _box[o + 1] < uMin || _box[o] > uHi || _box[o + 3] < wMin || _box[o + 2] > wHi)
                     return;
+                Prof.ChunkRastered++;
                 int a = _triangles[t * 3], b = _triangles[t * 3 + 1], c = _triangles[t * 3 + 2];
                 Raster(_chunkDepth, cols, rows, uMin, wMin, inv, _u[a], _w[a], _iz[a], _u[b], _w[b], _iz[b], _u[c], _w[c], _iz[c]);
             }

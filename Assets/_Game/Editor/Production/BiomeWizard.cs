@@ -120,6 +120,12 @@ namespace PocketWilds.Editor.Production
             public string BasicEggId = string.Empty;
 
             /// <summary>
+            /// T51 open to players in this version (BiomeDefinition.OpenToPlayers): false keeps the gate « Bientôt » while the biome
+            /// is being made, whatever species it already has. Tests, captures and benchmarks open it through saves.
+            /// </summary>
+            public bool OpenToPlayers = true;
+
+            /// <summary>
             /// T50: world x of the biome's first chunk on the strip (Grassland 0, Forest 112); its chunks follow every 14 m.
             /// Only the biome at the world's origin pins its arrival (the refuge); a later arrival streams with the camera.
             /// </summary>
@@ -218,11 +224,13 @@ namespace PocketWilds.Editor.Production
             {
                 Name = "Forest", Key = "forest", Prefix = "FO", Order = 1, BasicEggId = "egg.forest.basic",
                 English = "Forest", French = "Forêt",
+                // T51: « Bientôt » for players until the Forest is complete (the Owl and the Boar Piglet in T52, the bear cub in T53).
+                OpenToPlayers = false,
                 // T50: the strip goes on east of the Grassland's ForestEdge (98): Entry at 112, the region from x = 105.
                 OriginX = 112f, SunRaysFrom = QualityTier.Medium,
                 Mood = new MoodSpec
                 {
-                    Sun = Hex("FFDCA0"), Ambient = Hex("A6C488"), Sky = Hex("C0DCCB"), Fog = Hex("ECE6CE"), Strength = 0.3f,
+                    Sun = Hex("FFD08A"), Ambient = Hex("8FBCA4"), Sky = Hex("B8DCCF"), Fog = Hex("E6E2C8"), Strength = 0.32f,
                 },
             };
             // Zone names are used inside sentences (« Ouvrir {zone} »), with their article like the Prairie's.
@@ -236,17 +244,19 @@ namespace PocketWilds.Editor.Production
             // Rows (base, R, G, B, A, occlusion, accent): deeper leaf greens, warm bark, light moss, amber touches; cozy and luminous,
             // never dark (T50 art pass: a light moss floor with warm litter and a light tan path, soft occlusion). The wizard adds
             // missing rows only; ForestPipeline.TunePalettes writes these values over DEF_Palettes_Forest on every build.
-            spec.Palettes.Add(("palette.forest.tree", new[] { "7A5A42", "4C8C50", "6EAE5A", "E2AE4E", "A0CC78", "3A3428", "FFE6B4" }));
-            spec.Palettes.Add(("palette.forest.bush", new[] { "5A9A54", "4A8A4E", "8ABE64", "EBC066", "B4D688", "32422A", "FFE6B4" }));
-            spec.Palettes.Add(("palette.forest.ground", new[] { "78A656", "6AB24E", "AE8A5C", "8FB878", "E2CFA0", "4C5E36", "B8CC7C" }));
-            spec.Palettes.Add(("palette.forest.rock", new[] { "9A9586", "7AAE58", "B0AB9A", "D2CCB2", "C0D2A0", "4A473C", "F2E6C8" }));
-            spec.Palettes.Add(("palette.forest.log", new[] { "6E4E38", "78AA58", "8E6C4C", "E0AC48", "B4966C", "3A2C22", "FFE2A8" }));
+            spec.Palettes.Add(("palette.forest.tree", new[] { "7A5A42", "2F7A58", "52A070", "E2AE4E", "8CCB8E", "2E3A30", "FFE6B4" }));
+            spec.Palettes.Add(("palette.forest.bush", new[] { "3F8C60", "357E56", "6BB47E", "EBC066", "A6D6A0", "283C30", "FFE6B4" }));
+            spec.Palettes.Add(("palette.forest.ground", new[] { "74A464", "3F9A68", "C08A50", "8FB878", "E0C99A", "2F4A3C", "9CC48C" }));
+            spec.Palettes.Add(("palette.forest.rock", new[] { "9A9586", "5EA478", "B0AB9A", "D2CCB2", "B6D6AC", "4A473C", "F2E6C8" }));
+            spec.Palettes.Add(("palette.forest.log", new[] { "6E4E38", "5E9E6C", "8E6C4C", "E0AC48", "B4966C", "3A2C22", "FFE2A8" }));
             spec.Palettes.Add(("palette.forest.mushroom", new[] { "E8DCC4", "C8643E", "F2E6D0", "D9A441", "F7F0E0", "5A4034", "FFFFFF" }));
-            spec.Palettes.Add(("palette.forest.fern", new[] { "5A9C50", "4A8A48", "86BE62", "ACD07A", "C8E29A", "2E4428", "EEF6D0" }));
+            spec.Palettes.Add(("palette.forest.fern", new[] { "3E9464", "347F56", "66B47A", "98CE8C", "BDE4B0", "243C2E", "E6F6DC" }));
+            // T51 owner: the Forest has its own green (deep emerald, hue about 145), never the Grassland's yellow-green grass.
+            spec.Palettes.Add(("palette.forest.grass", new[] { "3F9466", "7CC492", "C8C79A", "3F9466", "3F9466", "2C5A40", "9CCB86" }));
             spec.Palettes.Add(("palette.forest.water", new[] { "6FA8A0", "8CC4B8", "C8E6DC", "4E8A80", "E8F4EE", "2E4A46", "FFFFFF" }));
             // T50 rows the Forest's pieces need (pw_forest.py, ForestPipeline): FO_Tree_D's light bark with dark marks, the canopy
             // wren (column 6: a yellow-breasted variant), the Clearing's two butterfly colorways (column 6: the second variant).
-            spec.Palettes.Add(("palette.forest.birch", new[] { "E6DDC8", "58984F", "92C462", "E6C05A", "4A423A", "3A3428", "FFF2CC" }));
+            spec.Palettes.Add(("palette.forest.birch", new[] { "E6DDC8", "4C9466", "82C08A", "E6C05A", "4A423A", "3A3428", "FFF2CC" }));
             spec.Palettes.Add(("palette.forest.life_bird", new[] { "7A5E48", "EBD3A8", "5E4636", "E8B64E", "7A5E48", "4A3A2E", "F2D27A" }));
             spec.Palettes.Add(("palette.forest.life_butterfly_amber", new[] { "4A3A2A", "F2B45A", "B86A3E", "4A3A2A", "4A3A2A", "35291E", "F7DDA8" }));
             spec.Palettes.Add(("palette.forest.life_butterfly_cream", new[] { "3E3540", "F4F0D8", "B8D88A", "3E3540", "3E3540", "2E2830", "E6F0B8" }));
@@ -300,6 +310,33 @@ namespace PocketWilds.Editor.Production
 
         [MenuItem("Pocket Wilds/Content/Create Forest Biome (T50)", priority = 152)]
         public static void CreateForestMenu() => Debug.Log("[BiomeWizard] " + CreateOrUpdate(ForestSpec()));
+
+        [MenuItem("Pocket Wilds/Content/Update Biome Open Flags (T51)", priority = 153)]
+        public static void ApplyOpenFlagsMenu() => Debug.Log("[BiomeWizard] " + ApplyOpenFlags());
+
+        /// <summary>
+        /// T51 writes only the open-to-players flag of the shipped presets (Grassland open, Forest « Bientôt ») onto their
+        /// existing definitions, without rebuilding the rest of the biome. Idempotent.
+        /// </summary>
+        public static string ApplyOpenFlags()
+        {
+            var lines = new List<string>();
+            foreach (var spec in new[] { GrasslandSpec(), ForestSpec() })
+            {
+                var paths = new BiomePaths(spec.Name, DefaultRoot);
+                var biome = AssetDatabase.LoadAssetAtPath<BiomeDefinitionAsset>(paths.Definition);
+                if (biome == null)
+                {
+                    lines.Add($"{spec.Name} : définition absente");
+                    continue;
+                }
+                biome.openToPlayers = spec.OpenToPlayers;
+                EditorUtility.SetDirty(biome);
+                lines.Add($"{spec.Name} : {(spec.OpenToPlayers ? "ouvert" : "Bientôt")}");
+            }
+            AssetDatabase.SaveAssets();
+            return string.Join(" ; ", lines) + ".";
+        }
 
         /// <summary>T50: where a zone's chunk stands on the strip: the spec's origin plus 14 m per zone along +x.</summary>
         public static Vector3 ChunkOrigin(BiomeSpec spec, int zone) => new Vector3(spec.OriginX + zone * ChunkSpacing, 0f, 0f);
@@ -404,6 +441,7 @@ namespace PocketWilds.Editor.Production
             biome.order = spec.Order;
             biome.key = spec.Key;
             biome.prefix = spec.Prefix;
+            biome.openToPlayers = spec.OpenToPlayers;
             for (int i = biome.zones.Count; i < spec.Zones.Count; i++)
                 biome.zones.Add(new BiomeDefinitionAsset.ZoneRow { chunk = spec.Zones[i].Chunk, role = spec.Zones[i].Role });
             EditorUtility.SetDirty(biome);

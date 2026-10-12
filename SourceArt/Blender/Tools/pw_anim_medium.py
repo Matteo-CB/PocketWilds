@@ -213,6 +213,134 @@ def clips():
     t.update(both("Ear_{}_01", "rx", [(0, 0), (14, -10), (26, -10), (32, 8), (37, -6), (40, 8), (43, -6), (47, 0), (54, 0)]))
     t.update(both("Ear_{}_01", "rz", [(0, 0), (34, 0), (37, -8), (40, 8), (43, -5), (46, 0), (54, 0)], -1))
     c[f"AN_{n}_PeekOut"] = (54, False, t)
+    c.update(t51_clips())
+    return c
+
+
+# T51 Fox (curled sleep) and Badger (sleep belly down), measured on SKM_Fox_LOD0 and SKM_Badger_LOD0: the belly rests
+# just above the ground, the folded paws touch it, nothing enters the body.
+FOX_CURL = {
+    ("Root", "lz"): -0.086,
+    ("Pelvis", "rz"): -10, ("Spine", "rz"): 22, ("Spine", "rx"): -3, ("Chest", "rz"): 26, ("Chest", "rx"): -4,
+    ("Neck", "rx"): 30, ("Neck", "ry"): 62, ("Head", "rx"): -2, ("Head", "ry"): 18, ("Head", "rz"): 18,
+    ("FrontLeg_L_Upper", "rx"): 85, ("FrontLeg_R_Upper", "rx"): 85,
+    ("FrontLeg_L_Lower", "rx"): -160, ("FrontLeg_R_Lower", "rx"): -160,
+    ("HindLeg_L_Upper", "rx"): 65, ("HindLeg_R_Upper", "rx"): 65,
+    ("HindLeg_L_Lower", "rx"): 130, ("HindLeg_R_Lower", "rx"): 130,
+    ("HindPaw_L", "rx"): 40, ("HindPaw_R", "rx"): 40,
+    ("Ear_L_01", "rx"): 20, ("Ear_R_01", "rx"): 20,
+    ("Tail_01", "rx"): -22, ("Tail_01", "rz"): -30, ("Tail_02", "rx"): -28, ("Tail_02", "rz"): -82,
+    ("Tail_03", "rx"): -12, ("Tail_03", "rz"): -66,
+}
+BADGER_SLEEP = {
+    ("Root", "lz"): -0.074,
+    ("Chest", "rx"): -3, ("Neck", "rx"): 10, ("Head", "rx"): 12, ("Head", "rz"): 8,
+    ("FrontLeg_L_Upper", "rx"): 78, ("FrontLeg_R_Upper", "rx"): 78,
+    ("FrontLeg_L_Lower", "rx"): -10, ("FrontLeg_R_Lower", "rx"): -10,
+    ("FrontPaw_L", "rx"): 15, ("FrontPaw_R", "rx"): 15,
+    ("HindLeg_L_Upper", "rx"): -80, ("HindLeg_R_Upper", "rx"): -80,
+    ("HindLeg_L_Lower", "rx"): 20, ("HindLeg_R_Lower", "rx"): 20,
+    ("HindPaw_L", "rx"): -20, ("HindPaw_R", "rx"): -20,
+    ("Tail_01", "rx"): -20,
+}
+
+
+def t51_clips():
+    """T51: species clips swapped in by the Fox and Badger overrides (AnimalPipeline), and three low head clips for the
+    short-necked members (Fox, Badger): the family Eat, Inspect and PeekOut swing a long fawn neck, which folds a short
+    neck's head into its chest."""
+    c = {}
+    n = FAMILY
+    # ---------------- FoxCurlSleep (signature « Sommeil enroulé »): settles front first, then curls into a ball, the
+    # head turned back to the left hip and the huge tail swept forward along the flank over the nose.
+    t = {}
+    for k, v in FOX_CURL.items():
+        if k[0].startswith("FrontLeg") or k[0].startswith("FrontPaw"):
+            t[k] = [(0, 0), (10, v * 0.7), (20, v), (30, v)]
+        elif k[0].startswith("Tail") or k[0] in ("Neck", "Head"):
+            t[k] = [(0, 0), (12, v * 0.25), (24, v * 0.9), (30, v)]
+        else:
+            t[k] = [(0, 0), (14, v * 0.6), (26, v), (30, v)]
+    c[f"AN_{n}_FoxCurlSleep_Enter"] = (30, False, t)
+    t = hold(FOX_CURL, 120)
+    t[("Chest", "rx")] = [(0, -4), (60, -2.6), (120, -4)]
+    t[("Spine", "rx")] = [(0, 0), (60, -0.8), (120, 0)]
+    t[("Tail_03", "rz")] = [(0, -66), (80, -66), (86, -60), (94, -66), (120, -66)]
+    t[("Ear_R_01", "rx")] = [(0, 20), (40, 20), (43, 12), (48, 20), (120, 20)]
+    c[f"AN_{n}_FoxCurlSleep_Loop"] = (120, True, t)
+    # Wakes: the body rises first, then the legs unfold under it (no paw sweeps below the ground).
+    t = {k: [(0, v), (6, v), (18, v * 0.1), (24, 0)] for k, v in FOX_CURL.items()}
+    t[("Root", "lz")] = [(0, FOX_CURL[("Root", "lz")]), (10, FOX_CURL[("Root", "lz")] * 0.4), (18, 0.002), (24, 0)]
+    t[("Chest", "rx")] = [(0, -4), (10, 6), (18, 2), (24, 0)]
+    t[("Neck", "rx")] = [(0, 30), (10, -6), (18, -2), (24, 0)]
+    c[f"AN_{n}_FoxCurlSleep_Exit"] = (24, False, t)
+
+    # ---------------- BadgerSleep: lies belly down, front paws forward under the chin, hind legs stretched back, the
+    # head resting low. Same lengths as the family Sleep clips.
+    t = {}
+    for k, v in BADGER_SLEEP.items():
+        # The legs stretch out first, then the body lowers: no paw sweeps below the ground.
+        t[k] = [(0, 0), (8, v * 0.2), (22, v), (30, v)] if k[0] == "Root" else [(0, 0), (10, v * 0.85), (18, v), (30, v)]
+    c[f"AN_{n}_BadgerSleep_Enter"] = (30, False, t)
+    t = hold(BADGER_SLEEP, 120)
+    t[("Chest", "rx")] = [(0, -3), (60, -1.8), (120, -3)]
+    t[("Tail_01", "rz")] = [(0, 0), (70, 0), (74, 8), (80, 0), (120, 0)]
+    c[f"AN_{n}_BadgerSleep_Loop"] = (120, True, t)
+    t = {k: [(0, v), (10, v * 0.8), (24, 0)] for k, v in BADGER_SLEEP.items()}
+    t[("Root", "lz")] = [(0, BADGER_SLEEP[("Root", "lz")]), (8, -0.022), (14, 0.0), (19, 0.004), (24, 0)]
+    c[f"AN_{n}_BadgerSleep_Exit"] = (24, False, t)
+
+    # ---------------- BadgerDig (signature « Petite fouille »): lowers its head, scratches the ground twice with each
+    # front paw in turn, then sniffs the little hole. 2 s one-shot. Each stroke lifts the paw forward and pulls it back
+    # to its rest place (Upper only forward, Lower only folds up), so no paw goes below the ground; Root only rises.
+    def stroke(start):
+        return ([(start, 0), (start + 4, 34), (start + 9, 6), (start + 11, 0)],
+                [(start, 0), (start + 3, -46), (start + 8, -18), (start + 11, 0)])
+    t = {("Neck", "rx"): [(0, 0), (8, 10), (40, 10), (46, 16), (54, 14), (60, 0)],
+         ("Head", "rx"): [(0, 0), (8, 14), (40, 14), (44, 24), (47, 20), (50, 24), (53, 20), (56, 8), (60, 0)],
+         ("Chest", "rx"): [(0, 0), (8, -2), (40, -2), (52, -2), (60, 0)],
+         ("Chest", "rz"): [(0, 0), (10, 3), (16, -3), (22, 3), (28, -3), (34, 3), (40, 0), (60, 0)],
+         ("Root", "lz"): [(0, 0), (10, 0.005), (52, 0.005), (60, 0)],
+         ("Tail_01", "rz"): [(0, 0), (12, 10), (18, -10), (24, 10), (30, -10), (36, 0), (60, 0)]}
+    for side, starts in (("L", (8, 30)), ("R", (19, 41))):
+        up, low = [(0, 0)], [(0, 0)]
+        for s in starts:
+            a, b = stroke(min(s, 48))
+            up += a; low += b
+        up.append((60, 0)); low.append((60, 0))
+        t[(f"FrontLeg_{side}_Upper", "rx")] = up
+        t[(f"FrontLeg_{side}_Lower", "rx")] = low
+    c[f"AN_{n}_BadgerDig"] = (60, False, t)
+
+    # ---------------- LowEat_Loop: the short-necked Eat. The front dips, the head lowers and tilts to the ground in
+    # front of the paws and nibbles. 2 s loop like Eat_Loop.
+    t = {("Chest", "rx"): [(0, -5), (60, -5)], ("Neck", "rx"): [(0, 14), (60, 14)],
+         ("Head", "rx"): [(0, 24), (10, 28), (20, 24), (30, 28), (40, 24), (50, 28), (60, 24)],
+         ("Ear_L_01", "rx"): [(0, 6), (30, 10), (60, 6)], ("Ear_R_01", "rx"): [(0, 6), (34, 2), (60, 6)],
+         ("Tail_01", "rx"): [(0, 0), (40, 0), (43, -12), (48, 0), (60, 0)]}
+    t.update(both("FrontLeg_{}_Upper", "rx", [(0, 5), (60, 5)]))
+    c[f"AN_{n}_LowEat_Loop"] = (60, True, t)
+    # ---------------- LowInspect: sniffs low in front, then looks up. 1.5 s one-shot like Inspect.
+    t = {("Neck", "rx"): [(0, 0), (12, 14), (28, 14), (38, -4), (45, 0)],
+         ("Head", "rx"): [(0, 0), (12, 22), (20, 26), (28, 22), (38, -4), (45, 0)],
+         ("Chest", "rx"): [(0, 0), (12, -3), (28, -3), (38, 0), (45, 0)],
+         ("Head", "rz"): [(0, 0), (16, 6), (26, -4), (45, 0)]}
+    t.update(both("Ear_{}_01", "rx", [(0, 0), (10, -14), (30, -14), (45, 0)]))
+    t.update(both("FrontLeg_{}_Upper", "rx", [(0, 0), (12, 3), (28, 3), (38, 0), (45, 0)]))
+    c[f"AN_{n}_LowInspect"] = (45, False, t)
+    # ---------------- LowPeekOut (photo pose « Sortir du terrier »): the PeekOut beats with a short neck: muzzle down,
+    # sniffs, pops up, a quick shake, settles. 1.8 s one-shot like PeekOut; legs at rest, Root only rises.
+    t = {("Neck", "rx"): [(0, 0), (14, 16), (24, 16), (32, -8), (38, -8), (48, 0), (54, 0)],
+         ("Head", "rx"): [(0, 0), (14, 26), (17, 30), (20, 25), (23, 29), (26, 26), (32, -12), (36, -10), (46, -2), (50, 0), (54, 0)],
+         ("Chest", "rx"): [(0, 0), (14, -3), (24, -3), (32, 2), (44, 0), (54, 0)],
+         ("Head", "ry"): [(0, 0), (34, 0), (37, 14), (40, -14), (43, 10), (46, -7), (49, 3), (52, 0), (54, 0)],
+         ("Head", "rz"): [(0, 0), (34, 0), (37, -6), (40, 6), (43, -4), (46, 3), (50, 0), (54, 0)],
+         ("Root", "lz"): [(0, 0), (28, 0), (32, 0.006), (38, 0.004), (46, 0), (54, 0)],
+         ("Tail_01", "rx"): [(0, 0), (30, -14), (36, 4), (44, 0), (54, 0)]}
+    t.update(both("Ear_{}_01", "rx", [(0, 0), (14, -10), (26, -10), (32, 8), (37, -6), (40, 8), (43, -6), (47, 0), (54, 0)]))
+    t.update(both("Ear_{}_01", "rz", [(0, 0), (34, 0), (37, -8), (40, 8), (43, -5), (46, 0), (54, 0)], -1))
+    t.update(both("FrontLeg_{}_Upper", "rx", [(0, 0), (14, 3), (24, 3), (32, -2), (44, 0), (54, 0)]))
+    c[f"AN_{n}_LowPeekOut"] = (54, False, t)
     return c
 
 
